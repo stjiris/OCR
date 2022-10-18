@@ -1,1 +1,1 @@
-# Disserta-o-OCR
+# Dissertacao-OCR
