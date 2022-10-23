@@ -1,6 +1,9 @@
 from flask import Flask, request
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
+from PIL import Image
+import pytesseract
+
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
 
@@ -14,8 +17,9 @@ def submitFile():
 
         filename_txt = "file_extracted/" + file.filename.split(".")[0] + ".txt"
 
-        # Obter o texto (Tesseract/etc) -> now hardcoded
-        text = "Hello World"
+        # Obter o texto (Tesseract/etc)
+        # De momento ainda 
+        text = pytesseract.image_to_string(Image.open("file_uploads/" + file.filename), lang='por')
 
         with open(filename_txt, "w") as f:
             f.write(text)
