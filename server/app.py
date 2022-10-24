@@ -16,24 +16,26 @@ def submitFile():
         file = request.files['file']
         file.save("file_uploads/" + file.filename)
 
-        filename_txt = "file_extracted/" + file.filename.split(".")[0] + ".txt"
+        file_basename = file.filename.split(".")[0]
+
+        filename_txt = "file_extracted/" + file_basename + ".txt"
 
         # Obter o texto (Tesseract/etc)
         # De momento ainda 
-        pages = convert_from_path("file_uploads/" + file.filename, 200, poppler_path="C:\\Users\\Andre.LAPTOP01\\Documents\\poppler-22.04.0\\Library\\bin")
-        pages[0].save("file_uploads/page1.jpg", "JPEG")
-        pages[1].save("file_uploads/page2.jpg", "JPEG")
-        # text = pytesseract.image_to_string(Image.open("file_uploads/" + file.filename), lang='por')
-        text = pytesseract.image_to_string(pages[0], lang='por')
-        # text = "Hello World"
+        pages = convert_from_path("file_uploads/" + file.filename, 200)
 
-        with open(filename_txt, "w") as f:
+        # Save each page individually
+        # for id, page in enumerate(pages):
+        #     page.save(f"file_uploads/{file_basename}_{id+1}.pdf", "PDF")
+
+        text = pytesseract.image_to_string(pages[0], lang='por')
+
+        with open(filename_txt, "w", encoding="utf-8") as f:
             f.write(text)
 
         # Enviar texto para o servidor
-
-        print("Acabei")
         return {"success": True, "text": text}
+
     except Exception as e:
         print(e)
         return {"success": False, "error": "[SUBMIT] Something went wrong"}
@@ -47,7 +49,7 @@ def submitText():
 
         filename_txt = "file_fixed/" + filename.split(".")[0] + ".txt"
 
-        with open(filename_txt, "w") as f:
+        with open(filename_txt, "w", encoding="utf-8") as f:
             f.write(text)
         
         return {"success": True}
