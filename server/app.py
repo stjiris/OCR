@@ -1,9 +1,11 @@
 from flask import Flask, request
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
-
 from pdf2image import convert_from_path
-from PIL import Image
+
 import pytesseract
+
+from src.utils import clear_text
+from src.evaluate import evaluate
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
@@ -28,13 +30,13 @@ def submitFile():
         # for id, page in enumerate(pages):
         #     page.save(f"file_uploads/{file_basename}_{id+1}.pdf", "PDF")
 
-        text = pytesseract.image_to_string(pages[0], lang='por')
+        text = clear_text(pytesseract.image_to_string(pages[0], lang='por'))
 
         with open(filename_txt, "w", encoding="utf-8") as f:
             f.write(text)
 
         # Enviar texto para o servidor
-        return {"success": True, "text": text}
+        return {"success": True, "text": text, "score": evaluate(file_basename + ".txt")}
 
     except Exception as e:
         print(e)
