@@ -52,7 +52,10 @@ function Home() {
                     this.saveButton.current.changeDisabledState(false);
                     this.uploadedFile.current.innerHTML = el.files[0].name;
                     document.getElementById("docContents").value = data.text;
-                    alert("File submitted with success! Score: " + data.score);
+
+                    if (data.score != -1) {
+                        alert("File submitted with success! Score: " + data.score);
+                    }
     
                     } else {
                     alert(data.error);
