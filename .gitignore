@@ -1,3 +1,6 @@
+# Dont send elastic search stuff
+elasticsearch/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
