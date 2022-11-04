@@ -17,7 +17,7 @@ class CustomButton extends React.Component {
 
     render() {
     return (
-        <Button onClick={() => this.state.clickFunction()} disabled={this.state.disabled} variant="contained">{this.state.text}</Button>
+        <Button sx={{mr: '1rem'}} onClick={() => this.state.clickFunction()} disabled={this.state.disabled} variant="contained">{this.state.text}</Button>
     );
     }
 }
