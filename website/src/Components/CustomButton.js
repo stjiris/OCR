@@ -12,13 +12,13 @@ class CustomButton extends React.Component {
     }
 
     changeDisabledState(currentState) {
-    this.setState({ disabled: currentState });
+        this.setState({ disabled: currentState });
     }
 
     render() {
-    return (
-        <Button sx={{mr: '1rem'}} onClick={() => this.state.clickFunction()} disabled={this.state.disabled} variant="contained">{this.state.text}</Button>
-    );
+        return (
+            <Button sx={{mr: '1rem'}} onClick={() => this.state.clickFunction()} disabled={this.state.disabled} variant="contained">{this.state.text}</Button>
+        );
     }
 }
 

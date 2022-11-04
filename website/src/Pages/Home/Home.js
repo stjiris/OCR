@@ -4,7 +4,7 @@ import { Box } from '@mui/material';
 import { Link } from '@mui/material';
 import CustomButton from '../../Components/CustomButton.js';
 import CustomTextField from '../../Components/CustomTextField.js';
-import BasicSelect from '../../Components/AlgoDropdown.js';
+import AlgoDropdown from '../../Components/AlgoDropdown.js';
 import './Home.css';
 
 var BASE_URL = 'http://localhost:5000/'
@@ -19,12 +19,17 @@ function Home() {
             }
             
             this.uploadedFile = React.createRef();
+            this.algoDropdown = React.createRef();
             this.saveButton = React.createRef();
             this.loadFile = this.loadFile.bind(this);
             this.sendChanges = this.sendChanges.bind(this);
         }
     
         loadFile = () => {
+            if (this.algoDropdown.current.state.algorithm === "") {
+                alert("Please select an algorithm");
+                return;
+            }
             var el = window._protected_reference = document.createElement("INPUT");
             el.type = "file";
                 
@@ -32,36 +37,36 @@ function Home() {
         
                 // test some async handling
                 new Promise(() => {
-                setTimeout(() => {
-                    let formData = new FormData();
-                    formData.append('file', el.files[0]);
-                    fetch(BASE_URL + 'submitFile', {
-                    method: 'POST',
-                    body: formData
-                    })
-                    .then(response => {return response.json()})
-                    .then(data => {
-                        if (data.success) {
-        
-                        this.setState({disabled: false});
-                        this.saveButton.current.changeDisabledState(false);
-                        this.uploadedFile.current.innerHTML = el.files[0].name;
-                        document.getElementById("docContents").value = data.text;
+                    setTimeout(() => {
+                        let formData = new FormData();
+                        formData.append('file', el.files[0]);
+                        fetch(BASE_URL + 'submitFile', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {return response.json()})
+                        .then(data => {
+                            if (data.success) {
+            
+                            this.setState({disabled: false});
+                            this.saveButton.current.changeDisabledState(false);
+                            this.uploadedFile.current.innerHTML = el.files[0].name;
+                            document.getElementById("docContents").value = data.text;
 
-                        if (data.score != -1) {
-                            alert("File submitted with success! Score: " + data.score);
-                        }
-        
-                        } else {
-                        alert(data.error);
-                        }
-                    });
-                }, 1000);
+                            if (data.score !== -1) {
+                                alert("File submitted with success! Score: " + data.score);
+                            }
+            
+                            } else {
+                                alert(data.error);
+                            }
+                        });
+                    }, 1000);
                 })
                 .then(function() {
-                // clear / free reference
-                el = window._protected_reference = undefined;
-                return null;
+                    // clear / free reference
+                    el = window._protected_reference = undefined;
+                    return null;
                 });
             });
             el.click(); // open
@@ -98,14 +103,14 @@ function Home() {
                         </Link>
                     </Box>
                     <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'normal', ml:'2rem', mr: '2rem'}}>
-                        <BasicSelect />
+                        <AlgoDropdown ref={this.algoDropdown}/>
                         <CustomButton text="Insert File" disabled={false} clickFunction={this.loadFile} />
                         <p ref={this.uploadedFile} id="fileInfo">No file submitted</p>
                     </Box>
             
                     <CustomTextField id="docContents" rows={13} sx={{mt: '1rem', ml: '10px', mr: '10px'}} disabled={this.state.disabled} multiline />
             
-                    <div class="footer-div">
+                    <div className="footer-div">
                         <CustomButton ref={this.saveButton} text="Save Text" disabled={this.state.disabled} clickFunction={this.sendChanges} />
                     </div>
                 </div>
