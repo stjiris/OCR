@@ -2,7 +2,7 @@ import pytesseract
 
 def get_text(pages):
     """
-    Parse the pages of a PDF file
+    Get the text from a list of pages
 
     @param pages: pages of the PDF file
     """

@@ -4,6 +4,8 @@ import re
 # TEXT UTILS
 ##################################################
 def clear_text(text):
+    if type(text) != str: return str(text)
+    
     # Detect changes of line in the middle of the word ex.: "pala-\nvra"
     m = re.findall(r"-\n[^-]", text)
     for i in m:

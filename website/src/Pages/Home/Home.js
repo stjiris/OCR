@@ -33,7 +33,7 @@ function Home() {
                 return;
             }
 
-            if (algorithm !== "Tesseract") {
+            if (algorithm === "Pero-OCR") {
                 alert("This algorithm is not supported yet");
                 return;
             }
