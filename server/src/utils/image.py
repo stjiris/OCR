@@ -1,15 +1,7 @@
 import re, cv2
 
-# Text Utils
-def clear_text(text):
-    # Detect changes of line in the middle of the word ex.: "pala-\nvra"
-    m = re.findall(r"-\n[^-]", text)
-    for i in m:
-        text = text.replace(i, i[-1:])
-    return text
-
 ##################################################
-# Image Utils
+# IMAGE UTILS
 ##################################################
 def distance_between_coords(x1, y1, x2, y2):
     """
@@ -71,6 +63,10 @@ def parse_image():
     
     # converting image into grayscale image
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    reshaped_image = cv2.resize(gray, (500, 700))
+    cv2.imshow('shapes', reshaped_image)
+    cv2.waitKey(0)
     
     # setting threshold of gray image
     _, threshold = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
@@ -90,13 +86,13 @@ def parse_image():
         # if cv2.contourArea(contour) < 2000: continue
         x, y, w, h = cv2.boundingRect(contour)
 
-        if w < 200 and h < 200: continue
-        if x < 25 or y < 25: continue
+        # if w < 200 and h < 200: continue
+        # if x < 25 or y < 25: continue
 
         approx = cv2.approxPolyDP(
             contour, 0.01 * cv2.arcLength(contour, True), True)
 
-        if len(approx) > 10: continue
+        # if len(approx) > 10: continue
 
         keeping_contours[(x, y, w, h)] = contour
 

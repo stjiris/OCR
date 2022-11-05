@@ -1,48 +1,43 @@
 from flask import Flask, request
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
-from pdf2image import convert_from_path
 
-import pytesseract
-
-from src.utils import clear_text
+from src.utils.file import process_file
 from src.evaluate import evaluate
+
+from src.algorithms import tesseract
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
 
-@app.route("/submitFile", methods=["POST"])
-def submitFile():
-    # Can be an error (no file/extracting text) -> probably not
+@app.route('/submitFile/Tesseract', methods=['POST'])
+def submit_file_tesseract():
     try:
-        # Obter ficheiro e guardar na pasta
         file = request.files['file']
-        file.save("file_uploads/" + file.filename)
-
-        file_basename = file.filename.split(".")[0]
-
-        filename_txt = "file_extracted/" + file_basename + ".txt"
-
-        # Obter o texto (Tesseract/etc)
-        # De momento ainda 
-        pages = convert_from_path("file_uploads/" + file.filename, 200)
-
-        # Save each page individually
-        # for id, page in enumerate(pages):
-        #     page.save(f"file_uploads/{file_basename}_{id+1}.pdf", "PDF")
-
-        text = clear_text(pytesseract.image_to_string(pages[0], lang='por'))
-
-        with open(filename_txt, "w", encoding="utf-8") as f:
-            f.write(text)
-
-        # Enviar texto para o servidor
-        return {"success": True, "text": text, "score": evaluate(file_basename + ".txt")}
-
-    except Exception as e:
-        print(e)
+        text = process_file(file, tesseract.get_text)
+        return {"success": True, "text": text, "score": 0}
+    except:
         return {"success": False, "error": "[SUBMIT] Something went wrong"}
 
-# Vamos para a parte de submeter o texto corrigido
+@app.route('/submitFile/Pero-OCR', methods=['POST'])
+def submit_file_pero_ocr():
+    try:
+        file = request.files['file']
+        # text = process_file(file, pero_ocr.get_text)
+        text = "Pero OCR"
+        return {"success": True, "text": text, "score": 0}
+    except:
+        return {"success": False, "error": "[SUBMIT] Something went wrong"}
+
+@app.route('/submitFile/EasyOCR', methods=['POST'])
+def submit_file_easy_ocr():
+    try:
+        file = request.files['file']
+        # text = process_file(file, easy_ocr.get_text)
+        text = "Easy OCR"
+        return {"success": True, "text": text, "score": 0}
+    except:
+        return {"success": False, "error": "[SUBMIT] Something went wrong"}
+
 @app.route("/submitText", methods=["POST"])
 def submitText():
     try:

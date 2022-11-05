@@ -26,10 +26,18 @@ function Home() {
         }
     
         loadFile = () => {
-            if (this.algoDropdown.current.state.algorithm === "") {
+            var algorithm = this.algoDropdown.current.state.algorithm;
+
+            if (algorithm === "") {
                 alert("Please select an algorithm");
                 return;
             }
+
+            if (algorithm !== "Tesseract") {
+                alert("This algorithm is not supported yet");
+                return;
+            }
+
             var el = window._protected_reference = document.createElement("INPUT");
             el.type = "file";
                 
@@ -40,7 +48,7 @@ function Home() {
                     setTimeout(() => {
                         let formData = new FormData();
                         formData.append('file', el.files[0]);
-                        fetch(BASE_URL + 'submitFile', {
+                        fetch(BASE_URL + 'submitFile/' + algorithm, {
                             method: 'POST',
                             body: formData
                         })
@@ -104,7 +112,7 @@ function Home() {
                     </Box>
                     <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'normal', ml:'2rem', mr: '2rem'}}>
                         <AlgoDropdown ref={this.algoDropdown}/>
-                        <CustomButton text="Insert File" disabled={false} clickFunction={this.loadFile} />
+                        <CustomButton marginTop='0.7rem' text="Insert File" disabled={false} clickFunction={this.loadFile} />
                         <p ref={this.uploadedFile} id="fileInfo">No file submitted</p>
                     </Box>
             
