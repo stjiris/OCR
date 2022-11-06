@@ -5,7 +5,7 @@ class CustomButton extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            marginTop: props.marginTop,
+            marginBottom: props.marginBottom,
             text: props.text,
             disabled: props.disabled,
             clickFunction: props.clickFunction
@@ -15,10 +15,10 @@ class CustomButton extends React.Component {
     changeDisabledState(currentState) {
         this.setState({ disabled: currentState });
     }
-
+    // #48954f
     render() {
         return (
-            <Button sx={{backgroundColor: '#338141', border: '1px solid black', mr: '1rem', mt: this.state.marginTop, maxHeight: '2rem'}} onClick={() => this.state.clickFunction()} disabled={this.state.disabled} variant="contained">{this.state.text}</Button>
+            <Button color="success" sx={{border: '1px solid black', mr: '1rem', mb: '1rem'}} onClick={() => this.state.clickFunction()} disabled={this.state.disabled} variant="contained">{this.state.text}</Button>
         );
     }
 }
