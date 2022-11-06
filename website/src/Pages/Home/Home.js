@@ -104,19 +104,19 @@ function Home() {
         render() {
             return (
                 <div className="App">
-                    <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', ml: '2rem', mr: '2rem'}}>
-                        <h1>OCR Application</h1>
-                        <Link href="/files" underline="hover">
+                    <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', ml: '1.5rem', mr: '1.5rem', mb: '1rem'}}>
+                        <img src="https://upload.net-empregos.com/uploads/91a0d52036ed4b2599c0aa85f272e93b/logo-net-empregos.png" className="App-logo" alt="Universidade Nova de Lisboa" />
+                        <Link sx={{color: '#338141'}} href="/files" underline="hover">
                             <h1>My Files</h1>
                         </Link>
                     </Box>
-                    <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'normal', ml:'2rem', mr: '2rem'}}>
+                    <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'normal', ml:'1.5rem', mr: '1.5rem'}}>
                         <AlgoDropdown ref={this.algoDropdown}/>
                         <CustomButton marginTop='0.7rem' text="Insert File" disabled={false} clickFunction={this.loadFile} />
                         <p ref={this.uploadedFile} id="fileInfo">No file submitted</p>
                     </Box>
             
-                    <CustomTextField id="docContents" rows={13} sx={{mt: '1rem', ml: '10px', mr: '10px'}} disabled={this.state.disabled} multiline />
+                    <CustomTextField id="docContents" rows={15} sx={{mt: '1rem', ml: '10px', mr: '10px'}} disabled={this.state.disabled} multiline />
             
                     <div className="footer-div">
                         <CustomButton ref={this.saveButton} text="Save Text" disabled={this.state.disabled} clickFunction={this.sendChanges} />
