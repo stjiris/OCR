@@ -106,9 +106,14 @@ function Home() {
                 <div className="App">
                     <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', ml: '1.5rem', mr: '2rem', mb: '1rem'}}>
                         <img src="https://upload.net-empregos.com/uploads/91a0d52036ed4b2599c0aa85f272e93b/logo-net-empregos.png" className="App-logo" alt="Universidade Nova de Lisboa" />
-                        <Link sx={{color: '#2e7d32'}} href="/files" underline="hover">
-                            <h1>My Files</h1>
-                        </Link>
+                        <Box sx={{display: 'flex', flexDirection: 'row'}}>
+                            <Link sx={{color: '#338141', mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'}} href="/" underline="hover">
+                                <h1>Scan</h1>
+                            </Link>
+                            <Link sx={{color: '#48954f', mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'}} href="/files" underline="hover">
+                                <h1>Files</h1>
+                            </Link>
+                        </Box>
                     </Box>
                     <Box sx={{display: 'flex', ml:'1.5rem', mr: '1.5rem'}}>
                         <AlgoDropdown ref={this.algoDropdown}/>
