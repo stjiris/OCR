@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, escape
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
 from src.utils.file import process_file
@@ -35,34 +35,19 @@ client = ElasticSearchClient(ES_URL, ES_INDEX, mapping)
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
 
-@app.route('/submitFile/Tesseract', methods=['POST'])
-def submit_file_tesseract():
-    try:
-        file = request.files['file']
-        text = process_file(file, tesseract.get_text)
-        return {"success": True, "text": text, "score": 0}
-    except:
-        return {"success": False, "error": "[SUBMIT] Something went wrong"}
-
-@app.route('/submitFile/Pero-OCR', methods=['POST'])
-def submit_file_pero_ocr():
-    try:
-        file = request.files['file']
-        # text = process_file(file, pero_ocr.get_text)
-        text = "Pero OCR"
-        return {"success": True, "text": text, "score": 0}
-    except:
-        return {"success": False, "error": "[SUBMIT] Something went wrong"}
-
-@app.route('/submitFile/EasyOCR', methods=['POST'])
-def submit_file_easy_ocr():
-    # try:
+@app.route('/submitFile/<algorithm>', methods=['POST'])
+def submit_file(algorithm):
+    algorithm = escape(algorithm)
     file = request.files['file']
-    text = process_file(file, easy_ocr.get_text)
+
+    if algorithm == "Tesseract":
+        text = process_file(file, tesseract.get_text)
+    elif algorithm == "Pero-OCR":
+        return {"success": False, "error": "[SUBMIT] Something went wrong"}
+    elif algorithm == "EasyOCR":
+        text = process_file(file, easy_ocr.get_text)
+
     return {"success": True, "text": text, "score": 0}
-    # except Exception as e:
-        # print(e)
-        # return {"success": False, "error": "[SUBMIT] Something went wrong"}
 
 @app.route("/submitText", methods=["POST"])
 def submitText():
