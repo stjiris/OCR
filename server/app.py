@@ -5,6 +5,32 @@ from src.utils.file import process_file
 from src.evaluate import evaluate
 
 from src.algorithms import tesseract, easy_ocr
+from src.elastic_search import ElasticSearchClient, create_document
+
+ES_URL = 'http://localhost:9200/'
+ES_INDEX = "jornais.0.1"
+
+mapping = {
+    "properties": {
+        "Id": {
+            "type": "keyword"
+        },
+        "Jornal": {
+            "type": "keyword"
+        },
+        "Page": {
+            "type": "integer"
+        },
+        "Text": {
+            "type": "keyword"
+        },
+        "Imagem Página": {
+            "enabled": False
+        },
+    }
+}
+
+client = ElasticSearchClient(ES_URL, ES_INDEX, mapping)
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
@@ -48,6 +74,8 @@ def submitText():
 
         with open(filename_txt, "w", encoding="utf-8") as f:
             f.write(text)
+
+        client.add_document(create_document(filename.split(".")[0], 1, text))
         
         return {"success": True}
     except:

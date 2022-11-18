@@ -3,3 +3,4 @@ pdf2image
 Flask
 Flask-Cors
 opencv-python
+elasticsearch
