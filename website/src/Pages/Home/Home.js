@@ -4,6 +4,8 @@ import { Box, Link, Button, IconButton } from '@mui/material';
 import CustomButton from '../../Components/CustomButton.js';
 import CustomTextField from '../../Components/CustomTextField.js';
 import AlgoDropdown from '../../Components/AlgoDropdown.js';
+import ProgressWheel from '../../Components/LoadingProgress.js';
+// import io from 'socket.io-client';
 
 import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
@@ -11,9 +13,10 @@ import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRound
 import './Home.css';
 
 var BASE_URL = 'http://localhost:5000/'
+// var socket = io(BASE_URL);
 
 function Home() {
-    
+
     class Form extends React.Component {
         constructor(props) {
             super(props);
@@ -21,10 +24,12 @@ function Home() {
                 disabled: true,
                 backDisabled: true,
                 frontDisabled: true,
+                loadingVisible: false,
                 page: 1,
                 contents: []
             }
             
+            this.fileButton = React.createRef();
             this.uploadedFile = React.createRef();
             this.algoDropdown = React.createRef();
             this.saveButton = React.createRef();
@@ -32,6 +37,7 @@ function Home() {
             this.arrowBackButton = React.createRef();
             this.pageText = React.createRef();
             this.arrowForwardButton = React.createRef();
+            this.loadingWheel = React.createRef();
 
             this.loadFile = this.loadFile.bind(this);
             this.sendChanges = this.sendChanges.bind(this);
@@ -59,12 +65,20 @@ function Home() {
 
             var el = window._protected_reference = document.createElement("INPUT");
             el.type = "file";
+            el.accept = ".pdf";
                 
             el.addEventListener('change', () => {
         
                 // test some async handling
                 new Promise(() => {
                     setTimeout(() => {
+                        // socket.emit('json', formData);
+
+                        this.loadingWheel.current.show();
+                        this.setState({disabled: true, backDisabled: true, frontDisabled: true});
+                        this.saveButton.current.changeDisabledState(true);
+                        this.fileButton.current.changeDisabledState(true);
+
                         let formData = new FormData();
                         formData.append('file', el.files[0]);
                         fetch(BASE_URL + 'submitFile/' + algorithm, {
@@ -75,12 +89,16 @@ function Home() {
                         .then(data => {
                             if (data.success) {
             
-                            this.uploadedFile.current.innerHTML = el.files[0].name;
-                            this.setState({disabled: false, contents: data.text, page: 1}, this.updatePage);
+                                this.uploadedFile.current.innerHTML = el.files[0].name;
+                                this.setState({disabled: false, backDisabled: true, frontDisabled: false, contents: data.text, page: 1}, this.updatePage);
+                                this.saveButton.current.changeDisabledState(false);
+                                this.fileButton.current.changeDisabledState(false);
 
-                            if (data.score !== -1) {
-                                alert("File submitted with success! Score: " + data.score);
-                            }
+                                this.loadingWheel.current.hide();
+
+                            // if (data.score !== -1) {
+                            //     alert("File submitted with success! Score: " + data.score);
+                            // }
             
                             } else {
                                 alert(data.error);
@@ -156,7 +174,8 @@ function Home() {
                     </Box>
                     <Box sx={{display: 'flex', ml:'1.5rem', mr: '1.5rem'}}>
                         <AlgoDropdown ref={this.algoDropdown}/>
-                        <CustomButton text="Insert File" disabled={false} clickFunction={this.loadFile} />
+                        <CustomButton text="Insert File" ref={this.fileButton} disabled={false} clickFunction={this.loadFile} />
+                        <ProgressWheel ref={this.loadingWheel}/>
                         <p hidden ref={this.uploadedFile} id="fileInfo">No file submitted</p>
                     </Box>
             
