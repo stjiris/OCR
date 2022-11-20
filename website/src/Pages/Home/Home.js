@@ -1,10 +1,15 @@
 import React from 'react';
 
-import { Box } from '@mui/material';
-import { Link } from '@mui/material';
+import { Box, Link, Button, IconButton } from '@mui/material';
 import CustomButton from '../../Components/CustomButton.js';
 import CustomTextField from '../../Components/CustomTextField.js';
 import AlgoDropdown from '../../Components/AlgoDropdown.js';
+import BackwardsPageArrow from '../../Components/BackwardsPageArrow.js';
+import ForwardsPageArrow from '../../Components/ForwardsPageArrow.js';
+
+import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
+import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
+
 import './Home.css';
 
 var BASE_URL = 'http://localhost:5000/'
@@ -16,13 +21,29 @@ function Home() {
             super(props);
             this.state = {
                 disabled: true,
+                backDisabled: true,
+                frontDisabled: true,
+                page: 1,
+                contents: []
             }
             
             this.uploadedFile = React.createRef();
             this.algoDropdown = React.createRef();
             this.saveButton = React.createRef();
+
+            this.arrowBackButton = React.createRef();
+            this.pageText = React.createRef();
+            this.arrowForwardButton = React.createRef();
+
             this.loadFile = this.loadFile.bind(this);
             this.sendChanges = this.sendChanges.bind(this);
+        }
+
+        updatePage() {
+            this.saveButton.current.changeDisabledState(this.state.disabled);
+            document.getElementById("docContents").value = this.state.contents[0];
+            this.setState({frontDisabled: false});
+            this.updatePageText();
         }
     
         loadFile = () => {
@@ -56,10 +77,8 @@ function Home() {
                         .then(data => {
                             if (data.success) {
             
-                            this.setState({disabled: false});
-                            this.saveButton.current.changeDisabledState(false);
                             this.uploadedFile.current.innerHTML = el.files[0].name;
-                            document.getElementById("docContents").value = data.text;
+                            this.setState({disabled: false, contents: data.text, page: 1}, this.updatePage);
 
                             if (data.score !== -1) {
                                 alert("File submitted with success! Score: " + data.score);
@@ -100,6 +119,28 @@ function Home() {
                 }
             });
         }
+
+        updatePageText() {
+            this.pageText.current.innerHTML = "Page " + this.state.page + " / " + this.state.contents.length;
+            document.getElementById("docContents").value = this.state.contents[this.state.page - 1];
+        }
+
+        changePage(diff) {
+            var newPage = this.state.page + diff;
+            if (this.state.page < 1 || this.state.page > this.state.contents.length) {
+                return;
+            }
+            if (newPage === 1) {
+                this.setState({backDisabled: true});
+            } else if (newPage === this.state.contents.length) {
+                this.setState({frontDisabled: true});
+            } else {
+                this.setState({backDisabled: false});
+                this.setState({frontDisabled: false});
+            }
+            this.setState({page: newPage}, this.updatePageText);
+            
+        }
     
         render() {
             return (
@@ -121,8 +162,14 @@ function Home() {
                         <p hidden ref={this.uploadedFile} id="fileInfo">No file submitted</p>
                     </Box>
             
-                    <CustomTextField id="docContents" rows={15} sx={{ml: '1.5rem', mr: '1.5rem'}} disabled={this.state.disabled} multiline />
-            
+                    <CustomTextField id="docContents" rows={14} sx={{ml: '1.5rem', mr: '1.5rem'}} disabled={this.state.disabled} multiline />
+
+                    <div className="page-div">
+                        <IconButton color="success" aria-label="back" disabled={this.state.backDisabled} onClick={() => this.changePage(-1)}><ArrowBackIosRoundedIcon /></IconButton>
+                        <Button variant="text" sx={{color: '#000000'}} ref={this.pageText}>Page 0 / 0</Button>
+                        <IconButton color="success" aria-label="back" disabled={this.state.frontDisabled} onClick={() => this.changePage(1)} sx={{mr: '1rem'}}><ArrowForwardIosRoundedIcon /></IconButton>
+                    </div>
+
                     <div className="footer-div">
                         <CustomButton ref={this.saveButton} text="Save Text" disabled={this.state.disabled} clickFunction={this.sendChanges} />
                     </div>

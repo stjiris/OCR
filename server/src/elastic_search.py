@@ -1,19 +1,21 @@
 from elasticsearch import Elasticsearch
 
 class ElasticSearchClient():
-    def __init__(self, ES_URL, ES_INDEX, mapping):
+    def __init__(self, ES_URL, ES_INDEX, mapping, settings):
         self.ES_URL = ES_URL
         self.ES_INDEX = ES_INDEX
         self.mapping = mapping
+        self.settings = settings
 
         self.client = Elasticsearch(ES_URL)
-        self.delete_index()
-        self.create_index()
+        # self.delete_index()
+        # self.create_index()
 
     def create_index(self):
         self.client.indices.create(
             index=self.ES_INDEX,
-            mappings=self.mapping
+            mappings=self.mapping,
+            settings=self.settings
         )
 
     def delete_index(self):

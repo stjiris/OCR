@@ -52,8 +52,12 @@ def process_file(file, algorithm):
     basename = get_file_basename(filename)
     pages = get_pdf_pages(f"file_uploads/{filename}")
 
-    text = clear_text(algorithm(pages))
+    pages_text = []
 
-    save_text_file(text, basename)
+    for id, page in enumerate(pages):
+        print("Processing page", id)
+        text = clear_text(algorithm(page))
+        save_text_file(text, basename + "_" + str(id+1))
+        pages_text.append(text)
 
-    return text
+    return pages_text

@@ -10,19 +10,61 @@ from src.elastic_search import ElasticSearchClient, create_document
 ES_URL = 'http://localhost:9200/'
 ES_INDEX = "jornais.0.1"
 
+settings = {
+    "analysis": {
+        "normalizer": {
+            "term_normalizer": {
+                "type": 'custom',
+                "filter": ['lowercase', 'asciifolding']
+            }
+        }
+    },
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "max_result_window": 550000
+}
+
 mapping = {
     "properties": {
         "Id": {
-            "type": "keyword"
+            "type": "keyword",
+            "normalizer": "term_normalizer"
         },
         "Jornal": {
-            "type": "keyword"
+            "type": 'text',
+            "fields": {
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                }
+            }
         },
         "Page": {
-            "type": "integer"
+            "type": 'integer',
+            "fields": {
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                }
+            }
         },
         "Text": {
-            "type": "keyword"
+            "type": 'text',
+            "fields": {
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                }
+            }
         },
         "Imagem Página": {
             "enabled": False
@@ -30,7 +72,7 @@ mapping = {
     }
 }
 
-client = ElasticSearchClient(ES_URL, ES_INDEX, mapping)
+client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
@@ -41,13 +83,13 @@ def submit_file(algorithm):
     file = request.files['file']
 
     if algorithm == "Tesseract":
-        text = process_file(file, tesseract.get_text)
+        pages_text = process_file(file, tesseract.get_text)
     elif algorithm == "Pero-OCR":
         return {"success": False, "error": "[SUBMIT] Something went wrong"}
     elif algorithm == "EasyOCR":
-        text = process_file(file, easy_ocr.get_text)
+        pages_text = process_file(file, easy_ocr.get_text)
 
-    return {"success": True, "text": text, "score": 0}
+    return {"success": True, "text": pages_text, "score": 0}
 
 @app.route("/submitText", methods=["POST"])
 def submitText():
