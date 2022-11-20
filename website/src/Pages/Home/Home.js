@@ -4,8 +4,6 @@ import { Box, Link, Button, IconButton } from '@mui/material';
 import CustomButton from '../../Components/CustomButton.js';
 import CustomTextField from '../../Components/CustomTextField.js';
 import AlgoDropdown from '../../Components/AlgoDropdown.js';
-import BackwardsPageArrow from '../../Components/BackwardsPageArrow.js';
-import ForwardsPageArrow from '../../Components/ForwardsPageArrow.js';
 
 import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
