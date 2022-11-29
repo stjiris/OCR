@@ -88,6 +88,10 @@ CORS(app)
 # def handle_json(json):
 #     print("received message: " + str(json))
 
+@app.route("/")
+def hello():
+    return "Hello World!"
+
 @app.route('/submitFile/<algorithm>', methods=['POST'])
 def submit_file(algorithm):
     algorithm = escape(algorithm)
@@ -104,21 +108,23 @@ def submit_file(algorithm):
 
 @app.route("/submitText", methods=["POST"])
 def submitText():
-    try:
-        text = request.json["text"] # texto corrigido
-        filename = request.json['filename'] # nome do pdf original
+    # try:
+    texts = request.json["text"] # texto corrigido
+    filename = request.json['filename'] # nome do pdf original
 
-        filename_txt = "file_fixed/" + filename.split(".")[0] + ".txt"
+    for id, t in enumerate(texts):
+        print("Saving page:", (id + 1))
+        filename_txt = f"file_fixed/{filename.split('.')[0]}_{(id + 1)}.txt"
 
         with open(filename_txt, "w", encoding="utf-8") as f:
-            f.write(text)
+            f.write(t)
 
-        client.add_document(create_document(filename.split(".")[0], 1, text))
-        
-        return {"success": True}
-    except:
-        return {"success": False, "error": "[FIXING] Something went wrong"}
+        client.add_document(create_document(filename.split(".")[0], id + 1, t))
+    
+    return {"success": True}
+    # except Exception as e:
+    #     return {"success": False, "error": "[FIXING] Something went wrong"}
 
 if __name__ == "__main__":
     # socketio.run(app, host='0.0.0.0', port=5000, debug=True)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

@@ -25,17 +25,17 @@ class ElasticSearchClient():
         )
 
     def add_document(self, document):
-        self.client.index(
+        print(self.client.index(
             index=self.ES_INDEX,
             document=document
-        )
+        ))
 
 def create_document(jornal, page_number, text):
     return {
         "Id": f"{jornal}_{page_number}",
         "Jornal": jornal,
         "Page": page_number,
-        # "Imagem Página": f"images/{jornal}/{page_number}.jpg",
-        "Imagem Página": "https://cdn.flipsnack.com/template/4708/small/page_1?v=1635417761",
+        "Imagem Página": f"http://localhost/images/{jornal}_{page_number}.jpg",
+        # "Imagem Página": "https://cdn.flipsnack.com/template/4708/small/page_1?v=1635417761",
         "Text": text
     }

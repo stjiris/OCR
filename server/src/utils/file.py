@@ -56,6 +56,7 @@ def process_file(file, algorithm):
 
     for id, page in enumerate(pages):
         print("Processing page", id)
+        page.save(f"file_uploads/{basename}_{(id + 1)}.jpg", "JPEG")
         text = clear_text(algorithm(page))
         save_text_file(text, basename + "_" + str(id+1))
         pages_text.append(text)
