@@ -176,10 +176,10 @@ function App() {
                 <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', ml: '1.5rem', mr: '2rem', mb: '1rem'}}>
                     <img src="https://upload.net-empregos.com/uploads/91a0d52036ed4b2599c0aa85f272e93b/logo-net-empregos.png" className="App-logo" alt="Universidade Nova de Lisboa" />
                     <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                        <Link sx={{color: '#338141', mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'}} to="/" underline="hover">
+                        <Link sx={{color: '#338141', mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'}} to="/" href="http://localhost/" underline="hover">
                             <h1>Scan</h1>
                         </Link>
-                        <Link sx={{color: '#48954f', mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'}} to="/files" underline="hover">
+                        <Link sx={{color: '#48954f', mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'}} to="/files" href="http://localhost/files" underline="hover">
                             <h1>Files</h1>
                         </Link>
                     </Box>
