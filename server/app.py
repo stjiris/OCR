@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, request, escape
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
@@ -77,8 +79,8 @@ client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
 
-@app.route("/testing", methods=['POST'])
-def test_image():
+@app.route("/submitFile", methods=['POST'])
+def submit_file():
     import os
 
     data = request.json
@@ -97,32 +99,11 @@ def test_image():
     elif algorithm == "EasyOCR":
         text = process_file(filename, page, easy_ocr.get_text)
 
-    # Process page and get text
-
     os.remove(f"file_uploads/{filename}_{page}.pdf")
-    return {"file": filename, "page": page, "text": text}
-
-@app.route("/")
-def hello():
-    return "Hello World!"
-
-@app.route('/submitFile/<algorithm>', methods=['POST'])
-def submit_file(algorithm):
-    algorithm = escape(algorithm)
-    file = request.files['file']
-
-    if algorithm == "Tesseract":
-        pages_text = process_file(file, tesseract.get_text)
-    elif algorithm == "Pero-OCR":
-        return {"success": False, "error": "[SUBMIT] Something went wrong"}
-    elif algorithm == "EasyOCR":
-        pages_text = process_file(file, easy_ocr.get_text)
-
-    return {"success": True, "text": pages_text, "score": 0}
+    return {"file": data["filename"], "page": page, "text": text, "score": 0}
 
 @app.route("/submitText", methods=["POST"])
 def submitText():
-    # try:
     texts = request.json["text"] # texto corrigido
     filename = request.json['filename'] # nome do pdf original
 
@@ -136,8 +117,6 @@ def submitText():
         client.add_document(create_document(filename.split(".")[0], id + 1, t))
     
     return {"success": True}
-    # except Exception as e:
-    #     return {"success": False, "error": "[FIXING] Something went wrong"}
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)

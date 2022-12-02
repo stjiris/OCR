@@ -78,7 +78,6 @@ function App() {
                 notEmpty += 1;
             }
         }
-        // return true;
         return 100 * notEmpty / this.state.contents.length;
     }
 
@@ -140,7 +139,7 @@ function App() {
                     for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
                         const newPdfDoc = await this.extractPdfPage(pdfSrcDoc, i);
 
-                        fetch(BASE_URL + 'testing', {
+                        fetch(BASE_URL + 'submitFile', {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
@@ -155,7 +154,7 @@ function App() {
                         })
                         .then(response => {return response.json()})
                         .then(data => {
-                            this.uploadedFile.current.innerHTML = el.files[0].name;
+                            this.uploadedFile.current.innerHTML = data["file"];
                             var page = data["page"];
                             
                             var currentContents = this.state.contents;
