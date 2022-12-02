@@ -1,11 +1,8 @@
 from flask import Flask, request, escape
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
-# from flask_socketio import SocketIO, emit
 
 from src.utils.file import process_file
 from src.evaluate import evaluate
-
-# import logging
 
 from src.algorithms import tesseract, easy_ocr
 from src.elastic_search import ElasticSearchClient, create_document
@@ -77,16 +74,33 @@ mapping = {
 
 client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
-# logging.getLogger('werkzeug').setLevel(logging.ERROR)
-# logging.getLogger('eventlet').setLevel(logging.ERROR)
-
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
-# socketio = SocketIO(app, cors_allowed_origins='*')    # Socket para comunicação com o front-end
 
-# @socketio.on("json")
-# def handle_json(json):
-#     print("received message: " + str(json))
+@app.route("/testing", methods=['POST'])
+def test_image():
+    import os
+
+    data = request.json
+    fileHex = data["file"]
+    filename = data["filename"].split(".")[0]
+    page = data["page"]
+    algorithm = data["algorithm"]
+
+    with open(f"file_uploads/{filename}_{page}.pdf", "wb") as f:
+        f.write(bytes.fromhex(fileHex))
+
+    if algorithm == "Tesseract":
+        text = process_file(filename, page, tesseract.get_text)
+    elif algorithm == "Pero-OCR":
+        return {"success": False, "error": "[SUBMIT] Something went wrong"}
+    elif algorithm == "EasyOCR":
+        text = process_file(filename, page, easy_ocr.get_text)
+
+    # Process page and get text
+
+    os.remove(f"file_uploads/{filename}_{page}.pdf")
+    return {"file": filename, "page": page, "text": text}
 
 @app.route("/")
 def hello():
@@ -126,5 +140,4 @@ def submitText():
     #     return {"success": False, "error": "[FIXING] Something went wrong"}
 
 if __name__ == "__main__":
-    # socketio.run(app, host='0.0.0.0', port=5000, debug=True)
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)

@@ -39,26 +39,25 @@ def save_text_file(text, basename):
     with open(f"file_extracted/{basename}.txt", "w", encoding="utf-8") as f:
         f.write(text)
 
-def process_file(file, algorithm):
+def process_file(file, pageNumber, algorithm):
     """
     Process a file, extract the text and save the results
 
     @param file: file to process
     @param algorithm: algorithm to use
     """
-    save_pdf_full(file)
+    # save_pdf_full(file)
 
-    filename = file.filename
-    basename = get_file_basename(filename)
-    pages = get_pdf_pages(f"file_uploads/{filename}")
+    # filename = file.filename
+    basename = get_file_basename(file)
+    pages = get_pdf_pages(f"file_uploads/{file}_{pageNumber}.pdf")
 
-    pages_text = []
+    # text = ""
 
     for id, page in enumerate(pages):
-        print("Processing page", id)
-        page.save(f"file_uploads/{basename}_{(id + 1)}.jpg", "JPEG")
+        print("Processing page", pageNumber)
+        page.save(f"file_uploads/{basename}_{pageNumber}.jpg", "JPEG")
         text = clear_text(algorithm(page))
-        save_text_file(text, basename + "_" + str(id+1))
-        pages_text.append(text)
+        save_text_file(text, basename + "_" + str(pageNumber))
 
-    return pages_text
+    return text

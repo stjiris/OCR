@@ -6,25 +6,15 @@ import CustomButton from './Components/CustomButton.js';
 import CustomTextField from './Components/CustomTextField.js';
 import AlgoDropdown from './Components/AlgoDropdown.js';
 import ProgressWheel from './Components/LoadingProgress.js';
-// import io from 'socket.io-client';
+
+import { PDFDocument } from "pdf-lib";
 
 import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 
 var BASE_URL = 'http://localhost:5001/'
-// var socket = io(BASE_URL);
 
 function App() {
-
-  // let routes = (
-  //   // UNPROTECTED ROUTES
-  //   <Routes>
-  //     <Route exact path='/' element={<Navigate to='/home' />}/>
-  //     <Route exact path='/home' element={<Home/>}/>
-  //   </Routes>
-  // );
-
-  // return <Router>{routes}</Router>;^
   class Form extends React.Component {
     constructor(props) {
         super(props);
@@ -58,6 +48,57 @@ function App() {
         this.updatePageText();
     }
 
+    readFile(file) {
+        return new Promise((resolve, reject) => {
+            let reader = new FileReader();
+            reader.onload = () => {
+                resolve(reader.result);
+            }
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    async extractPdfPage(pdfSrcDoc, page) {
+        const pdfNewDoc = await PDFDocument.create();
+        const pages = await pdfNewDoc.copyPages(pdfSrcDoc, [page]);
+        pages.forEach(page => pdfNewDoc.addPage(page));
+        const newPdf = await pdfNewDoc.save();
+        return newPdf;
+    }
+
+    i2hex(i) {
+        return ('0' + i.toString(16)).slice(-2);
+    }
+
+    isComplete() {
+        for (var i = 0; i < this.state.contents.length; i++) {
+            if (this.state.contents[i] === "") {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    createEmptyArray(size) {
+        var emptyContents = []
+        for (var i = 0; i < size; i++) {
+            emptyContents.push("");
+        }
+        return emptyContents;
+    }
+
+    fileSubmited() {
+        if (this.isComplete()) {
+
+            this.saveButton.current.changeDisabledState(false);
+            this.fileButton.current.changeDisabledState(false);
+
+            this.loadingWheel.current.hide();
+            this.updatePage();
+        }
+    }
+
     loadFile = () => {
         var algorithm = this.algoDropdown.current.state.algorithm;
 
@@ -79,43 +120,45 @@ function App() {
     
             // test some async handling
             new Promise(() => {
-                setTimeout(() => {
-                    // socket.emit('json', formData);
-
+                setTimeout(async () => {
                     this.loadingWheel.current.show();
                     this.setState({disabled: true, backDisabled: true, frontDisabled: true});
                     this.saveButton.current.changeDisabledState(true);
                     this.fileButton.current.changeDisabledState(true);
 
-                    let formData = new FormData();
-                    formData.append('file', el.files[0]);
-                    fetch(BASE_URL + 'submitFile/' + algorithm, {
-                        method: 'POST',
-                        mode: 'cors',
-                        headers: {
-                            'Access-Control-Allow-Origin': 'http://localhost:5001'
-                        },
-                        body: formData
-                    })
-                    .then(response => {return response.json()})
-                    .then(data => {
-                        if (data.success) {
-        
+                    if (el.files.length === 0) return;
+
+                    const pdfArrayBuffer = await this.readFile(el.files[0]);
+                    const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
+
+                    this.setState({contents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
+
+                    for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
+                        const newPdfDoc = await this.extractPdfPage(pdfSrcDoc, i);
+
+                        fetch(BASE_URL + 'testing', {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                file: Array.from(newPdfDoc).map(this.i2hex).join(''),
+                                filename: el.files[0].name,
+                                page: i + 1,
+                                algorithm: algorithm
+                            })
+                        })
+                        .then(response => {return response.json()})
+                        .then(data => {
                             this.uploadedFile.current.innerHTML = el.files[0].name;
-                            this.setState({disabled: false, backDisabled: true, frontDisabled: false, contents: data.text, page: 1}, this.updatePage);
-                            this.saveButton.current.changeDisabledState(false);
-                            this.fileButton.current.changeDisabledState(false);
-
-                            this.loadingWheel.current.hide();
-
-                        // if (data.score !== -1) {
-                        //     alert("File submitted with success! Score: " + data.score);
-                        // }
-        
-                        } else {
-                            alert(data.error);
-                        }
-                    });
+                            var page = data["page"];
+                            
+                            var currentContents = this.state.contents;
+                            currentContents[page - 1] = data["text"]
+                            this.setState({contents: currentContents, disabled: false, backDisabled: true, frontDisabled: false, page: 1}, this.fileSubmited);
+                        })
+                    }
                 }, 1000);
             })
             .then(function() {
