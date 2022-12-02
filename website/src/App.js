@@ -72,12 +72,14 @@ function App() {
     }
 
     isComplete() {
+        var notEmpty = 0;
         for (var i = 0; i < this.state.contents.length; i++) {
-            if (this.state.contents[i] === "") {
-                return false;
+            if (this.state.contents[i] !== "") {
+                notEmpty += 1;
             }
         }
-        return true;
+        // return true;
+        return 100 * notEmpty / this.state.contents.length;
     }
 
     createEmptyArray(size) {
@@ -89,8 +91,10 @@ function App() {
     }
 
     fileSubmited() {
-        if (this.isComplete()) {
+        var progress = this.isComplete();
+        this.loadingWheel.current.setProgress(progress);
 
+        if (progress === 100.00) {
             this.saveButton.current.changeDisabledState(false);
             this.fileButton.current.changeDisabledState(false);
 
