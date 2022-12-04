@@ -8,8 +8,8 @@ class ElasticSearchClient():
         self.settings = settings
 
         self.client = Elasticsearch(ES_URL)
-        # self.delete_index()
-        # self.create_index()
+        self.delete_index()
+        self.create_index()
 
     def create_index(self):
         self.client.indices.create(

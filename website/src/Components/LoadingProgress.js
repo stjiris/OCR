@@ -17,7 +17,7 @@ class ProgressWheel extends React.Component {
   }
 
   hide() {
-    this.setState({ size: 0 });
+    this.setState({ size: 0, progress: 0 });
   }
 
   show() {
