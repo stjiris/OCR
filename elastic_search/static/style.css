@@ -1,0 +1,111 @@
+@import url('https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css');
+@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.0/font/bootstrap-icons.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+@import url('./theme-colors.css');
+
+body {
+    font: 13px/1.5 'Noto Sans Serif', sans-serif;
+    color: var(--primary-black);
+    background: white;
+}
+
+a {
+    color: var(--primary-red);
+}
+
+.fancy-font {
+    font-family: 'Cinzel', serif;
+}
+
+
+
+header{
+    background-color: white;
+    color: var(--primary-red)
+}
+
+header .nav-link{
+    color: var(--primary-red);
+    transition: 0.2s;
+    font-weight: bold;
+}
+header .nav-link.active, header .nav-link.active:hover{
+    color: var(--primary-gold);
+}
+header .nav-link:hover{
+    color: var(--primary-gold);
+}
+
+footer {
+    background: var(--primary-gold);
+}
+
+form label{
+    font-size: 0.75rem;
+}
+
+input[type=checkbox] ~ label{
+    position: relative;
+    cursor: pointer;
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+input[type=checkbox] ~ label:before{
+    content: "";
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    left: -10px;
+    width: 0px;
+    background-color: var(--tribunal-color);
+    border-radius: 10px;
+    transition: 0.2s;
+}
+
+input[type=checkbox]:checked ~ label, .not-used input[type=checkbox] ~ label{
+    opacity: 1;
+    text-decoration: none;
+}
+
+input[type=checkbox]:checked ~ label:before, .not-used input[type=checkbox] ~ label:before{
+    width: 5px;
+}
+
+@media print{
+    header{
+        background: none;
+    }
+    header a{
+        color: #000 !important;
+        text-decoration: none !important;
+    }
+    * {
+        -webkit-transition: none !important;
+        transition: none !important;
+    }
+    .container .row{
+        display: block;
+        width: 100%;
+    }
+}
+
+input[type=checkbox] ~ label{
+    position: relative;
+    cursor: pointer;
+}
+input[type=checkbox] ~ label:before{
+    content: "";
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    left: -10px;
+    width: 0px;
+    background-color: var(--border-color, var(--primary-red));
+    border-radius: 10px;
+    transition: 0.2s;
+}
+input[type=checkbox]:checked ~ label:before{
+    width: 5px;
+}

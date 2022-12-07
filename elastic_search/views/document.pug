@@ -1,0 +1,28 @@
+extends head.pug 
+block head 
+    title Document !{itemId}
+    link(rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous")
+
+block printpageinfo
+
+
+block allmain
+    form#filter-form
+    if !source
+        .alert.alert-info(role="alert")
+            h4.alert-heading Sem resultados...
+            strong 
+                i.bi.bi-lightbulb-fill
+                | Sugestões:
+            ol
+                li O recurso não foi encontrado ou ainda não foi publicado neste arquivo
+    else
+        article.row.border-top.result
+            .col-12.pt-1.d-flex
+                a(href=`./${source["Id"]}`): b !{source["Id"]}
+            for [key, value] of Object.entries(source)
+                if key != "Id"
+                    .col-12.pt-1.d-flex
+                        span <b>!{key}:</b>&nbsp;
+                            for val in value 
+                                a(href=`./?${key}="${encodeURIComponent(val)}"`) !{val}

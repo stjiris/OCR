@@ -1,0 +1,169 @@
+extends head 
+block head
+    title Pesquisa
+    link(rel="stylesheet", href="./highlight-style.css")
+
+prepend header
+    -currentPage = "search"
+
+block printpageinfo
+    ul
+        p Resultados da pesquisa por: "!{q || ""}" (Página !{page+1} de !{pages} páginas)
+        p Filtros aplicados:
+        for filter in Object.keys(filters)
+            li
+                b !{filter}: 
+                | !{filters[filter]}
+
+
+
+append form
+    a(href="#top")
+        i.bi.bi-chevron-up.mr-2
+        | Voltar ao topo
+
+block main
+    if body.hits.total.value == 0
+        .alert.alert-info(role="alert")
+            h4.alert-heading Sem resultados...
+            strong
+                i.bi.bi-lightbulb-fill
+                | Sugestões:
+            ol
+                li Verifique os filtros utilizados (tribunais, relator, descritores, data)
+                li Verifique o termo pesquisado
+    else
+        article
+            div.d-inline.float-end.d-print-none
+                if searchedArray.length > 0
+                    | Termos da pesquisa destacados:&nbsp;
+                    for term, i in searchedArray
+                        span.badge.bg-white.text-dark(style=`border: 3px solid var(--highlight-${i}, var(--primary-gold))`) !{term}
+        include acord-article
+        article.row(data-tribunal)#looking
+            h3 A receber páginas...
+            script.
+                let fetching = false;
+                let page = !{page};
+                let url = `./acord-only?sort=!{sort}&!{querystring}`;
+                new IntersectionObserver(function(entries, observer) {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting && !fetching) {
+                            let start = new Date().getTime();
+                            fetch(url+`&page=${page}`).then(r => r.text()).then(html => {
+                                if (html.length > 0) {
+                                    document.querySelector("#looking").insertAdjacentHTML("beforebegin", html);
+                                    page++;
+                                    end = new Date().getTime();
+                                } else {
+                                    observer.disconnect();
+                                    document.querySelector("#looking").querySelector("h3").textContent = "Não há mais páginas...";
+                                }
+                                observer.disconnect();
+                                entry.target.remove();
+                            });
+                        }
+                    })
+                }, {
+                    threshold: 0
+                }).observe(document.querySelector("#looking"));
+        article.row.d-print-none
+            nav
+                ul.pagination.justify-content-center.text-center
+                    li.page-item
+                        a.page-link(href=`?page=${0}&sort=${sort}&${querystring}`): i.bi.bi-chevron-double-left
+                    li.page-item
+                        if page > 0
+                            a.page-link(href=`?page=${page-1}&sort=${sort}&${querystring}`): i.bi.bi-chevron-left
+                        else
+                            a.page-link: i.bi.bi-chevron-left.disabled
+                    li.page-item.w-25
+                        a.page-link
+                            small Página !{page+1}/!{pages}
+                    li.page-item
+                        if page < pages-1
+                            a.page-link(href=`?page=${page+1}&sort=${sort}&${querystring}`): i.bi.bi-chevron-right
+                        else
+                            a.page-link: i.bi.bi-chevron-right.disabled
+                    li.page-item
+                        a.page-link(href=`?page=${pages-1}&sort=${sort}&${querystring}`): i.bi.bi-chevron-double-right
+        
+    script.
+        // Close all summary elements
+        function closeAllSummaries() {
+            var allSummaries = document.getElementsByTagName('summary');
+            for (var i = 0; i < allSummaries.length; i++) {
+                allSummaries[i].parentNode.removeAttribute('open');
+            }
+        }
+        // Open all summary elements
+        function openAllSummaries() {
+            var allSummaries = document.getElementsByTagName('summary');
+            for (var i = 0; i < allSummaries.length; i++) {
+                allSummaries[i].parentNode.setAttribute('open', true);
+            }
+        }
+        addEventListener('beforeprint', openAllSummaries);
+        addEventListener('afterprint', closeAllSummaries);
+        addEventListener('DOMContentLoaded', function() {
+            document.getElementById("sort-select").addEventListener("change", function(e) {
+                document.getElementById("input-sort").value = this.value;
+                document.getElementById("filter-form").submit();
+            });
+        });
+    style.
+        @media print{
+            article {
+                max-height: none !important;
+                width: 100%;
+                display: block;
+            }
+
+            article::after{
+                top:100% !important;
+            }
+
+            article{
+                break-inside: avoid !important;
+            }
+            .border{ border: none !important; }
+        }
+
+        article {
+            position: relative;
+            /*max-height: 300px;*/
+            overflow: hidden;
+            transition: 0.5s 0.3s;
+            padding-bottom: 2.5px;
+        }
+
+        .relevancia{
+            font-size: 0.65rem;
+            align-self: center;
+            white-space: nowrap;
+        }
+
+
+        article.result::before {
+            content: '';
+            background: var(--primary-red);
+            top: 10px;
+            width: 5px;
+            position: absolute;
+            border-radius: 10px;
+            bottom: 10px;
+        }
+        article.result::after {
+            /*content: "";*/
+            position: absolute; 
+            top: 50%;
+            bottom: 0;
+            left: -15px;
+            right: -15px;
+            box-shadow: inset white 0 -45px 20px;
+            transition: 0.5s 0.3s;
+        }
+
+        article:focus-within::after, article:hover::after{
+            box-shadow: inset white 0 0px 0px;
+        }
