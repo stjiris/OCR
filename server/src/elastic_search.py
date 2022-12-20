@@ -1,5 +1,70 @@
 from elasticsearch import Elasticsearch
 
+ES_URL = 'http://localhost:9200/'
+ES_INDEX = "jornais.0.1"
+
+settings = {
+    "analysis": {
+        "normalizer": {
+            "term_normalizer": {
+                "type": 'custom',
+                "filter": ['lowercase', 'asciifolding']
+            }
+        }
+    },
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "max_result_window": 550000
+}
+
+mapping = {
+    "properties": {
+        "Id": {
+            "type": "keyword",
+            "normalizer": "term_normalizer"
+        },
+        "Jornal": {
+            "type": 'text',
+            "fields": {
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                }
+            }
+        },
+        "Page": {
+            "type": 'integer',
+            "fields": {
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                }
+            }
+        },
+        "Text": {
+            "type": 'text',
+            "fields": {
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                }
+            }
+        },
+        "Imagem Página": {
+            "enabled": False
+        },
+    }
+}
+
 class ElasticSearchClient():
     def __init__(self, ES_URL, ES_INDEX, mapping, settings):
         self.ES_URL = ES_URL
