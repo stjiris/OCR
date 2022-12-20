@@ -18,7 +18,9 @@ a {
     font-family: 'Cinzel', serif;
 }
 
-
+span {
+    white-space: pre-line;
+}
 
 header{
     background-color: white;
