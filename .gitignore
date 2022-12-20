@@ -1,6 +1,7 @@
 # Dont send elastic search stuff
 elasticsearch/
 **/IRIS/
+IRIS.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
