@@ -101,6 +101,5 @@ def create_document(jornal, page_number, text):
         "Jornal": jornal,
         "Page": page_number,
         "Imagem Página": f"http://localhost/images/{jornal}_{page_number}.jpg",
-        # "Imagem Página": "https://cdn.flipsnack.com/template/4708/small/page_1?v=1635417761",
         "Text": text
     }
