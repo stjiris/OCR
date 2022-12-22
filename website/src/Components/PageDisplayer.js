@@ -20,7 +20,7 @@ class PageDisplayer extends React.Component {
     render() {
 
         if (this.state.journal === null) {
-            return <img className="pageImage" alt="Journal not Submitted" src="https://www.swiftpublisher.com/assets/img/articles/magazine-design/entertainment-weekly-magazine-cover-page.jpg"/>
+            return <img className="pageImage" alt="Journal not Submitted" src="http://localhost/images/DefaultPage.png"/>
         }
 
         let page_url = "http://localhost/images/" + this.state.journal.split(".")[0] + "_" + this.state.page + ".jpg";
