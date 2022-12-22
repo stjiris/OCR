@@ -31,6 +31,7 @@ $ npm run build
 
 ## Start the elastic search server
 ```
+$ cd elastic_search
 $ node server.js
 ```
 
