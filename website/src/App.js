@@ -6,6 +6,7 @@ import CustomButton from './Components/CustomButton.js';
 import CustomTextField from './Components/CustomTextField.js';
 import AlgoDropdown from './Components/AlgoDropdown.js';
 import ProgressWheel from './Components/LoadingProgress.js';
+import PageDisplayer from './Components/PageDisplayer.js';
 
 import { PDFDocument } from "pdf-lib";
 
@@ -33,6 +34,7 @@ function App() {
         this.saveButton = React.createRef();
 
         this.textEditor = React.createRef();
+        this.pageDisplayer = React.createRef();
 
         this.arrowBackButton = React.createRef();
         this.pageText = React.createRef();
@@ -103,6 +105,8 @@ function App() {
 
             this.loadingWheel.current.hide();
             this.updatePage();
+
+            this.pageDisplayer.current.setJournal(this.uploadedFile.current.innerHTML);
         }
     }
 
@@ -228,6 +232,7 @@ function App() {
             this.setState({frontDisabled: false});
         }
         this.setState({page: newPage}, this.updatePageText);
+        this.pageDisplayer.current.setPage(newPage);
         
     }
 
@@ -252,8 +257,9 @@ function App() {
                     <p hidden ref={this.uploadedFile} id="fileInfo">No file submitted</p>
                 </Box>
 
-                <Box sx={{ml: '1.5rem', mr: '1.5rem'}}>
-                    <CustomTextField ref={this.textEditor} id="docContents" rows={14} onChange={(e) => this.updateContents(e)} fullWidth disabled={this.state.disabled} multiline />
+                <Box sx={{display: 'flex', ml: '1.5rem', mr: '1.5rem'}}>
+                    <PageDisplayer ref={this.pageDisplayer}/>
+                    <CustomTextField sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={13} id="docContents" onChange={(e) => this.updateContents(e)} fullWidth disabled={this.state.disabled} multiline />
                 </Box>
         
 

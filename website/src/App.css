@@ -20,3 +20,10 @@ img {
 .loading-wheel {
   display: none;
 }
+
+.pageImage {
+  border: 1px solid grey;
+  margin-top: 0rem;
+  margin-right: 1.5rem;
+  height: 55vh;
+}

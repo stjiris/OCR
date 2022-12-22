@@ -54,7 +54,8 @@ def process_file(file, pageNumber, algorithm):
 
     # text = ""
 
-    for id, page in enumerate(pages):
+    for page in pages:
+        page = page.crop((0, 0, page.size[0], page.size[1] - 120))
         print("Processing page", pageNumber)
         page.save(f"file_uploads/{basename}_{pageNumber}.jpg", "JPEG")
         text = clear_text(algorithm(page))
