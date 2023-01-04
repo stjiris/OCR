@@ -1,5 +1,12 @@
 # Dissertacao-OCR
 
+# Next steps
+- [ ] Remover logotipos
+- [ ] Sessão - pasta com imagens e resultados e conf do OCR
+
+- [ ] Corrigir erros de OCR
+
+
 # How to setup
 ## Change the `nginx.conf` file to match your directory
 ```
