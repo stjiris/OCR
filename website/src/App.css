@@ -27,3 +27,11 @@ img {
   margin-right: 1.5rem;
   height: 55vh;
 }
+
+span {
+  font-size: 0.9rem;
+}
+
+.no-file {
+  margin-left: 1rem;
+}

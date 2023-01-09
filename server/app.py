@@ -3,17 +3,41 @@ import os
 from flask import Flask, request, escape
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
-from src.utils.file import process_file
+from src.utils.file import process_file, get_file_structure
 from src.evaluate import evaluate
 
 from src.algorithms import tesseract, easy_ocr
 from src.elastic_search import *
 
-client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+# client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
 
+#####################################
+# FILE SYSTEM ROUTES
+#####################################
+@app.route("/files", methods=["GET"])
+def get_file_system():
+    return get_file_structure("./files/")
+
+@app.route("/create-folder", methods=["POST"])
+def create_folder():
+    data = request.json
+    print(data)
+    path = data["path"]
+    folder = data["folder"]
+
+    if os.path.exists(path + "/" + folder):
+        return {"success": False, "error": "That folder already exists"}
+
+    os.mkdir(path + "/" + folder)
+
+    return {"success": True, "files": get_file_structure("./files/")}
+
+#####################################
+# FILES ROUTES
+#####################################
 @app.route("/submitFile", methods=['POST'])
 def submit_file():
     import os
@@ -49,7 +73,7 @@ def submitText():
         with open(filename_txt, "w", encoding="utf-8") as f:
             f.write(t)
 
-        client.add_document(create_document(filename.split(".")[0], id + 1, t))
+        # client.add_document(create_document(filename.split(".")[0], id + 1, t))
     
     return {"success": True}
 
