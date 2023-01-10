@@ -6,6 +6,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import Notification from './Notifications';
 
 var BASE_URL = 'http://localhost:5001/'
 
@@ -40,6 +41,8 @@ class FolderMenu extends React.Component {
         }
 
         this.textField = React.createRef();
+        this.successNot = React.createRef();
+        this.errorNot = React.createRef();
     }
 
     currentPath(path) {
@@ -69,36 +72,44 @@ class FolderMenu extends React.Component {
         .then(data => {
             if (data.success) {
                 this.state.filesystem.updateFiles(data.files);
+
+                this.successNot.current.setMessage("Folder created with success");
+                this.successNot.current.open();
+
                 this.toggleOpen();
-                alert("Folder created");
             } else {
-                alert(data.error);
+                this.errorNot.current.setMessage(data.error);
+                this.errorNot.current.open();
             }
         });
     }
 
     render() {
         return (
-            <Modal open={this.state.open}>
-                <Box sx={style}>
-                    <Typography id="modal-modal-title" variant="h6" component="h2">
-                        Create a new folder
-                    </Typography>
-                    <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Folder name" variant="outlined" />
-                    <Button
-                        color="success"
-                        variant="contained"
-                        sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem', mb: '0.5rem'}}
-                        onClick={() => this.createFolder()}
-                    >
-                        Create
-                    </Button>
+            <Box>
+                <Notification message={""} severity={"success"} ref={this.successNot}/>
+                <Notification message={""} severity={"error"} ref={this.errorNot}/>
+                <Modal open={this.state.open}>
+                    <Box sx={style}>
+                        <Typography id="modal-modal-title" variant="h6" component="h2">
+                            Create a new folder
+                        </Typography>
+                        <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Folder name" variant="outlined" />
+                        <Button
+                            color="success"
+                            variant="contained"
+                            sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem', mb: '0.5rem'}}
+                            onClick={() => this.createFolder()}
+                        >
+                            Create
+                        </Button>
 
-                    <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
-                        <CloseRoundedIcon />
-                    </IconButton>
-                </Box>
-            </Modal>
+                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                            <CloseRoundedIcon />
+                        </IconButton>
+                    </Box>
+                </Modal>
+            </Box>
         )
     }
 }

@@ -145,6 +145,7 @@ class FileExplorer extends React.Component {
                 mb: '1.5rem'
             }}>
                 <FolderMenu filesystem={this} ref={this.folderMenu}/>
+
                 <Button
                     disabled={this.state.backButtonDisabled}
                     variant="contained"
