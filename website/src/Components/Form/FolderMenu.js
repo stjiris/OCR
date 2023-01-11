@@ -6,7 +6,8 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import Notification from './Notifications';
+
+import Notification from '../Notification/Notifications';
 
 var BASE_URL = 'http://localhost:5001/'
 

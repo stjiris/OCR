@@ -2,13 +2,13 @@ import './App.css';
 import React from 'react';
 
 import { Box, Link, Button, IconButton } from '@mui/material';
-import CustomButton from './Components/CustomButton.js';
-import CustomTextField from './Components/CustomTextField.js';
-import AlgoDropdown from './Components/AlgoDropdown.js';
-import ProgressWheel from './Components/LoadingProgress.js';
-import PageDisplayer from './Components/PageDisplayer.js';
+import CustomButton from './Components/Button/CustomButton.js';
+import CustomTextField from './Components/TextField/CustomTextField.js';
+import AlgoDropdown from './Components/Dropdown/AlgoDropdown.js';
+import ProgressWheel from './Components/ProgressBar/LoadingProgress.js';
+import PageDisplayer from './Components/Displayer/PageDisplayer.js';
 
-import { FileExplorer } from './Components/FileSystem.js';
+import { FileExplorer } from './Components/FileSystem/FileSystem.js';
 
 import { PDFDocument } from "pdf-lib";
 

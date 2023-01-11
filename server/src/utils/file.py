@@ -73,36 +73,32 @@ def get_pdf_pages(file):
     """
     return convert_from_path(file, 200)
 
-def save_text_file(text, basename):
+def save_text_file(text, basename, path):
     """
     Save a text file
 
     @param text: text to save
     @param filename: name of the file
     """
-    with open(f"file_extracted/{basename}.txt", "w", encoding="utf-8") as f:
+    with open(f"{path}/{basename}.txt", "w", encoding="utf-8") as f:
         f.write(text)
 
-def process_file(file, pageNumber, algorithm):
+def process_file(file, pageNumber, config, path, algorithm):
     """
     Process a file, extract the text and save the results
 
     @param file: file to process
     @param algorithm: algorithm to use
     """
-    # save_pdf_full(file)
-
-    # filename = file.filename
-    basename = get_file_basename(file)
-    pages = get_pdf_pages(f"file_uploads/{file}_{pageNumber}.pdf")
-
-    # text = ""
+    filename = file.split(".")[0]
+    basename = get_file_basename(filename)
+    pages = get_pdf_pages(f"{path}/{file}/{basename}_{pageNumber}.pdf")
 
     for page in pages:
         page = page.crop((0, 0, page.size[0], page.size[1] - 120))
         print("Processing page", pageNumber)
-        page.save(f"file_uploads/{basename}_{pageNumber}.jpg", "JPEG")
+        page.save(f"{path}/{file}/{basename}_{pageNumber}.jpg", "JPEG")
         text = clear_text(algorithm(page))
-        save_text_file(text, basename + "_" + str(pageNumber))
+        save_text_file(text, basename + "_" + str(pageNumber), f"{path}/{file}")
 
     return text

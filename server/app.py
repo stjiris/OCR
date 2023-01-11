@@ -44,21 +44,25 @@ def submit_file():
 
     data = request.json
     fileHex = data["file"]
-    filename = data["filename"].split(".")[0]
+    file = data["filename"]
+    filename = file.split(".")[0]
     page = data["page"]
     algorithm = data["algorithm"]
+    config = data["config"]
+    path = data["path"]
 
-    with open(f"file_uploads/{filename}_{page}.pdf", "wb") as f:
+    if not os.path.exists(f"{path}/{file}"):
+        os.mkdir(f"{path}/{file}")
+
+    with open(f"{path}/{file}/{filename}_{page}.pdf", "wb") as f:
         f.write(bytes.fromhex(fileHex))
 
     if algorithm == "Tesseract":
-        text = process_file(filename, page, tesseract.get_text)
-    elif algorithm == "Pero-OCR":
-        return {"success": False, "error": "[SUBMIT] Something went wrong"}
+        text = process_file(file, page, config, path, tesseract.get_text)
     elif algorithm == "EasyOCR":
-        text = process_file(filename, page, easy_ocr.get_text)
+        text = process_file(file, page, config, path, easy_ocr.get_text)
 
-    os.remove(f"file_uploads/{filename}_{page}.pdf")
+    os.remove(f"{path}/{file}/{filename}_{page}.pdf")
     return {"file": data["filename"], "page": page, "text": text, "score": 0}
 
 @app.route("/submitText", methods=["POST"])

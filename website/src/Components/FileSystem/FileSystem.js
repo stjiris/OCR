@@ -7,7 +7,8 @@ import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import UndoIcon from '@mui/icons-material/Undo';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 
-import FolderMenu from './FolderMenu';
+import FolderMenu from '../Form/FolderMenu';
+import FileMenu from '../Form/FileMenu';
 
 const ICONS_SPACING = '0.9rem';
 const ICONS_WIDTH = '100px';
@@ -63,10 +64,11 @@ class FileExplorer extends React.Component {
             current_folder: [props.current_folder],
             contents: [],
             backButtonDisabled: true,
-            createFileButtonDisabled: true,
+            createFileButtonDisabled: false,
         }
 
         this.folderMenu = React.createRef();
+        this.fileMenu = React.createRef();
     }
 
     updateFiles(files) {
@@ -115,6 +117,11 @@ class FileExplorer extends React.Component {
         this.folderMenu.current.toggleOpen();
     }
 
+    createFile() {
+        this.fileMenu.current.currentPath(this.state.current_folder.join('/'));
+        this.fileMenu.current.toggleOpen();
+    }
+
     goBack() {
         var current_folder = this.state.current_folder;
         current_folder.pop();
@@ -145,6 +152,7 @@ class FileExplorer extends React.Component {
                 mb: '1.5rem'
             }}>
                 <FolderMenu filesystem={this} ref={this.folderMenu}/>
+                <FileMenu filesystem={this} ref={this.fileMenu}/>
 
                 <Button
                     disabled={this.state.backButtonDisabled}
@@ -170,6 +178,7 @@ class FileExplorer extends React.Component {
                     disabled={this.state.createFileButtonDisabled}
                     variant="contained"
                     startIcon={<NoteAddIcon />}
+                    onClick={() => this.createFile()}
                     sx={{border: '1px solid black', mb: '0.5rem'}}
                 >
                     Create File

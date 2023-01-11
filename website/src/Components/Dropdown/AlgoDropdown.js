@@ -9,17 +9,19 @@ class AlgoDropdown extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      algorithm: ''
+      algorithm: 'Tesseract',
+      menu: props.menu
     }
   }
 
   changeAlgorithm = (event) => {
+    this.state.menu.changeAlgorithm(event.target.value);
     this.setState({ algorithm: event.target.value });
   }
 
   render() {
     return (
-      <Box sx={{ minWidth: 140, mr: '1rem'}}>
+      <Box sx={{ minWidth: 140, mt: '0.5rem'}}>
         <FormControl fullWidth size="small">
           <InputLabel id="demo-simple-select-label">Algorithm</InputLabel>
           <Select
@@ -30,7 +32,6 @@ class AlgoDropdown extends React.Component {
             onChange={this.changeAlgorithm}
           >
             <MenuItem value={"Tesseract"}>Tesseract</MenuItem>
-            <MenuItem value={"Pero-OCR"}>Pero-OCR</MenuItem>
             <MenuItem value={"EasyOCR"}>EasyOCR</MenuItem>
           </Select>
         </FormControl>
