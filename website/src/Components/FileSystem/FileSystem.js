@@ -181,7 +181,7 @@ class FileExplorer extends React.Component {
                     onClick={() => this.createFile()}
                     sx={{border: '1px solid black', mb: '0.5rem'}}
                 >
-                    Create File
+                    Submit File
                 </Button>
 
                 <Box sx={{

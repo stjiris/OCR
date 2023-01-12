@@ -137,7 +137,7 @@ class FileMenu extends React.Component {
         return 100 * notEmpty / this.state.pageContents.length;
     }
 
-    createFile() {
+    submitFile() {
         let algorithm = this.algoDropdown.current.state.algorithm;
         let config = "";
 
@@ -256,9 +256,9 @@ class FileMenu extends React.Component {
                                 disabled={this.state.buttonDisabled}
                                 variant="contained"
                                 sx={{border: '1px solid black', mr: '1rem'}}
-                                onClick={() => this.createFile()}
+                                onClick={() => this.submitFile()}
                             >
-                                Create
+                                Submit
                             </Button>
                             <ProgressWheel ref={this.loadingWheel}/>
                         </Box>
