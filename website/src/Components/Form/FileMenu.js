@@ -6,9 +6,10 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
-import AlgoDropdown from '../Dropdown/AlgoDropdown';
+import ProgressWheel from '../ProgressBar/LoadingProgress';
 import Notification from '../Notification/Notifications';
 
+import AlgoDropdown from '../Dropdown/AlgoDropdown';
 import ChecklistDropdown from '../Dropdown/ChecklistDropdown';
 import LangDropdown from '../Dropdown/LangDropdown';
 
@@ -42,9 +43,10 @@ class FileMenu extends React.Component {
             open: false,
             path: "",
             textFieldValue: "",
+            buttonDisabled: false,
 
             filesystem: props.filesystem,
-            language: <ChecklistDropdown />
+            pageContents: []
         }
 
         this.textField = React.createRef();
@@ -54,6 +56,7 @@ class FileMenu extends React.Component {
 
         this.tesseractLangs = React.createRef();
         this.easyLangs = React.createRef();
+        this.loadingWheel = React.createRef();
     }
 
     currentPath(path) {
@@ -110,6 +113,30 @@ class FileMenu extends React.Component {
         return ('0' + i.toString(16)).slice(-2);
     }
 
+    fileSubmitted() {
+        var progress = this.isComplete();
+        
+        this.loadingWheel.current.setProgress(progress);
+
+        if (progress === 100.00) {
+            this.loadingWheel.current.hide();
+
+            this.successNot.current.setMessage("File submitted with success");
+            this.successNot.current.open();
+            this.setState({open: false, buttonDisabled: false});
+        }
+    }
+
+    isComplete() {
+        var notEmpty = 0;
+        for (var i = 0; i < this.state.pageContents.length; i++) {
+            if (this.state.pageContents[i] !== "") {
+                notEmpty += 1;
+            }
+        }
+        return 100 * notEmpty / this.state.pageContents.length;
+    }
+
     createFile() {
         let algorithm = this.algoDropdown.current.state.algorithm;
         let config = "";
@@ -120,8 +147,6 @@ class FileMenu extends React.Component {
             config = this.easyLangs.current.getChoice();
         }
 
-        console.log(algorithm, config);
-
         var el = window._protected_reference = document.createElement("INPUT");
         el.type = "file";
         el.accept = ".pdf";
@@ -131,49 +156,73 @@ class FileMenu extends React.Component {
             // test some async handling
             new Promise(() => {
                 setTimeout(async () => {
-                    // this.loadingWheel.current.show();
-                    // this.setState({disabled: true, backDisabled: true, frontDisabled: true});
-                    // this.saveButton.current.changeDisabledState(true);
-                    // this.fileButton.current.changeDisabledState(true);
+
+                    this.loadingWheel.current.show();
+                    this.setState({ buttonDisabled: true });
 
                     if (el.files.length === 0) return;
 
                     const pdfArrayBuffer = await this.readFile(el.files[0]);
                     const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
 
-                    // this.setState({contents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
+                    this.setState({pageContents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
 
-                    for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
-                        const newPdfDoc = await this.extractPdfPage(pdfSrcDoc, i);
+                    fetch(BASE_URL + 'file-exists?path=' + this.state.path + '&file=' + el.files[0].name, {
+                        method: 'GET'
+                    })
+                    .then(response => {return response.json()})
+                    .then(async (data) => {
+                        if (!data.success) {
+                            this.errorNot.current.setMessage(data.error);
+                            this.errorNot.current.open();
+                            this.loadingWheel.current.hide();
+                            this.setState({ buttonDisabled: false });
+                        } else {
+                            for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
+                                const newPdfDoc = await this.extractPdfPage(pdfSrcDoc, i);
+        
+                                fetch(BASE_URL + 'submitFile', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                        'Access-Control-Allow-Origin': '*',
+                                        'Access-Control-Allow-Methods': 'DELETE, POST, GET, OPTIONS',
+                                        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+                                    },
+                                    body: JSON.stringify({
+                                        file: Array.from(newPdfDoc).map(this.i2hex).join(''),
+                                        filename: el.files[0].name,
+                                        page: i + 1,
+                                        algorithm: algorithm,
+                                        config: config,
+                                        path: this.state.path
+                                    })
+                                })
+                                .then(response => {return response.json()})
+                                .then(data => {
+                                    if (data.success) {
+                                        var page = data["page"];
+                                        var files = data["files"];
+            
+                                        this.state.filesystem.updateFiles(files);
+            
+                                        var currentContents = this.state.pageContents;
+                                        currentContents[page - 1] = data["text"]
+                                        this.setState({pageContents: currentContents}, this.fileSubmitted);
+                                    } else {
+                                        this.errorNot.current.setMessage(data.error);
+                                        this.errorNot.current.open();
+                                        this.loadingWheel.current.hide();
+                                        this.setState({ buttonDisabled: false });
+                                    }
+                                })
+                            }
+                        }
 
-                        fetch(BASE_URL + 'submitFile', {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json',
-                                'Access-Control-Allow-Origin': '*',
-                                'Access-Control-Allow-Methods': 'DELETE, POST, GET, OPTIONS',
-                                'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
-                            },
-                            body: JSON.stringify({
-                                file: Array.from(newPdfDoc).map(this.i2hex).join(''),
-                                filename: el.files[0].name,
-                                page: i + 1,
-                                algorithm: algorithm,
-                                config: config,
-                                path: this.state.path
-                            })
-                        })
-                        .then(response => {return response.json()})
-                        .then(data => {
-                            // this.uploadedFile.current.innerHTML = data["file"];
-                            var page = data["page"];
-                            console.log(page);
-                            // var currentContents = this.state.contents;
-                            // currentContents[page - 1] = data["text"]
-                            // this.setState({contents: currentContents, disabled: false, backDisabled: true, frontDisabled: true, page: 1}, this.fileSubmited);
-                        })
-                    }
+                    })
+
+
                 }, 1000);
             })
             .then(function() {
@@ -202,15 +251,19 @@ class FileMenu extends React.Component {
                         <ChecklistDropdown ref={this.tesseractLangs}/>
                         <LangDropdown ref={this.easyLangs}/>
 
-                        <Button
-                            variant="contained"
-                            sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem', mb: '0.5rem'}}
-                            onClick={() => this.createFile()}
-                        >
-                            Create
-                        </Button>
+                        <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center', mt: '0.5rem'}}>
+                            <Button
+                                disabled={this.state.buttonDisabled}
+                                variant="contained"
+                                sx={{border: '1px solid black', mr: '1rem'}}
+                                onClick={() => this.createFile()}
+                            >
+                                Create
+                            </Button>
+                            <ProgressWheel ref={this.loadingWheel}/>
+                        </Box>
 
-                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                        <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
                             <CloseRoundedIcon />
                         </IconButton>
                     </Box>

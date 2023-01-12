@@ -200,9 +200,9 @@ function App() {
         .then(response => {return response.json()})
         .then(data => {
             if (data.success) {
-            alert("Text submitted with success!");
+                alert("Text submitted with success!");
             } else {
-            alert(data.error);
+                alert(data.error);
             }
         });
     }

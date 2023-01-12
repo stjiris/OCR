@@ -64,7 +64,8 @@ class FileExplorer extends React.Component {
             current_folder: [props.current_folder],
             contents: [],
             backButtonDisabled: true,
-            createFileButtonDisabled: false,
+
+            pageContents: []
         }
 
         this.folderMenu = React.createRef();
@@ -175,7 +176,6 @@ class FileExplorer extends React.Component {
                 </Button>
 
                 <Button
-                    disabled={this.state.createFileButtonDisabled}
                     variant="contained"
                     startIcon={<NoteAddIcon />}
                     onClick={() => this.createFile()}

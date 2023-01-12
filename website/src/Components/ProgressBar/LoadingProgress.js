@@ -27,7 +27,7 @@ class ProgressWheel extends React.Component {
   render() {
     return (
       <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-        <CircularProgress variant="determinate" size={this.state.size} color="success" value={this.state.progress} />
+        <CircularProgress variant="determinate" size={this.state.size} value={this.state.progress} />
         <Box
         sx={{
           top: 0,

@@ -38,7 +38,8 @@ class FolderMenu extends React.Component {
             path: "",
             textFieldValue: "",
 
-            filesystem: props.filesystem
+            filesystem: props.filesystem,
+            buttonDisabled: false
         }
 
         this.textField = React.createRef();
@@ -59,6 +60,7 @@ class FolderMenu extends React.Component {
     }
 
     createFolder() {
+        this.setState({ buttonDisabled: true });
         fetch(BASE_URL + 'create-folder', {
             method: 'POST',
             headers: {
@@ -71,6 +73,7 @@ class FolderMenu extends React.Component {
         })
         .then(response => {return response.json()})
         .then(data => {
+            this.setState({ buttonDisabled: false });
             if (data.success) {
                 this.state.filesystem.updateFiles(data.files);
 
@@ -97,15 +100,16 @@ class FolderMenu extends React.Component {
                         </Typography>
                         <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Folder name" variant="outlined" />
                         <Button
+                            disabled={this.state.buttonDisabled}
                             color="success"
                             variant="contained"
-                            sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem', mb: '0.5rem'}}
+                            sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem'}}
                             onClick={() => this.createFolder()}
                         >
                             Create
                         </Button>
 
-                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                        <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
                             <CloseRoundedIcon />
                         </IconButton>
                     </Box>

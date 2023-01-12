@@ -1,6 +1,6 @@
-import os
+import os, json
 
-from flask import Flask, request, escape
+from flask import Flask, request
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
 from src.utils.file import process_file, get_file_structure
@@ -35,6 +35,21 @@ def create_folder():
 
     return {"success": True, "files": get_file_structure("./files/")}
 
+@app.route("/file-exists", methods=["GET"])
+def file_exists():
+    data = request.values
+    path = data["path"]
+    file = data["file"]
+
+    if os.path.exists(f"{path}/{file}"):
+        return {"success": False, "error": "There is a file with that name already"}
+    else:
+        return {"success": True}
+
+@app.route("/get-file", methods=["GET"])
+def get_file():
+    pass
+
 #####################################
 # FILES ROUTES
 #####################################
@@ -51,7 +66,8 @@ def submit_file():
     config = data["config"]
     path = data["path"]
 
-    if not os.path.exists(f"{path}/{file}"):
+    if os.path.exists(f"{path}/{file}/{filename}_{page}.txt"): return {"success": False, "error": "There is a file with that name already"}
+    if not os.path.exists(f"{path}/{file}"):    
         os.mkdir(f"{path}/{file}")
 
     with open(f"{path}/{file}/{filename}_{page}.pdf", "wb") as f:
@@ -63,7 +79,13 @@ def submit_file():
         text = process_file(file, page, config, path, easy_ocr.get_text)
 
     os.remove(f"{path}/{file}/{filename}_{page}.pdf")
-    return {"file": data["filename"], "page": page, "text": text, "score": 0}
+    with open(f"{path}/{file}/_config.json", "w") as f:
+        json.dump({
+            "algorithm": algorithm,
+            "config": config
+        }, f)
+
+    return {"success": True, "file": data["filename"], "page": page, "text": text, "score": 0, "files": get_file_structure("./files/")}
 
 @app.route("/submitText", methods=["POST"])
 def submitText():
