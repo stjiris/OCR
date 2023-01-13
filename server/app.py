@@ -3,7 +3,7 @@ import os, json
 from flask import Flask, request
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
-from src.utils.file import process_file, get_file_structure
+from src.utils.file import process_file, get_file_structure, get_file_parsed
 from src.evaluate import evaluate
 
 from src.algorithms import tesseract, easy_ocr
@@ -48,7 +48,11 @@ def file_exists():
 
 @app.route("/get-file", methods=["GET"])
 def get_file():
-    pass
+    path = request.values["path"]
+
+    pages, images = get_file_parsed(path)
+
+    return {"contents": pages, "images": images}
 
 #####################################
 # FILES ROUTES
@@ -92,14 +96,16 @@ def submitText():
     texts = request.json["text"] # texto corrigido
     filename = request.json['filename'] # nome do pdf original
 
+    basename = os.path.basename(filename)
+
     for id, t in enumerate(texts):
         print("Saving page:", (id + 1))
-        filename_txt = f"file_fixed/{filename.split('.')[0]}_{(id + 1)}.txt"
+        filename_txt = f"{filename}/{basename.split('.')[0]}_{(id + 1)}_changed.txt"
 
         with open(filename_txt, "w", encoding="utf-8") as f:
             f.write(t)
 
-        # client.add_document(create_document(filename.split(".")[0], id + 1, t))
+    #     # client.add_document(create_document(filename.split(".")[0], id + 1, t))
     
     return {"success": True}
 

@@ -27,8 +27,9 @@ class FileItem extends React.Component {
 
     handleClick = event => {
         if (this.state.type === 'folder' && event.detail >= 2) {
-            console.log("Opening folder " + this.state.name)
             this.state.filesystem.enterFolder(this.state.name);
+        } else if (this.state.type === 'file' && event.detail >= 2) {
+            this.state.filesystem.openFile(this.state.name);
         }
     }
 
@@ -60,6 +61,7 @@ class FileExplorer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            app: props.app,
             files: props.files,
             current_folder: [props.current_folder],
             contents: [],
@@ -145,12 +147,17 @@ class FileExplorer extends React.Component {
         this.contentsOfFolder);
     }
 
+    openFile(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+        this.state.app.openFile(path);
+    }
+
     render() {
         return (
             <Box sx={{
                 ml: '1.5rem',
                 mr: '1.5rem',
-                mb: '1.5rem'
+                mb: '1.5rem',
             }}>
                 <FolderMenu filesystem={this} ref={this.folderMenu}/>
                 <FileMenu filesystem={this} ref={this.fileMenu}/>
@@ -189,7 +196,8 @@ class FileExplorer extends React.Component {
                     border: '1px solid grey',
                     display: 'flex',
                     flexDirection: 'row',
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    height: '75vh',
                 }}>
                     {
                         this.state.contents.length === 0

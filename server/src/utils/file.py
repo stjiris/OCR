@@ -1,4 +1,4 @@
-import os
+import os, re
 from pdf2image import convert_from_path
 
 from src.utils.text import clear_text
@@ -16,6 +16,26 @@ from src.utils.text import clear_text
 #       - filename_changes.txt          (the text changed by the user)
 #       - conf.txt                      (the conf file of the OCR engine used)
 # - folder2
+
+def get_file_parsed(path):
+    basename = os.path.basename(path).split('.')[0]
+    if os.path.exists(f"{path}/{basename}_1_changed.txt"):
+        files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and "_changed.txt" in f]
+    else:
+        files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and "_changed.txt" not in f and ".txt" in f]
+
+    files = sorted(
+        files,
+        key=lambda x: int(re.findall('\d+', x)[-1])
+    )
+
+    contents = []
+    for file in files:
+        print(file)
+        with open(file, encoding="utf-8") as f:
+            contents.append(f.read())
+
+    return contents, [1,2,3]
 
 def get_file_structure(path):
     """
@@ -39,11 +59,18 @@ def get_file_structure(path):
 
     if not folders and files: return last_folder
 
-    files = []
+    contents_folders = []
+    contents_files = []
+    
     for folder in folders:
         file = get_file_structure(f"{path}{folder}/")
-        files.append(file)
-    filesystem[last_folder] = files
+
+        if type(file) == str:
+            contents_files.append(file)
+        else:
+            contents_folders.append(file)
+
+    filesystem[last_folder] = contents_folders + contents_files
     return filesystem
 
 ##################################################
@@ -98,7 +125,7 @@ def process_file(file, pageNumber, config, path, algorithm):
         page = page.crop((0, 0, page.size[0], page.size[1] - 120))
         print("Processing page", pageNumber)
         page.save(f"{path}/{file}/{basename}_{pageNumber}.jpg", "JPEG")
-        text = clear_text(algorithm(page))
+        text = clear_text(algorithm(page, config))
         save_text_file(text, basename + "_" + str(pageNumber), f"{path}/{file}")
 
     return text
