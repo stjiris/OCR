@@ -63,7 +63,7 @@ class FileExplorer extends React.Component {
         this.state = {
             app: props.app,
             files: props.files,
-            current_folder: [props.current_folder],
+            current_folder: props.current_folder.split('/'),
             contents: [],
             backButtonDisabled: true,
 
@@ -98,6 +98,10 @@ class FileExplorer extends React.Component {
 
         for (let f in current_folder) {
             files = this.findFolder(files, current_folder[f]);
+        }
+
+        if (files === undefined) {
+            files = [];
         }
 
         var fileCopy = [...files];
@@ -148,8 +152,9 @@ class FileExplorer extends React.Component {
     }
 
     openFile(file) {
-        var path = this.state.current_folder.join('/') + '/' + file;
-        this.state.app.openFile(path);
+        var path = this.state.current_folder.join('/');
+        var filename = path + '/' + file;
+        this.state.app.openFile(path, filename);
     }
 
     render() {

@@ -19,6 +19,7 @@ function App() {
         this.state = {
             fileSystemMode: true,
             fileOpened: "",
+            path: "files",
 
             contents: [],
             images: []
@@ -31,15 +32,13 @@ function App() {
         this.sendChanges = this.sendChanges.bind(this);
     }
 
-    openFile(file) {
-        console.log("Opening file: " + file);
-        this.setState({fileOpened: file, 'fileSystemMode': false});
+    openFile(path, file) {
+        this.setState({path: path, fileOpened: file, 'fileSystemMode': false});
         fetch(BASE_URL + 'get-file?path=' + file, {
             method: 'GET'
         })
         .then(response => {return response.json()})
         .then(data => {
-            console.log(data.contents);
             this.setState({contents: data.contents, images: data.images});
         });
     }
@@ -87,7 +86,7 @@ function App() {
 
                 {
                     this.state.fileSystemMode
-                    ? <FileExplorer current_folder={"files"} files={{"files": []}} app={this}/>
+                    ? <FileExplorer current_folder={this.state.path} files={{"files": []}} app={this}/>
                     : <Box>
                         <Button
                             disabled={this.state.backButtonDisabled}
