@@ -3,6 +3,8 @@ elasticsearch/
 **/IRIS/
 IRIS.py
 
+files/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
