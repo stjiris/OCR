@@ -1,14 +1,18 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+
+import FolderMenu from '../Form/FolderMenu';
+import FileMenu from '../Form/FileMenu';
+
 import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import UndoIcon from '@mui/icons-material/Undo';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-
-import FolderMenu from '../Form/FolderMenu';
-import FileMenu from '../Form/FileMenu';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import DeleteMenu from '../Form/DeleteMenu';
 
 const ICONS_SPACING = '0.9rem';
 const ICONS_WIDTH = '100px';
@@ -21,8 +25,17 @@ class FileItem extends React.Component {
         this.state = {
             name: props.name,
             type: props.type,
-            filesystem: props.filesystem
+            filesystem: props.filesystem,
+            deleteButton: false
         }
+    }
+
+    mouseHovering() {
+        this.setState({ deleteButton: true });
+    }
+
+    mouseNotHovering() {
+        this.setState({ deleteButton: false });
     }
 
     handleClick = event => {
@@ -35,24 +48,54 @@ class FileItem extends React.Component {
 
     render() {
         return (
-            <Box sx={{
-                m: ICONS_SPACING,
-                width: ICONS_WIDTH,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-            }}>
-                {
-                    this.state.type === 'folder'
-                    ? <FolderOpenRoundedIcon onClick={this.handleClick} color="success" sx={{ fontSize: 60 }} />
-                    : <InsertDriveFileOutlinedIcon onClick={this.handleClick} color="primary" sx={{ fontSize: 60 }} />
-                }
-                <span>{
-                    this.state.name.length > 11
-                    ? this.state.name.substring(0, 11) + '...'
-                    : this.state.name
-                }</span>
-            </Box>
+            <div onMouseEnter={() => this.mouseHovering()} onMouseLeave={() => this.mouseNotHovering()}>
+
+                <Box sx={{
+                    m: ICONS_SPACING,
+                    width: ICONS_WIDTH,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                }}>
+                    <link
+                        rel="stylesheet"
+                        href="https://fonts.googleapis.com/icon?family=Material+Icons"
+                    />
+
+                    {
+                        this.state.type === 'folder'
+                        ? <FolderOpenRoundedIcon onClick={this.handleClick} color="success" sx={{ fontSize: 60 }} />
+                        : <InsertDriveFileOutlinedIcon onClick={this.handleClick} color="primary" sx={{ fontSize: 60 }} />
+                    }
+
+                    <span>{
+                        this.state.name.length > 11
+                        ? this.state.name.substring(0, 11) + '...'
+                        : this.state.name
+                    }</span>
+                    
+                    {
+                        this.state.deleteButton
+                        ? <IconButton sx = {{
+                            position: 'absolute',
+                            bgcolor: 'red',
+                            color: 'white',
+                            height: '25px',
+                            width: '25px',
+                            transform: 'translate(75%, 0)',
+                            ':hover': {
+                                bgcolor: 'red',
+                                color: 'white'
+                            }
+                        }}
+                            onClick={() => {this.state.filesystem.deleteItem(this.state.name)}}    
+                        >
+                            <DeleteForeverIcon fontSize='small' />
+                        </IconButton>
+                        : null
+                    }
+                </Box>
+            </div>
         );
     }
 }
@@ -72,6 +115,7 @@ class FileExplorer extends React.Component {
 
         this.folderMenu = React.createRef();
         this.fileMenu = React.createRef();
+        this.deleteMenu = React.createRef();
     }
 
     updateFiles(files) {
@@ -129,6 +173,11 @@ class FileExplorer extends React.Component {
         this.fileMenu.current.toggleOpen();
     }
 
+    deleteItem(name) {
+        this.deleteMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
+        this.deleteMenu.current.toggleOpen();
+    }
+
     goBack() {
         var current_folder = this.state.current_folder;
         current_folder.pop();
@@ -166,6 +215,7 @@ class FileExplorer extends React.Component {
             }}>
                 <FolderMenu filesystem={this} ref={this.folderMenu}/>
                 <FileMenu filesystem={this} ref={this.fileMenu}/>
+                <DeleteMenu filesystem={this} ref={this.deleteMenu} />
 
                 <Button
                     disabled={this.state.backButtonDisabled}

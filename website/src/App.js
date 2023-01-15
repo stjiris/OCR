@@ -5,6 +5,7 @@ import { Box, Link, Button } from '@mui/material';
 import CustomButton from './Components/Button/CustomButton.js';
 import CustomTextField from './Components/TextField/CustomTextField.js';
 import PageDisplayer from './Components/Displayer/PageDisplayer.js';
+import Notification from './Components/Notification/Notifications';
 
 import { FileExplorer } from './Components/FileSystem/FileSystem.js';
 
@@ -28,6 +29,9 @@ function App() {
         this.saveButton = React.createRef();
         this.textEditor = React.createRef();
         this.pageDisplayer = React.createRef();
+
+        this.successNot = React.createRef();
+        this.errorNot = React.createRef();
 
         this.sendChanges = this.sendChanges.bind(this);
     }
@@ -63,9 +67,12 @@ function App() {
         .then(response => {return response.json()})
         .then(data => {
             if (data.success) {
-                alert("Text submitted with success!");
+                this.successNot.current.setMessage("Text submitted with success!");
+                this.successNot.current.open();
+                this.setState({contents: [], images: [], fileOpened: "", fileSystemMode: true})
             } else {
-                alert(data.error);
+                this.errorNot.current.setMessage(data.error);
+                this.errorNot.current.open();
             }
         });
     }
@@ -81,6 +88,8 @@ function App() {
                         <Link sx={{color: '#48954f', mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'}} style={{textDecoration: 'none'}} to="/files" href="http://localhost/files" underline="hover">
                             <h1>Files</h1>
                         </Link>
+                        <Notification message={""} severity={"success"} ref={this.successNot}/>
+                        <Notification message={""} severity={"error"} ref={this.errorNot}/>
                     </Box>
                 </Box>
 

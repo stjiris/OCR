@@ -1,4 +1,4 @@
-import os, json
+import os, json, shutil
 
 from flask import Flask, request
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
@@ -53,6 +53,17 @@ def get_file():
     pages, images = get_file_parsed(path)
 
     return {"contents": pages, "images": images}
+
+@app.route("/delete-path", methods=["POST"])
+def delete_path():
+    data = data = request.json
+    path = data["path"]
+
+    print(path)
+
+    shutil.rmtree(path, ignore_errors=True)
+
+    return {"success": True, "message": "Deleted with success", "files": get_file_structure("./files/")}
 
 #####################################
 # FILES ROUTES
