@@ -123,7 +123,6 @@ def process_file(file, pageNumber, config, path, algorithm):
 
     for page in pages:
         page = page.crop((0, 0, page.size[0], page.size[1] - 120))
-        print("Processing page", pageNumber)
         page.save(f"{path}/{file}/{basename}_{pageNumber}.jpg", "JPEG")
         text = clear_text(algorithm(page, config))
         save_text_file(text, basename + "_" + str(pageNumber), f"{path}/{file}")

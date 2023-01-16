@@ -1,4 +1,4 @@
-import os, json, shutil
+import os, json, shutil, re
 
 from flask import Flask, request
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
@@ -9,7 +9,7 @@ from src.evaluate import evaluate
 from src.algorithms import tesseract, easy_ocr
 from src.elastic_search import *
 
-# client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
@@ -59,7 +59,13 @@ def delete_path():
     data = data = request.json
     path = data["path"]
 
-    print(path)
+    basename = path.split("/")[-1].split(".")[0]
+
+    docs = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f]
+    pages = set([re.findall("\d+", f)[-1] for f in docs])
+
+    for p in pages:
+        client.delete_document(f"{path}/{basename}_{p}")
 
     shutil.rmtree(path, ignore_errors=True)
 
@@ -100,6 +106,8 @@ def submit_file():
             "config": config
         }, f)
 
+    client.add_document(create_document(f"{path}/{file}/{filename}", page, text))
+
     return {"success": True, "file": data["filename"], "page": page, "text": text, "score": 0, "files": get_file_structure("./files/")}
 
 @app.route("/submitText", methods=["POST"])
@@ -116,7 +124,7 @@ def submitText():
         with open(filename_txt, "w", encoding="utf-8") as f:
             f.write(t)
 
-    #     # client.add_document(create_document(filename.split(".")[0], id + 1, t))
+        client.update_document(f"{filename}/{basename.split('.')[0]}_{(id + 1)}", t)
     
     return {"success": True}
 

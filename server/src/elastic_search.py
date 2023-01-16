@@ -90,16 +90,34 @@ class ElasticSearchClient():
         )
 
     def add_document(self, document):
-        print(self.client.index(
+        self.client.index(
             index=self.ES_INDEX,
+            id=document["Id"],
             document=document
-        ))
+        )
 
-def create_document(jornal, page_number, text):
+    def update_document(self, id, text):
+        self.client.update(
+            index=self.ES_INDEX,
+            id=id,
+            body={
+                "doc" : {
+                    "Text": text
+                }
+            }
+        )
+
+    def delete_document(self, id):
+        self.client.delete(
+            index=self.ES_INDEX,
+            id=id
+        )
+
+def create_document(path, page_number, text):
     return {
-        "Id": f"{jornal}_{page_number}",
-        "Jornal": jornal,
+        "Id": f"{path}_{page_number}",
+        "Jornal": path,
         "Page": page_number,
-        "Imagem Página": f"http://localhost/images/{jornal}_{page_number}.jpg",
+        "Imagem Página": f"http://localhost/images/{path}_{page_number}.jpg",
         "Text": text
     }
