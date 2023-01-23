@@ -27,16 +27,16 @@ class FileItem extends React.Component {
             name: props.name,
             type: props.type,
             filesystem: props.filesystem,
-            deleteButton: false
+            menu: false
         }
     }
 
     mouseHovering() {
-        this.setState({ deleteButton: true });
+        this.setState({ menu: true });
     }
 
     mouseNotHovering() {
-        this.setState({ deleteButton: false });
+        this.setState({ menu: false });
     }
 
     handleClick = event => {
@@ -45,6 +45,14 @@ class FileItem extends React.Component {
         } else if (this.state.type === 'file' && event.detail >= 2) {
             this.state.filesystem.openFile(this.state.name);
         }
+    }
+
+    deleteItem() {
+        this.state.filesystem.deleteItem(this.state.name);
+    }
+
+    getTxt() {
+        this.state.filesystem.getTxt(this.state.name);
     }
 
     render() {
@@ -76,7 +84,7 @@ class FileItem extends React.Component {
                     }</span>
                     
                     {
-                        this.state.deleteButton
+                        this.state.menu
                         ? <Box sx={{
                             position: 'absolute',
                             height: '2rem',
@@ -94,7 +102,7 @@ class FileItem extends React.Component {
                                     flexDirection: 'row',
                                     alignItems: 'center'
                                 }}>
-                                    <IconButton color="error" aria-label="delete" sx={{
+                                    <IconButton color="error" aria-label="delete" onClick={() => this.deleteItem()} sx={{
                                         paddingRight: '0px',
                                     }}>
                                         <DeleteForeverIcon />
@@ -110,12 +118,14 @@ class FileItem extends React.Component {
                                             }
                                         </p>
                                     </IconButton>
-                                    <IconButton color="success" aria-label="download_txt">
+                                    <IconButton color="success" aria-label="download_txt"
+                                        onClick={() => this.getTxt()}
+                                    >
                                         <FileDownloadIcon />
                                         <p style={{fontSize: '13px'}}>TXT</p>
                                     </IconButton>
                                 </Box>
-                                : <IconButton color="error" aria-label="delete">
+                                : <IconButton color="error" aria-label="delete" onClick={() => this.deleteItem()}>
                                         <DeleteForeverIcon />
                                         <p style={{fontSize: '13px'}}>DEL</p>
                                     </IconButton>
@@ -205,6 +215,21 @@ class FileExplorer extends React.Component {
     deleteItem(name) {
         this.deleteMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
         this.deleteMenu.current.toggleOpen();
+    }
+
+    getTxt(name) {
+        var path = this.state.current_folder.join('/') + '/' + name;
+        fetch(BASE_URL + 'get_txt?path=' + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+            a.download = name + "-Text.txt";
+            a.click();
+            a.remove();
+        });
     }
 
     goBack() {

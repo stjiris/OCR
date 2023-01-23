@@ -1,9 +1,15 @@
 import os, json, shutil, re
 
-from flask import Flask, request
+from flask import Flask, request, send_file
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
-from src.utils.file import process_file, get_file_structure, get_file_parsed
+from src.utils.file import (
+    process_file,
+    get_file_structure,
+    get_file_parsed,
+    get_txt_file
+)
+
 from src.evaluate import evaluate
 
 from src.algorithms import tesseract, easy_ocr
@@ -50,9 +56,15 @@ def file_exists():
 def get_file():
     path = request.values["path"]
 
-    pages, images = get_file_parsed(path)
+    pages = get_file_parsed(path)
 
-    return {"contents": pages, "images": images}
+    return {"contents": pages}
+
+@app.route("/get_txt", methods=["GET"])
+def get_txt():
+    path = request.values["path"]
+    file = get_txt_file(path)
+    return send_file(file)
 
 @app.route("/delete-path", methods=["POST"])
 def delete_path():
@@ -119,7 +131,7 @@ def submitText():
 
     for id, t in enumerate(texts):
         print("Saving page:", (id + 1))
-        filename_txt = f"{filename}/{basename.split('.')[0]}_{(id + 1)}_changed.txt"
+        filename_txt = f"{filename}/{basename.split('.')[0]}_{(id + 1)}.txt"
 
         with open(filename_txt, "w", encoding="utf-8") as f:
             f.write(t)
