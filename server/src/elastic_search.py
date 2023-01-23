@@ -73,8 +73,8 @@ class ElasticSearchClient():
         self.settings = settings
 
         self.client = Elasticsearch(ES_URL)
-        self.delete_index()
-        self.create_index()
+        if not self.client.indices.exists(index=self.ES_INDEX):
+            self.create_index()
 
     def create_index(self):
         self.client.indices.create(
@@ -113,6 +113,14 @@ class ElasticSearchClient():
             id=id
         )
 
+    def get_docs(self):
+        return list(self.client.search(index=self.ES_INDEX, body={
+            'size': 100,
+            'query': {
+                'match_all': {}
+            }
+        })["hits"]["hits"])
+
 def create_document(path, page_number, text):
     return {
         "Id": f"{path}_{page_number}",
@@ -121,3 +129,7 @@ def create_document(path, page_number, text):
         "Imagem Página": f"http://localhost/images/{path}_{page_number}.jpg",
         "Text": text
     }
+
+# client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+# res = dict(client.get_docs())
+# print(type(res))

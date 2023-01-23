@@ -57,7 +57,10 @@ def get_file_structure(path):
     folders = [x for x in os.listdir(path) if os.path.isdir(f"{path}{x}/")]
     files = [x for x in os.listdir(path) if not os.path.isdir(f"{path}{x}/")]
 
-    if not folders and files: return last_folder
+    if not folders and files:
+        if path == "./files/":
+            return {"files": []}
+        return last_folder
 
     contents_folders = []
     contents_files = []

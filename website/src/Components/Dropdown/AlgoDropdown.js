@@ -21,7 +21,7 @@ class AlgoDropdown extends React.Component {
 
   render() {
     return (
-      <Box sx={{ minWidth: 140, mt: '0.5rem'}}>
+      <Box sx={{ minWidth: 140, mt: '0.5rem', mb: '0.5rem'}}>
         <FormControl fullWidth size="small">
           <InputLabel id="demo-simple-select-label">Algorithm</InputLabel>
           <Select

@@ -128,5 +128,12 @@ def submitText():
     
     return {"success": True}
 
+#####################################
+# ELASTICSEARCH
+#####################################
+@app.route("/get_elasticsearch", methods=["GET"])
+def get_elasticsearch():
+    return client.get_docs()
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)

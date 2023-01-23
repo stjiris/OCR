@@ -5,6 +5,7 @@ import IconButton from '@mui/material/IconButton';
 
 import FolderMenu from '../Form/FolderMenu';
 import FileMenu from '../Form/FileMenu';
+import DeleteMenu from '../Form/DeleteMenu';
 
 import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
@@ -12,9 +13,9 @@ import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import UndoIcon from '@mui/icons-material/Undo';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import DeleteMenu from '../Form/DeleteMenu';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
-const ICONS_SPACING = '0.9rem';
+const ICONS_SPACING = '1.1rem';
 const ICONS_WIDTH = '100px';
 
 var BASE_URL = 'http://localhost:5001/'
@@ -76,22 +77,47 @@ class FileItem extends React.Component {
                     
                     {
                         this.state.deleteButton
-                        ? <IconButton sx = {{
+                        ? <Box sx={{
                             position: 'absolute',
-                            bgcolor: 'red',
-                            color: 'white',
-                            height: '25px',
-                            width: '25px',
-                            transform: 'translate(75%, 0)',
-                            ':hover': {
-                                bgcolor: 'red',
-                                color: 'white'
+                            height: '2rem',
+                            bgcolor: 'white',
+                            border: '1px solid black',
+                            borderRadius: '20px',
+                            transform: 'translate(0, -100%)',
+                            display: 'flex',
+                            flexDirection: 'row',
+                        }}>
+                            <IconButton color="error" aria-label="delete" sx={{
+                                paddingRight: '0px',
+                            }}>
+                                <DeleteForeverIcon />
+                                <p style={{fontSize: '13px'}}>DEL</p>
+                            </IconButton>
+                            {
+                                this.state.type !== 'folder'
+                                ? <Box sx={{
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    alignItems: 'center'
+                                }}>
+                                    <IconButton color="info" aria-label="download_file" sx={{
+                                        paddingRight: '0px',
+                                    }}>
+                                        <FileDownloadIcon />
+                                        <p style={{fontSize: '13px'}}>
+                                            {
+                                                this.state.name.split('.')[1].toUpperCase()
+                                            }
+                                        </p>
+                                    </IconButton>
+                                    <IconButton color="success" aria-label="download_txt">
+                                        <FileDownloadIcon />
+                                        <p style={{fontSize: '13px'}}>TXT</p>
+                                    </IconButton>
+                                </Box>
+                                : null
                             }
-                        }}
-                            onClick={() => {this.state.filesystem.deleteItem(this.state.name)}}    
-                        >
-                            <DeleteForeverIcon fontSize='small' />
-                        </IconButton>
+                        </Box>
                         : null
                     }
                 </Box>

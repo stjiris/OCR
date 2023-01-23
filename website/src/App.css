@@ -30,8 +30,13 @@ img {
 
 span {
   font-size: 0.9rem;
+  white-space: pre-line;
 }
 
 .no-file {
   margin-left: 1rem;
+}
+
+.link:hover {
+  cursor: pointer;
 }
