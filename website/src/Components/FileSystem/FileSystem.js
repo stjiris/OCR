@@ -87,12 +87,6 @@ class FileItem extends React.Component {
                             display: 'flex',
                             flexDirection: 'row',
                         }}>
-                            <IconButton color="error" aria-label="delete" sx={{
-                                paddingRight: '0px',
-                            }}>
-                                <DeleteForeverIcon />
-                                <p style={{fontSize: '13px'}}>DEL</p>
-                            </IconButton>
                             {
                                 this.state.type !== 'folder'
                                 ? <Box sx={{
@@ -100,8 +94,14 @@ class FileItem extends React.Component {
                                     flexDirection: 'row',
                                     alignItems: 'center'
                                 }}>
-                                    <IconButton color="info" aria-label="download_file" sx={{
+                                    <IconButton color="error" aria-label="delete" sx={{
                                         paddingRight: '0px',
+                                    }}>
+                                        <DeleteForeverIcon />
+                                        <p style={{fontSize: '13px'}}>DEL</p>
+                                    </IconButton>
+                                    <IconButton color="info" aria-label="download_file" sx={{
+                                        paddingRight: '0px'
                                     }}>
                                         <FileDownloadIcon />
                                         <p style={{fontSize: '13px'}}>
@@ -115,7 +115,10 @@ class FileItem extends React.Component {
                                         <p style={{fontSize: '13px'}}>TXT</p>
                                     </IconButton>
                                 </Box>
-                                : null
+                                : <IconButton color="error" aria-label="delete">
+                                        <DeleteForeverIcon />
+                                        <p style={{fontSize: '13px'}}>DEL</p>
+                                    </IconButton>
                             }
                         </Box>
                         : null
