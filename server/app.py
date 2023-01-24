@@ -7,7 +7,8 @@ from src.utils.file import (
     process_file,
     get_file_structure,
     get_file_parsed,
-    get_txt_file
+    get_txt_file,
+    get_original_file
 )
 
 from src.evaluate import evaluate
@@ -66,6 +67,12 @@ def get_txt():
     file = get_txt_file(path)
     return send_file(file)
 
+@app.route("/get_original", methods=["GET"])
+def get_original():
+    path = request.values["path"]
+    file = get_original_file(path)
+    return send_file(file)
+
 @app.route("/delete-path", methods=["POST"])
 def delete_path():
     data = data = request.json
@@ -113,7 +120,6 @@ def submit_file():
     elif algorithm == "EasyOCR":
         text = process_file(file, page, config, path, easy_ocr.get_text)
 
-    os.remove(f"{path}/{file}/{filename}_{page}.pdf")
     with open(f"{path}/{file}/_config.json", "w") as f:
         json.dump({
             "algorithm": algorithm,

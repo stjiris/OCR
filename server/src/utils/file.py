@@ -1,5 +1,6 @@
 import os, re
 from pdf2image import convert_from_path
+from PyPDF2 import PdfMerger
 
 from src.utils.text import clear_text
 
@@ -16,6 +17,27 @@ from src.utils.text import clear_text
 #       - filename_changes.txt          (the text changed by the user)
 #       - conf.txt                      (the conf file of the OCR engine used)
 # - folder2
+
+def get_original_file(path):
+    basename = os.path.basename(path).split('.')[0]
+    filename = f"{path}/{basename}.pdf"
+
+    files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".pdf" in f]
+    files = sorted(
+        files,
+        key=lambda x: int(re.findall('\d+', x)[-1])
+    )
+
+    print(files)
+
+    merger = PdfMerger()
+    for pdf in files:
+        merger.append(pdf)
+
+    merger.write(filename)
+    merger.close()
+
+    return filename
 
 def get_txt_file(path):
     basename = os.path.basename(path).split('.')[0]

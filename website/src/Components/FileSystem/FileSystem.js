@@ -52,7 +52,11 @@ class FileItem extends React.Component {
     }
 
     getTxt() {
-        this.state.filesystem.getTxt(this.state.name);
+        this.state.filesystem.getDocument("get_txt", this.state.name);
+    }
+
+    getOriginal() {
+        this.state.filesystem.getDocument("get_original", this.state.name);
     }
 
     render() {
@@ -108,7 +112,7 @@ class FileItem extends React.Component {
                                         <DeleteForeverIcon />
                                         <p style={{fontSize: '13px'}}>DEL</p>
                                     </IconButton>
-                                    <IconButton color="info" aria-label="download_file" sx={{
+                                    <IconButton color="info" aria-label="download_file" onClick={() => this.getOriginal()} sx={{
                                         paddingRight: '0px'
                                     }}>
                                         <FileDownloadIcon />
@@ -217,16 +221,16 @@ class FileExplorer extends React.Component {
         this.deleteMenu.current.toggleOpen();
     }
 
-    getTxt(name) {
+    getDocument(route, name) {
         var path = this.state.current_folder.join('/') + '/' + name;
-        fetch(BASE_URL + 'get_txt?path=' + path, {
+        fetch(BASE_URL + route + '?path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
         .then(data => {
             var a = document.createElement('a');
             a.href = URL.createObjectURL(data);
-            a.download = name + "-Text.txt";
+            a.download = name + ((route === "get_txt") ? "-Text.txt" : "");
             a.click();
             a.remove();
         });
