@@ -28,8 +28,6 @@ def get_original_file(path):
         key=lambda x: int(re.findall('\d+', x)[-1])
     )
 
-    print(files)
-
     merger = PdfMerger()
     for pdf in files:
         merger.append(pdf)
@@ -52,7 +50,6 @@ def get_txt_file(path):
     with open(filename, "w", encoding="utf-8") as f:
         for file in files:
             page = int(re.findall('\d+', file)[-1])
-            print(file, page)
 
             with open(file, encoding="utf-8") as _f:
                 f.write(f"----- PAGE {page:04d} -----\n\n")
