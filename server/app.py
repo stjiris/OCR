@@ -73,7 +73,9 @@ def delete_path():
 
     basename = path.split("/")[-1].split(".")[0]
 
-    docs = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f]
+    print(path)
+
+    docs = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
     pages = set([re.findall("\d+", f)[-1] for f in docs])
 
     for p in pages:

@@ -14,6 +14,7 @@ import ChecklistDropdown from '../Dropdown/ChecklistDropdown';
 import LangDropdown from '../Dropdown/LangDropdown';
 
 import { PDFDocument } from "pdf-lib";
+import { TextField } from '@mui/material';
 
 var BASE_URL = 'http://localhost:5001/'
 
@@ -167,6 +168,7 @@ class FileMenu extends React.Component {
             open: false,
             path: "",
             textFieldValue: "",
+            filename: "",
             buttonDisabled: false,
 
             filesystem: props.filesystem,
@@ -289,9 +291,11 @@ class FileMenu extends React.Component {
                     const pdfArrayBuffer = await this.readFile(el.files[0]);
                     const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
 
+                    var filename = ((this.state.filename === "") ? el.files[0].name : this.state.filename);
+
                     this.setState({pageContents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
 
-                    fetch(BASE_URL + 'file-exists?path=' + this.state.path + '&file=' + el.files[0].name, {
+                    fetch(BASE_URL + 'file-exists?path=' + this.state.path + '&file=' + filename, {
                         method: 'GET'
                     })
                     .then(response => {return response.json()})
@@ -316,7 +320,7 @@ class FileMenu extends React.Component {
                                     },
                                     body: JSON.stringify({
                                         file: Array.from(newPdfDoc).map(this.i2hex).join(''),
-                                        filename: el.files[0].name,
+                                        filename: filename,
                                         page: i + 1,
                                         algorithm: algorithm,
                                         config: config,
@@ -369,6 +373,17 @@ class FileMenu extends React.Component {
                         <Typography id="modal-modal-title" variant="h6" component="h2">
                             Create a new file
                         </Typography>
+
+                        <TextField
+                            variant="outlined"
+                            size="small"
+                            label="File name (Optional) - Ex.: my_file.pdf"
+                            sx={{
+                                width: '100%',
+                                mb: '1px'
+                            }}
+                            onChange={(e) => this.setState({filename: e.target.value})}
+                        />
 
                         <AlgoDropdown ref={this.algoDropdown} menu={this}/>
 

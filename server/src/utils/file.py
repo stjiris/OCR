@@ -21,7 +21,7 @@ def get_txt_file(path):
     basename = os.path.basename(path).split('.')[0]
     filename = f"{path}/{basename}-Text.txt"
 
-    files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f  and "Text.txt" not in f]
+    files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
     files = sorted(
         files,
         key=lambda x: int(re.findall('\d+', x)[-1])
