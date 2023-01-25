@@ -9,8 +9,6 @@ import ChecklistDropdown from '../Dropdown/ChecklistDropdown';
 import { Divider } from '@mui/material';
 import PageDisplayer from '../Displayer/PageDisplayer';
 
-var BASE_URL = 'http://localhost:5001/';
-
 class ESItem extends React.Component {
     constructor(props) {
         super(props);
@@ -69,7 +67,7 @@ class ESPage extends React.Component {
     }
 
     componentDidMount() {
-        fetch(BASE_URL + "get_elasticsearch", {
+        fetch(process.env.REACT_APP_API_URL + "get_elasticsearch", {
             method: 'GET'
         })
         .then(response => {return response.json()})

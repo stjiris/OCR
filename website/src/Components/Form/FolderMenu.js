@@ -9,8 +9,6 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
 import Notification from '../Notification/Notifications';
 
-var BASE_URL = 'http://localhost:5001/'
-
 const style = {
     position: 'absolute',
     top: '50%',
@@ -61,7 +59,7 @@ class FolderMenu extends React.Component {
 
     createFolder() {
         this.setState({ buttonDisabled: true });
-        fetch(BASE_URL + 'create-folder', {
+        fetch(process.env.REACT_APP_API_URL + 'create-folder', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

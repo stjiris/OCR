@@ -18,8 +18,6 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 const ICONS_SPACING = '1.1rem';
 const ICONS_WIDTH = '100px';
 
-var BASE_URL = 'http://localhost:5001/'
-
 class FileItem extends React.Component {
     constructor(props) {
         super(props);
@@ -197,7 +195,7 @@ class FileExplorer extends React.Component {
     }
 
     componentDidMount() {
-        fetch(BASE_URL + 'files', {
+        fetch(process.env.REACT_APP_API_URL + 'files', {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -223,7 +221,7 @@ class FileExplorer extends React.Component {
 
     getDocument(route, name) {
         var path = this.state.current_folder.join('/') + '/' + name;
-        fetch(BASE_URL + route + '?path=' + path, {
+        fetch(process.env.REACT_APP_API_URL + route + '?path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})

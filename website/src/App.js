@@ -12,8 +12,6 @@ import ESPage from './Components/ElasticSearchPage/ESPage';
 
 import UndoIcon from '@mui/icons-material/Undo';
 
-var BASE_URL = 'http://localhost:5001/'
-
 function App() {
   class Form extends React.Component {
     constructor(props) {
@@ -41,7 +39,7 @@ function App() {
 
     openFile(path, file) {
         this.setState({path: path, fileOpened: file, fileSystemMode: false, editFileMode: true});
-        fetch(BASE_URL + 'get-file?path=' + file, {
+        fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + file, {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -57,7 +55,7 @@ function App() {
     }
 
     sendChanges() {
-        fetch(BASE_URL + 'submitText', {
+        fetch(process.env.REACT_APP_API_URL + 'submitText', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

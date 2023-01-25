@@ -16,8 +16,6 @@ import LangDropdown from '../Dropdown/LangDropdown';
 import { PDFDocument } from "pdf-lib";
 import { TextField } from '@mui/material';
 
-var BASE_URL = 'http://localhost:5001/'
-
 const languages = [
     {"id": 1, "name": "Afrikaans", "code": "afr"},
     {"id": 2, "name": "Amharic", "code": "amh"},
@@ -295,7 +293,7 @@ class FileMenu extends React.Component {
 
                     this.setState({pageContents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
 
-                    fetch(BASE_URL + 'file-exists?path=' + this.state.path + '&file=' + filename, {
+                    fetch(process.env.REACT_APP_API_URL + 'file-exists?path=' + this.state.path + '&file=' + filename, {
                         method: 'GET'
                     })
                     .then(response => {return response.json()})
@@ -309,7 +307,7 @@ class FileMenu extends React.Component {
                             for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
                                 const newPdfDoc = await this.extractPdfPage(pdfSrcDoc, i);
         
-                                fetch(BASE_URL + 'submitFile', {
+                                fetch(process.env.REACT_APP_API_URL + 'submitFile', {
                                     method: 'POST',
                                     headers: {
                                         'Accept': 'application/json',

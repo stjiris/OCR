@@ -8,8 +8,6 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
 import Notification from '../Notification/Notifications';
 
-var BASE_URL = 'http://localhost:5001/'
-
 const style = {
     position: 'absolute',
     top: '50%',
@@ -60,7 +58,7 @@ class DeleteMenu extends React.Component {
 
     deleteItem() {
         this.setState({ buttonDisabled: true });
-        fetch(BASE_URL + 'delete-path', {
+        fetch(process.env.REACT_APP_API_URL + 'delete-path', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
