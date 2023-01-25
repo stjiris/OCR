@@ -1,7 +1,8 @@
-pytesseract
-pdf2image
-Flask
-Flask-Cors
-opencv-python
-elasticsearch
-pypdf
+pytesseract==0.3.10
+pdf2image==1.16.0
+Flask==2.2.2
+Flask-Cors==3.0.10
+opencv-python==4.5.4.60 
+elasticsearch==8.5.0
+PyPDF2==2.12.1
+easyocr==1.6.2

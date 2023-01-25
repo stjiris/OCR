@@ -1,0 +1,51 @@
+version: '3.9'
+
+volumes:
+  elasticsearch_data: {}
+  files_data: {}
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./compose/nginx/Dockerfile
+    ports:
+     - "80:80"
+    depends_on:
+      - server
+    volumes:
+      - files_data:/usr/share/nginx/html/files
+
+  server:
+    build:
+      context: ./server
+      dockerfile: ../compose/server/Dockerfile
+    environment:
+      - ES_URL=http://elasticsearch:9200
+    ports:
+      - "5001:5001"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - files_data:/opt/app/files
+    
+  elasticsearch:
+    build:
+      context: ./compose/elasticsearch
+      dockerfile: Dockerfile
+    ports:
+     - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    healthcheck:
+      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:9200
+      interval: 10s
+      timeout: 30s
+      retries: 15
+      start_period: 10s
+  
+  

@@ -1,6 +1,7 @@
 from elasticsearch import Elasticsearch
+from os import environ
 
-ES_URL = 'http://localhost:9200/'
+ES_URL = environ.get('ES_URL', 'http://localhost:9200/')
 ES_INDEX = "jornais.0.1"
 
 settings = {
