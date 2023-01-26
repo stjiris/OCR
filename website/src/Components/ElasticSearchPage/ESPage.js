@@ -122,7 +122,11 @@ class ESPage extends React.Component {
             });
             values.push(page["_id"]);
             
-            if (values.some(containsFreeText) && journal.includes(this.get_journal(page)) && fileType.includes(this.get_fileType(page))) {
+            if (
+                values.some(containsFreeText) && 
+                (journal.length === 0 || journal.includes(this.get_journal(page))) &&
+                (fileType.length === 0 || fileType.includes(this.get_fileType(page)))
+            ) {
                 current_showing.push(page);
             }
         });
@@ -155,7 +159,7 @@ class ESPage extends React.Component {
                     </Box>
                     <TextField onChange={(e) => this.changeText(e)} ref={this.freeText} label="Free Text" variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.journal} label={"Journal"} options={[]} choice={[]} />
-                    <ChecklistDropdown ref={this.fileType} label={"File Type"} options={[]} choice={[]} />
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"File Type"} options={[]} choice={[]} />
                 </Box>
 
                 <Box sx={{

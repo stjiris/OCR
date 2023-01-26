@@ -100,15 +100,6 @@ class DeleteMenu extends React.Component {
                             flexDirection: 'row'
                         }}>
                             <Button
-                                disabled={this.state.backButtonDisabled}
-                                variant="contained"
-                                sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', mt: '0.5rem', mr: '1rem', ':hover': {bgcolor: '#dddddd'}}}
-                                onClick={() => this.goBack()}
-                            >
-                                Cancel
-                            </Button>
-
-                            <Button
                                 disabled={this.state.buttonDisabled}
                                 color="error"
                                 variant="contained"

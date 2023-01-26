@@ -170,7 +170,10 @@ class FileMenu extends React.Component {
             buttonDisabled: false,
 
             filesystem: props.filesystem,
-            pageContents: []
+            pageContents: [],
+
+            error: false,
+            helperText: "",
         }
 
         this.textField = React.createRef();
@@ -262,6 +265,7 @@ class FileMenu extends React.Component {
     }
 
     submitFile() {
+        this.setState({error: false, helperText: ""}); 
         let algorithm = this.algoDropdown.current.state.algorithm;
         let config = "";
 
@@ -280,6 +284,17 @@ class FileMenu extends React.Component {
             // test some async handling
             new Promise(() => {
                 setTimeout(async () => {
+                    var filename = el.files[0].name;
+                    if (this.state.filename !== "") {
+                        filename = this.state.filename;
+
+                        var index = filename.lastIndexOf(".");
+
+                        if (index === -1 || filename.slice(index + 1) !== "pdf") {
+                            this.setState({error: true, helperText: "The name should end with .pdf"})
+                            return;
+                        }
+                    }
 
                     this.loadingWheel.current.show();
                     this.setState({ buttonDisabled: true });
@@ -288,8 +303,6 @@ class FileMenu extends React.Component {
 
                     const pdfArrayBuffer = await this.readFile(el.files[0]);
                     const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
-
-                    var filename = ((this.state.filename === "") ? el.files[0].name : this.state.filename);
 
                     this.setState({pageContents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
 
@@ -373,6 +386,8 @@ class FileMenu extends React.Component {
                         </Typography>
 
                         <TextField
+                            error={this.state.error}
+                            helperText={this.state.helperText}
                             variant="outlined"
                             size="small"
                             label="File name (Optional) - Ex.: my_file.pdf"
