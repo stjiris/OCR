@@ -127,10 +127,6 @@ def create_document(path, page_number, text):
         "Id": f"{path}_{page_number}",
         "Jornal": path,
         "Page": page_number,
-        "Imagem Página": f"http://localhost/images/{path}_{page_number}.jpg",
+        "Imagem Página": f"./images/{path}_{page_number}.jpg",
         "Text": text
     }
-
-# client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
-# res = dict(client.get_docs())
-# print(type(res))

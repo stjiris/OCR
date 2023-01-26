@@ -10,10 +10,18 @@ class PageDisplayer extends React.Component {
     }
     
     render() {
-        var fileWithoutPath = this.state.filename.split("/");
-        fileWithoutPath = fileWithoutPath[fileWithoutPath.length - 1];
+        var path = this.state.filename.split("/");
+
+        var pathString = "./images/" + (
+            (path.length === 0)
+            ? ""
+            : path.slice(1).join("/") + "/"
+        )
+        
+        var fileWithoutPath = path[path.length - 1];
         var basename = fileWithoutPath.split(".")[0];
-        let page_url = "http://localhost/images/" + this.state.filename + '/' + basename + "_" + (1 + this.state.page) + ".jpg";
+
+        let page_url = pathString + basename + "_" + (1 + this.state.page) + ".jpg";
         return <img className="pageImage" alt={page_url} src={page_url}/>
     }
 }
