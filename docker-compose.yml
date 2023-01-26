@@ -10,11 +10,15 @@ services:
       context: .
       dockerfile: ./compose/nginx/Dockerfile
     ports:
-     - "80:80"
+      - "8888:80"
     depends_on:
       - server
     volumes:
       - files_data:/usr/share/nginx/html/files
+    environment:
+      - PUBLIC_URL=/ocr/
+      - REACT_APP_API_URL=./api/
+    restart: unless-stopped
 
   server:
     build:
@@ -23,19 +27,20 @@ services:
     environment:
       - ES_URL=http://elasticsearch:9200
     ports:
-      - "5001:5001"
+      - "5001"
     depends_on:
       elasticsearch:
         condition: service_healthy
     volumes:
-      - files_data:/opt/app/files
-    
+      - files_data:/opt/app/files 
+    restart: unless-stopped
+
   elasticsearch:
     build:
       context: ./compose/elasticsearch
       dockerfile: Dockerfile
     ports:
-     - "9200:9200"
+     - "9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
@@ -47,5 +52,4 @@ services:
       timeout: 30s
       retries: 15
       start_period: 10s
-  
-  
+    restart: unless-stopped
