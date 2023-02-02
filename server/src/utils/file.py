@@ -72,6 +72,24 @@ def get_file_parsed(path):
 
     return contents
 
+def delete_structure(client, structure, path):
+    """
+    Delete all the files in the structure
+    structure = {"files": [{"folder2": ["file2"]}, "file1"]}
+    """
+    if type(structure) == str:
+        path = f"{path}/{structure}"
+        basename = get_file_basename(structure)
+        pages = set([re.findall("\d+", f)[-1] for f in os.listdir(path) if ".txt" in f and "Text.txt" not in f])
+        for page in pages:
+            print(f"Deleting {path}/{basename}_{page}...")
+            client.delete_document(f"{path}/{basename}_{page}")
+        return
+
+    for key, value in structure.items():
+        for item in value:
+            delete_structure(client, item, f"{path}/{key}")
+
 def get_file_structure(path):
     """
     Put the file system structure in a dict
@@ -88,7 +106,7 @@ def get_file_structure(path):
     """
     filesystem = {}
     last_folder = path.split("/")[-2]
-    
+
     folders = [x for x in os.listdir(path) if os.path.isdir(f"{path}{x}/")]
     files = [x for x in os.listdir(path) if not os.path.isdir(f"{path}{x}/")]
 
@@ -128,7 +146,7 @@ def get_file_basename(filename):
 
     @param file: file name
     """
-    return filename.split(".")[0]
+    return filename.split("/")[-1].split(".")[0]
 
 def get_pdf_pages(file):
     """

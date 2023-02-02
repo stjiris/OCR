@@ -8,7 +8,8 @@ from src.utils.file import (
     get_file_structure,
     get_file_parsed,
     get_txt_file,
-    get_original_file
+    get_original_file,
+    delete_structure
 )
 
 from src.evaluate import evaluate
@@ -78,16 +79,11 @@ def delete_path():
     data = data = request.json
     path = data["path"]
 
-    basename = path.split("/")[-1].split(".")[0]
+    structure = get_file_structure(path + "/", display=True)
 
-    print(path)
+    main_path = path[:path.rfind("/")]
 
-    docs = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
-    pages = set([re.findall("\d+", f)[-1] for f in docs])
-
-    for p in pages:
-        client.delete_document(f"{path}/{basename}_{p}")
-
+    delete_structure(client, structure, main_path)        
     shutil.rmtree(path, ignore_errors=True)
 
     return {"success": True, "message": "Deleted with success", "files": get_file_structure("./files/")}
