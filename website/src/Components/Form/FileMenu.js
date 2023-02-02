@@ -287,13 +287,12 @@ class FileMenu extends React.Component {
                     var filename = el.files[0].name;
                     if (this.state.filename !== "") {
                         filename = this.state.filename;
+                    }
 
-                        var index = filename.lastIndexOf(".");
-
-                        if (index === -1 || filename.slice(index + 1) !== "pdf") {
-                            this.setState({error: true, helperText: "The name should end with .pdf"})
-                            return;
-                        }
+                    var index = filename.lastIndexOf(".");
+                    if (index === -1 || filename.slice(index + 1) !== "pdf") {
+                        this.setState({error: true, helperText: "The filename is invalid (the original name if nothing written above). It must end with .pdf"})
+                        return;
                     }
 
                     this.loadingWheel.current.show();
