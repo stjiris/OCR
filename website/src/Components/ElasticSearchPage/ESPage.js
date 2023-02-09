@@ -170,7 +170,9 @@ class ESPage extends React.Component {
                     ml: '1rem',
                 }}>
                     {
-                        this.state.showing.map((page, index) => {
+                        this.state.showing.length === 0
+                        ? <p style={{fontSize: '20px'}}><b>No pages found</b></p>
+                        : this.state.showing.map((page, index) => {
                             return(
                                 <Box key={page['_id']} sx={{
                                     display: 'flex',
