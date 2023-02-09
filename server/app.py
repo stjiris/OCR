@@ -27,6 +27,7 @@ CORS(app)
 #####################################
 @app.route("/files", methods=["GET"])
 def get_file_system():
+    # print(get_file_structure("./files/"))
     return get_file_structure("./files/")
 
 @app.route("/create-folder", methods=["POST"])
@@ -79,7 +80,7 @@ def delete_path():
     data = data = request.json
     path = data["path"]
 
-    structure = get_file_structure(path + "/", display=True)
+    structure = get_file_structure(path + "/")
 
     main_path = path[:path.rfind("/")]
 
