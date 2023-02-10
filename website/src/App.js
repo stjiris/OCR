@@ -93,7 +93,7 @@ function App() {
                             onClick={() => this.setState({fileSystemMode: true, editFileMode: false})}
                             underline="hover"
                         >
-                            <h1>Scan</h1>
+                            <h1>Documents</h1>
                         </Link>
                         <Link
                             className="link"
@@ -105,7 +105,7 @@ function App() {
                             onClick={() => this.setState({fileSystemMode: false, editFileMode: false})}
                             underline="hover"
                         >
-                            <h1>Files</h1>
+                            <h1>Search</h1>
                         </Link>
 
                         <Notification message={""} severity={"success"} ref={this.successNot}/>
