@@ -6,6 +6,7 @@ from flask_cors import CORS # permitir requests de outros ips alem do servidor
 from src.utils.file import (
     process_file,
     get_filesystem,
+    get_structure,
     get_file_parsed,
     get_txt_file,
     get_original_file,
@@ -79,7 +80,9 @@ def delete_path():
     data = data = request.json
     path = data["path"]
 
-    structure = get_filesystem(path + "/")
+    print(path)
+
+    structure = get_structure(path + "/")
 
     main_path = path[:path.rfind("/")]
 
