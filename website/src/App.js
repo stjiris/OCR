@@ -24,7 +24,9 @@ function App() {
             path: "files",
 
             contents: [],
-            images: []
+            images: [],
+
+            filesChoice: []
         }
         
         this.saveButton = React.createRef();
@@ -46,6 +48,10 @@ function App() {
         .then(data => {
             this.setState({contents: data.contents, images: data.images});
         });
+    }
+
+    viewFile(file) {
+        this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [{name: file, code: file}]});
     }
 
     updateContents(event, index) {
@@ -90,7 +96,7 @@ function App() {
                                 mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
                             }}
                             style={{textDecoration: 'none'}}
-                            onClick={() => this.setState({fileSystemMode: true, editFileMode: false})}
+                            onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: []})}
                             underline="hover"
                         >
                             <h1>Documents</h1>
@@ -102,7 +108,7 @@ function App() {
                                 mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
                             }}
                             style={{textDecoration: 'none'}}
-                            onClick={() => this.setState({fileSystemMode: false, editFileMode: false})}
+                            onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: []})}
                             underline="hover"
                         >
                             <h1>Search</h1>
@@ -147,7 +153,7 @@ function App() {
                                 <CustomButton ref={this.saveButton} text="Save" disabled={this.state.disabled} clickFunction={this.sendChanges} />
                             </div>
                         </Box>
-                        : <ESPage />
+                        : <ESPage app={this}/>
                 }
             </div>
         )

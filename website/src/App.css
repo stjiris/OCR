@@ -12,20 +12,8 @@ body {
   text-align: center;
 }
 
-img {
-  margin-top: 1rem;
-  height: 5rem;
-}
-
 .loading-wheel {
   display: none;
-}
-
-.pageImage {
-  border: 1px solid grey;
-  margin-top: 0rem;
-  margin-right: 1.5rem;
-  height: 55vh;
 }
 
 span {
@@ -39,4 +27,14 @@ span {
 
 .link:hover {
   cursor: pointer;
+}
+
+.modal-image {
+  max-width: 90vw;
+  max-height: 90vh;
+  transition: transform 0.5s;
+}
+
+.modal-image:hover {
+  transform: scale(1.5);
 }

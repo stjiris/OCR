@@ -113,6 +113,12 @@ class FileExplorer extends React.Component {
         this.state.app.openFile(path, filename);
     }
 
+    viewFile(file) {
+        var path = this.state.current_folder.join('/');
+        var filename = path + '/' + file;
+        this.state.app.viewFile(filename);
+    }
+
     deleteItem(name) {
         this.deleteMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
         this.deleteMenu.current.toggleOpen();

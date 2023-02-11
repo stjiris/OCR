@@ -56,8 +56,8 @@ export default class ChecklistDropdown extends React.Component {
 
         let duplicateRemoved = [];
         value.forEach((item) => {
-            if (duplicateRemoved.findIndex((o) => o.id === item.id) >= 0) {
-                duplicateRemoved = duplicateRemoved.filter((x) => x.id !== item.id);
+            if (duplicateRemoved.findIndex((o) => o.name === item.name) >= 0) {
+                duplicateRemoved = duplicateRemoved.filter((x) => x.name !== item.name);
             } else {
                 duplicateRemoved.push(item);
             }
@@ -92,8 +92,8 @@ export default class ChecklistDropdown extends React.Component {
                         >
                             {
                                 this.state.options.map((variant) => (
-                                    <MenuItem key={variant.id} value={variant} sx={{height: '2.5rem'}}>
-                                        <Checkbox checked={this.state.choice.findIndex((item) => item.id === variant.id) >= 0} />
+                                    <MenuItem key={variant.name} value={variant} sx={{height: '2.5rem'}}>
+                                        <Checkbox checked={this.state.choice.findIndex((item) => item.name === variant.name) >= 0} />
                                         <ListItemText primary={variant.name} />
                                     </MenuItem>
                                 ))

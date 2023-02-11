@@ -28,6 +28,11 @@ export default class FileRow extends React.Component {
         this.state.filesystem.editFile(this.state.name);
     }
 
+    view(e) {
+        e.stopPropagation();
+        this.state.filesystem.viewFile(this.state.name);
+    }
+
     delete(e) {
         e.stopPropagation();
         this.state.filesystem.deleteItem(this.state.name);
@@ -37,7 +42,6 @@ export default class FileRow extends React.Component {
         return (
             <TableRow
                 sx={{ '&:last-child td, &:last-child th': { border: 0 }, ":hover": {backgroundColor: "#f5f5f5"} }}
-                // onClick={() => this.fileClicked()}
             >
                 <TableCell sx={{paddingTop: 0, paddingBottom: 0}}>
                     <Box sx={{
@@ -67,7 +71,7 @@ export default class FileRow extends React.Component {
                             sx={{mr: '0.1rem'}}
                             color="primary"
                             aria-label="delete"
-                            onClick={(e) => this.edit(e)}
+                            onClick={(e) => this.view(e)}
                         >
                             <VisibilityRoundedIcon />
                         </IconButton>

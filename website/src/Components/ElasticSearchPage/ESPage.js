@@ -27,7 +27,10 @@ class ESItem extends React.Component {
             }}>
                 <Divider color="success" orientation='vertical' flexItem sx={{mr: '0.5rem'}} />
                 <Box>
-                    <PageDisplayer filename={this.state.page['_id'].split('/').slice(0, -1).join('/')} page={this.state.page['_source']['Page']-1} />
+                    <PageDisplayer
+                        filename={this.state.page['_id'].split('/').slice(0, -1).join('/')}
+                        page={this.state.page['_source']['Page']-1}
+                    />
                 </Box>
                 <Box sx={{
                     display: 'flex',
@@ -43,12 +46,14 @@ class ESItem extends React.Component {
 }
 
 class ESPage extends React.Component {
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         this.state = {
             pages: [],
             showing: [],
             freeText: "",
+
+            app: props.app
         }
 
         this.freeText = React.createRef();
@@ -80,7 +85,6 @@ class ESPage extends React.Component {
                 var names = journals.map(j => j.name);
                 if (!names.includes(journal)) {
                     journals.push({
-                        "id": journals.length,
                         "name": journal,
                         "code": journal
                     });
@@ -90,16 +94,15 @@ class ESPage extends React.Component {
                 names = fileTypes.map(j => j.name);
                 if (!names.includes(fileType)) {
                     fileTypes.push({
-                        "id": fileTypes.length,
                         "name": fileType,
                         "code": fileType
                     });
                 }
             }
 
-            this.setState({pages: data, showing: data});
-            this.journal.current.setState({options: journals});
+            this.journal.current.setState({options: journals, choice: this.state.app.state.filesChoice});
             this.fileType.current.setState({options: fileTypes});
+            this.setState({pages: data, showing: data}, this.filterPages);
         });
     }
 
@@ -143,7 +146,7 @@ class ESPage extends React.Component {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    width: '20%',
+                    width: '15%',
                     ml: '1.5rem'
                 }}>
                     <Box sx={{
