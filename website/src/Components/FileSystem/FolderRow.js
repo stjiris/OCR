@@ -13,6 +13,7 @@ export default class FolderRow extends React.Component {
         super(props);
         this.state = {
             name: props.name,
+            info: props.info,
             filesystem: props.filesystem
         }
     }
@@ -43,13 +44,19 @@ export default class FolderRow extends React.Component {
                     </Box>
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    -
+                    {
+                        this.state.info["creation_date"]
+                    }
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    -
+                    {
+                        this.state.info["last_modified"]
+                    }
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    -
+                    {
+                        this.state.info["number_of_files"]
+                    }
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
                     -

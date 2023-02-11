@@ -28,6 +28,7 @@ class FileExplorer extends React.Component {
         this.state = {
             app: props.app,
             files: props.files,
+            info: {},
             current_folder: props.current_folder.split('/'),
             contents: [],
             buttonsDisabled: props.current_folder.split('/').length === 1,
@@ -44,7 +45,9 @@ class FileExplorer extends React.Component {
         })
         .then(response => {return response.json()})
         .then(data => {
-            this.setState({files: data}, this.contentsOfFolder);
+            var info = data["info"];
+            var files = {'files': data["files"]};
+            this.setState({files: files, info: info}, this.contentsOfFolder);
         });
     }
 
@@ -161,6 +164,10 @@ class FileExplorer extends React.Component {
         return files;
     }
 
+    getInfo(path) {
+        return this.state.info[path];
+    }
+
     displayFileSystem() {
         var contents = this.getPathContents();
 
@@ -170,12 +177,22 @@ class FileExplorer extends React.Component {
             var item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
                 items.push(
-                    <FileRow key={item} name={item} filesystem={this} />
+                    <FileRow
+                        key={item}
+                        name={item}
+                        info={this.getInfo(this.state.current_folder.join("/") + "/" + item)}
+                        filesystem={this}
+                    />
                 )
             } else {
                 var key = Object.keys(item)[0];
                 items.push(
-                    <FolderRow key={key} name={key} filesystem={this} />
+                    <FolderRow
+                        key={key}
+                        name={key}
+                        info={this.getInfo(this.state.current_folder.join("/") + "/" + key)}
+                        filesystem={this}
+                    />
                 )
             }
         }

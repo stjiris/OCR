@@ -1,4 +1,4 @@
-import os, re
+import os, re, time
 from pdf2image import convert_from_path
 from PyPDF2 import PdfMerger
 
@@ -90,13 +90,138 @@ def delete_structure(client, structure, path):
         for item in value:
             delete_structure(client, item, f"{path}/{key}")
 
-def get_file_structure(path):
+def get_filesystem(path):
+    """
+    Get the filesystem structure and information of each file/folder
+
+    @param path: path to the folder
+    """
+    files = get_structure(path)
+    info = get_info(files)
+    return {**files, 'info': info}
+
+def get_creation_time(path):
+    """
+    Get the creation time of the file/folder
+
+    @param path: path to the file/folder
+    """
+
+    ti_c = os.path.getctime(path)
+    c_ti = time.ctime(ti_c)
+    t_obj = time.strptime(c_ti)
+    c_time = time.strftime("%Y-%m-%d %H:%M:%S", t_obj)
+    return c_time
+
+def get_modification_time(path):
+    """
+    Get the modification time of the file/folder
+
+    @param path: path to the file/folder
+    """
+
+    ti_m = os.path.getmtime(path)
+    m_ti = time.ctime(ti_m)
+    t_obj = time.strptime(m_ti)
+    m_time = time.strftime("%Y-%m-%d %H:%M:%S", t_obj)
+    return m_time
+
+def get_size(path):
+    """
+    Get the size of the file
+
+    @param path: path to the file
+    """
+
+    extension = path[path.rfind(".") + 1:]
+    files = [
+        os.path.join(path, f) for f in os.listdir(path)
+        if os.path.isfile(os.path.join(path, f)) and extension in f[-len(extension):]
+    ]
+
+    size = 0
+    for file in files:
+        size += os.path.getsize(file)
+
+    if size < 1024: return f"{size} B"
+    elif size < 1024 ** 2: return f"{size / 1024:.2f} KB"
+    elif size < 1024 ** 3: return f"{size / 1024 ** 2:.2f} MB"
+    else: return f"{size / 1024 ** 3:.2f} GB"
+
+def get_info(files, current_path="", info={}):
+    """
+    Get the info of each file/folder
+
+    @param files: the filesystem structure
+    """
+
+    if type(files) == dict:
+        key = list(files.keys())[0]
+        path = f"{current_path}/{key}" if current_path != "" else key
+
+        creation_date = get_creation_time(path)
+        modification_date = get_modification_time(path)
+
+        data = {
+            "creation_date": creation_date,
+            "last_modified": modification_date,
+            "number_of_files": 0
+        }
+
+        for item in files[key]:
+            item_data = get_info(item, path)
+
+            if "number_of_files" in item_data:
+                data["number_of_files"] += item_data["number_of_files"]
+            else:
+                data["number_of_files"] += 1
+
+        if path != "files":
+            info[path] = data
+            return data
+        return info
+
+    else:
+        path = f"{current_path}/{files}"
+
+        creation_date = get_creation_time(path)
+        modification_date = get_modification_time(path)
+        size = get_size(path)
+
+        data = {
+            "creation_date": creation_date,
+            "last_modified": modification_date,
+            "size": size
+        }
+
+        info[path] = data
+
+        return data
+
+def get_structure(path):
     """
     Put the file system structure in a dict
     {
+        'info': {
+            'files/folder1': {
+                'creation_date': '2021-05-05 12:00:00',
+                'last_modified': '2021-05-05 15:00:00',
+                'number_of_files': 1
+            },
+            'files/folder2': {
+                'creation_date': '2021-05-05 12:00:00',
+                'last_modified': '2021-05-05 15:00:00',
+                'number_of_files': 0
+            },
+            'files/folder1/file.pdf': {
+                'creation_date': '2021-05-05 15:00:00',
+                'last_modified': '2021-05-05 15:00:00',
+                'size': 10 KB
+            }
+        },
         'files': [
             {
-                'folder1': ['J1_75.pdf']
+                'folder1': ['file.pdf']
             },
             {
                 'folder2': []
@@ -112,14 +237,14 @@ def get_file_structure(path):
 
     if not folders and files:
         if path == "./files/":
-            return {"files": []}
+            return {"files": [], "info": {}}
         return last_folder
-
+    
     contents_folders = []
     contents_files = []
     
     for folder in folders:
-        file = get_file_structure(f"{path}{folder}/")
+        file = get_structure(f"{path}{folder}/")
 
         if type(file) == str:
             contents_files.append(file)

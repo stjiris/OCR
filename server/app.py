@@ -5,7 +5,7 @@ from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
 from src.utils.file import (
     process_file,
-    get_file_structure,
+    get_filesystem,
     get_file_parsed,
     get_txt_file,
     get_original_file,
@@ -27,8 +27,7 @@ CORS(app)
 #####################################
 @app.route("/files", methods=["GET"])
 def get_file_system():
-    # print(get_file_structure("./files/"))
-    return get_file_structure("./files/")
+    return get_filesystem("./files/")
 
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
@@ -42,7 +41,7 @@ def create_folder():
 
     os.mkdir(path + "/" + folder)
 
-    return {"success": True, "files": get_file_structure("./files/")}
+    return {"success": True, "files": get_filesystem("./files/")}
 
 @app.route("/file-exists", methods=["GET"])
 def file_exists():
@@ -80,14 +79,14 @@ def delete_path():
     data = data = request.json
     path = data["path"]
 
-    structure = get_file_structure(path + "/")
+    structure = get_filesystem(path + "/")
 
     main_path = path[:path.rfind("/")]
 
     delete_structure(client, structure, main_path)        
     shutil.rmtree(path, ignore_errors=True)
 
-    return {"success": True, "message": "Deleted with success", "files": get_file_structure("./files/")}
+    return {"success": True, "message": "Deleted with success", "files": get_filesystem("./files/")}
 
 #####################################
 # FILES ROUTES
@@ -125,7 +124,7 @@ def submit_file():
 
     client.add_document(create_document(f"{path}/{file}/{filename}", page, text))
 
-    return {"success": True, "file": data["filename"], "page": page, "text": text, "score": 0, "files": get_file_structure("./files/")}
+    return {"success": True, "file": data["filename"], "page": page, "text": text, "score": 0, "files": get_filesystem("./files/")}
 
 @app.route("/submitText", methods=["POST"])
 def submitText():
