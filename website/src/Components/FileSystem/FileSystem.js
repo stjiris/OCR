@@ -51,8 +51,11 @@ class FileExplorer extends React.Component {
         });
     }
 
-    updateFiles(files) {
-        this.setState({ files: files }, this.contentsOfFolder);
+    updateFiles(data) {
+        var files = {'files': data['files']}
+        var info = data['info'];
+
+        this.setState({ files: files, info: info }, this.contentsOfFolder);
     }
 
     contentsOfFolder() {

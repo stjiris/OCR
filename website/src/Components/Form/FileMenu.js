@@ -14,7 +14,6 @@ import ChecklistDropdown from '../Dropdown/ChecklistDropdown';
 import LangDropdown from '../Dropdown/LangDropdown';
 
 import { PDFDocument } from "pdf-lib";
-import { TextField } from '@mui/material';
 
 const languages = [
     {"id": 1, "name": "Afrikaans", "code": "afr"},
@@ -165,21 +164,19 @@ class FileMenu extends React.Component {
         this.state = {
             open: false,
             path: "",
-            textFieldValue: "",
-            filename: "",
             buttonDisabled: false,
 
             filesystem: props.filesystem,
             pageContents: [],
 
-            error: false,
-            helperText: "",
+            file: null,
         }
 
         this.textField = React.createRef();
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
         this.algoDropdown = React.createRef();
+        this.fileSelected = React.createRef();
 
         this.tesseractLangs = React.createRef();
         this.easyLangs = React.createRef();
@@ -192,10 +189,6 @@ class FileMenu extends React.Component {
 
     toggleOpen() {
         this.setState({ open: !this.state.open });
-    }
-
-    textFieldUpdate = event => {
-        this.setState({ textFieldValue: event.target.value });
     }
 
     changeAlgorithm(algorithm) {
@@ -265,111 +258,115 @@ class FileMenu extends React.Component {
     }
 
     submitFile() {
-        this.setState({error: false, helperText: ""}); 
         let algorithm = this.algoDropdown.current.state.algorithm;
-        let config = "";
 
+        let algo_abreviation = "";
+        let config = "";
         if (algorithm === "Tesseract") {
+            algo_abreviation = "TESS";
             config = this.tesseractLangs.current.getChoice();
         } else {
+            algo_abreviation = "EASY";
             config = this.easyLangs.current.getChoice();
         }
 
+        if (this.state.file === null) {
+            this.errorNot.current.setMessage("No file selected");
+            this.errorNot.current.open();
+            return;
+        }
+
+        var filename = this.state.file.name;
+        var extension = filename.split('.').pop();
+        var filename_no_ext = filename.split('.').slice(0, -1).join('.');
+
+        filename = filename_no_ext + "_" + algo_abreviation + "_" + config + "." + extension;
+
+        fetch(process.env.REACT_APP_API_URL + 'file-exists?path=' + this.state.path + '&file=' + filename, {
+            method: 'GET'
+        })
+        .then(response => {return response.json()})
+        .then(async (data) => {
+            if (!data.success) {
+                this.errorNot.current.setMessage(data.error);
+                this.errorNot.current.open();
+                this.loadingWheel.current.hide();
+                this.setState({ buttonDisabled: false });
+
+            } else {
+
+                this.loadingWheel.current.show();
+                this.setState({ buttonDisabled: true });
+
+                const pdfArrayBuffer = await this.readFile(this.state.file);
+                const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
+                this.setState({pageContents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
+
+                for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
+                    const newPdfDoc = await this.extractPdfPage(pdfSrcDoc, i);
+
+                    fetch(process.env.REACT_APP_API_URL + 'submitFile', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Methods': 'DELETE, POST, GET, OPTIONS',
+                            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+                        },
+                        body: JSON.stringify({
+                            file: Array.from(newPdfDoc).map(this.i2hex).join(''),
+                            filename: filename,
+                            page: i + 1,
+                            algorithm: algorithm,
+                            config: config,
+                            path: this.state.path
+                        })
+                    })
+                    .then(response => {return response.json()})
+                    .then(data => {
+                        if (data.success) {
+                            var page = data["page"];
+                            var files = data["files"];
+
+                            this.state.filesystem.updateFiles(files);
+
+                            var currentContents = this.state.pageContents;
+                            currentContents[page - 1] = data["text"]
+                            this.setState({pageContents: currentContents}, this.fileSubmitted);
+                        } else {
+                            this.errorNot.current.setMessage(data.error);
+                            this.errorNot.current.open();
+                            this.loadingWheel.current.hide();
+                            this.setState({ buttonDisabled: false });
+                        }
+                    })
+                }
+            }
+        })
+    }
+
+    selectFile() {
         var el = window._protected_reference = document.createElement("INPUT");
         el.type = "file";
         el.accept = ".pdf";
             
         el.addEventListener('change', () => {
-    
-            // test some async handling
-            new Promise(() => {
-                setTimeout(async () => {
-                    var filename = el.files[0].name;
-                    if (this.state.filename !== "") {
-                        filename = this.state.filename;
-                    }
+            if (el.files.length === 0) return;
 
-                    var index = filename.lastIndexOf(".");
-                    if (index === -1 || filename.slice(index + 1) !== "pdf") {
-                        this.setState({error: true, helperText: "The filename is invalid (the original name if nothing written above). It must end with .pdf"})
-                        return;
-                    }
+            var filename = el.files[0].name;
 
-                    this.loadingWheel.current.show();
-                    this.setState({ buttonDisabled: true });
+            var extension = filename.split('.').pop();
+            if (extension !== "pdf") {
+                this.errorNot.current.setMessage("Only PDF files are accepted currently! The file submitted is named " + filename);
+                this.errorNot.current.open();
+                return;
+            }
 
-                    if (el.files.length === 0) return;
-
-                    const pdfArrayBuffer = await this.readFile(el.files[0]);
-                    const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
-
-                    this.setState({pageContents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
-
-                    fetch(process.env.REACT_APP_API_URL + 'file-exists?path=' + this.state.path + '&file=' + filename, {
-                        method: 'GET'
-                    })
-                    .then(response => {return response.json()})
-                    .then(async (data) => {
-                        if (!data.success) {
-                            this.errorNot.current.setMessage(data.error);
-                            this.errorNot.current.open();
-                            this.loadingWheel.current.hide();
-                            this.setState({ buttonDisabled: false });
-                        } else {
-                            for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
-                                const newPdfDoc = await this.extractPdfPage(pdfSrcDoc, i);
-        
-                                fetch(process.env.REACT_APP_API_URL + 'submitFile', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Accept': 'application/json',
-                                        'Content-Type': 'application/json',
-                                        'Access-Control-Allow-Origin': '*',
-                                        'Access-Control-Allow-Methods': 'DELETE, POST, GET, OPTIONS',
-                                        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
-                                    },
-                                    body: JSON.stringify({
-                                        file: Array.from(newPdfDoc).map(this.i2hex).join(''),
-                                        filename: filename,
-                                        page: i + 1,
-                                        algorithm: algorithm,
-                                        config: config,
-                                        path: this.state.path
-                                    })
-                                })
-                                .then(response => {return response.json()})
-                                .then(data => {
-                                    if (data.success) {
-                                        var page = data["page"];
-                                        var files = data["files"];
-            
-                                        this.state.filesystem.updateFiles(files);
-            
-                                        var currentContents = this.state.pageContents;
-                                        currentContents[page - 1] = data["text"]
-                                        this.setState({pageContents: currentContents}, this.fileSubmitted);
-                                    } else {
-                                        this.errorNot.current.setMessage(data.error);
-                                        this.errorNot.current.open();
-                                        this.loadingWheel.current.hide();
-                                        this.setState({ buttonDisabled: false });
-                                    }
-                                })
-                            }
-                        }
-
-                    })
-
-
-                }, 1000);
-            })
-            .then(function() {
-                // clear / free reference
-                el = window._protected_reference = undefined;
-                return null;
-            });
+            this.setState({file: el.files[0]});
+            this.fileSelected.current.innerHTML = filename;
         });
-        el.click(); // open
+        el.click();
     }
 
     render() {
@@ -384,18 +381,22 @@ class FileMenu extends React.Component {
                             Create a new file
                         </Typography>
 
-                        <TextField
-                            error={this.state.error}
-                            helperText={this.state.helperText}
-                            variant="outlined"
-                            size="small"
-                            label="File name (Optional) - Ex.: my_file.pdf"
-                            sx={{
-                                width: '100%',
-                                mb: '1px'
-                            }}
-                            onChange={(e) => this.setState({filename: e.target.value})}
-                        />
+                        <Box sx={{display: 'flex', alignItems: 'center'}}>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                sx={{
+                                    border: '1px solid black',
+                                    mr: '1rem',
+                                }}
+                                onClick={() => this.selectFile()}
+                            >
+                                Choose Document
+                            </Button>
+                            <p ref={this.fileSelected} style={{
+
+                            }}>No file selected</p>
+                        </Box>
 
                         <AlgoDropdown ref={this.algoDropdown} menu={this}/>
 
