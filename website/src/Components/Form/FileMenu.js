@@ -13,7 +13,9 @@ import AlgoDropdown from '../Dropdown/AlgoDropdown';
 import ChecklistDropdown from '../Dropdown/ChecklistDropdown';
 import LangDropdown from '../Dropdown/LangDropdown';
 
-import { PDFDocument } from "pdf-lib";
+import prepareDocument from './FilePreparation';
+
+const validExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
 
 const languages = [
     {"id": 1, "name": "Afrikaans", "code": "afr"},
@@ -183,15 +185,16 @@ class FileMenu extends React.Component {
         this.loadingWheel = React.createRef();
     }
 
-    currentPath(path) {
-        this.setState({ path: path });
-    }
+    // SETTERS
+    currentPath(path) { this.setState({ path: path }) }
+    toggleOpen() { this.setState({ open: !this.state.open }) }
 
-    toggleOpen() {
-        this.setState({ open: !this.state.open });
-    }
-
+    // PROCESS FUNCTIONS
     changeAlgorithm(algorithm) {
+        /**
+         * Change the interface when the algorithm is changed
+         */
+
         if (algorithm === "Tesseract") {
             this.tesseractLangs.current.setVisible();
             this.easyLangs.current.setInvisible();
@@ -201,8 +204,15 @@ class FileMenu extends React.Component {
         }
     }
 
-    // FILES FUNCTIONS
     createEmptyArray(size) {
+        /**
+         * Create an empty array of size 'size'
+         * 
+         * @param {number} size The size of the array
+         * 
+         * @returns {array} An empty array of size 'size'
+         */
+
         var emptyContents = []
         for (var i = 0; i < size; i++) {
             emptyContents.push("");
@@ -210,30 +220,12 @@ class FileMenu extends React.Component {
         return emptyContents;
     }
 
-    readFile(file) {
-        return new Promise((resolve, reject) => {
-            let reader = new FileReader();
-            reader.onload = () => {
-                resolve(reader.result);
-            }
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(file);
-        });
-    }
-
-    async extractPdfPage(pdfSrcDoc, page) {
-        const pdfNewDoc = await PDFDocument.create();
-        const pages = await pdfNewDoc.copyPages(pdfSrcDoc, [page]);
-        pages.forEach(page => pdfNewDoc.addPage(page));
-        const newPdf = await pdfNewDoc.save();
-        return newPdf;
-    }
-
-    i2hex(i) {
-        return ('0' + i.toString(16)).slice(-2);
-    }
-
     fileSubmitted() {
+        /**
+         * When dealing with multiple pages, check if all pages have been
+         * submitted to the server
+         */
+
         var progress = this.isComplete();
         
         this.loadingWheel.current.setProgress(progress);
@@ -248,6 +240,12 @@ class FileMenu extends React.Component {
     }
 
     isComplete() {
+        /**
+         * Calculate the progress of the file submission
+         * 
+         * @returns {number} The percentage of pages that have been submitted
+         */
+
         var notEmpty = 0;
         for (var i = 0; i < this.state.pageContents.length; i++) {
             if (this.state.pageContents[i] !== "") {
@@ -257,7 +255,115 @@ class FileMenu extends React.Component {
         return 100 * notEmpty / this.state.pageContents.length;
     }
 
+    async processRequest(filename, algorithm, config) {
+        /**
+         * Make the POST requests to the server
+         * 
+         * @param {string} filename The name of the file
+         * @param {string} algorithm The algorithm to use
+         * @param {string} config The configuration of the algorithm
+         */
+
+        this.loadingWheel.current.show();
+        this.setState({ buttonDisabled: true });
+
+        var extension = filename.split('.').pop().toLowerCase();
+
+        // Check if the file is an image
+        if (["jpg", "jpeg", "png"].includes(extension)) {
+            var payload = new FormData();
+            payload.append('file', this.state.file);
+            payload.append('filename', filename);
+            payload.append('algorithm', algorithm);
+            payload.append('config', config);
+            payload.append('path', this.state.path);
+
+            fetch(process.env.REACT_APP_API_URL + 'submitImageFile', {
+                method: 'POST',
+                body: payload
+            })
+            .then(response => {return response.json()})
+            .then(data => {
+                if (data.success) {
+                    var files = data["files"];
+
+                    this.state.filesystem.updateFiles(files);
+
+                    var currentContents = this.state.pageContents;
+                    currentContents[0] = data["text"]
+                    this.setState({pageContents: currentContents}, this.fileSubmitted);
+                } else {
+                    this.errorNot.current.setMessage(data.error);
+                    this.errorNot.current.open();
+                    this.loadingWheel.current.hide();
+                    this.setState({ buttonDisabled: false });
+                }
+            });
+
+        // Check if the file is a PDF / multi-page document
+        } else {
+            var pages = await prepareDocument(this.state.file);
+            this.setState({pageContents: this.createEmptyArray(pages.length)});
+    
+            for (let i = 0; i < pages.length; i++) {
+                fetch(process.env.REACT_APP_API_URL + 'submitFile', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'DELETE, POST, GET, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+                    },
+                    body: JSON.stringify({
+                        file: pages[i],
+                        filename: filename,
+                        page: i + 1,
+                        algorithm: algorithm,
+                        config: config,
+                        path: this.state.path
+                    })
+                })
+                .then(response => {return response.json()})
+                .then(data => {
+                    if (data.success) {
+                        var page = data["page"];
+                        var files = data["files"];
+    
+                        this.state.filesystem.updateFiles(files);
+    
+                        var currentContents = this.state.pageContents;
+                        currentContents[page - 1] = data["text"]
+                        this.setState({pageContents: currentContents}, this.fileSubmitted);
+                    } else {
+                        this.errorNot.current.setMessage(data.error);
+                        this.errorNot.current.open();
+                        this.loadingWheel.current.hide();
+                        this.setState({ buttonDisabled: false });
+                    }
+                })
+            }
+        }
+    }
+
     submitFile() {
+        /**
+         * Send the file to the server and the OCR algorithm and configuration
+         * 
+         * Steps:
+         * 1. Check if a file is selected
+         * 2. Get the algorithm and configuration
+         * 3. Send the file to the server
+         */
+
+        // 1. Check if a file is selected
+        if (this.state.file === null) {
+            this.errorNot.current.setMessage("No file selected");
+            this.errorNot.current.open();
+            return;
+        }
+
+        // 2. Get the algorithm and configuration
         let algorithm = this.algoDropdown.current.state.algorithm;
 
         let algo_abreviation = "";
@@ -270,19 +376,14 @@ class FileMenu extends React.Component {
             config = this.easyLangs.current.getChoice();
         }
 
-        if (this.state.file === null) {
-            this.errorNot.current.setMessage("No file selected");
-            this.errorNot.current.open();
-            return;
-        }
-
+        // 3. Send the file to the server
         var filename = this.state.file.name;
         var extension = filename.split('.').pop();
         var filename_no_ext = filename.split('.').slice(0, -1).join('.');
 
-        filename = filename_no_ext + "_" + algo_abreviation + "_" + config + "." + extension;
+        var final_filename = filename_no_ext + "_" + algo_abreviation + "_" + config + "." + extension;
 
-        fetch(process.env.REACT_APP_API_URL + 'file-exists?path=' + this.state.path + '&file=' + filename, {
+        fetch(process.env.REACT_APP_API_URL + 'file-exists?path=' + this.state.path + '&file=' + final_filename, {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -295,61 +396,24 @@ class FileMenu extends React.Component {
 
             } else {
 
-                this.loadingWheel.current.show();
-                this.setState({ buttonDisabled: true });
+                await this.processRequest(final_filename, algorithm, config);
 
-                const pdfArrayBuffer = await this.readFile(this.state.file);
-                const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
-                this.setState({pageContents: this.createEmptyArray(pdfSrcDoc.getPageCount())})
-
-                for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
-                    const newPdfDoc = await this.extractPdfPage(pdfSrcDoc, i);
-
-                    fetch(process.env.REACT_APP_API_URL + 'submitFile', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*',
-                            'Access-Control-Allow-Methods': 'DELETE, POST, GET, OPTIONS',
-                            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
-                        },
-                        body: JSON.stringify({
-                            file: Array.from(newPdfDoc).map(this.i2hex).join(''),
-                            filename: filename,
-                            page: i + 1,
-                            algorithm: algorithm,
-                            config: config,
-                            path: this.state.path
-                        })
-                    })
-                    .then(response => {return response.json()})
-                    .then(data => {
-                        if (data.success) {
-                            var page = data["page"];
-                            var files = data["files"];
-
-                            this.state.filesystem.updateFiles(files);
-
-                            var currentContents = this.state.pageContents;
-                            currentContents[page - 1] = data["text"]
-                            this.setState({pageContents: currentContents}, this.fileSubmitted);
-                        } else {
-                            this.errorNot.current.setMessage(data.error);
-                            this.errorNot.current.open();
-                            this.loadingWheel.current.hide();
-                            this.setState({ buttonDisabled: false });
-                        }
-                    })
-                }
             }
         })
     }
 
     selectFile() {
+        /**
+         * This is a hack to get around the fact that the input type="file" element
+         * cannot be accessed from the React code. This is because the element is
+         * not rendered by React, but by the browser itself.
+         * 
+         * Function to select the file to be submitted
+         */
+
         var el = window._protected_reference = document.createElement("INPUT");
         el.type = "file";
-        el.accept = ".pdf";
+        el.accept = validExtensions.join(',');
             
         el.addEventListener('change', () => {
             if (el.files.length === 0) return;
@@ -357,8 +421,8 @@ class FileMenu extends React.Component {
             var filename = el.files[0].name;
 
             var extension = filename.split('.').pop();
-            if (extension !== "pdf") {
-                this.errorNot.current.setMessage("Only PDF files are accepted currently! The file submitted is named " + filename);
+            if (!validExtensions.includes("." + extension)) {
+                this.errorNot.current.setMessage("Only PDF, JPG, JPEG and PNG files are accepted currently! The file submitted is named " + filename);
                 this.errorNot.current.open();
                 return;
             }
@@ -383,6 +447,7 @@ class FileMenu extends React.Component {
 
                         <Box sx={{display: 'flex', alignItems: 'center'}}>
                             <Button
+                                disabled={this.state.buttonDisabled}
                                 variant="contained"
                                 size="small"
                                 sx={{

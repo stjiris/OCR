@@ -1,10 +1,12 @@
-import os, json, shutil, re
+import os, json, shutil
+from PIL import Image
 
 from flask import Flask, request, send_file
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
 from src.utils.file import (
     process_file,
+    process_image,
     get_filesystem,
     get_structure,
     get_file_parsed,
@@ -94,24 +96,57 @@ def delete_path():
 #####################################
 # FILES ROUTES
 #####################################
+@app.route("/submitImageFile", methods=['POST'])
+def submit_image_file():
+    file = request.files["file"]
+    path = request.form["path"]
+    algorithm = request.form["algorithm"]
+    config = request.form["config"]
+    filename = request.form["filename"]
+
+    basename = os.path.basename(filename).split(".")[0]
+    extension = os.path.basename(filename).split(".")[1]
+
+    if os.path.exists(f"{path}/{filename}"): return {"success": False, "error": "There is a file with that name already"}
+    os.mkdir(f"{path}/{filename}")
+
+    file.save(f"{path}/{filename}/{filename}")
+    img = Image.open(file)
+    img.save(f"{path}/{filename}/{basename}_1.jpg")
+
+    if algorithm == "Tesseract":
+        text = process_image(img, path, filename, config, tesseract.get_text)
+    elif algorithm == "EasyOCR":
+        text = process_image(img, path, filename, config, easy_ocr.get_text)
+
+    with open(f"{path}/{filename}/_config.json", "w") as f:
+        json.dump({
+            "algorithm": algorithm,
+            "config": config
+        }, f)
+
+    client.add_document(create_document(f"{path}/{filename}/{basename}", extension, text))
+
+    return {"success": True, "file": filename, "text": text, "score": 0, "files": get_filesystem("./files/")}
+
 @app.route("/submitFile", methods=['POST'])
 def submit_file():
-    import os
-
     data = request.json
     fileHex = data["file"]
     file = data["filename"]
-    filename = file.split(".")[0]
     page = data["page"]
     algorithm = data["algorithm"]
     config = data["config"]
     path = data["path"]
 
-    if os.path.exists(f"{path}/{file}/{filename}_{page}.txt"): return {"success": False, "error": "There is a file with that name already"}
+    basename = os.path.basename(file).split(".")[0]
+    extension = os.path.basename(file).split(".")[1]
+
+    if os.path.exists(f"{path}/{file}/{basename}_{page}.txt"): return {"success": False, "error": "There is a file with that name already"}
     if not os.path.exists(f"{path}/{file}"):    
         os.mkdir(f"{path}/{file}")
 
-    with open(f"{path}/{file}/{filename}_{page}.pdf", "wb") as f:
+    with open(f"{path}/{file}/{basename}_{page}.pdf", "wb") as f:
         f.write(bytes.fromhex(fileHex))
 
     if algorithm == "Tesseract":
@@ -125,7 +160,7 @@ def submit_file():
             "config": config
         }, f)
 
-    client.add_document(create_document(f"{path}/{file}/{filename}", page, text))
+    client.add_document(create_document(f"{path}/{file}/{basename}", extension, text, page))
 
     return {"success": True, "file": data["filename"], "page": page, "text": text, "score": 0, "files": get_filesystem("./files/")}
 
@@ -134,16 +169,20 @@ def submitText():
     texts = request.json["text"] # texto corrigido
     filename = request.json['filename'] # nome do pdf original
 
-    basename = os.path.basename(filename)
+    basename = os.path.basename(filename).split(".")[0]
+    extension = os.path.basename(filename).split(".")[1]
 
     for id, t in enumerate(texts):
         print("Saving page:", (id + 1))
-        filename_txt = f"{filename}/{basename.split('.')[0]}_{(id + 1)}.txt"
+        if extension in ["jpg", "jpeg", "png"]:
+            final_filename = f"{filename}/{basename}"
+        else:
+            final_filename = f"{filename}/{basename}_{(id + 1)}"
 
-        with open(filename_txt, "w", encoding="utf-8") as f:
+        with open(final_filename + ".txt", "w", encoding="utf-8") as f:
             f.write(t)
 
-        client.update_document(f"{filename}/{basename.split('.')[0]}_{(id + 1)}", t)
+        client.update_document(f"{final_filename}.{extension}", t)
     
     return {"success": True}
 

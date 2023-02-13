@@ -122,11 +122,19 @@ class ElasticSearchClient():
             }
         })["hits"]["hits"])
 
-def create_document(path, page_number, text):
-    return {
-        "Id": f"{path}_{page_number}",
-        "Jornal": path,
-        "Page": page_number,
-        "Imagem Página": f"./images/{path}_{page_number}.jpg",
-        "Text": text
-    }
+def create_document(path, extension, text, page=None):
+    if extension in ["jpg", "jpeg", "png"]:
+        return {
+            "Id": f"{path}.{extension}",
+            "Jornal": path,
+            "Imagem Página": f"./images/{path}_1.jpg",
+            "Text": text
+        }
+    else:
+        return {
+            "Id": f"{path}_{page}.{extension}",
+            "Jornal": path,
+            "Page": page,
+            "Imagem Página": f"./images/{path}_{page}.jpg",
+            "Text": text
+        }

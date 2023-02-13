@@ -32,7 +32,13 @@ class PageDisplayer extends React.Component {
         var fileWithoutPath = path[path.length - 1];
         var basename = fileWithoutPath.split(".")[0];
 
-        let page_url = pathString + basename + "_" + (1 + this.state.page) + ".jpg";
+        let page_url;
+        if (isNaN(this.state.page)) {
+            page_url = pathString + basename + "_1.jpg";
+        } else {
+            page_url = pathString + basename + "_" + (1 + this.state.page) + ".jpg";
+        }
+
         return (
             <Box>
                 <ImageModal image={page_url} />

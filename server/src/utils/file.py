@@ -60,10 +60,11 @@ def get_txt_file(path):
 def get_file_parsed(path):
     files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
 
-    files = sorted(
-        files,
-        key=lambda x: int(re.findall('\d+', x)[-1])
-    )
+    if len(files) > 1:
+        files = sorted(
+            files,
+            key=lambda x: int(re.findall('\d+', x)[-1])
+        )
 
     contents = []
     for file in files:
@@ -78,12 +79,18 @@ def delete_structure(client, structure, path):
     structure = {"files": [{"folder2": ["file2"]}, "file1"]}
     """
     if type(structure) == str:
+        extension = structure[structure.rfind(".") + 1:]
         path = f"{path}/{structure}"
         basename = get_file_basename(structure)
-        pages = set([re.findall("\d+", f)[-1] for f in os.listdir(path) if ".txt" in f and "Text.txt" not in f])
-        for page in pages:
-            print(f"Deleting {path}/{basename}_{page}...")
-            client.delete_document(f"{path}/{basename}_{page}")
+
+        if extension in ["pdf"]:
+            pages = set([re.findall("\d+", f)[-1] for f in os.listdir(path) if ".txt" in f and "Text.txt" not in f])
+            for page in pages:
+                print(f"Deleting {path}/{basename}_{page}.pdf...")
+                client.delete_document(f"{path}/{basename}_{page}.pdf")
+        else:
+            print(f"Deleting {path}/{structure}...")
+            client.delete_document(f"{path}/{structure}")
         return
 
     for key, value in structure.items():
@@ -290,6 +297,19 @@ def save_text_file(text, basename, path):
     """
     with open(f"{path}/{basename}.txt", "w", encoding="utf-8") as f:
         f.write(text)
+
+def process_image(image, path, filename, config, algorithm):
+    """
+    Process an image, extract the text and save the results
+
+    @param image: image to process
+    @param algorithm: algorithm to use
+    """
+    basename = get_file_basename(filename)
+
+    text = clear_text(algorithm(image, config))
+    save_text_file(text, basename, f"{path}/{filename}")
+    return text
 
 def process_file(file, pageNumber, config, path, algorithm):
     """
