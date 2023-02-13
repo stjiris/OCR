@@ -114,10 +114,12 @@ def submit_image_file():
     img = Image.open(file)
     img.save(f"{path}/{filename}/{basename}_1.jpg")
 
-    if algorithm == "Tesseract":
-        text = process_image(img, path, filename, config, tesseract.get_text)
-    elif algorithm == "EasyOCR":
-        text = process_image(img, path, filename, config, easy_ocr.get_text)
+    # if algorithm == "Tesseract":
+    #     text = process_image(img, path, filename, config, tesseract.get_text)
+    # elif algorithm == "EasyOCR":
+    #     text = process_image(img, path, filename, config, easy_ocr.get_text)
+
+    text = "Ok"
 
     with open(f"{path}/{filename}/_config.json", "w") as f:
         json.dump({
@@ -149,16 +151,18 @@ def submit_file():
     with open(f"{path}/{file}/{basename}_{page}.pdf", "wb") as f:
         f.write(bytes.fromhex(fileHex))
 
-    if algorithm == "Tesseract":
-        text = process_file(file, page, config, path, tesseract.get_text)
-    elif algorithm == "EasyOCR":
-        text = process_file(file, page, config, path, easy_ocr.get_text)
-
     with open(f"{path}/{file}/_config.json", "w") as f:
         json.dump({
             "algorithm": algorithm,
             "config": config
         }, f)
+
+    # if algorithm == "Tesseract":
+    #     text = process_file(file, page, config, path, tesseract.get_text)
+    # elif algorithm == "EasyOCR":
+    #     text = process_file(file, page, config, path, easy_ocr.get_text)
+
+    text = "Ok"
 
     client.add_document(create_document(f"{path}/{file}/{basename}", extension, text, page))
 
