@@ -1,8 +1,9 @@
-import os, re, time
+import os, re, time, json
 from pdf2image import convert_from_path
 from PyPDF2 import PdfMerger
 
 from src.utils.text import clear_text
+from src.elastic_search import create_document
 
 ##################################################
 # FILESYSTEM UTILS
@@ -84,7 +85,7 @@ def delete_structure(client, structure, path):
         basename = get_file_basename(structure)
 
         if extension in ["pdf"]:
-            pages = set([re.findall("\d+", f)[-1] for f in os.listdir(path) if ".txt" in f and "Text.txt" not in f])
+            pages = set([re.findall("\d+", f)[-1] for f in os.listdir(path) if f".{extension}" in f])
             for page in pages:
                 print(f"Deleting {path}/{basename}_{page}.pdf...")
                 client.delete_document(f"{path}/{basename}_{page}.pdf")
@@ -195,10 +196,14 @@ def get_info(files, current_path="", info={}):
         modification_date = get_modification_time(path)
         size = get_size(path)
 
+        with open(path + "/_config.json", encoding="utf-8") as f:
+            data = json.load(f)
+
         data = {
             "creation_date": creation_date,
             "last_modified": modification_date,
-            "size": size
+            "size": size,
+            "complete": data["parsed"]
         }
 
         info[path] = data
@@ -298,7 +303,42 @@ def save_text_file(text, basename, path):
     with open(f"{path}/{basename}.txt", "w", encoding="utf-8") as f:
         f.write(text)
 
-def process_image(image, path, filename, config, algorithm):
+def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_client):
+    """
+    Function that will be used by the threads to process the files
+
+    @param process_function: function to process the files
+    @param filename: name of the file
+    @param arg: argument to pass to the function (PIL image or PDF page number)
+    @param config: config to pass to the function
+    @param path: path to the file
+    """
+
+    basename = os.path.basename(filename).split(".")[0]
+    extension = os.path.basename(filename).split(".")[1]
+
+    text = process_function(filename, arg, config, path, ocr_algorithm)
+    es_client.add_document(create_document(f"{path}/{filename}/{basename}", extension, text, arg if type(arg) == int else None))
+
+    if type(arg) == int:
+        files = os.listdir(f"{path}/{filename}")
+        original_files = [x for x in files if x.endswith(extension)]
+        processed_files = [x for x in files if x.endswith("txt")]
+
+        if len(original_files) == len(processed_files):
+            with open(f"{path}/{filename}/_config.json") as f:
+                data = json.load(f)
+                data["parsed"] = True
+            with open(f"{path}/{filename}/_config.json", "w") as f:
+                json.dump(data, f)
+    else:
+        with open(f"{path}/{filename}/_config.json") as f:
+            data = json.load(f)
+            data["parsed"] = True
+        with open(f"{path}/{filename}/_config.json", "w") as f:
+            json.dump(data, f)
+
+def process_image(filename, image, config, path, algorithm):
     """
     Process an image, extract the text and save the results
 

@@ -3,11 +3,11 @@ import { PDFDocument } from "pdf-lib";
 /***********************************************
     GENERAL Document Preparation
 ***********************************************/
-async function prepareDocument(file) {
+async function prepareDocument(file, page) {
     var extension = file.name.split('.').pop();
     switch (extension) {
         case 'pdf':
-            return await preparePDF(file);
+            return await preparePDF(file, page);
         default:
             return [];
     }
@@ -39,15 +39,17 @@ function i2hex(i) {
     return ('0' + i.toString(16)).slice(-2);
 }
 
-async function preparePDF(file) {
-    var pages = [];
+async function getPageCount(file) {
     const pdfArrayBuffer = await readFile(file);
     const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
-    for (let i = 0; i < pdfSrcDoc.getPageCount(); i++) {
-        const newPdfDoc = await extractPdfPage(pdfSrcDoc, i);
-        pages.push(Array.from(newPdfDoc).map(i2hex).join(''));
-    }
-    return pages;
+    return pdfSrcDoc.getPageCount();
 }
 
-export default prepareDocument;
+async function preparePDF(file, page) {
+    const pdfArrayBuffer = await readFile(file);
+    const pdfSrcDoc = await PDFDocument.load(pdfArrayBuffer);
+    const newPdfDoc = await extractPdfPage(pdfSrcDoc, page);
+    return Array.from(newPdfDoc).map(i2hex).join('');
+}
+
+export { getPageCount, prepareDocument };

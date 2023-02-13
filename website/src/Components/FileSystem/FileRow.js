@@ -75,6 +75,7 @@ export default class FileRow extends React.Component {
                 <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
                     <Box>
                         <IconButton
+                            disabled={!this.state.info["complete"]}
                             sx={{mr: '0.1rem'}}
                             color="primary"
                             aria-label="delete"
@@ -84,6 +85,7 @@ export default class FileRow extends React.Component {
                         </IconButton>
 
                         <IconButton
+                            disabled={!this.state.info["complete"]}
                             sx={{mr: '0.1rem'}}
                             color="primary"
                             aria-label="delete"
@@ -93,6 +95,7 @@ export default class FileRow extends React.Component {
                         </IconButton>
 
                         <IconButton
+                            disabled={!this.state.info["complete"]}
                             color="error"
                             aria-label="delete"
                             onClick={(e) => this.delete(e)}

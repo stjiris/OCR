@@ -4,7 +4,10 @@ from PIL import Image
 from flask import Flask, request, send_file
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 
+from concurrent.futures import ThreadPoolExecutor
+
 from src.utils.file import (
+    parse_file,
     process_file,
     process_image,
     get_filesystem,
@@ -21,6 +24,7 @@ from src.algorithms import tesseract, easy_ocr
 from src.elastic_search import *
 
 client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+pool = ThreadPoolExecutor(1)
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
@@ -82,8 +86,6 @@ def delete_path():
     data = data = request.json
     path = data["path"]
 
-    print(path)
-
     structure = get_structure(path + "/")
 
     main_path = path[:path.rfind("/")]
@@ -105,7 +107,6 @@ def submit_image_file():
     filename = request.form["filename"]
 
     basename = os.path.basename(filename).split(".")[0]
-    extension = os.path.basename(filename).split(".")[1]
 
     if os.path.exists(f"{path}/{filename}"): return {"success": False, "error": "There is a file with that name already"}
     os.mkdir(f"{path}/{filename}")
@@ -114,22 +115,17 @@ def submit_image_file():
     img = Image.open(file)
     img.save(f"{path}/{filename}/{basename}_1.jpg")
 
-    # if algorithm == "Tesseract":
-    #     text = process_image(img, path, filename, config, tesseract.get_text)
-    # elif algorithm == "EasyOCR":
-    #     text = process_image(img, path, filename, config, easy_ocr.get_text)
-
-    text = "Ok"
-
     with open(f"{path}/{filename}/_config.json", "w") as f:
         json.dump({
             "algorithm": algorithm,
-            "config": config
+            "config": config,
+            "parsed": False
         }, f)
 
-    client.add_document(create_document(f"{path}/{filename}/{basename}", extension, text))
+    algo = tesseract.get_text if algorithm == "tesseract" else easy_ocr.get_text
+    pool.submit(parse_file, process_image, filename, img, config, path, algo, client)
 
-    return {"success": True, "file": filename, "text": text, "score": 0, "files": get_filesystem("./files/")}
+    return {"success": True, "file": filename, "score": 0, "files": get_filesystem("./files/")}
 
 @app.route("/submitFile", methods=['POST'])
 def submit_file():
@@ -142,7 +138,6 @@ def submit_file():
     path = data["path"]
 
     basename = os.path.basename(file).split(".")[0]
-    extension = os.path.basename(file).split(".")[1]
 
     if os.path.exists(f"{path}/{file}/{basename}_{page}.txt"): return {"success": False, "error": "There is a file with that name already"}
     if not os.path.exists(f"{path}/{file}"):    
@@ -154,19 +149,14 @@ def submit_file():
     with open(f"{path}/{file}/_config.json", "w") as f:
         json.dump({
             "algorithm": algorithm,
-            "config": config
+            "config": config,
+            "parsed": False
         }, f)
 
-    # if algorithm == "Tesseract":
-    #     text = process_file(file, page, config, path, tesseract.get_text)
-    # elif algorithm == "EasyOCR":
-    #     text = process_file(file, page, config, path, easy_ocr.get_text)
+    algo = tesseract.get_text if algorithm == "tesseract" else easy_ocr.get_text
+    pool.submit(parse_file, process_file, file, page, config, path, algo, client)
 
-    text = "Ok"
-
-    client.add_document(create_document(f"{path}/{file}/{basename}", extension, text, page))
-
-    return {"success": True, "file": data["filename"], "page": page, "text": text, "score": 0, "files": get_filesystem("./files/")}
+    return {"success": True, "file": data["filename"], "page": page, "score": 0, "files": get_filesystem("./files/")}
 
 @app.route("/submitText", methods=["POST"])
 def submitText():
