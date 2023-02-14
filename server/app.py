@@ -3,8 +3,7 @@ from PIL import Image
 
 from flask import Flask, request, send_file
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
-
-from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
 
 from src.utils.file import (
     parse_file,
@@ -24,10 +23,27 @@ from src.algorithms import tesseract, easy_ocr
 from src.elastic_search import *
 
 client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
-pool = ThreadPoolExecutor(1)
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
+
+MAX_THREADS = 4
+WAITING_PAGES = []
+
+def manage_threads(pages):
+    import time
+    active_threads = []
+    print("Parser started!")
+    while True:
+        time.sleep(5)
+        for t in active_threads:
+            if not t.is_alive():
+                active_threads.remove(t)
+        if len(active_threads) < MAX_THREADS and len(pages) > 0:
+            page = pages.pop()
+            t = Thread(target=parse_file, args=(*page, ))
+            t.start()
+            active_threads.append(t)
 
 #####################################
 # FILE SYSTEM ROUTES
@@ -122,9 +138,9 @@ def submit_image_file():
             "parsed": False
         }, f)
 
-    algo = tesseract.get_text if algorithm == "tesseract" else easy_ocr.get_text
-    pool.submit(parse_file, process_image, filename, img, config, path, algo, client)
-
+    algo = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text
+    parse_file(process_image, filename, img, config, path, algo, client)
+    
     return {"success": True, "file": filename, "score": 0, "files": get_filesystem("./files/")}
 
 @app.route("/submitFile", methods=['POST'])
@@ -136,6 +152,8 @@ def submit_file():
     algorithm = data["algorithm"]
     config = data["config"]
     path = data["path"]
+
+    print("Received page:", page)
 
     basename = os.path.basename(file).split(".")[0]
 
@@ -153,8 +171,9 @@ def submit_file():
             "parsed": False
         }, f)
 
-    algo = tesseract.get_text if algorithm == "tesseract" else easy_ocr.get_text
-    pool.submit(parse_file, process_file, file, page, config, path, algo, client)
+    algo = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text
+    WAITING_PAGES.append((process_file, file, page, config, path, algo, client))
+    # pool.submit(parse_file, process_file, file, page, config, path, algo, client)
 
     return {"success": True, "file": data["filename"], "page": page, "score": 0, "files": get_filesystem("./files/")}
 
@@ -190,5 +209,8 @@ def get_elasticsearch():
 if __name__ == "__main__":
     if not os.path.exists("./files/"):
         os.mkdir("./files/")
+
+    page_parser = Thread(target=manage_threads, args=(WAITING_PAGES, ), daemon=True)
+    page_parser.start()
                 
     app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)

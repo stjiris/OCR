@@ -321,6 +321,7 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
     es_client.add_document(create_document(f"{path}/{filename}/{basename}", extension, text, arg if type(arg) == int else None))
 
     if type(arg) == int:
+        print("----- Processing page", arg, "of", filename)
         files = os.listdir(f"{path}/{filename}")
         original_files = [x for x in files if x.endswith(extension)]
         processed_files = [x for x in files if x.endswith("txt")]
