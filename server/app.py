@@ -39,7 +39,7 @@ def manage_threads(pages):
         for t in active_threads:
             if not t.is_alive():
                 active_threads.remove(t)
-        if len(active_threads) < MAX_THREADS and len(pages) > 0:
+        while len(pages) > 0 and len(active_threads) <= MAX_THREADS:
             page = pages.pop()
             t = Thread(target=parse_file, args=(*page, ))
             t.start()
