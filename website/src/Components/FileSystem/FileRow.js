@@ -101,12 +101,17 @@ export default class FileRow extends React.Component {
                     <Box>
                         <IconButton
                             disabled={!(this.state.info["progress"] === 100)}
+                            color="primary"
                             sx={{mr: '0.1rem'}}
                             aria-label="delete"
                             onClick={(e) => this.getTxt(e)}
                         >
-                            <DownloadRoundedIcon color="primary"/>
-                            <p style={{fontSize: '13px', color: 'black'}}>TXT</p>
+                            <DownloadRoundedIcon/>
+                            {
+                                this.state.info["progress"] === 100
+                                ? <p style={{fontSize: '13px', color: 'black'}}>TXT</p>
+                                : <p style={{fontSize: '13px', color: 'grey'}}>TXT</p>
+                            }
                         </IconButton>
                         <IconButton
                             disabled={!(this.state.info["progress"] === 100)}
