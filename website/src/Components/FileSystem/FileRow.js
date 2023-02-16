@@ -9,6 +9,7 @@ import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutl
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import ModeRoundedIcon from '@mui/icons-material/ModeRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
+import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -31,6 +32,11 @@ export default class FileRow extends React.Component {
 
     fileClicked() {
         this.state.filesystem.editFile(this.state.name);
+    }
+
+    getTxt(e) {
+        e.stopPropagation();
+        this.state.filesystem.getTxt(this.state.name);
     }
 
     edit(e) {
@@ -93,6 +99,15 @@ export default class FileRow extends React.Component {
                 </TableCell>
                 <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
                     <Box>
+                        <IconButton
+                            disabled={!(this.state.info["progress"] === 100)}
+                            sx={{mr: '0.1rem'}}
+                            aria-label="delete"
+                            onClick={(e) => this.getTxt(e)}
+                        >
+                            <DownloadRoundedIcon color="primary"/>
+                            <p style={{fontSize: '13px', color: 'black'}}>TXT</p>
+                        </IconButton>
                         <IconButton
                             disabled={!(this.state.info["progress"] === 100)}
                             sx={{mr: '0.1rem'}}

@@ -43,17 +43,18 @@ def get_txt_file(path):
     filename = f"{path}/{basename}-Text.txt"
 
     files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
-    files = sorted(
-        files,
-        key=lambda x: int(re.findall('\d+', x)[-1])
-    )
+
+    if len(files) > 1:
+        files = sorted(
+            files,
+            key=lambda x: int(re.findall('\d+', x)[-1])
+        )
 
     with open(filename, "w", encoding="utf-8") as f:
-        for file in files:
-            page = int(re.findall('\d+', file)[-1])
+        for id, file in enumerate(files):
 
             with open(file, encoding="utf-8") as _f:
-                f.write(f"----- PAGE {page:04d} -----\n\n")
+                f.write(f"----- PAGE {(id+1):04d} -----\n\n")
                 f.write(_f.read().strip() + "\n\n")
 
     return filename
@@ -333,12 +334,6 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
         with open(f"{path}/{filename}/_config.json") as f:
             data = json.load(f)
             data["progress"] = int(progress)
-        with open(f"{path}/{filename}/_config.json", "w") as f:
-            json.dump(data, f)
-    else:
-        with open(f"{path}/{filename}/_config.json") as f:
-            data = json.load(f)
-            data["progress"] = True
         with open(f"{path}/{filename}/_config.json", "w") as f:
             json.dump(data, f)
 

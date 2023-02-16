@@ -139,7 +139,7 @@ def submit_image_file():
         json.dump({
             "algorithm": algorithm,
             "config": config,
-            "progress": 0
+            "progress": 100
         }, f)
 
     algo = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text

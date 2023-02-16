@@ -141,6 +141,10 @@ class FileExplorer extends React.Component {
         this.displayFileSystem);
     }
 
+    getTxt(file) {
+        this.getDocument("get_txt", file);
+    }
+
     editFile(file) {
         var path = this.state.current_folder.join('/');
         var filename = path + '/' + file;
