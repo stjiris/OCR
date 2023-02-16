@@ -127,7 +127,7 @@ def submit_image_file():
     config = request.form["config"]
     filename = request.form["filename"]
 
-    basename = os.path.basename(filename).split(".")[0]
+    basename = get_file_basename(filename)
 
     if os.path.exists(f"{path}/{filename}"): return {"success": False, "error": "There is a file with that name already"}
     os.mkdir(f"{path}/{filename}")
