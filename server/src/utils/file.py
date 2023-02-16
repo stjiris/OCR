@@ -329,7 +329,7 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
         original_files = [x for x in files if x.endswith(extension)]
         processed_files = [x for x in files if x.endswith("txt")]
 
-        progress = 100 * len(processed_files) / len(original_files)
+        progress = 100 * len(processed_files) / len(original_files) if len(original_files) > 0 else 0
         print("-----", len(processed_files), "of", len(original_files), "processed", progress)
         with open(f"{path}/{filename}/_config.json") as f:
             data = json.load(f)
