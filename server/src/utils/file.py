@@ -318,7 +318,7 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
     """
 
     basename = os.path.basename(filename).split(".")[0]
-    extension = os.path.basename(filename).split(".")[1]
+    extension = os.path.basename(filename).split(".")[-1]
 
     text = process_function(filename, arg, config, path, ocr_algorithm)
     es_client.add_document(create_document(f"{path}/{filename}/{basename}", extension, text, arg if type(arg) == int else None))
