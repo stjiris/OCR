@@ -68,7 +68,9 @@ class ESPage extends React.Component {
     }
 
     get_fileType(data) {
-        var fileType = data['_id'].split('/').slice(-2)[0].split('.')[1].toUpperCase();
+        console.log(data['_id'], data['_id'].split('/'), data['_id'].split('/').slice(-2)[0].split('.'))
+        var splitted = data['_id'].split('/').slice(-2)[0].split('.')
+        var fileType = splitted[splitted.length-1].toUpperCase();
         return fileType;
     }
 
