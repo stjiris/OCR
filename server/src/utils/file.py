@@ -197,16 +197,17 @@ def get_info(files, current_path="", info={}):
         modification_date = get_modification_time(path)
         size = get_size(path)
 
-        with open(path + "/_config.json", encoding="utf-8") as f:
+        with open(path + "/_config.json") as f:
             data = json.load(f)
+            progress = data["progress"]
 
-        print(f"Getting info of {path}...", data["progress"])
+        print(f"Getting info of {path}...", progress)
 
         data = {
             "creation_date": creation_date,
             "last_modified": modification_date,
             "size": size,
-            "progress": data["progress"]
+            "progress": progress
         }
 
         info[path] = data
@@ -329,11 +330,15 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
         original_files = [x for x in files if x.endswith(extension)]
         processed_files = [x for x in files if x.endswith("txt")]
 
+        #? Still needs this if? Probably fixed with the path fixes
         progress = 100 * len(processed_files) / len(original_files) if len(original_files) > 0 else 0
+
         print("-----", len(processed_files), "of", len(original_files), "processed", progress)
+
         with open(f"{path}/{filename}/_config.json") as f:
             data = json.load(f)
             data["progress"] = int(progress)
+
         with open(f"{path}/{filename}/_config.json", "w") as f:
             json.dump(data, f)
 

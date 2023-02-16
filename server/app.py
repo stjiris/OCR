@@ -177,7 +177,6 @@ def submit_file():
 
     algo = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text
     WAITING_PAGES.append((process_file, file, page, config, path, algo, client))
-    # pool.submit(parse_file, process_file, file, page, config, path, algo, client)
 
     return {"success": True, "file": data["filename"], "page": page, "score": 0, "files": get_filesystem("./files/")}
 
