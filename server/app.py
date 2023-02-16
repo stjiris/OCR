@@ -52,6 +52,10 @@ def manage_threads(pages):
 def get_file_system():
     return get_filesystem("./files/")
 
+@app.route("/info", methods=["GET"])
+def get_info():
+    return {'info': get_filesystem("./files/")["info"]}
+
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
@@ -135,7 +139,7 @@ def submit_image_file():
         json.dump({
             "algorithm": algorithm,
             "config": config,
-            "parsed": False
+            "progress": 0
         }, f)
 
     algo = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text
@@ -168,7 +172,7 @@ def submit_file():
         json.dump({
             "algorithm": algorithm,
             "config": config,
-            "parsed": False
+            "progress": 0
         }, f)
 
     algo = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text

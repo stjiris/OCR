@@ -99,7 +99,7 @@ function App() {
                             onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: []})}
                             underline="hover"
                         >
-                            <h1>Documents</h1>
+                            <h1>Home</h1>
                         </Link>
                         <Link
                             className="link"

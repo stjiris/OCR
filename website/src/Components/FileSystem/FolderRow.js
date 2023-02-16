@@ -18,6 +18,10 @@ export default class FolderRow extends React.Component {
         }
     }
 
+    updateInfo(info) {
+        this.setState({info: info});
+    }
+
     folderClicked() {
         this.state.filesystem.enterFolder(this.state.name);
     }
@@ -57,6 +61,9 @@ export default class FolderRow extends React.Component {
                     {
                         this.state.info["number_of_files"]
                     }
+                </TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                    -
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
                     -

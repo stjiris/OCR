@@ -21,6 +21,7 @@ import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import UndoIcon from '@mui/icons-material/Undo';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 
+const UPDATE_TIME = 15;
 
 class FileExplorer extends React.Component {
     constructor(props) {
@@ -32,11 +33,15 @@ class FileExplorer extends React.Component {
             current_folder: props.current_folder.split('/'),
             contents: [],
             buttonsDisabled: props.current_folder.split('/').length === 1,
+            components: []
         }
 
         this.folderMenu = React.createRef();
         this.fileMenu = React.createRef();
         this.deleteMenu = React.createRef();
+
+        this.interval = null;
+        this.rowRefs = [];
     }
 
     componentDidMount() {
@@ -47,15 +52,37 @@ class FileExplorer extends React.Component {
         .then(data => {
             var info = data["info"];
             var files = {'files': data["files"]};
-            this.setState({files: files, info: info}, this.contentsOfFolder);
+            this.setState({files: files, info: info}, this.displayFileSystem);
         });
+
+        this.interval = setInterval(() => {
+            fetch(process.env.REACT_APP_API_URL + 'info', {
+                method: 'GET'
+            })
+            .then(response => {return response.json()})
+            .then(data => {
+                var info = data["info"];
+                    
+                this.rowRefs.forEach(ref => {
+                    var rowInfo = info[this.state.current_folder.join("/") + "/" + ref.current.state.name];
+                    ref.current.updateInfo(rowInfo);
+                });
+
+                this.setState({info: info});
+            });
+        }, 1000 * UPDATE_TIME);
+    }
+
+    componentWillUnmount() {
+        if (this.interval)
+            clearInterval(this.interval);
     }
 
     updateFiles(data) {
         var files = {'files': data['files']}
         var info = data['info'];
 
-        this.setState({ files: files, info: info }, this.contentsOfFolder);
+        this.setState({ files: files, info: info }, this.displayFileSystem);
     }
 
     contentsOfFolder() {
@@ -72,7 +99,7 @@ class FileExplorer extends React.Component {
 
         var fileCopy = [...files];
 
-        this.setState({ contents: fileCopy })
+        this.setState({ components: fileCopy })
     }
 
     createFolder() {
@@ -110,7 +137,7 @@ class FileExplorer extends React.Component {
             current_folder: current_folder,
             buttonsDisabled: buttonsDisabled,
             createFileButtonDisabled: createFileButtonDisabled},
-        this.contentsOfFolder);
+        this.displayFileSystem);
     }
 
     editFile(file) {
@@ -138,7 +165,7 @@ class FileExplorer extends React.Component {
             current_folder: current_folder,
             buttonsDisabled: false,
             createFileButtonDisabled: false},
-        this.contentsOfFolder);
+        this.displayFileSystem);
     }
 
     findFolder(files, folder) {
@@ -201,14 +228,18 @@ class FileExplorer extends React.Component {
 
     displayFileSystem() {
         var contents = this.sortContents(this.getPathContents());
+        this.rowRefs = [];
 
         var items = [];
 
         for (let f in contents) {
+            var ref = React.createRef();
+            this.rowRefs.push(ref);
             var item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
                 items.push(
                     <FileRow
+                        ref={ref}
                         key={item}
                         name={item}
                         info={this.getInfo(this.state.current_folder.join("/") + "/" + item)}
@@ -219,6 +250,7 @@ class FileExplorer extends React.Component {
                 var key = Object.keys(item)[0];
                 items.push(
                     <FolderRow
+                        ref={ref}
                         key={key}
                         name={key}
                         info={this.getInfo(this.state.current_folder.join("/") + "/" + key)}
@@ -227,7 +259,7 @@ class FileExplorer extends React.Component {
                 )
             }
         }
-        return items;
+        this.setState({components: items});
     }
 
     generateTable() {
@@ -241,11 +273,12 @@ class FileExplorer extends React.Component {
                             <TableCell align='center'><b>Date Modified</b></TableCell>
                             <TableCell align='center'><b>Number of Files</b></TableCell>
                             <TableCell align='center'><b>Size</b></TableCell>
+                            <TableCell align='center'><b>Progress</b></TableCell>
                             <TableCell align='center'></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {this.displayFileSystem()}
+                        {this.state.components}
                     </TableBody>
                 </Table>
             </TableContainer>

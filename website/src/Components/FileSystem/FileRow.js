@@ -10,6 +10,9 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import ModeRoundedIcon from '@mui/icons-material/ModeRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+
 export default class FileRow extends React.Component {
     constructor(props) {
         super(props);
@@ -18,6 +21,12 @@ export default class FileRow extends React.Component {
             info: props.info,
             filesystem: props.filesystem
         }
+    }
+
+    updateInfo(info) {
+        if (this.state.name.includes("J4"))
+            console.log(info)
+        this.setState({info: info});
     }
 
     fileClicked() {
@@ -72,10 +81,20 @@ export default class FileRow extends React.Component {
                         this.state.info["size"]
                     }
                 </TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                    {
+                        this.state.info["progress"] === 100
+                        ? <CheckRoundedIcon color="success" sx={{fontSize: 30}}/>
+                        : <IconButton sx={{fontSize: 30}}>
+                            <AccessTimeIcon sx={{mr: '0.3rem'}} style={{color: "orange"}}/>
+                            <p style={{fontSize: '13px'}}><b>{this.state.info["progress"]}%</b></p>
+                        </IconButton>
+                    }
+                </TableCell>
                 <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
                     <Box>
                         <IconButton
-                            disabled={!this.state.info["complete"]}
+                            disabled={!(this.state.info["progress"] === 100)}
                             sx={{mr: '0.1rem'}}
                             color="primary"
                             aria-label="delete"
@@ -85,7 +104,7 @@ export default class FileRow extends React.Component {
                         </IconButton>
 
                         <IconButton
-                            disabled={!this.state.info["complete"]}
+                            disabled={!(this.state.info["progress"] === 100)}
                             sx={{mr: '0.1rem'}}
                             color="primary"
                             aria-label="delete"
@@ -95,7 +114,7 @@ export default class FileRow extends React.Component {
                         </IconButton>
 
                         <IconButton
-                            disabled={!this.state.info["complete"]}
+                            disabled={!(this.state.info["progress"] === 100)}
                             color="error"
                             aria-label="delete"
                             onClick={(e) => this.delete(e)}

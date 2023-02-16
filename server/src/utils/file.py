@@ -199,11 +199,13 @@ def get_info(files, current_path="", info={}):
         with open(path + "/_config.json", encoding="utf-8") as f:
             data = json.load(f)
 
+        print(f"Getting info of {path}...", data["progress"])
+
         data = {
             "creation_date": creation_date,
             "last_modified": modification_date,
             "size": size,
-            "complete": data["parsed"]
+            "progress": data["progress"]
         }
 
         info[path] = data
@@ -326,16 +328,17 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
         original_files = [x for x in files if x.endswith(extension)]
         processed_files = [x for x in files if x.endswith("txt")]
 
-        if len(original_files) == len(processed_files):
-            with open(f"{path}/{filename}/_config.json") as f:
-                data = json.load(f)
-                data["parsed"] = True
-            with open(f"{path}/{filename}/_config.json", "w") as f:
-                json.dump(data, f)
+        progress = 100 * len(processed_files) / len(original_files)
+        print("-----", len(processed_files), "of", len(original_files), "processed", progress)
+        with open(f"{path}/{filename}/_config.json") as f:
+            data = json.load(f)
+            data["progress"] = int(progress)
+        with open(f"{path}/{filename}/_config.json", "w") as f:
+            json.dump(data, f)
     else:
         with open(f"{path}/{filename}/_config.json") as f:
             data = json.load(f)
-            data["parsed"] = True
+            data["progress"] = True
         with open(f"{path}/{filename}/_config.json", "w") as f:
             json.dump(data, f)
 

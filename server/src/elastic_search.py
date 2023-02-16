@@ -74,6 +74,7 @@ class ElasticSearchClient():
         self.settings = settings
 
         self.client = Elasticsearch(ES_URL)
+        # self.delete_index()
         if not self.client.indices.exists(index=self.ES_INDEX):
             self.create_index()
 
