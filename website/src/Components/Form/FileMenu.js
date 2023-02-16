@@ -236,7 +236,7 @@ class FileMenu extends React.Component {
 
             this.successNot.current.setMessage("File submitted with success");
             this.successNot.current.open();
-            this.setState({open: false, buttonDisabled: false, pages: []});
+            this.setState({open: false, buttonDisabled: false, pages: [], totalPages: 0});
         }
     }
 
@@ -296,7 +296,7 @@ class FileMenu extends React.Component {
         // Check if the file is a PDF / multi-page document
         } else {
             var pageCount = await getPageCount(this.state.file);
-            this.setState({totalPages: pageCount});
+            this.setState({totalPages: pageCount, pages: []});
     
             for (let i = 0; i < pageCount; i++) {
                 var page = await prepareDocument(this.state.file, i);

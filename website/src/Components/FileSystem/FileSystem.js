@@ -171,8 +171,36 @@ class FileExplorer extends React.Component {
         return this.state.info[path];
     }
 
+    sortContents(contents) {
+        /**
+         * Sorts the contents of the current folder
+         * First order by type (folder, file)
+         * Then order by name
+         */
+        var folders = [];
+        var files = [];
+
+        for (let f in contents) {
+            var item = contents[f];
+            if (typeof item === 'string' || item instanceof String) {
+                files.push(item);
+            } else {
+                folders.push(item);
+            }
+        }
+
+        folders.sort(function(d1, d2) {
+            var key1 = Object.keys(d1)[0];
+            var key2 = Object.keys(d2)[0];
+            return key1.localeCompare(key2);
+        });
+        files.sort();
+
+        return folders.concat(files);
+    }
+
     displayFileSystem() {
-        var contents = this.getPathContents();
+        var contents = this.sortContents(this.getPathContents());
 
         var items = [];
 
