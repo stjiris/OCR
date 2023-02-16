@@ -31,9 +31,10 @@ class FileExplorer extends React.Component {
             files: props.files,
             info: {},
             current_folder: props.current_folder.split('/'),
-            contents: [],
             buttonsDisabled: props.current_folder.split('/').length === 1,
-            components: []
+            components: [],
+
+            loading: false,
         }
 
         this.folderMenu = React.createRef();
@@ -52,7 +53,7 @@ class FileExplorer extends React.Component {
         .then(data => {
             var info = data["info"];
             var files = {'files': data["files"]};
-            this.setState({files: files, info: info}, this.displayFileSystem);
+            this.setState({files: files, info: info, loading: false}, this.displayFileSystem);
         });
 
         this.interval = setInterval(() => {

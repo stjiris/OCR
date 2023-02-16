@@ -13,7 +13,7 @@ class ESItem extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            page: props.page
+            page: props.page,
         }
     }
 
@@ -53,7 +53,8 @@ class ESPage extends React.Component {
             showing: [],
             freeText: "",
 
-            app: props.app
+            app: props.app,
+            loading: true
         }
 
         this.freeText = React.createRef();
@@ -100,9 +101,11 @@ class ESPage extends React.Component {
                 }
             }
 
-            this.journal.current.setState({options: journals, choice: this.state.app.state.filesChoice});
-            this.fileType.current.setState({options: fileTypes});
-            this.setState({pages: data, showing: data}, this.filterPages);
+            if (this.journal.current !== null)
+                this.journal.current.setState({options: journals, choice: this.state.app.state.filesChoice});
+            if (this.fileType.current !== null)
+                this.fileType.current.setState({options: fileTypes});
+            this.setState({pages: data, showing: data, loading: false}, this.filterPages);
         });
     }
 
@@ -172,22 +175,25 @@ class ESPage extends React.Component {
                     mr: '1.5rem',
                     ml: '1rem',
                 }}>
-                    {
-                        this.state.showing.length === 0
-                        ? <p style={{fontSize: '20px'}}><b>No pages found</b></p>
-                        : this.state.showing.map((page, index) => {
-                            return(
-                                <Box key={page['_id']} sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                }}>
-                                    {
-                                        index > 0 ? <Divider sx={{mb: '10px'}}/> : null
-                                    }
-                                    <ESItem page={page} />
-                                </Box>
-                            )
-                        })
+                    {   
+                        this.state.loading
+                        ? <p style={{fontSize: '20px'}}><b>Loading...</b></p>
+
+                        :   this.state.showing.length === 0
+                            ? <p style={{fontSize: '20px'}}><b>No pages found</b></p>
+                            : this.state.showing.map((page, index) => {
+                                return(
+                                    <Box key={page['_id']} sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                    }}>
+                                        {
+                                            index > 0 ? <Divider sx={{mb: '10px'}}/> : null
+                                        }
+                                        <ESItem page={page} />
+                                    </Box>
+                                )
+                            })
                     }
                 </Box>
             </Box>
