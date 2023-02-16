@@ -317,7 +317,7 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
     @param path: path to the file
     """
 
-    basename = os.path.basename(filename).split(".")[0]
+    basename = '.'.join(os.path.basename(filename).split(".")[:-1])
     extension = os.path.basename(filename).split(".")[-1]
 
     text = process_function(filename, arg, config, path, ocr_algorithm)
