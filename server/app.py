@@ -14,7 +14,8 @@ from src.utils.file import (
     get_file_parsed,
     get_txt_file,
     get_original_file,
-    delete_structure
+    delete_structure,
+    get_file_basename
 )
 
 from src.evaluate import evaluate
@@ -159,7 +160,7 @@ def submit_file():
 
     print("Received page:", page)
 
-    basename = os.path.basename(file).split(".")[0]
+    basename = get_file_basename(file)
 
     if os.path.exists(f"{path}/{file}/{basename}_{page}.txt"): return {"success": False, "error": "There is a file with that name already"}
     if not os.path.exists(f"{path}/{file}"):    

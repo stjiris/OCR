@@ -30,7 +30,7 @@ class PageDisplayer extends React.Component {
         )
         
         var fileWithoutPath = path[path.length - 1];
-        var basename = fileWithoutPath.split(".")[0];
+        var basename = fileWithoutPath.split(".").slice(0, -1).join(".");
 
         let page_url;
         if (isNaN(this.state.page)) {

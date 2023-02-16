@@ -81,7 +81,7 @@ def delete_structure(client, structure, path):
     structure = {"files": [{"folder2": ["file2"]}, "file1"]}
     """
     if type(structure) == str:
-        extension = structure.pop(".")[-1]
+        extension = structure.split(".")[-1]
         path = f"{path}/{structure}"
         basename = get_file_basename(structure)
 
@@ -318,7 +318,7 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
     @param path: path to the file
     """
 
-    basename = '.'.join(os.path.basename(filename).split(".")[:-1])
+    basename = '.'.join(filename.split(".")[:-1])
     extension = os.path.basename(filename).split(".")[-1]
 
     text = process_function(filename, arg, config, path, ocr_algorithm)
@@ -362,8 +362,8 @@ def process_file(file, pageNumber, config, path, algorithm):
     @param file: file to process
     @param algorithm: algorithm to use
     """
-    filename = file.split(".")[0]
-    basename = get_file_basename(filename)
+    basename = get_file_basename(file)
+
     pages = get_pdf_pages(f"{path}/{file}/{basename}_{pageNumber}.pdf")
 
     for page in pages:
