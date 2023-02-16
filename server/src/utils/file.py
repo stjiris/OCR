@@ -81,7 +81,7 @@ def delete_structure(client, structure, path):
     structure = {"files": [{"folder2": ["file2"]}, "file1"]}
     """
     if type(structure) == str:
-        extension = structure[structure.rfind(".") + 1:]
+        extension = structure.pop(".")[-1]
         path = f"{path}/{structure}"
         basename = get_file_basename(structure)
 
@@ -287,7 +287,7 @@ def get_file_basename(filename):
 
     @param file: file name
     """
-    return filename.split("/")[-1].split(".")[0]
+    return '.'.join(filename.split("/")[-1].split(".")[:-1])
 
 def get_pdf_pages(file):
     """
