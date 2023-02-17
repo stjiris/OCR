@@ -80,7 +80,9 @@ export default class FileRow extends React.Component {
                     }
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    -
+                    {
+                        this.state.info["number_of_files"]
+                    }
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
                     {

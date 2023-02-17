@@ -180,7 +180,7 @@ def get_info(files, current_path="", info={}):
         for item in files[key]:
             item_data = get_info(item, path)
 
-            if "number_of_files" in item_data:
+            if "size" not in item_data:
                 data["number_of_files"] += item_data["number_of_files"]
             else:
                 data["number_of_files"] += 1
@@ -201,13 +201,21 @@ def get_info(files, current_path="", info={}):
             data = json.load(f)
             progress = data["progress"]
 
+        extension = files.split(".")[-1]
+        if extension == "jpg": files_in_folder = 1
+        else: files_in_folder = len([
+            f for f in os.listdir(path)
+            if os.path.isfile(os.path.join(path, f)) and extension in f[-len(extension):]
+        ])
+
         print(f"Getting info of {path}...", progress)
 
         data = {
             "creation_date": creation_date,
             "last_modified": modification_date,
             "size": size,
-            "progress": progress
+            "progress": progress,
+            "number_of_files": files_in_folder
         }
 
         info[path] = data

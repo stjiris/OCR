@@ -276,7 +276,7 @@ class FileExplorer extends React.Component {
                             <TableCell><b>Name</b></TableCell>
                             <TableCell align='center'><b>Date Created</b></TableCell>
                             <TableCell align='center'><b>Date Modified</b></TableCell>
-                            <TableCell align='center'><b>Number of Files</b></TableCell>
+                            <TableCell align='center'><b>Number of Files/Pages</b></TableCell>
                             <TableCell align='center'><b>Size</b></TableCell>
                             <TableCell align='center'><b>Progress</b></TableCell>
                             <TableCell align='center'></TableCell>
