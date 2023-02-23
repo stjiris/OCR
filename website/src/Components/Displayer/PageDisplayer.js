@@ -3,21 +3,14 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 
-import {ZoomImage, ImageModal} from './ImageModal';
-
 class PageDisplayer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             filename: props.filename,
-            page: props.page
+            page: props.page,
+            maxWidth: '150px'
         }
-
-        this.modal = React.createRef();
-    }
-
-    expandImage() {
-        this.modal.current.handleOpen();
     }
     
     render() {
@@ -40,26 +33,20 @@ class PageDisplayer extends React.Component {
         }
 
         return (
-            <Box>
-                <ImageModal image={page_url} />
-                <ZoomImage image={page_url} ref={this.modal}/>
-                <Card
-                    sx={{
-                        mr: '0.5rem',
-                        ":hover": {
-                            cursor: 'pointer',
-                            boxShadow: 3,
-                        },
-                    }}
-                    onClick={() => this.expandImage()}
+            <Box
+                sx={{maxWidth: `${this.state.maxWidth}`, border: '1px solid #d9d9d9', boxShadow: 1, mr: '0.5rem'}}
+            >
+                <a
+                    href={page_url}
+                    target="_blank"
+                    rel="noreferrer"
                 >
-                    <CardMedia
-                        component="img"
-                        height="120"
-                        sx={{objectFit: 'contain', padding: 0}}
-                        image={page_url}
+                    <img 
+                        src={page_url}
+                        alt={page_url}
+                        style={{maxWidth: `${this.state.maxWidth}`}}
                     />
-                </Card>
+                </a>
             </Box>
         );
     }
