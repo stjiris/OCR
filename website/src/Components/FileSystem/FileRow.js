@@ -24,11 +24,7 @@ export default class FileRow extends React.Component {
         }
     }
 
-    updateInfo(info) {
-        if (this.state.name.includes("J4"))
-            console.log(info)
-        this.setState({info: info});
-    }
+    updateInfo(info) { this.setState({info: info}); }
 
     fileClicked() {
         this.state.filesystem.editFile(this.state.name);

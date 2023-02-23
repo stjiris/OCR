@@ -10,6 +10,7 @@ import { Divider } from '@mui/material';
 import PageDisplayer from '../Displayer/PageDisplayer';
 
 class ESItem extends React.Component {
+    // This component is used to display a single page from the ElasticSearch database
     constructor(props) {
         super(props);
         this.state = {
@@ -57,17 +58,26 @@ class ESPage extends React.Component {
             loading: true
         }
 
+        // Filters
         this.freeText = React.createRef();
         this.journal = React.createRef();
         this.fileType = React.createRef();
     }
 
     get_journal(data) {
+        /**
+         * Get the journal name from the file path
+         * 
+         * ! Needs to keep some of the path otherwise can get duplicates with other folders
+         */
         var journal = data['_id'].split('/').slice(0,-1).join('/');
         return journal;
     }
 
     get_fileType(data) {
+        /**
+         * Get the file type from the file path
+         */
         console.log(data['_id'], data['_id'].split('/'), data['_id'].split('/').slice(-2)[0].split('.'))
         var splitted = data['_id'].split('/').slice(-2)[0].split('.')
         var fileType = splitted[splitted.length-1].toUpperCase();
@@ -75,6 +85,9 @@ class ESPage extends React.Component {
     }
 
     componentDidMount() {
+        /**
+         * When the component is mounted, get the data from the ElasticSearch database
+         */
         fetch(process.env.REACT_APP_API_URL + "get_elasticsearch", {
             method: 'GET'
         })
@@ -112,10 +125,16 @@ class ESPage extends React.Component {
     }
 
     changeText(event) {
+        /**
+         * Handle the change in the text field
+         */
         this.setState({freeText: event.target.value}, this.filterPages);
     }
 
     filterPages() {
+        /**
+         * Filter the pages based on the filters
+         */
         var current_showing = [];
 
         var freeText = this.state.freeText;

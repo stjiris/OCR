@@ -79,6 +79,10 @@ class ElasticSearchClient():
             self.create_index()
 
     def create_index(self):
+        """
+        Create the index with the mapping and settings
+        """
+
         self.client.indices.create(
             index=self.ES_INDEX,
             mappings=self.mapping,
@@ -86,12 +90,20 @@ class ElasticSearchClient():
         )
 
     def delete_index(self):
+        """
+        Delete the index
+        """
+
         self.client.indices.delete(
             index=self.ES_INDEX,
             ignore=[400, 404]
         )
 
     def add_document(self, document):
+        """
+        Add the document to the index
+        """
+
         self.client.index(
             index=self.ES_INDEX,
             id=document["Id"],
@@ -99,6 +111,10 @@ class ElasticSearchClient():
         )
 
     def update_document(self, id, text):
+        """
+        Update the document with the new text
+        """
+
         self.client.update(
             index=self.ES_INDEX,
             id=id,
@@ -110,20 +126,32 @@ class ElasticSearchClient():
         )
 
     def delete_document(self, id):
+        """
+        Delete the document from the index
+        """
+
         self.client.delete(
             index=self.ES_INDEX,
             id=id
         )
 
     def get_docs(self):
+        """
+        Get the documents from the index
+        """
+
         return list(self.client.search(index=self.ES_INDEX, body={
-            'size': 100,
+            'size': 1000,
             'query': {
                 'match_all': {}
             }
         })["hits"]["hits"])
 
 def create_document(path, extension, text, page=None):
+    """
+    Create the document to be added to the index
+    """
+    
     if extension in ["jpg", "jpeg", "png"]:
         return {
             "Id": f"{path}.{extension}",

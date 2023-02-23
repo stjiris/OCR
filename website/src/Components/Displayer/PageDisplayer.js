@@ -1,7 +1,5 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardMedia from '@mui/material/CardMedia';
 
 class PageDisplayer extends React.Component {
     constructor(props) {
@@ -14,6 +12,7 @@ class PageDisplayer extends React.Component {
     }
     
     render() {
+        // TODO: This code will be refactored with the separation of tasks
         var path = this.state.filename.split("/");
 
         var pathString = (process.env.REACT_APP_IMAGES_PREFIX || ".") + "/images/" + (

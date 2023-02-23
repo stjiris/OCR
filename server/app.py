@@ -5,6 +5,8 @@ from flask import Flask, request, send_file
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
 from threading import Thread
 
+from src.utils.export import export_file
+
 from src.utils.file import (
     parse_file,
     process_file,
@@ -12,8 +14,6 @@ from src.utils.file import (
     get_filesystem,
     get_structure,
     get_file_parsed,
-    get_txt_file,
-    get_original_file,
     delete_structure,
     get_file_basename
 )
@@ -93,13 +93,7 @@ def get_file():
 @app.route("/get_txt", methods=["GET"])
 def get_txt():
     path = request.values["path"]
-    file = get_txt_file(path)
-    return send_file(file)
-
-@app.route("/get_original", methods=["GET"])
-def get_original():
-    path = request.values["path"]
-    file = get_original_file(path)
+    file = export_file(path, "txt")
     return send_file(file)
 
 @app.route("/delete-path", methods=["POST"])
