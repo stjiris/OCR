@@ -78,7 +78,6 @@ class ESPage extends React.Component {
         /**
          * Get the file type from the file path
          */
-        console.log(data['_id'], data['_id'].split('/'), data['_id'].split('/').slice(-2)[0].split('.'))
         var splitted = data['_id'].split('/').slice(-2)[0].split('.')
         var fileType = splitted[splitted.length-1].toUpperCase();
         return fileType;
@@ -202,7 +201,7 @@ class ESPage extends React.Component {
 
                         :   this.state.showing.length === 0
                             ? <p style={{fontSize: '20px'}}><b>No pages found</b></p>
-                            : this.state.showing.map((page, index) => {
+                            : this.state.showing.sort((a, b) => (a['_id'] > b['_id'] ? 1 : -1)).map((page, index) => {
                                 return(
                                     <Box key={page['_id']} sx={{
                                         display: 'flex',
