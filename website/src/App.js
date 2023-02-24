@@ -40,6 +40,12 @@ function App() {
     }
 
     openFile(path, file) {
+        /**
+         * Open a file in the text editor
+         * 
+         * @param {string} path - The path of the file
+         * @param {string} file - The name of the file
+         */
         this.setState({path: path, fileOpened: file, fileSystemMode: false, editFileMode: true});
         fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + file, {
             method: 'GET'
@@ -51,16 +57,30 @@ function App() {
     }
 
     viewFile(file) {
+        /**
+         * View a file in ES page
+         * 
+         * @param {string} file - The name of the file
+         */
         this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [{name: file, code: file}]});
     }
 
     updateContents(event, index) {
+        /**
+         * Update the content of the text editor
+         * 
+         * @param {event} event - The event
+         * @param {int} index - The index of the text field changed
+         */
         var contents = this.state.contents;
         contents[index] = event.target.value;
         this.setState({contents: contents});
     }
 
     sendChanges() {
+        /**
+         * Send the changes to the server
+         */
         fetch(process.env.REACT_APP_API_URL + 'submitText', {
             method: 'POST',
             headers: {

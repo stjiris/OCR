@@ -46,6 +46,9 @@ class FileExplorer extends React.Component {
     }
 
     componentDidMount() {
+        /**
+         * Fetch the files and info from the server
+         */
         fetch(process.env.REACT_APP_API_URL + 'files', {
             method: 'GET'
         })
@@ -56,6 +59,7 @@ class FileExplorer extends React.Component {
             this.setState({files: files, info: info, loading: false}, this.displayFileSystem);
         });
 
+        // Update the info every UPDATE_TIME seconds
         this.interval = setInterval(() => {
             fetch(process.env.REACT_APP_API_URL + 'info', {
                 method: 'GET'
@@ -80,40 +84,35 @@ class FileExplorer extends React.Component {
     }
 
     updateFiles(data) {
+        /**
+         * Update the files and info
+         */
         var files = {'files': data['files']}
         var info = data['info'];
 
         this.setState({ files: files, info: info }, this.displayFileSystem);
     }
 
-    contentsOfFolder() {
-        var current_folder = this.state.current_folder;
-        var files = this.state.files;
-
-        for (let f in current_folder) {
-            files = this.findFolder(files, current_folder[f]);
-        }
-
-        if (files === undefined) {
-            files = [];
-        }
-
-        var fileCopy = [...files];
-
-        this.setState({ components: fileCopy })
-    }
-
     createFolder() {
+        /**
+         * Open the folder menu
+         */
         this.folderMenu.current.currentPath(this.state.current_folder.join('/'));
         this.folderMenu.current.toggleOpen();
     }
 
     createFile() {
+        /**
+         * Open the file menu
+         */
         this.fileMenu.current.currentPath(this.state.current_folder.join('/'));
         this.fileMenu.current.toggleOpen();
     }
 
     getDocument(route, name) {
+        /**
+         * Export the .txt or .pdf file
+         */
         var path = this.state.current_folder.join('/') + '/' + name;
         fetch(process.env.REACT_APP_API_URL + route + '?path=' + path, {
             method: 'GET'
@@ -122,13 +121,16 @@ class FileExplorer extends React.Component {
         .then(data => {
             var a = document.createElement('a');
             a.href = URL.createObjectURL(data);
-            a.download = name + ((route === "get_txt") ? "-Text.txt" : "");
+            a.download = name + ((route === "get_txt") ? "-Text.txt" : "_search.pdf");
             a.click();
             a.remove();
         });
     }
 
     goBack() {
+        /**
+         * Go back to the previous folder
+         */
         var current_folder = this.state.current_folder;
         current_folder.pop();
         var buttonsDisabled = current_folder.length === 1;
@@ -142,27 +144,49 @@ class FileExplorer extends React.Component {
     }
 
     getTxt(file) {
+        /**
+         * Export the .txt file
+         */
         this.getDocument("get_txt", file);
     }
 
+    getPdf(file) {
+        /**
+         * Export the .pdf file
+         */
+        this.getDocument("get_pdf", file);
+    }
+
     editFile(file) {
+        /**
+         * Open the file in the editor
+         */
         var path = this.state.current_folder.join('/');
         var filename = path + '/' + file;
         this.state.app.openFile(path, filename);
     }
 
     viewFile(file) {
+        /**
+         * Open the file in the viewer
+         */
         var path = this.state.current_folder.join('/');
         var filename = path + '/' + file;
         this.state.app.viewFile(filename);
     }
 
     deleteItem(name) {
+        /**
+         * Open the delete menu
+         */
         this.deleteMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
         this.deleteMenu.current.toggleOpen();
     }
 
     enterFolder(folder) {
+        /**
+         * Enter the folder and update the path
+         */
         var current_folder = this.state.current_folder;
         current_folder.push(folder);
         this.state.app.setState({path: current_folder.join('/')});
@@ -174,6 +198,9 @@ class FileExplorer extends React.Component {
     }
 
     findFolder(files, folder) {
+        /**
+         * Find the folder in the files
+         */
         if ( Array.isArray(files) ) {
             var i;
             for (i = 0; i < files.length; i++) {
@@ -188,6 +215,9 @@ class FileExplorer extends React.Component {
     }
 
     getPathContents() {
+        /**
+         * Get the contents of the current folder
+         */
         var files = this.state.files;
         var current_folder = this.state.current_folder;
 
@@ -200,6 +230,9 @@ class FileExplorer extends React.Component {
     }
 
     getInfo(path) {
+        /**
+         * Get the info of the file
+         */
         return this.state.info[path];
     }
 
@@ -232,6 +265,9 @@ class FileExplorer extends React.Component {
     }
 
     displayFileSystem() {
+        /**
+         * Iterate the contents of the folder and build the components
+         */
         var contents = this.sortContents(this.getPathContents());
         this.rowRefs = [];
 

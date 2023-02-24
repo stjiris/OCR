@@ -13,9 +13,12 @@ class CustomButton extends React.Component {
     }
 
     changeDisabledState(currentState) {
+        /**
+         * Change between disabled and enabled state
+         */
         this.setState({ disabled: currentState });
     }
-    // #48954f
+
     render() {
         return (
             <Button color="success" sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}} onClick={() => this.state.clickFunction()} disabled={this.state.disabled} variant="contained">{this.state.text}</Button>

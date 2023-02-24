@@ -18,9 +18,7 @@ export default class FolderRow extends React.Component {
         }
     }
 
-    updateInfo(info) {
-        this.setState({info: info});
-    }
+    updateInfo(info) { this.setState({info: info}); }
 
     folderClicked() {
         this.state.filesystem.enterFolder(this.state.name);

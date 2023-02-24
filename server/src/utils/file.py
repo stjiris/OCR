@@ -1,6 +1,5 @@
 import os, re, time, json
 from pdf2image import convert_from_path
-from PyPDF2 import PdfMerger
 
 from src.utils.text import clear_text
 from src.elastic_search import create_document
@@ -19,47 +18,13 @@ from src.elastic_search import create_document
 #       - conf.txt                      (the conf file of the OCR engine used)
 # - folder2
 
-def get_original_file(path):
-    basename = os.path.basename(path).split('.')[0]
-    filename = f"{path}/{basename}.pdf"
-
-    files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".pdf" in f]
-    files = sorted(
-        files,
-        key=lambda x: int(re.findall('\d+', x)[-1])
-    )
-
-    merger = PdfMerger()
-    for pdf in files:
-        merger.append(pdf)
-
-    merger.write(filename)
-    merger.close()
-
-    return filename
-
-def get_txt_file(path):
-    basename = os.path.basename(path).split('.')[0]
-    filename = f"{path}/{basename}-Text.txt"
-
-    files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
-
-    if len(files) > 1:
-        files = sorted(
-            files,
-            key=lambda x: int(re.findall('\d+', x)[-1])
-        )
-
-    with open(filename, "w", encoding="utf-8") as f:
-        for id, file in enumerate(files):
-
-            with open(file, encoding="utf-8") as _f:
-                f.write(f"----- PAGE {(id+1):04d} -----\n\n")
-                f.write(_f.read().strip() + "\n\n")
-
-    return filename
-
 def get_file_parsed(path):
+    """
+    Return the text off all the pages of the file
+
+    :param path: path to the file
+    :return: list with the text of each page
+    """
     files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
 
     if len(files) > 1:
@@ -103,7 +68,8 @@ def get_filesystem(path):
     """
     Get the filesystem structure and information of each file/folder
 
-    @param path: path to the folder
+    :param path: path to the folder
+    :return: dictionary with the structure and information
     """
     files = get_structure(path)
     info = get_info(files)
@@ -113,7 +79,8 @@ def get_creation_time(path):
     """
     Get the creation time of the file/folder
 
-    @param path: path to the file/folder
+    :param path: path to the file/folder
+    :return: creation time
     """
 
     ti_c = os.path.getctime(path)
@@ -126,7 +93,8 @@ def get_modification_time(path):
     """
     Get the modification time of the file/folder
 
-    @param path: path to the file/folder
+    :param path: path to the file/folder
+    :return: modification time
     """
 
     ti_m = os.path.getmtime(path)
@@ -139,7 +107,8 @@ def get_size(path):
     """
     Get the size of the file
 
-    @param path: path to the file
+    :param path: path to the file
+    :return: size of the file
     """
 
     extension = path[path.rfind(".") + 1:]
@@ -161,7 +130,10 @@ def get_info(files, current_path="", info={}):
     """
     Get the info of each file/folder
 
-    @param files: the filesystem structure
+    :param files: the filesystem structure
+    :param current_path: the current path
+    :param info: the info of the files/folders
+    :return: the info of the files/folders
     """
 
     if type(files) == dict:
@@ -252,6 +224,8 @@ def get_structure(path):
             }
         ]
     }
+
+    :param path: the path to the files
     """
     filesystem = {}
     last_folder = path.split("/")[-2]
@@ -281,19 +255,12 @@ def get_structure(path):
 ##################################################
 # FILES UTILS
 ##################################################
-def save_pdf_full(file):
-    """
-    Save the full PDF file
-
-    @param pdf_file: path to the PDF file
-    """
-    file.save(f"file_uploads/{file.filename}")
-
 def get_file_basename(filename):
     """
     Get the basename of a file
 
-    @param file: file name
+    :param file: file name
+    :return: basename of the file
     """
     return '.'.join(filename.split("/")[-1].split(".")[:-1])
 
@@ -301,7 +268,8 @@ def get_pdf_pages(file):
     """
     Get the pages of a PDF file
 
-    @param pdf_file: path to the PDF file
+    :param pdf_file: path to the PDF file
+    :return: pages as PIL images
     """
     return convert_from_path(file, 200)
 
@@ -309,8 +277,9 @@ def save_text_file(text, basename, path):
     """
     Save a text file
 
-    @param text: text to save
-    @param filename: name of the file
+    :param text: text to save
+    :param filename: name of the file
+    :param path: path to the file
     """
     with open(f"{path}/{basename}.txt", "w", encoding="utf-8") as f:
         f.write(text)
@@ -319,11 +288,11 @@ def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_
     """
     Function that will be used by the threads to process the files
 
-    @param process_function: function to process the files
-    @param filename: name of the file
-    @param arg: argument to pass to the function (PIL image or PDF page number)
-    @param config: config to pass to the function
-    @param path: path to the file
+    :param process_function: function to process the files
+    :param filename: name of the file
+    :param arg: argument to pass to the function (PIL image or PDF page number)
+    :param config: config to pass to the function
+    :param path: path to the file
     """
 
     basename = '.'.join(filename.split(".")[:-1])
@@ -354,8 +323,12 @@ def process_image(filename, image, config, path, algorithm):
     """
     Process an image, extract the text and save the results
 
-    @param image: image to process
-    @param algorithm: algorithm to use
+    :param filename: name of the file
+    :param image: image to process
+    :param config: config to pass to the algorithm
+    :param path: path to the file
+    :param algorithm: algorithm to use
+    :return: text extracted from the image
     """
     basename = get_file_basename(filename)
 
@@ -367,8 +340,12 @@ def process_file(file, pageNumber, config, path, algorithm):
     """
     Process a file, extract the text and save the results
 
-    @param file: file to process
-    @param algorithm: algorithm to use
+    :param file: file to process
+    :param pageNumber: page number to process
+    :param config: config to pass to the algorithm
+    :param path: path to the file
+    :param algorithm: algorithm to use
+    :return: text extracted from the file
     """
     basename = get_file_basename(file)
 

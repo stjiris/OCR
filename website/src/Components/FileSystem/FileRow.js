@@ -24,11 +24,7 @@ export default class FileRow extends React.Component {
         }
     }
 
-    updateInfo(info) {
-        if (this.state.name.includes("J4"))
-            console.log(info)
-        this.setState({info: info});
-    }
+    updateInfo(info) { this.setState({info: info}); }
 
     fileClicked() {
         this.state.filesystem.editFile(this.state.name);
@@ -37,6 +33,11 @@ export default class FileRow extends React.Component {
     getTxt(e) {
         e.stopPropagation();
         this.state.filesystem.getTxt(this.state.name);
+    }
+
+    getPdf(e) {
+        e.stopPropagation();
+        this.state.filesystem.getPdf(this.state.name);
     }
 
     edit(e) {
@@ -113,6 +114,20 @@ export default class FileRow extends React.Component {
                                 this.state.info["progress"] === 100
                                 ? <p style={{fontSize: '13px', color: 'black'}}>TXT</p>
                                 : <p style={{fontSize: '13px', color: 'grey'}}>TXT</p>
+                            }
+                        </IconButton>
+                        <IconButton
+                            disabled={!(this.state.info["progress"] === 100)}
+                            color="primary"
+                            sx={{mr: '0.1rem'}}
+                            aria-label="delete"
+                            onClick={(e) => this.getPdf(e)}
+                        >
+                            <DownloadRoundedIcon/>
+                            {
+                                this.state.info["progress"] === 100
+                                ? <p style={{fontSize: '13px', color: 'black'}}>PDF</p>
+                                : <p style={{fontSize: '13px', color: 'grey'}}>PDF</p>
                             }
                         </IconButton>
                         <IconButton
