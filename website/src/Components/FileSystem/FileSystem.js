@@ -121,7 +121,7 @@ class FileExplorer extends React.Component {
         .then(data => {
             var a = document.createElement('a');
             a.href = URL.createObjectURL(data);
-            a.download = name + ((route === "get_txt") ? "-Text.txt" : "");
+            a.download = name + ((route === "get_txt") ? "-Text.txt" : "_search.pdf");
             a.click();
             a.remove();
         });
@@ -148,6 +148,13 @@ class FileExplorer extends React.Component {
          * Export the .txt file
          */
         this.getDocument("get_txt", file);
+    }
+
+    getPdf(file) {
+        /**
+         * Export the .pdf file
+         */
+        this.getDocument("get_pdf", file);
     }
 
     editFile(file) {

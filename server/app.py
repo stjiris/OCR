@@ -94,6 +94,14 @@ def get_file():
 def get_txt():
     path = request.values["path"]
     file = export_file(path, "txt")
+    print(path, file)
+    return send_file(file)
+
+@app.route("/get_pdf", methods=["GET"])
+def get_pdf():
+    path = request.values["path"]
+    file = export_file(path, "pdf")
+    print(path, file)
     return send_file(file)
 
 @app.route("/delete-path", methods=["POST"])
