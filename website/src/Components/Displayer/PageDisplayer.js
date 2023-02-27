@@ -13,7 +13,7 @@ class PageDisplayer extends React.Component {
     render() {
         return (
             <Box
-                sx={{maxWidth: `${this.state.maxWidth}`, border: '1px solid #d9d9d9', boxShadow: 1}}
+                sx={{maxWidth: `${this.state.maxWidth}`, border: '1px solid #d9d9d9', boxShadow: 1, mr: '0.5rem'}}
             >
                 <a
                     href={this.state.path}

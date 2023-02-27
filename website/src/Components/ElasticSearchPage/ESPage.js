@@ -35,7 +35,6 @@ class ESItem extends React.Component {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    ml: '0.5rem',
                 }}>
                     <span><b>Path:</b> {this.state.page['_source']['Path'].split('/').slice(1,-2).join('/')}</span>                
                     <span><b>Document:</b> {this.state.page['_source']['Document']}</span>                

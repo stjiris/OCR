@@ -206,7 +206,7 @@ def index_doc():
     else:
         config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
         ocr_config = get_data(path + "/_data.json")
-        files = [f for f in os.listdir(path) if f.endswith(".txt")]
+        files = [f for f in os.listdir(path) if f.endswith(".txt") and not f.endswith("-Text.txt")]
 
         for id, file in enumerate(files):
             file_path = f"{path}/{file}"
@@ -244,7 +244,7 @@ def remove_index_doc():
         return {}
     else:
         config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
-        files = [f for f in os.listdir(path) if f.endswith(".txt")]
+        files = [f for f in os.listdir(path) if f.endswith(".txt") and not f.endswith("-Text.txt")]
 
         if config["files/pages"] > 1:
             files = sorted(files, key=lambda x: re.findall(r"\d+", x)[-1])
