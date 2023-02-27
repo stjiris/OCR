@@ -167,9 +167,7 @@ function App() {
                                     return (
                                         <Box key={index} sx={{display: 'flex', ml: '1.5rem', mr: '1.5rem', mb: '0.5rem'}}>
                                             <PageDisplayer                                           
-                                                ref={this.pageDisplayer}
-                                                filename={this.state.fileOpened}    
-                                                page={index}
+                                                path={page["page_url"]}
                                             />
                                             <CustomTextField defaultValue={page["content"]} sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={13} onChange={(e) => this.updateContents(e, index)} fullWidth disabled={this.state.disabled} multiline />
                                         </Box>

@@ -2,9 +2,8 @@ from src.utils.file import get_file_basename
 from elasticsearch import Elasticsearch
 from os import environ
 
-import random, uuid
-
 ES_URL = environ.get('ES_URL', 'http://localhost:9200/')
+IMAGE_PREFIX = environ.get('IMAGE_PREFIX', '.')
 ES_INDEX = "jornais.0.1"
 
 settings = {
@@ -164,7 +163,7 @@ class ElasticSearchClient():
 
 def create_document(path, algorithm, config, text, page=None):
     basename = get_file_basename(path)
-    image = "http://localhost/images/" + '/'.join(path.split('/')[1:-2]) + '/' + basename + ".jpg"
+    image = IMAGE_PREFIX + "/images/" + '/'.join(path.split('/')[1:-2]) + '/' + basename + ".jpg"
 
     if page is None:
         return {
