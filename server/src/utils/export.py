@@ -85,12 +85,15 @@ def export_pdf(path):
     """
     Export the file as a .pdf file
     """
+    file_path = '/'.join(path.split('/')[:-1])
+    images = sorted([f"{file_path}/{f}" for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path, f)) and re.search(r"\.jpg", f)])
 
-    images = sorted([f"{path}/{f}" for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and re.search(r"\d+\.jpg", f)])
+    print(file_path)
+    print(images)
 
     load_invisible_font()
   
-    basename = get_file_basename(path)
+    basename = get_file_basename(file_path)
     filename = f"{path}/{basename}_search.pdf"
 
     pdf = Canvas(filename, pageCompression=1)

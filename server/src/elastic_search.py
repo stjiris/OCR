@@ -1,5 +1,8 @@
+from src.utils.file import get_file_basename
 from elasticsearch import Elasticsearch
 from os import environ
+
+import random, uuid
 
 ES_URL = environ.get('ES_URL', 'http://localhost:9200/')
 ES_INDEX = "jornais.0.1"
@@ -24,7 +27,19 @@ mapping = {
             "type": "keyword",
             "normalizer": "term_normalizer"
         },
-        "Jornal": {
+        "Document": {
+            "type": 'text',
+            "fields": {
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                }
+            }
+        },
+        "Path": {
             "type": 'text',
             "fields": {
                 "raw": {
@@ -60,7 +75,7 @@ mapping = {
                 }
             }
         },
-        "Imagem Página": {
+        " Page Image": {
             "enabled": False
         },
     }
@@ -99,14 +114,14 @@ class ElasticSearchClient():
             ignore=[400, 404]
         )
 
-    def add_document(self, document):
+    def add_document(self, id, document):
         """
         Add the document to the index
         """
 
         self.client.index(
             index=self.ES_INDEX,
-            id=document["Id"],
+            id=id,
             document=document
         )
 
@@ -147,23 +162,26 @@ class ElasticSearchClient():
             }
         })["hits"]["hits"])
 
-def create_document(path, extension, text, page=None):
-    """
-    Create the document to be added to the index
-    """
-    
-    if extension in ["jpg", "jpeg", "png"]:
+def create_document(path, algorithm, config, text, page=None):
+    basename = get_file_basename(path)
+    image = "http://localhost/images/" + '/'.join(path.split('/')[1:-2]) + '/' + basename + ".jpg"
+
+    if page is None:
         return {
-            "Id": f"{path}.{extension}",
-            "Jornal": path,
-            "Imagem Página": f"./images/{path}_1.jpg",
+            "Path": path,
+            "Algorithm": algorithm,
+            "Config": config,
+            "Document": path.split('/')[-3],
+            "Page Image": image,
             "Text": text
         }
     else:
         return {
-            "Id": f"{path}_{page}.{extension}",
-            "Jornal": path,
+            "Path": path,
+            "Algorithm": algorithm,
+            "Config": config,
+            "Document": path.split('/')[-3],
             "Page": page,
-            "Imagem Página": f"./images/{path}_{page}.jpg",
+            "Page Image": image,
             "Text": text
         }

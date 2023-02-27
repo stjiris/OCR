@@ -1,5 +1,4 @@
-import os, json, shutil
-from PIL import Image
+import os, json, shutil, re
 
 from flask import Flask, request, send_file
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
@@ -8,14 +7,15 @@ from threading import Thread
 from src.utils.export import export_file
 
 from src.utils.file import (
-    parse_file,
-    process_file,
-    process_image,
+    get_structure_info,
     get_filesystem,
-    get_structure,
     get_file_parsed,
     delete_structure,
-    get_file_basename
+    perform_file_ocr,
+    get_data,
+    update_data,
+    get_page_count,
+    generate_uuid
 )
 
 from src.evaluate import evaluate
@@ -29,7 +29,7 @@ app = Flask(__name__)   # Aplicação em si
 CORS(app)
 
 MAX_THREADS = 4
-WAITING_PAGES = []
+WAITING_DOCS = []
 
 def manage_threads(pages):
     import time
@@ -42,7 +42,7 @@ def manage_threads(pages):
                 active_threads.remove(t)
         while len(pages) > 0 and len(active_threads) <= MAX_THREADS:
             page = pages.pop()
-            t = Thread(target=parse_file, args=(*page, ))
+            t = Thread(target=perform_file_ocr, args=(*page, ))
             t.start()
             active_threads.append(t)
 
@@ -51,16 +51,16 @@ def manage_threads(pages):
 #####################################
 @app.route("/files", methods=["GET"])
 def get_file_system():
-    return get_filesystem("./files/")
+    return get_filesystem("files")
 
 @app.route("/info", methods=["GET"])
 def get_info():
-    return {'info': get_filesystem("./files/")["info"]}
+    return {'info': get_structure_info("files")}
 
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
-    print(data)
+
     path = data["path"]
     folder = data["folder"]
 
@@ -69,7 +69,13 @@ def create_folder():
 
     os.mkdir(path + "/" + folder)
 
-    return {"success": True, "files": get_filesystem("./files/")}
+    with open(f"{path}/{folder}/_data.json", "w") as f:
+        json.dump({
+            "type": "folder",
+            "files/pages": 0
+        }, f)
+
+    return {"success": True, "files": get_filesystem("files")}
 
 @app.route("/file-exists", methods=["GET"])
 def file_exists():
@@ -85,23 +91,19 @@ def file_exists():
 @app.route("/get-file", methods=["GET"])
 def get_file():
     path = request.values["path"]
-
-    pages = get_file_parsed(path)
-
-    return {"contents": pages}
+    doc = get_file_parsed(path)
+    return {"doc": doc}
 
 @app.route("/get_txt", methods=["GET"])
 def get_txt():
     path = request.values["path"]
     file = export_file(path, "txt")
-    print(path, file)
     return send_file(file)
 
 @app.route("/get_pdf", methods=["GET"])
 def get_pdf():
     path = request.values["path"]
     file = export_file(path, "pdf")
-    print(path, file)
     return send_file(file)
 
 @app.route("/delete-path", methods=["POST"])
@@ -109,100 +111,171 @@ def delete_path():
     data = data = request.json
     path = data["path"]
 
-    structure = get_structure(path + "/")
+    delete_structure(client, path)        
+    shutil.rmtree(path)
 
-    main_path = path[:path.rfind("/")]
-
-    delete_structure(client, structure, main_path)        
-    shutil.rmtree(path, ignore_errors=True)
-
-    return {"success": True, "message": "Deleted with success", "files": get_filesystem("./files/")}
+    return {"success": True, "message": "Deleted with success", "files": get_filesystem("files")}
 
 #####################################
 # FILES ROUTES
 #####################################
-@app.route("/submitImageFile", methods=['POST'])
-def submit_image_file():
+@app.route("/upload-file", methods=['POST'])
+def upload_file():
+    """
+    Receive a file and save it in the server
+    @param file: file to be saved
+    @param path: path to save the file
+    """
+
     file = request.files["file"]
     path = request.form["path"]
-    algorithm = request.form["algorithm"]
-    config = request.form["config"]
-    filename = request.form["filename"]
 
-    basename = get_file_basename(filename)
+    filename = file.filename
 
     if os.path.exists(f"{path}/{filename}"): return {"success": False, "error": "There is a file with that name already"}
+
     os.mkdir(f"{path}/{filename}")
-
     file.save(f"{path}/{filename}/{filename}")
-    img = Image.open(file)
-    img.save(f"{path}/{filename}/{basename}_1.jpg")
 
-    with open(f"{path}/{filename}/_config.json", "w") as f:
+    with open(f"{path}/{filename}/_data.json", "w") as f:
         json.dump({
-            "algorithm": algorithm,
-            "config": config,
-            "progress": 100
+            "type": "file",
+            "ocr_results": 0,
+            "files/pages": get_page_count(f"{path}/{filename}/{filename}")
         }, f)
 
-    algo = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text
-    parse_file(process_image, filename, img, config, path, algo, client)
-    
-    return {"success": True, "file": filename, "score": 0, "files": get_filesystem("./files/")}
+    # Update the folders _data.json
+    with open(f"{path}/_data.json") as f:
+        data = json.load(f)
+        data["files/pages"] += 1
 
-@app.route("/submitFile", methods=['POST'])
-def submit_file():
+    update_data(f"{path}/_data.json", data)
+
+    return {"success": True, "file": filename, "filesystem": get_filesystem("files")}
+
+@app.route("/perform-ocr", methods=["POST"])
+def perform_ocr():
+    """
+    Request to perform OCR on a file/folder
+    @param path: path to the file/folder
+    @param algorithm: algorithm to be used
+    @param data: data to be used
+    @param multiple: if it is a folder or not
+    """
+
     data = request.json
-    fileHex = data["file"]
-    file = data["filename"]
-    page = data["page"]
+    path = data["path"]
     algorithm = data["algorithm"]
     config = data["config"]
+    multiple = data["multiple"]
+
+    ocr_algorithm = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text
+    ocr_folder = f"{algorithm[:4].upper()}_{config}"
+
+    if multiple:
+        files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+    else:
+        files = [path]
+
+    for f in files:
+        if not os.path.exists(f"{f}/{ocr_folder}"):
+            os.mkdir(f"{f}/{ocr_folder}")
+            data_path = f"{f}/{ocr_folder}/_data.json"
+            with open(data_path, "w") as _f:
+                json.dump({"type": "ocr", "progress": 0, "indexed": False, "algorithm": algorithm, "config": config}, _f)
+
+        WAITING_DOCS.append((f, ocr_folder, config, ocr_algorithm))
+
+    return {"success": True, "message": "OCR started, please wait", "files": get_filesystem("files")}
+
+@app.route("/index-doc", methods=["POST"])
+def index_doc():
+    """
+    Index a document in Elasticsearch
+    @param path: path to the document
+    @param multiple: if it is a folder or not
+    """
+    data = request.json
     path = data["path"]
+    multiple = data["multiple"]
 
-    print("Received page:", page)
+    if multiple:
+        pass
 
-    basename = get_file_basename(file)
+        return {}
+    else:
+        config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
+        ocr_config = get_data(path + "/_data.json")
+        files = [f for f in os.listdir(path) if f.endswith(".txt")]
 
-    if os.path.exists(f"{path}/{file}/{basename}_{page}.txt"): return {"success": False, "error": "There is a file with that name already"}
-    if not os.path.exists(f"{path}/{file}"):    
-        os.mkdir(f"{path}/{file}")
+        for id, file in enumerate(files):
+            file_path = f"{path}/{file}"
 
-    with open(f"{path}/{file}/{basename}_{page}.pdf", "wb") as f:
-        f.write(bytes.fromhex(fileHex))
+            with open(file_path) as f:
+                text = f.read()
 
-    with open(f"{path}/{file}/_config.json", "w") as f:
-        json.dump({
-            "algorithm": algorithm,
-            "config": config,
-            "progress": 0
-        }, f)
+            if config["files/pages"] > 1:
+                doc = create_document(file_path, ocr_config["algorithm"], ocr_config["config"], text, id+1)
+            else:
+                doc = create_document(file_path, ocr_config["algorithm"], ocr_config["config"], text)
 
-    algo = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text
-    WAITING_PAGES.append((process_file, file, page, config, path, algo, client))
+            id = generate_uuid(file_path)
 
-    return {"success": True, "file": data["filename"], "page": page, "score": 0, "files": get_filesystem("./files/")}
+            client.add_document(id, doc)
 
-@app.route("/submitText", methods=["POST"])
-def submitText():
-    texts = request.json["text"] # texto corrigido
-    filename = request.json['filename'] # nome do pdf original
+        update_data(path + "/_data.json", {"indexed": True})
 
-    basename = os.path.basename(filename).split(".")[0]
-    extension = os.path.basename(filename).split(".")[1]
+        return {"success": True, "message": "Document indexed", "files": get_filesystem("files")}
 
-    for id, t in enumerate(texts):
-        print("Saving page:", (id + 1))
-        if extension in ["jpg", "jpeg", "png"]:
-            final_filename = f"{filename}/{basename}"
-        else:
-            final_filename = f"{filename}/{basename}_{(id + 1)}"
+@app.route("/remove-index-doc", methods=["POST"])
+def remove_index_doc():
+    """
+    Remove a document in Elasticsearch
+    @param path: path to the document
+    @param multiple: if it is a folder or not
+    """
+    data = request.json
+    path = data["path"]
+    multiple = data["multiple"]
 
-        with open(final_filename + ".txt", "w", encoding="utf-8") as f:
-            f.write(t)
+    if multiple:
+        pass
 
-        client.update_document(f"{final_filename}.{extension}", t)
-    
+        return {}
+    else:
+        config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
+        files = [f for f in os.listdir(path) if f.endswith(".txt")]
+
+        if config["files/pages"] > 1:
+            files = sorted(files, key=lambda x: re.findall(r"\d+", x)[-1])
+
+        for id, f in enumerate(files):
+            file_path = f"{path}/{f}"
+            id = generate_uuid(file_path)
+            client.delete_document(id)
+
+        update_data(path + "/_data.json", {"indexed": False})
+
+        return {"success": True, "message": "Document removed", "files": get_filesystem("files")}
+
+@app.route("/submit-text", methods=["POST"])
+def submit_text():
+    texts = request.json["text"] # estrutura com texto, nome do ficheiro e url da imagem
+
+    data_folder = '/'.join(texts[0]["original_file"].split("/")[:-1])
+    data = get_data(data_folder + "/_data.json")
+
+    for t in texts:
+        text = t["content"]
+        filename = t["original_file"]
+
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(text)
+
+        if data["indexed"]:
+            id = generate_uuid(filename)
+            client.update_document(id, text)
+
     return {"success": True}
 
 #####################################
@@ -212,11 +285,18 @@ def submitText():
 def get_elasticsearch():
     return client.get_docs()
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    return {"success": False, "message": "We are sorry, but an error has occurred. Please describe what you did on the Google Docs file and also insert a link to the file inserted if that's the case."}
+
+#####################################
+# MAIN
+#####################################
 if __name__ == "__main__":
     if not os.path.exists("./files/"):
         os.mkdir("./files/")
 
-    page_parser = Thread(target=manage_threads, args=(WAITING_PAGES, ), daemon=True)
+    page_parser = Thread(target=manage_threads, args=(WAITING_DOCS, ), daemon=True)
     page_parser.start()
                 
     app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)

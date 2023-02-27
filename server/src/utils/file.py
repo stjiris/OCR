@@ -1,8 +1,9 @@
 import os, re, time, json
 from pdf2image import convert_from_path
+from PyPDF2 import PdfFileReader
+from PIL import Image
 
 from src.utils.text import clear_text
-from src.elastic_search import create_document
 
 ##################################################
 # FILESYSTEM UTILS
@@ -25,54 +26,48 @@ def get_file_parsed(path):
     :param path: path to the file
     :return: list with the text of each page
     """
-    files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
+    files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
 
-    if len(files) > 1:
-        files = sorted(
-            files,
-            key=lambda x: int(re.findall('\d+', x)[-1])
-        )
-
-    contents = []
+    data = []
     for file in files:
+        basename = get_file_basename(file)
         with open(file, encoding="utf-8") as f:
-            contents.append(f.read())
+            data.append({
+                "original_file": file,
+                "content": f.read(),
+                "page_url": "http://localhost/images/" + '/'.join(file.split("/")[1:-2]) + "/" + basename + ".jpg",
+            })
+    return data
 
-    return contents
+def generate_uuid(path):
+    import uuid, random
+    random.seed(path)
+    return str(uuid.UUID(bytes=bytes(random.getrandbits(8) for _ in range(16)), version=4))
 
-def delete_structure(client, structure, path):
+def delete_structure(client, path):
     """
     Delete all the files in the structure
-    structure = {"files": [{"folder2": ["file2"]}, "file1"]}
     """
-    if type(structure) == str:
-        extension = structure.split(".")[-1]
-        path = f"{path}/{structure}"
-        basename = get_file_basename(structure)
+    data = get_data(path + "/_data.json")
+    if data["type"] == "ocr" and data["indexed"]:
+        files = [f"{path}/{f}" for f in os.listdir(path) if f.endswith(".txt")]
+        for file in files:
+            id = generate_uuid(file)
+            client.delete_document(id)
 
-        if extension in ["pdf"]:
-            pages = set([re.findall("\d+", f)[-1] for f in os.listdir(path) if f".{extension}" in f])
-            for page in pages:
-                print(f"Deleting {path}/{basename}_{page}.pdf...")
-                client.delete_document(f"{path}/{basename}_{page}.pdf")
-        else:
-            print(f"Deleting {path}/{structure}...")
-            client.delete_document(f"{path}/{structure}")
-        return
-
-    for key, value in structure.items():
-        for item in value:
-            delete_structure(client, item, f"{path}/{key}")
+    else:
+        folders = [f"{path}/{f}" for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")]
+        for folder in folders:
+            delete_structure(client, folder)
 
 def get_filesystem(path):
     """
-    Get the filesystem structure and information of each file/folder
-
-    :param path: path to the folder
-    :return: dictionary with the structure and information
+	@@ -106,7 +101,7 @@ def get_filesystem(path):
+    @param path: path to the folder
     """
     files = get_structure(path)
-    info = get_info(files)
+    info = get_structure_info(path)
+
     return {**files, 'info': info}
 
 def get_creation_time(path):
@@ -111,110 +106,41 @@ def get_size(path):
     :return: size of the file
     """
 
-    extension = path[path.rfind(".") + 1:]
-    files = [
-        os.path.join(path, f) for f in os.listdir(path)
-        if os.path.isfile(os.path.join(path, f)) and extension in f[-len(extension):]
-    ]
+    name = path.split("/")[-1]
+    path = f"{path}/{name}"
 
-    size = 0
-    for file in files:
-        size += os.path.getsize(file)
+    size = os.path.getsize(path)
 
     if size < 1024: return f"{size} B"
     elif size < 1024 ** 2: return f"{size / 1024:.2f} KB"
     elif size < 1024 ** 3: return f"{size / 1024 ** 2:.2f} MB"
     else: return f"{size / 1024 ** 3:.2f} GB"
 
-def get_info(files, current_path="", info={}):
+def get_structure_info(path):
     """
     Get the info of each file/folder
-
-    :param files: the filesystem structure
-    :param current_path: the current path
-    :param info: the info of the files/folders
-    :return: the info of the files/folders
+    @param files: the filesystem structure
     """
+    info = {}
 
-    if type(files) == dict:
-        key = list(files.keys())[0]
-        path = f"{current_path}/{key}" if current_path != "" else key
+    for root, folders, _ in os.walk(path):
+        for folder in folders:
+            folder_path = f"{root}/{folder}".replace("\\", "/")
 
-        creation_date = get_creation_time(path)
-        modification_date = get_modification_time(path)
+            data = get_data(f"{folder_path}/_data.json")
+            path_info = {"creation_date": get_creation_time(folder_path), "last_modified": get_modification_time(folder_path)}
+            path_info.update(data)
 
-        data = {
-            "creation_date": creation_date,
-            "last_modified": modification_date,
-            "number_of_files": 0
-        }
+            if data["type"] == "file": path_info["size"] = get_size(folder_path)
 
-        for item in files[key]:
-            item_data = get_info(item, path)
+            info[folder_path] = path_info
 
-            if "size" not in item_data:
-                data["number_of_files"] += item_data["number_of_files"]
-            else:
-                data["number_of_files"] += 1
-
-        if path != "files":
-            info[path] = data
-            return data
-        return info
-
-    else:
-        path = f"{current_path}/{files}"
-
-        creation_date = get_creation_time(path)
-        modification_date = get_modification_time(path)
-        size = get_size(path)
-
-        with open(path + "/_config.json") as f:
-            data = json.load(f)
-            progress = data["progress"]
-
-        extension = files.split(".")[-1]
-        if extension == "jpg": files_in_folder = 1
-        else: files_in_folder = len([
-            f for f in os.listdir(path)
-            if os.path.isfile(os.path.join(path, f)) and extension in f[-len(extension):]
-        ])
-
-        print(f"Getting info of {path}...", progress)
-
-        data = {
-            "creation_date": creation_date,
-            "last_modified": modification_date,
-            "size": size,
-            "progress": progress,
-            "number_of_files": files_in_folder
-        }
-
-        info[path] = data
-
-        return data
+    return info
 
 def get_structure(path):
     """
     Put the file system structure in a dict
     {
-        'info': {
-            'files/folder1': {
-                'creation_date': '2021-05-05 12:00:00',
-                'last_modified': '2021-05-05 15:00:00',
-                'number_of_files': 1
-            },
-            'files/folder2': {
-                'creation_date': '2021-05-05 12:00:00',
-                'last_modified': '2021-05-05 15:00:00',
-                'number_of_files': 0
-            },
-            'files/folder1/file.pdf': {
-                'creation_date': '2021-05-05 15:00:00',
-                'last_modified': '2021-05-05 15:00:00',
-                'size': 10 KB
-            }
-        },
         'files': [
             {
                 'folder1': ['file.pdf']
@@ -228,33 +154,35 @@ def get_structure(path):
     :param path: the path to the files
     """
     filesystem = {}
-    last_folder = path.split("/")[-2]
+    name = path.split("/")[-1]
 
-    folders = sorted([x for x in os.listdir(path) if os.path.isdir(f"{path}{x}/")])
-    files = [x for x in os.listdir(path) if not os.path.isdir(f"{path}{x}/")]
+    if path != "files":
+        data = get_data(f"{path}/_data.json")
+        if data["type"] == "file": return name
 
-    if not folders and files:
-        if path == "./files/":
-            return {"files": [], "info": {}}
-        return last_folder
-    
-    contents_folders = []
-    contents_files = []
-    
+    contents = []
+    folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")])
     for folder in folders:
-        file = get_structure(f"{path}{folder}/")
+        file = get_structure(f"{path}/{folder}")
+        contents.append(file)
 
-        if type(file) == str:
-            contents_files.append(file)
-        else:
-            contents_folders.append(file)
-
-    filesystem[last_folder] = contents_folders + contents_files
+    filesystem[name] = contents
     return filesystem
 
 ##################################################
 # FILES UTILS
 ##################################################
+def get_page_count(filename):
+    """
+    Get the number of pages of a file
+    """
+
+    extension = filename.split(".")[-1]
+    if extension == "pdf":
+        return PdfFileReader(open(filename, "rb")).getNumPages()
+    elif extension in ["jpg", "jpeg"]:
+        return 1
+
 def get_file_basename(filename):
     """
     Get the basename of a file
@@ -273,88 +201,70 @@ def get_pdf_pages(file):
     """
     return convert_from_path(file, 200)
 
-def save_text_file(text, basename, path):
+def save_text_file(text, path):
     """
     Save a text file
-
-    :param text: text to save
-    :param filename: name of the file
-    :param path: path to the file
+    @param text: text to save
+    @param path: path of the file
     """
-    with open(f"{path}/{basename}.txt", "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(text)
 
-def parse_file(process_function, filename, arg, config, path, ocr_algorithm, es_client):
+##################################################
+# OCR UTILS
+##################################################
+def get_data(file):
+    with open(file, encoding="utf-8") as f:
+        return json.load(f)
+
+def update_data(file, data):
     """
-    Function that will be used by the threads to process the files
-
-    :param process_function: function to process the files
-    :param filename: name of the file
-    :param arg: argument to pass to the function (PIL image or PDF page number)
-    :param config: config to pass to the function
-    :param path: path to the file
+    Update the data file
+    @param file: path to the data file
+    @param data: data to update
     """
 
-    basename = '.'.join(filename.split(".")[:-1])
-    extension = os.path.basename(filename).split(".")[-1]
+    previous_data = get_data(file)
+    with open(file, "w", encoding="utf-8") as f:
+        previous_data.update(data)
+        json.dump(previous_data, f)
 
-    text = process_function(filename, arg, config, path, ocr_algorithm)
-    es_client.add_document(create_document(f"{path}/{filename}/{basename}", extension, text, arg if type(arg) == int else None))
-
-    if type(arg) == int:
-        print("----- Processing page", arg, "of", filename)
-        files = os.listdir(f"{path}/{filename}")
-        original_files = [x for x in files if x.endswith(extension)]
-        processed_files = [x for x in files if x.endswith("txt")]
-
-        #? Still needs this if? Probably fixed with the path fixes
-        progress = 100 * len(processed_files) / len(original_files) if len(original_files) > 0 else 0
-
-        print("-----", len(processed_files), "of", len(original_files), "processed", progress)
-
-        with open(f"{path}/{filename}/_config.json") as f:
-            data = json.load(f)
-            data["progress"] = int(progress)
-
-        with open(f"{path}/{filename}/_config.json", "w") as f:
-            json.dump(data, f)
-
-def process_image(filename, image, config, path, algorithm):
+def prepare_file_ocr(path, ocr_folder, algorithm, config):
     """
-    Process an image, extract the text and save the results
-
-    :param filename: name of the file
-    :param image: image to process
-    :param config: config to pass to the algorithm
-    :param path: path to the file
-    :param algorithm: algorithm to use
-    :return: text extracted from the image
+    Prepare the OCR of a file
+    @param path: path to the file
+    @param ocr_folder: folder to save the results
     """
-    basename = get_file_basename(filename)
 
-    text = clear_text(algorithm(image, config))
-    save_text_file(text, basename, f"{path}/{filename}")
-    return text
+    extension = path.split(".")[-1]
+    basename = get_file_basename(path)
 
-def process_file(file, pageNumber, config, path, algorithm):
+    if extension == "pdf":
+        pages = convert_from_path(f"{path}/{basename}.pdf", 200)
+        for i, page in enumerate(pages):
+            page.save(f"{path}/{basename}_{i}.jpg", "JPEG")
+
+    elif extension in ["jpeg", "jpg"]:
+        img = Image.open(f"{path}/{basename}.{extension}")
+        img.save(f"{path}/{basename}.jpg", "JPEG")
+
+def perform_file_ocr(path, ocr_folder, config, ocr_algorithm):
     """
-    Process a file, extract the text and save the results
-
-    :param file: file to process
-    :param pageNumber: page number to process
-    :param config: config to pass to the algorithm
-    :param path: path to the file
-    :param algorithm: algorithm to use
-    :return: text extracted from the file
+    Prepare the OCR of a file
+    @param path: path to the file
+    @param ocr_folder: folder to save the results
+    @param data: data to use
+    @param ocr_algorithm: algorithm to use
     """
-    basename = get_file_basename(file)
 
-    pages = get_pdf_pages(f"{path}/{file}/{basename}_{pageNumber}.pdf")
+    algorithm = "Tesseract" if ocr_folder.startswith("TESS") else "EasyOCR"
+    prepare_file_ocr(path, ocr_folder, algorithm, config)
 
-    for page in pages:
-        page = page.crop((0, 0, page.size[0], page.size[1] - 120))
-        page.save(f"{path}/{file}/{basename}_{pageNumber}.jpg", "JPEG")
-        text = clear_text(algorithm(page, config))
-        save_text_file(text, basename + "_" + str(pageNumber), f"{path}/{file}")
+    images = [x for x in os.listdir(path) if x.endswith(".jpg")]
 
-    return text
+    data_folder = f"{path}/{ocr_folder}/_data.json"
+
+    for id, image in enumerate(images):
+        text = clear_text(ocr_algorithm(Image.open(f"{path}/{image}"), config))
+        save_text_file(text, f"{path}/{ocr_folder}/{get_file_basename(image)}.txt")
+        update_data(data_folder, {"progress": int((id + 1) / len(images) * 100)})
