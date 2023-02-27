@@ -180,28 +180,6 @@ class FileExplorer extends React.Component {
         this.downloadMenu.current.toggleOpen();
     }
 
-
-    getDocument(path, type) {
-        /**
-         * Export the .txt or .pdf file
-         */
-        fetch(process.env.REACT_APP_API_URL + "get_" + type + '?path=' + path, {
-            method: 'GET'
-        })
-        .then(response => {return response.blob()})
-        .then(data => {
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(data);
-
-            var name = path.split('/').slice(-2)[0];
-            console.log(name)
-            var basename = name.split('.').slice(0, -1).join('.');
-            a.download = basename + '.' + type;
-            a.click();
-            a.remove();
-        });
-    }
-
     goBack() {
         /**
          * Go back to the previous folder

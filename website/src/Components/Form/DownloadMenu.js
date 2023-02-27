@@ -4,6 +4,8 @@ import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import CircularProgress from '@mui/material/CircularProgress';
+
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
 const style = {
@@ -33,6 +35,9 @@ class DownloadMenu extends React.Component {
             path: "",
 
             filesystem: props.filesystem,
+
+            loading: false,
+            loadingType: "",
         }
     }
 
@@ -41,15 +46,32 @@ class DownloadMenu extends React.Component {
     }
 
     toggleOpen() {
+        if (this.state.open) {
+            this.setState({ loading: false });
+        }
         this.setState({ open: !this.state.open });
     }
 
-    downloadTxt() {
-        this.state.filesystem.getDocument(this.state.path, "txt");
-    }
+    getDocument(type) {
+        /**
+         * Export the .txt or .pdf file
+         */
+        this.setState({ loading: true, loadingType: type });
+        fetch(process.env.REACT_APP_API_URL + "get_" + type + '?path=' + this.state.path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
 
-    downloadPdf() {
-        this.state.filesystem.getDocument(this.state.path, "pdf");
+            var name = this.state.path.split('/').slice(-2)[0];
+            var basename = name.split('.').slice(0, -1).join('.');
+            a.download = basename + '.' + type;
+            a.click();
+            a.remove();
+            this.setState({ loading: false });
+        });
     }
 
     render() {
@@ -62,24 +84,42 @@ class DownloadMenu extends React.Component {
                         </Typography>
 
                         <Button
+                            disabled={this.state.loading}
                             color="primary"
                             variant="contained"
                             sx={{border: '1px solid black', mt: '0.5rem', width: '100%'}}
-                            onClick={() => this.downloadTxt()}
+                            onClick={() => this.getDocument("txt")}
                         >
                             TXT
                         </Button>
 
                         <Button
+                            disabled={this.state.loading}
                             color="success"
                             variant="contained"
                             sx={{border: '1px solid black', mt: '0.5rem', width: '100%'}}
-                            onClick={() => this.downloadPdf()}
+                            onClick={() => this.getDocument("pdf")}
                         >
                             PDF
                         </Button>
 
-                        <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
+                        >
+                            {
+                                this.state.loading
+                                ? this.state.loadingType === "txt"
+                                    ? <CircularProgress sx={{mt: '0.5rem'}} color="primary" />
+                                    : <CircularProgress sx={{mt: '0.5rem'}} color="success" />
+                                : null
+                            }
+                        </Box>
+
+                        <IconButton disabled={this.state.loading} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
                             <CloseRoundedIcon />
                         </IconButton>
                     </Box>
