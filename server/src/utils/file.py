@@ -2,9 +2,11 @@ import os, re, time, json
 from pdf2image import convert_from_path
 from PyPDF2 import PdfFileReader
 from PIL import Image
+from os import environ
 
 from src.utils.text import clear_text
 
+IMAGE_PREFIX = environ.get('IMAGE_PREFIX', '.')
 ##################################################
 # FILESYSTEM UTILS
 ##################################################
@@ -35,7 +37,7 @@ def get_file_parsed(path):
             data.append({
                 "original_file": file,
                 "content": f.read(),
-                "page_url": "http://localhost/images/" + '/'.join(file.split("/")[1:-2]) + "/" + basename + ".jpg",
+                "page_url": IMAGE_PREFIX + "/images/" + '/'.join(file.split("/")[1:-2]) + "/" + basename + ".jpg",
             })
     return data
 
