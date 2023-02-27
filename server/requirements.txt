@@ -7,3 +7,4 @@ elasticsearch==8.5.0
 PyPDF2==2.12.1
 easyocr==1.6.2
 reportlab==3.6.12
+lxml==4.9.1
