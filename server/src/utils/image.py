@@ -99,5 +99,3 @@ def parse_image():
     reshaped_image = cv2.resize(img, (500, 700))
     cv2.imshow('shapes', reshaped_image)
     cv2.waitKey(0)            
-
-# parse_image()

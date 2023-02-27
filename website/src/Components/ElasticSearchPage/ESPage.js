@@ -10,6 +10,7 @@ import { Divider } from '@mui/material';
 import PageDisplayer from '../Displayer/PageDisplayer';
 
 class ESItem extends React.Component {
+    // This component is used to display a single page from the ElasticSearch database
     constructor(props) {
         super(props);
         this.state = {
@@ -28,17 +29,25 @@ class ESItem extends React.Component {
                 <Divider color="success" orientation='vertical' flexItem sx={{mr: '0.5rem'}} />
                 <Box>
                     <PageDisplayer
-                        filename={this.state.page['_id'].split('/').slice(0, -1).join('/')}
-                        page={this.state.page['_source']['Page']-1}
+                        path={this.state.page['_source']['Page Image']}
                     />
                 </Box>
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
+                    ml: '0.5rem',
                 }}>
-                    <span><b>File:</b> {this.state.page['_id']}</span>                
-                    <span><b>Page:</b> {this.state.page['_source']['Page']}</span>                
-                    <span><b>Page Text:</b> {this.state.page['_source']['Text']}</span>
+                    <span><b>Path:</b> {this.state.page['_source']['Path'].split('/').slice(1,-2).join('/')}</span>                
+                    <span><b>Document:</b> {this.state.page['_source']['Document']}</span>                
+                    {
+                        this.state.page['_source']['Page'] !== undefined
+                        ? <span><b>Page:</b> {this.state.page['_source']['Page']}</span>
+                        : null
+                    }
+                    <span><b>Algorithm:</b> {this.state.page['_source']['Algorithm']}</span>                
+                    <span><b>Configuration:</b> {this.state.page['_source']['Config']}</span>
+                    <br/>
+                    <span><b>Text:</b><br/>{this.state.page['_source']['Text']}</span>
                 </Box>
             </Box>
         )
@@ -57,24 +66,47 @@ class ESPage extends React.Component {
             loading: true
         }
 
+        // Filters
         this.freeText = React.createRef();
         this.journal = React.createRef();
         this.fileType = React.createRef();
+        this.algorithm = React.createRef();
+        this.config = React.createRef();
     }
 
     get_journal(data) {
-        var journal = data['_id'].split('/').slice(0,-1).join('/');
+        /**
+         * Get the journal name from the file path
+         * 
+         * ! Needs to keep some of the path otherwise can get duplicates with other folders
+         */
+        var journal = data['_source']['Path'].split('/').slice(1, -2).join('/');
         return journal;
     }
 
     get_fileType(data) {
-        console.log(data['_id'], data['_id'].split('/'), data['_id'].split('/').slice(-2)[0].split('.'))
-        var splitted = data['_id'].split('/').slice(-2)[0].split('.')
+        /**
+         * Get the file type from the file path
+         */
+        var splitted = data['_source']['Document'].split('.')
         var fileType = splitted[splitted.length-1].toUpperCase();
         return fileType;
     }
 
+    get_algorithm(data) {
+        var algorithm = data['_source']['Algorithm'];
+        return algorithm;
+    }
+
+    get_config(data) {
+        var config = data['_source']['Config'];
+        return config;
+    }
+
     componentDidMount() {
+        /**
+         * When the component is mounted, get the data from the ElasticSearch database
+         */
         fetch(process.env.REACT_APP_API_URL + "get_elasticsearch", {
             method: 'GET'
         })
@@ -82,6 +114,9 @@ class ESPage extends React.Component {
         .then(data => {
             var journals = [];
             var fileTypes = [];
+            var algorithms = [];
+            var configs = [];
+
             for (var i = 0; i < data.length; i++) {
 
                 var journal = this.get_journal(data[i]);
@@ -101,31 +136,62 @@ class ESPage extends React.Component {
                         "code": fileType
                     });
                 }
+
+                var algorithm = this.get_algorithm(data[i]);
+                names = algorithms.map(j => j.name);
+                if (!names.includes(algorithm)) {
+                    algorithms.push({
+                        "name": algorithm,
+                        "code": algorithm
+                    });
+                }
+
+                var config = this.get_config(data[i]);
+                names = configs.map(j => j.name);
+                if (!names.includes(config)) {
+                    configs.push({
+                        "name": config,
+                        "code": config
+                    });
+                }
             }
 
             if (this.journal.current !== null)
                 this.journal.current.setState({options: journals, choice: this.state.app.state.filesChoice});
             if (this.fileType.current !== null)
                 this.fileType.current.setState({options: fileTypes});
+            if (this.algorithm.current !== null)
+                this.algorithm.current.setState({options: algorithms, choice: this.state.app.state.algorithmChoice});
+            if (this.config.current !== null)
+                this.config.current.setState({options: configs, choice: this.state.app.state.configChoice});
             this.setState({pages: data, showing: data, loading: false}, this.filterPages);
         });
     }
 
     changeText(event) {
+        /**
+         * Handle the change in the text field
+         */
         this.setState({freeText: event.target.value}, this.filterPages);
     }
 
     filterPages() {
+        /**
+         * Filter the pages based on the filters
+         */
         var current_showing = [];
 
         var freeText = this.state.freeText;
         var journal = this.journal.current.getChoiceList();
         var fileType = this.fileType.current.getChoiceList();
+        var algorithm = this.algorithm.current.getChoiceList();
+        var config = this.config.current.getChoiceList();
 
         const containsFreeText = (element) => element.toString().toLowerCase().includes(freeText.toLowerCase());
 
         this.state.pages.forEach(page => {
             var values = Object.keys(page["_source"]).map(function(key){
+                if (key === "Page Image") return "";
                 return page["_source"][key];
             });
             values.push(page["_id"]);
@@ -133,7 +199,9 @@ class ESPage extends React.Component {
             if (
                 values.some(containsFreeText) && 
                 (journal.length === 0 || journal.includes(this.get_journal(page))) &&
-                (fileType.length === 0 || fileType.includes(this.get_fileType(page)))
+                (fileType.length === 0 || fileType.includes(this.get_fileType(page))) &&
+                (algorithm.length === 0 || algorithm.includes(this.get_algorithm(page))) &&
+                (config.length === 0 || config.includes(this.get_config(page)))
             ) {
                 current_showing.push(page);
             }
@@ -168,6 +236,8 @@ class ESPage extends React.Component {
                     <TextField onChange={(e) => this.changeText(e)} ref={this.freeText} label="Free Text" variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.journal} label={"Journal"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"File Type"} options={[]} choice={[]} />
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.algorithm} label={"Algorithm"} options={[]} choice={[]} />
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.config} label={"Config"} options={[]} choice={[]} />
                 </Box>
 
                 <Box sx={{
@@ -183,7 +253,7 @@ class ESPage extends React.Component {
 
                         :   this.state.showing.length === 0
                             ? <p style={{fontSize: '20px'}}><b>No pages found</b></p>
-                            : this.state.showing.map((page, index) => {
+                            : this.state.showing.sort((a, b) => (a['_id'] > b['_id'] ? 1 : -1)).map((page, index) => {
                                 return(
                                     <Box key={page['_id']} sx={{
                                         display: 'flex',

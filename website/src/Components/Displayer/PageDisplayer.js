@@ -1,65 +1,31 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardMedia from '@mui/material/CardMedia';
-
-import {ZoomImage, ImageModal} from './ImageModal';
 
 class PageDisplayer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            filename: props.filename,
-            page: props.page
+            path: props.path,
+            maxWidth: '150px'
         }
-
-        this.modal = React.createRef();
-    }
-
-    expandImage() {
-        this.modal.current.handleOpen();
     }
     
     render() {
-        var path = this.state.filename.split("/");
-
-        var pathString = (process.env.REACT_APP_IMAGES_PREFIX || ".") + "/images/" + (
-            (path.length === 0)
-            ? ""
-            : path.slice(1).join("/") + "/"
-        )
-        
-        var fileWithoutPath = path[path.length - 1];
-        var basename = fileWithoutPath.split(".").slice(0, -1).join(".");
-
-        let page_url;
-        if (isNaN(this.state.page)) {
-            page_url = pathString + basename + "_1.jpg";
-        } else {
-            page_url = pathString + basename + "_" + (1 + this.state.page) + ".jpg";
-        }
-
         return (
-            <Box>
-                <ImageModal image={page_url} />
-                <ZoomImage image={page_url} ref={this.modal}/>
-                <Card
-                    sx={{
-                        mr: '0.5rem',
-                        ":hover": {
-                            cursor: 'pointer',
-                            boxShadow: 3,
-                        },
-                    }}
-                    onClick={() => this.expandImage()}
+            <Box
+                sx={{maxWidth: `${this.state.maxWidth}`, border: '1px solid #d9d9d9', boxShadow: 1}}
+            >
+                <a
+                    href={this.state.path}
+                    target="_blank"
+                    rel="noreferrer"
                 >
-                    <CardMedia
-                        component="img"
-                        height="120"
-                        sx={{objectFit: 'contain', padding: 0}}
-                        image={page_url}
+                    <img
+                        src={this.state.path}
+                        alt={`Page of ${this.state.path.split('/').slice(-1)}`}
+                        style={{maxWidth: `${this.state.maxWidth}`}}
                     />
-                </Card>
+                </a>
             </Box>
         );
     }

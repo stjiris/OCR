@@ -7,12 +7,11 @@ import TableRow from '@mui/material/TableRow';
 
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import ModeRoundedIcon from '@mui/icons-material/ModeRounded';
-import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+import SearchIcon from '@mui/icons-material/Search';
 
-import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import VersionRow from './VersionRow';
 
 export default class FileRow extends React.Component {
     constructor(props) {
@@ -20,18 +19,53 @@ export default class FileRow extends React.Component {
         this.state = {
             name: props.name,
             info: props.info,
-            filesystem: props.filesystem
+            filesystem: props.filesystem,
+
+            expanded: false,
+            versions: props.versions,
+            versionsComponents: []
         }
+
+        this.versionRefs = [];
+    }
+
+    componentDidMount() {
+        this.createVersions();
+    }
+
+    createVersions() {
+        var versions = this.state.versions;
+        var versionsComponents = [];
+
+        for (let i = 0; i < versions.length; i++) {
+            var ref = React.createRef();
+            this.versionRefs.push(ref);
+
+            var version = versions[i];
+            versionsComponents.push(
+                <VersionRow
+                    ref={ref}
+                    key={this.state.name + "_" + version}
+                    file={this.state.name}
+                    name={version}
+                    filesystem={this.state.filesystem}
+                    info={this.getInfo(version)}
+                />
+            );
+        }
+        this.setState({versionsComponents: versionsComponents});
     }
 
     updateInfo(info) {
-        if (this.state.name.includes("J4"))
-            console.log(info)
-        this.setState({info: info});
+        this.setState({info: info, versionsComponents: []}, this.createVersions);
+    }
+
+    updateVersions(versions) {
+        this.setState({versions: versions});
     }
 
     fileClicked() {
-        this.state.filesystem.editFile(this.state.name);
+        this.setState({expanded: !this.state.expanded});
     }
 
     getTxt(e) {
@@ -39,14 +73,9 @@ export default class FileRow extends React.Component {
         this.state.filesystem.getTxt(this.state.name);
     }
 
-    edit(e) {
+    getPdf(e) {
         e.stopPropagation();
-        this.state.filesystem.editFile(this.state.name);
-    }
-
-    view(e) {
-        e.stopPropagation();
-        this.state.filesystem.viewFile(this.state.name);
+        this.state.filesystem.getPdf(this.state.name);
     }
 
     delete(e) {
@@ -54,98 +83,107 @@ export default class FileRow extends React.Component {
         this.state.filesystem.deleteItem(this.state.name);
     }
 
+    getInfo(version) {
+        var keys = Object.keys(this.state.info);
+        for (let i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            if (key.endsWith(version)) {
+                return this.state.info[key];
+            }
+        }
+    }
+
+    performOCR(e) {
+        console.log("Performing OCR on " + this.state.name);
+        e.stopPropagation();
+        this.state.filesystem.performOCR(false, this.state.name);
+    }
+
     render() {
+        var mainInfo = this.getInfo(this.state.name);
+        var style = {}
+        if (!this.state.expanded) {
+            style = {
+                '&:last-child td, &:last-child th': { border: 0 },
+                ":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'}
+            }
+        } else {
+            style = {
+                borderBottomLeftRadius: '6px',
+                borderBottomRightRadius: '6px',
+                borderColor: 'grey',
+                ":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px',}
+            }
+        }
         return (
-            <TableRow
-                sx={{ '&:last-child td, &:last-child th': { border: 0 }, ":hover": {backgroundColor: "#f5f5f5"} }}
-            >
-                <TableCell sx={{paddingTop: 0, paddingBottom: 0}}>
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                    }}>
-                        <InsertDriveFileOutlinedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
-                        <p>{this.state.name}</p>    
-                    </Box>
-                </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    {
-                        this.state.info["creation_date"]
-                    }
-                </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    {
-                        this.state.info["last_modified"]
-                    }
-                </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    {
-                        this.state.info["number_of_files"]
-                    }
-                </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    {
-                        this.state.info["size"]
-                    }
-                </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    {
-                        this.state.info["progress"] === 100
-                        ? <CheckRoundedIcon color="success" sx={{fontSize: 30}}/>
-                        : <IconButton sx={{fontSize: 30}}>
-                            <AccessTimeIcon sx={{mr: '0.3rem'}} style={{color: "orange"}}/>
-                            <p style={{fontSize: '13px'}}><b>{this.state.info["progress"]}%</b></p>
-                        </IconButton>
-                    }
-                </TableCell>
-                <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    <Box>
-                        <IconButton
-                            disabled={!(this.state.info["progress"] === 100)}
-                            color="primary"
-                            sx={{mr: '0.1rem'}}
-                            aria-label="delete"
-                            onClick={(e) => this.getTxt(e)}
-                        >
-                            <DownloadRoundedIcon/>
+            <>
+                <TableRow
+                    sx={style}
+                    onClick={() => this.fileClicked()}
+                >
+                    <TableCell sx={{paddingTop: 0, paddingBottom: 0}}>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                        }}>
                             {
-                                this.state.info["progress"] === 100
-                                ? <p style={{fontSize: '13px', color: 'black'}}>TXT</p>
-                                : <p style={{fontSize: '13px', color: 'grey'}}>TXT</p>
+                                this.state.expanded
+                                ? <KeyboardArrowDownRoundedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
+                                : <KeyboardArrowRightRoundedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
                             }
-                        </IconButton>
-                        <IconButton
-                            disabled={!(this.state.info["progress"] === 100)}
-                            sx={{mr: '0.1rem'}}
-                            color="primary"
-                            aria-label="delete"
-                            onClick={(e) => this.view(e)}
-                        >
-                            <VisibilityRoundedIcon />
-                        </IconButton>
-
-                        <IconButton
-                            disabled={!(this.state.info["progress"] === 100)}
-                            sx={{mr: '0.1rem'}}
-                            color="primary"
-                            aria-label="delete"
-                            onClick={(e) => this.edit(e)}
-                        >
-                            <ModeRoundedIcon />
-                        </IconButton>
-
-                        <IconButton
-                            disabled={!(this.state.info["progress"] === 100)}
-                            color="error"
-                            aria-label="delete"
-                            onClick={(e) => this.delete(e)}
-                        >
-                            <DeleteForeverIcon />
-                        </IconButton>
-                    </Box>
-                </TableCell>
-            </TableRow>
+                            <InsertDriveFileOutlinedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
+                            <p>{this.state.name}</p>    
+                        </Box>
+                    </TableCell>
+                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                        {
+                            mainInfo["creation_date"]
+                        }
+                    </TableCell>
+                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                        {
+                            mainInfo["last_modified"]
+                        }
+                    </TableCell>
+                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                        {
+                            mainInfo["files/pages"]
+                        }
+                    </TableCell>
+                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                        {
+                            mainInfo["size"]
+                        }
+                    </TableCell>
+                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                        -
+                    </TableCell>
+                    <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
+                        <Box>
+                            <IconButton
+                                style={{color: "#e5de00"}}
+                                aria-label="delete"
+                                onClick={(e) => this.performOCR(e)}
+                            >
+                                <SearchIcon />
+                            </IconButton>
+                            <IconButton
+                                color="error"
+                                aria-label="delete"
+                                onClick={(e) => this.delete(e)}
+                            >
+                                <DeleteForeverIcon />
+                            </IconButton>
+                        </Box>
+                    </TableCell>
+                </TableRow>
+                {
+                    this.state.expanded
+                    ? this.state.versionsComponents.map((comp) => { return comp; } )
+                    : null
+                }
+            </>
         )
     }
 }

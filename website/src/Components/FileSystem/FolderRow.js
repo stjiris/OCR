@@ -19,7 +19,12 @@ export default class FolderRow extends React.Component {
     }
 
     updateInfo(info) {
-        this.setState({info: info});
+        var key = Object.keys(info)[0];
+        this.setState({info: info[key]});
+    }
+
+    updateVersions(_) {
+        // Do nothing
     }
 
     folderClicked() {
@@ -59,7 +64,7 @@ export default class FolderRow extends React.Component {
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
                     {
-                        this.state.info["number_of_files"]
+                        this.state.info["files/pages"]
                     }
                 </TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>

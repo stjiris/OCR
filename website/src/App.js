@@ -24,9 +24,10 @@ function App() {
             path: "files",
 
             contents: [],
-            images: [],
 
-            filesChoice: []
+            filesChoice: [],
+            algorithmChoice: [],
+            configChoice: [],
         }
         
         this.saveButton = React.createRef();
@@ -39,36 +40,63 @@ function App() {
         this.sendChanges = this.sendChanges.bind(this);
     }
 
-    openFile(path, file) {
+    editFile(path, file) {
+        /**
+         * Open a file in the text editor
+         * 
+         * @param {string} path - The path of the file
+         * @param {string} file - The name of the file
+         */
         this.setState({path: path, fileOpened: file, fileSystemMode: false, editFileMode: true});
         fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + file, {
             method: 'GET'
         })
         .then(response => {return response.json()})
         .then(data => {
-            this.setState({contents: data.contents, images: data.images});
+            this.setState({contents: data["doc"]});
         });
     }
 
-    viewFile(file) {
-        this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [{name: file, code: file}]});
+    viewFile(file, algorithm, config) {
+        /**
+         * View a file in ES page
+         * 
+         * @param {string} file - The name of the file
+         */
+        this.setState(
+            {
+                fileSystemMode: false,
+                editFileMode: false,
+                filesChoice: [{name: file, code: file}],
+                algorithmChoice: [{name: algorithm, code: algorithm}],
+                configChoice: [{name: config, code: config}]
+            }
+        );
     }
 
     updateContents(event, index) {
+        /**
+         * Update the content of the text editor
+         * 
+         * @param {event} event - The event
+         * @param {int} index - The index of the text field changed
+         */
         var contents = this.state.contents;
-        contents[index] = event.target.value;
+        contents[index]["content"] = event.target.value;
         this.setState({contents: contents});
     }
 
     sendChanges() {
+        /**
+         * Send the changes to the server
+         */
         fetch(process.env.REACT_APP_API_URL + 'submitText', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                "text": this.state.contents,
-                "filename": this.state.fileOpened
+                "text": this.state.contents
             })
         })
         .then(response => {return response.json()})
@@ -76,7 +104,7 @@ function App() {
             if (data.success) {
                 this.successNot.current.setMessage("Text submitted with success!");
                 this.successNot.current.open();
-                this.setState({contents: [], images: [], fileOpened: "", fileSystemMode: true, editFileMode: false})
+                this.setState({contents: [], fileOpened: "", fileSystemMode: true, editFileMode: false})
             } else {
                 this.errorNot.current.setMessage(data.error);
                 this.errorNot.current.open();
@@ -96,7 +124,7 @@ function App() {
                                 mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
                             }}
                             style={{textDecoration: 'none'}}
-                            onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: []})}
+                            onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
                             underline="hover"
                         >
                             <h1>Home</h1>
@@ -108,7 +136,7 @@ function App() {
                                 mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
                             }}
                             style={{textDecoration: 'none'}}
-                            onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: []})}
+                            onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
                             underline="hover"
                         >
                             <h1>Search</h1>
@@ -129,7 +157,7 @@ function App() {
                                 variant="contained"
                                 startIcon={<UndoIcon />} 
                                 sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', ml: '1.5rem', mb: '0.5rem', ':hover': {bgcolor: '#dddddd'}}}
-                                onClick={() => this.setState({contents: [], images: [], fileOpened: "", fileSystemMode: true})}
+                                onClick={() => this.setState({contents: [], fileOpened: "", fileSystemMode: true})}
                             >
                                 Go Back
                             </Button>
@@ -143,7 +171,7 @@ function App() {
                                                 filename={this.state.fileOpened}    
                                                 page={index}
                                             />
-                                            <CustomTextField defaultValue={page} sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={13} onChange={(e) => this.updateContents(e, index)} fullWidth disabled={this.state.disabled} multiline />
+                                            <CustomTextField defaultValue={page["content"]} sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={13} onChange={(e) => this.updateContents(e, index)} fullWidth disabled={this.state.disabled} multiline />
                                         </Box>
                                     )
                                 })

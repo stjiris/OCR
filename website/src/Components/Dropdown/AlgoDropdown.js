@@ -14,7 +14,14 @@ class AlgoDropdown extends React.Component {
     }
   }
 
+  getChoice() {
+    return this.state.algorithm;
+  }
+
   changeAlgorithm = (event) => {
+    /**
+     * Update the page; language dropdown will be updated accordingly
+     */
     this.state.menu.changeAlgorithm(event.target.value);
     this.setState({ algorithm: event.target.value });
   }

@@ -34,26 +34,32 @@ export default class ChecklistDropdown extends React.Component {
         this.getChoice = this.getChoice.bind(this);
     }
 
-    setVisible() {
-        this.setState({ visible: true });
-    }
-    
-    setInvisible() {
-        this.setState({ visible: false });
-    }
+    // Setters
+    setVisible() { this.setState({ visible: true }); }
+    setInvisible() { this.setState({ visible: false }); }
 
     getChoice() {
+        /**
+         * Return the choice as a string
+         */
         return this.state.choice.map((x) => x.code).join('+');
     }
 
     getChoiceList() {
+        /**
+         * Return the choice as a list
+         */
         return this.state.choice.map((x) => x.code);
     }
 
     handleChange(event) {
-
+        /**
+         * If an option is selected or disabled, update the choice list
+         */
         const { target : { value } } = event;
 
+        // When disabling an option, the value will appear twice in the list
+        // This code removes the duplicates
         let duplicateRemoved = [];
         value.forEach((item) => {
             if (duplicateRemoved.findIndex((o) => o.name === item.name) >= 0) {
@@ -63,11 +69,11 @@ export default class ChecklistDropdown extends React.Component {
             }
         });
 
+        // If all options are disabled, reset the choice list to the default
         if (duplicateRemoved.length === 0) {
             duplicateRemoved = this.state.default
         }
 
-        
         if (this.state.parentfunc !== undefined) {
             this.setState({ choice: duplicateRemoved }, this.state.parentfunc);
         } else {

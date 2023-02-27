@@ -92,6 +92,7 @@ var languages = [
 ]
 
 export default class LangDropdown extends React.Component {
+  // Currently only used for EasyOCR
   constructor(props) {
     super(props);
     this.state = {
@@ -102,19 +103,21 @@ export default class LangDropdown extends React.Component {
     this.getChoice = this.getChoice.bind(this);
   }
 
-  setVisible() {
-    this.setState({ visible: true });
-  }
+  setVisible() { this.setState({ visible: true }); }
 
-  setInvisible() {
-    this.setState({ visible: false });
-  }
+  setInvisible() { this.setState({ visible: false }); }
 
   getChoice() {
+    /**
+     * Get the current choice
+     */
     return this.state.choice;
   }
 
   changeLanguage = (event) => {
+    /**
+     * Change the current choice
+     */
     this.setState({ choice: event.target.value });
   }
 
