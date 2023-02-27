@@ -90,7 +90,7 @@ function App() {
         /**
          * Send the changes to the server
          */
-        fetch(process.env.REACT_APP_API_URL + 'submitText', {
+        fetch(process.env.REACT_APP_API_URL + 'submit-text', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
