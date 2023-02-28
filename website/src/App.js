@@ -53,7 +53,9 @@ function App() {
         })
         .then(response => {return response.json()})
         .then(data => {
-            this.setState({contents: data["doc"]});
+            this.setState({contents: data["doc"].sort((a, b) =>
+                (a["page_url"] > b["page_url"]) ? 1 : -1
+            )});
         });
     }
 
@@ -163,9 +165,7 @@ function App() {
                             </Button>
 
                             {
-                                this.state.contents.sort((a, b) => 
-                                    (a["page_url"] > b["page_url"]) ? 1 : -1
-                                ).map((page, index) => {
+                                this.state.contents.map((page, index) => {
                                     return (
                                         <Box key={index} sx={{display: 'flex', ml: '1.5rem', mr: '1.5rem', mb: '0.5rem'}}>
                                             <Box>
