@@ -12,6 +12,8 @@ import ESPage from './Components/ElasticSearchPage/ESPage';
 
 import UndoIcon from '@mui/icons-material/Undo';
 
+const VERSION = "0.1.0";
+
 function App() {
   class Form extends React.Component {
     constructor(props) {
@@ -148,7 +150,7 @@ function App() {
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>
                     </Box>
 
-                    <p>Version: 0.1.0</p>
+                    <p>{`Version: ${VERSION}`}</p>
                 </Box>
 
                 {
