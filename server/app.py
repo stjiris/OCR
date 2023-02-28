@@ -23,7 +23,7 @@ from src.evaluate import evaluate
 from src.algorithms import tesseract, easy_ocr
 from src.elastic_search import *
 
-# client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
