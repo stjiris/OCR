@@ -147,6 +147,8 @@ function App() {
                         <Notification message={""} severity={"success"} ref={this.successNot}/>
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>
                     </Box>
+
+                    <p>Version: 0.1.0</p>
                 </Box>
 
                 {
