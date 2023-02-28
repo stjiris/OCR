@@ -12,6 +12,15 @@ import ESPage from './Components/ElasticSearchPage/ESPage';
 
 import UndoIcon from '@mui/icons-material/Undo';
 
+/**
+ * About Versioning:
+ * Version -> MAJOR.MINOR.PATCH
+ * MAJOR version when you make incompatible API changes
+ * MINOR version when you add functionality in a backwards compatible manner
+ * PATCH version when you make backwards compatible bug fixes
+ */
+const VERSION = "0.1.0";
+
 function App() {
   class Form extends React.Component {
     constructor(props) {
@@ -147,6 +156,8 @@ function App() {
                         <Notification message={""} severity={"success"} ref={this.successNot}/>
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>
                     </Box>
+
+                    <p>{`Version: ${VERSION}`}</p>
                 </Box>
 
                 {
