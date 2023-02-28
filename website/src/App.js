@@ -166,10 +166,14 @@ function App() {
                                 this.state.contents.map((page, index) => {
                                     return (
                                         <Box key={index} sx={{display: 'flex', ml: '1.5rem', mr: '1.5rem', mb: '0.5rem'}}>
-                                            <PageDisplayer                                           
-                                                path={page["page_url"]}
-                                            />
-                                            <CustomTextField defaultValue={page["content"]} sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={13} onChange={(e) => this.updateContents(e, index)} fullWidth disabled={this.state.disabled} multiline />
+                                            <Box>
+                                                <PageDisplayer                                           
+                                                    path={page["page_url"]}
+                                                />
+                                            </Box>
+                                            <Box sx={{width: '100%'}}>
+                                                <CustomTextField defaultValue={page["content"]} sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={13} onChange={(e) => this.updateContents(e, index)} fullWidth disabled={this.state.disabled} multiline />
+                                            </Box>
                                         </Box>
                                     )
                                 })

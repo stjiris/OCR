@@ -231,7 +231,7 @@ def update_data(file, data):
         previous_data.update(data)
         json.dump(previous_data, f)
 
-def prepare_file_ocr(path, ocr_folder, algorithm, config):
+def prepare_file_ocr(path):
     """
     Prepare the OCR of a file
     @param path: path to the file
@@ -260,9 +260,9 @@ def perform_file_ocr(path, ocr_folder, config, ocr_algorithm):
     """
 
     algorithm = "Tesseract" if ocr_folder.startswith("TESS") else "EasyOCR"
-    prepare_file_ocr(path, ocr_folder, algorithm, config)
+    prepare_file_ocr(path)
 
-    images = [x for x in os.listdir(path) if x.endswith(".jpg")]
+    images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
 
     data_folder = f"{path}/{ocr_folder}/_data.json"
 

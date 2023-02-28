@@ -23,7 +23,7 @@ from src.evaluate import evaluate
 from src.algorithms import tesseract, easy_ocr
 from src.elastic_search import *
 
-client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+# client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
@@ -206,7 +206,7 @@ def index_doc():
     else:
         config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
         ocr_config = get_data(path + "/_data.json")
-        files = [f for f in os.listdir(path) if f.endswith(".txt") and not f.endswith("-Text.txt")]
+        files = sorted([f for f in os.listdir(path) if f.endswith(".txt") and not f.endswith("-Text.txt")])
 
         for id, file in enumerate(files):
             file_path = f"{path}/{file}"
