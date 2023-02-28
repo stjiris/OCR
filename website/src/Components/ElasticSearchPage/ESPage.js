@@ -252,7 +252,15 @@ class ESPage extends React.Component {
 
                         :   this.state.showing.length === 0
                             ? <p style={{fontSize: '20px'}}><b>No pages found</b></p>
-                            : this.state.showing.sort((a, b) => (a['_id'] > b['_id'] ? 1 : -1)).map((page, index) => {
+                            : this.state.showing.sort((a, b) => {
+                                    var a_source = a['_source'];
+                                    var b_source = b['_source'];
+                                    if (a_source['Path'] === b_source['Path']) {
+                                        return a_source['Page Number'] > b_source['Page Number'] ? 1 : -1;
+                                    }
+                                    return a_source['Path'] > b_source['Path'] ? 1 : -1;
+                                    
+                                }).map((page, index) => {
                                 return(
                                     <Box key={page['_id']} sx={{
                                         display: 'flex',

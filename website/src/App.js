@@ -53,7 +53,9 @@ function App() {
         })
         .then(response => {return response.json()})
         .then(data => {
-            this.setState({contents: data["doc"]});
+            this.setState({contents: data["doc"].sort((a, b) =>
+                (a["page_url"] > b["page_url"]) ? 1 : -1
+            )});
         });
     }
 
