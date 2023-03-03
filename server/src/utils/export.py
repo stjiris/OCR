@@ -8,7 +8,7 @@
    - .pdf with transparent layer of text (TODO)
 """
 
-import re, os, base64, io, zlib
+import re, os, base64, io, zlib, json
 from src.utils.file import get_file_basename
 
 from reportlab.pdfbase import pdfmetrics
@@ -88,9 +88,6 @@ def export_pdf(path):
     file_path = '/'.join(path.split('/')[:-1])
     images = sorted([f"{file_path}/{f}" for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path, f)) and re.search(r"\.jpg", f)])
 
-    print(file_path)
-    print(images)
-
     load_invisible_font()
   
     basename = get_file_basename(file_path)
@@ -102,6 +99,9 @@ def export_pdf(path):
     dpi = 200
   
     for image in images:
+        image_basename = get_file_basename(image)
+        hocr_path = f"{path}/{image_basename}.json"
+
         im = Image.open(image)
         w, h = im.size
         try:
@@ -113,49 +113,28 @@ def export_pdf(path):
         height = (h * 72 / dpi)
         pdf.setPageSize((width, height))
         pdf.drawImage(image, 0, 0, width=width, height=height)
-        add_text_layer(pdf, image, height, dpi)
+        add_text_layer(pdf, hocr_path, height, dpi)
         pdf.showPage()
   
     pdf.save()
     return filename
 
-def add_text_layer(pdf, image, height, dpi):
-    import pytesseract
+def add_text_layer(pdf, hocr_path, height, dpi):
     """Draw an invisible text layer for OCR data"""
-    p1 = re.compile(r'bbox((\s+\d+){4})')
-    p2 = re.compile(r'baseline((\s+[\d\.\-]+){2})')
 
-    hocrfile = pytesseract.image_to_pdf_or_hocr(image, extension='hocr', lang='por')
+    with open(hocr_path, 'r') as f:
+        hocrfile = json.load(f)
 
-    # hocrfile = os.path.splitext(image)[0] + ".hocr"
-    hocr = etree.fromstring(hocrfile, html.XHTMLParser())
-    
-    for line in hocr.xpath('//*[@class="ocr_line"]'):
-        linebox = p1.search(line.attrib['title']).group(1).split()
-        try:
-            baseline = p2.search(line.attrib['title']).group(1).split()
-        except AttributeError:
-            baseline = [0, 0]
-        linebox = [float(i) for i in linebox]
-        baseline = [float(i) for i in baseline]
-        xpath_elements = './/*[@class="ocrx_word"]'
-        if (not (line.xpath('boolean(' + xpath_elements + ')'))):
-            # if there are no words elements present,
-            # we switch to lines as elements
-            xpath_elements = '.'
-        
-        for word in line.xpath(xpath_elements):
-            rawtext = word.text_content().strip()
-            if rawtext == '':
-                continue
+    for line in hocrfile:
+        for word in line:
+            rawtext = word["text"]
+            box = word["box"]
+            b = word["b"]
+
             font_width = pdf.stringWidth(rawtext, 'invisible', 8)
             if font_width <= 0:
                 continue
 
-            box = p1.search(word.attrib['title']).group(1).split()
-            box = [float(i) for i in box]
-            b = polyval(baseline,
-                        (box[0] + box[2]) / 2 - linebox[0]) + linebox[3]
             text = pdf.beginText()
             text.setTextRenderMode(3)  # double invisible
             text.setFont('invisible', 8)
@@ -164,7 +143,6 @@ def add_text_layer(pdf, image, height, dpi):
             text.setHorizScale(100.0 * box_width / font_width)
             text.textLine(rawtext)
             pdf.drawText(text)
-
 
 def polyval(poly, x):
     return x * poly[0] + poly[1]

@@ -15,7 +15,9 @@ from src.utils.file import (
     get_data,
     update_data,
     get_page_count,
-    generate_uuid
+    generate_uuid,
+    json_to_text,
+    fix_ocr
 )
 
 from src.evaluate import evaluate
@@ -104,6 +106,8 @@ def get_txt():
 def get_pdf():
     path = request.values["path"]
     file = export_file(path, "pdf")
+    return {"success": False, "error": "Error: Unexpected error while exporting PDF. Please write on Google Docs."}
+        
     return send_file(file)
 
 @app.route("/delete-path", methods=["POST"])
@@ -169,8 +173,8 @@ def perform_ocr():
     config = data["config"]
     multiple = data["multiple"]
 
-    ocr_algorithm = tesseract.get_text if algorithm == "Tesseract" else easy_ocr.get_text
-    ocr_folder = f"{algorithm[:4].upper()}_{config}"
+    ocr_algorithm = tesseract if algorithm == "Tesseract" else easy_ocr
+    ocr_folder = f"{algorithm[:4].upper()}_{'_'.join(config)}"
 
     if multiple:
         files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
@@ -182,7 +186,7 @@ def perform_ocr():
             os.mkdir(f"{f}/{ocr_folder}")
             data_path = f"{f}/{ocr_folder}/_data.json"
             with open(data_path, "w") as _f:
-                json.dump({"type": "ocr", "progress": 0, "indexed": False, "algorithm": algorithm, "config": config}, _f)
+                json.dump({"type": "ocr", "progress": 0, "indexed": False, "algorithm": algorithm, "config": '_'.join(config)}, _f)
 
         WAITING_DOCS.append((f, ocr_folder, config, ocr_algorithm))
 
@@ -206,13 +210,14 @@ def index_doc():
     else:
         config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
         ocr_config = get_data(path + "/_data.json")
-        files = sorted([f for f in os.listdir(path) if f.endswith(".txt") and not f.endswith("-Text.txt")])
+        files = sorted([f for f in os.listdir(path) if f.endswith(".json") and f != "_data.json"])
 
         for id, file in enumerate(files):
             file_path = f"{path}/{file}"
 
             with open(file_path) as f:
-                text = f.read()
+                hocr = json.load(f)
+                text = json_to_text(hocr)
 
             if config["files/pages"] > 1:
                 doc = create_document(file_path, ocr_config["algorithm"], ocr_config["config"], text, id+1)
@@ -269,8 +274,21 @@ def submit_text():
         text = t["content"]
         filename = t["original_file"]
 
+        with open(filename, encoding="utf-8") as f:
+            hocr = json.load(f)
+            words = [[x["text"] for x in l] for l in hocr]
+
+        try:
+            new_hocr = fix_ocr(words, text)
+        except:
+            return {"success": False, "error": "An unexpected error occured while changing the text, please inform us"}
+        
+        for l_id, l in enumerate(new_hocr):
+            for w_id, w in enumerate(l):
+                hocr[l_id][w_id]["text"] = w
+
         with open(filename, "w", encoding="utf-8") as f:
-            f.write(text)
+            json.dump(hocr, f, indent=2)
 
         if data["indexed"]:
             id = generate_uuid(filename)
@@ -284,10 +302,6 @@ def submit_text():
 @app.route("/get_elasticsearch", methods=["GET"])
 def get_elasticsearch():
     return client.get_docs()
-
-@app.errorhandler(Exception)
-def handle_exception(e):
-    return {"success": False, "message": "We are sorry, but an error has occurred. Please describe what you did on the Google Docs file and also insert a link to the file inserted if that's the case."}
 
 #####################################
 # MAIN

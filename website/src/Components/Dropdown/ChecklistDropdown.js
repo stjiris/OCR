@@ -35,8 +35,13 @@ export default class ChecklistDropdown extends React.Component {
     }
 
     // Setters
-    setVisible() { this.setState({ visible: true }); }
-    setInvisible() { this.setState({ visible: false }); }
+    setOptions(options) {
+        this.setState({ options: options });
+    }
+
+    setChoice(choice) {
+        this.setState({ choice: choice });
+    }
 
     getChoice() {
         /**
