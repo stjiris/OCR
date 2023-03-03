@@ -19,7 +19,7 @@ import UndoIcon from '@mui/icons-material/Undo';
  * MINOR version when you add functionality in a backwards compatible manner
  * PATCH version when you make backwards compatible bug fixes
  */
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 
 function App() {
   class Form extends React.Component {
