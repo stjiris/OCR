@@ -105,9 +105,7 @@ def get_txt():
 @app.route("/get_pdf", methods=["GET"])
 def get_pdf():
     path = request.values["path"]
-    file = export_file(path, "pdf")
-    return {"success": False, "error": "Error: Unexpected error while exporting PDF. Please write on Google Docs."}
-        
+    file = export_file(path, "pdf")        
     return send_file(file)
 
 @app.route("/delete-path", methods=["POST"])
