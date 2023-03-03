@@ -3,6 +3,7 @@ from pdf2image import convert_from_path
 from PyPDF2 import PdfFileReader
 from PIL import Image
 from os import environ
+from difflib import SequenceMatcher
 
 from src.utils.text import clear_text
 
@@ -28,15 +29,17 @@ def get_file_parsed(path):
     :param path: path to the file
     :return: list with the text of each page
     """
-    files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
+    files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".json" in f and "_data.json" not in f]
 
     data = []
     for file in files:
         basename = get_file_basename(file)
         with open(file, encoding="utf-8") as f:
+            hocr = json.load(f)
+
             data.append({
                 "original_file": file,
-                "content": f.read(),
+                "content": json_to_text(hocr),
                 "page_url": IMAGE_PREFIX + "/images/" + '/'.join(file.split("/")[1:-2]) + "/" + basename + ".jpg",
             })
     return data
@@ -212,6 +215,16 @@ def save_text_file(text, path):
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
 
+def save_json_structure(structure, path):
+    """
+    Save the json structure of a file
+
+    :param structure: json structure
+    :param path: path to the file
+    """
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(structure, f, indent=2)
+
 ##################################################
 # OCR UTILS
 ##################################################
@@ -250,6 +263,14 @@ def prepare_file_ocr(path):
         img = Image.open(f"{path}/{basename}.{extension}")
         img.save(f"{path}/{basename}.jpg", "JPEG")
 
+def json_to_text(json_d):
+    """
+    Convert json to text
+    :param json_d: json with the hOCR data
+    :return: text
+    """
+    return '\n'.join([' '.join([w["text"] for w in l]) for l in json_d]).strip()
+
 def perform_file_ocr(path, ocr_folder, config, ocr_algorithm):
     """
     Prepare the OCR of a file
@@ -259,7 +280,6 @@ def perform_file_ocr(path, ocr_folder, config, ocr_algorithm):
     @param ocr_algorithm: algorithm to use
     """
 
-    algorithm = "Tesseract" if ocr_folder.startswith("TESS") else "EasyOCR"
     prepare_file_ocr(path)
 
     images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
@@ -267,6 +287,65 @@ def perform_file_ocr(path, ocr_folder, config, ocr_algorithm):
     data_folder = f"{path}/{ocr_folder}/_data.json"
 
     for id, image in enumerate(images):
-        text = clear_text(ocr_algorithm(Image.open(f"{path}/{image}"), config))
-        save_text_file(text, f"{path}/{ocr_folder}/{get_file_basename(image)}.txt")
+        print(image)
+        json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{image}"), config)
+        # text = clear_text(json_to_text(json_d))
+
+        # Save the results
+        save_json_structure(json_d, f"{path}/{ocr_folder}/{get_file_basename(image)}.json")
+        # save_text_file(text, f"{path}/{ocr_folder}/{get_file_basename(image)}.txt")
+
         update_data(data_folder, {"progress": int((id + 1) / len(images) * 100)})
+
+def similarity_score(text1, text2):
+    """
+    Compute the similarity score between two texts
+
+    :param text1: first text
+    :param text2: second text
+    :return: similarity score
+    """
+    return SequenceMatcher(None, text1, text2).ratio()
+
+def fix_ocr(previous_words, current_text):
+    """
+    Update the hOCR results with the current submitted text
+
+    :param previous_words: previous words removed from the hOCR results - [["Tnis", ...], ...]
+    :param current_text: current text - "This ..."
+    :return: updated hOCR results
+    """
+
+    current_words = [[w for w in l.split()] for l in current_text.split("\n")]
+
+    for line_id, previous_line in enumerate(previous_words):
+        current_line = current_words[line_id]
+
+        # I'm not expecting tesseract to insert spaces where there is none
+        # But could be wrong
+        if len(current_line) < len(previous_line):
+            raise ValueError("The current text is shorter than the previous one, not expecting that")
+
+        pp, pc = 0, 0 # previous and current position
+        while pc < len(current_line) and pp < len(previous_line):
+
+            current_diff = pp - pc
+
+            if current_diff == len(previous_line) - len(current_line):
+                # We can't attemp to join any words. Every current word should match the previous one
+                same_score, adding_score = 1, 0
+            else:
+                same_score = similarity_score(current_line[pc], previous_line[pp])
+                adding_score = similarity_score(''.join(current_line[pc:pc+2]), previous_line[pp])
+
+            if same_score >= adding_score:
+                previous_line[pp] = current_line[pc]
+                pc += 1
+                pp += 1
+            else:
+                previous_line[pp] = ' '.join(current_line[pc:pc+2])
+                pp += 1
+                pc += 2
+
+    return previous_words
+    
