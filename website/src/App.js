@@ -1,16 +1,18 @@
 import './App.css';
 import React from 'react';
 
-import { Box, Link, Button } from '@mui/material';
+import { Box, Link, Button, IconButton } from '@mui/material';
 import CustomButton from './Components/Button/CustomButton.js';
 import CustomTextField from './Components/TextField/CustomTextField.js';
 import PageDisplayer from './Components/Displayer/PageDisplayer.js';
 import Notification from './Components/Notification/Notifications';
+import VersionsMenu from './Components/Form/VersionsMenu';
 
 import { FileExplorer } from './Components/FileSystem/FileSystem.js';
 import ESPage from './Components/ElasticSearchPage/ESPage';
 
 import UndoIcon from '@mui/icons-material/Undo';
+import InfoIcon from '@mui/icons-material/Info';
 
 /**
  * About Versioning:
@@ -19,7 +21,7 @@ import UndoIcon from '@mui/icons-material/Undo';
  * MINOR version when you add functionality in a backwards compatible manner
  * PATCH version when you make backwards compatible bug fixes
  */
-const VERSION = "0.2.1";
+const VERSION = "0.2.2";
 
 function App() {
   class Form extends React.Component {
@@ -45,6 +47,8 @@ function App() {
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
+
+        this.versionsMenu = React.createRef();
 
         this.sendChanges = this.sendChanges.bind(this);
     }
@@ -97,6 +101,13 @@ function App() {
         this.setState({contents: contents});
     }
 
+    openVersionsMenu() {
+        /**
+         * Open the versions menu
+         */
+        this.versionsMenu.current.toggleOpen();
+    }
+
     sendChanges() {
         /**
          * Send the changes to the server
@@ -113,7 +124,7 @@ function App() {
         .then(response => {return response.json()})
         .then(data => {
             if (data.success) {
-                this.successNot.current.setMessage("Text submitted with success!");
+                this.successNot.current.setMessage("Texto submetido com sucesso");
                 this.successNot.current.open();
                 this.setState({contents: [], fileOpened: "", fileSystemMode: true, editFileMode: false})
             } else {
@@ -138,7 +149,7 @@ function App() {
                             onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
                             underline="hover"
                         >
-                            <h1>Home</h1>
+                            <h1>Início</h1>
                         </Link>
                         <Link
                             className="link"
@@ -150,16 +161,22 @@ function App() {
                             onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
                             underline="hover"
                         >
-                            <h1>Search</h1>
+                            <h1>Pesquisar</h1>
                         </Link>
 
                         <Notification message={""} severity={"success"} ref={this.successNot}/>
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>
                     </Box>
 
-                    <p>{`Version: ${VERSION}`}</p>
+                    <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
+                        <p>{`Versão: ${VERSION}`}</p>
+                        <IconButton onClick={() => this.openVersionsMenu()}>
+                            <InfoIcon />
+                        </IconButton>
+                    </Box>
                 </Box>
 
+                <VersionsMenu ref={this.versionsMenu}/>
                 {
                     this.state.fileSystemMode
                     ? <FileExplorer current_folder={this.state.path} files={{"files": []}} app={this}/>
@@ -172,7 +189,7 @@ function App() {
                                 sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', ml: '1.5rem', mb: '0.5rem', ':hover': {bgcolor: '#dddddd'}}}
                                 onClick={() => this.setState({contents: [], fileOpened: "", fileSystemMode: true})}
                             >
-                                Go Back
+                                Voltar atrás
                             </Button>
 
                             {
@@ -193,7 +210,7 @@ function App() {
                             }
 
                             <div className="footer-div">
-                                <CustomButton ref={this.saveButton} text="Save" disabled={this.state.disabled} clickFunction={this.sendChanges} />
+                                <CustomButton ref={this.saveButton} text="Guardar" disabled={this.state.disabled} clickFunction={this.sendChanges} />
                             </div>
                         </Box>
                         : <ESPage app={this}/>

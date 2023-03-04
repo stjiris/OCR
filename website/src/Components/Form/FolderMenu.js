@@ -75,7 +75,7 @@ class FolderMenu extends React.Component {
             if (data.success) {
                 this.state.filesystem.updateFiles(data.files);
 
-                this.successNot.current.setMessage("Folder created with success");
+                this.successNot.current.setMessage("Pasta criada com sucesso");
                 this.successNot.current.open();
 
                 this.toggleOpen();
@@ -94,9 +94,9 @@ class FolderMenu extends React.Component {
                 <Modal open={this.state.open}>
                     <Box sx={style}>
                         <Typography id="modal-modal-title" variant="h6" component="h2">
-                            Create a new folder
+                            Crie uma nova pasta
                         </Typography>
-                        <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Folder name" variant="outlined" />
+                        <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Nome da pasta" variant="outlined" />
                         <Button
                             disabled={this.state.buttonDisabled}
                             color="success"
@@ -104,7 +104,7 @@ class FolderMenu extends React.Component {
                             sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem'}}
                             onClick={() => this.createFolder()}
                         >
-                            Create
+                            Criar
                         </Button>
 
                         <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>

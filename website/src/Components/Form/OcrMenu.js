@@ -329,12 +329,12 @@ class OcrMenu extends React.Component {
                 <Modal open={this.state.open}>
                     <Box sx={style}>
                         <Typography id="modal-modal-title" variant="h6" component="h2">
-                            Perform OCR
+                            Realizar o OCR
                         </Typography>
 
                         <AlgoDropdown ref={this.algoDropdown} menu={this}/>
 
-                        <ChecklistDropdown ref={this.langs} label={"Language"} options={tesseractLangList} choice={tesseractChoice}/>
+                        <ChecklistDropdown ref={this.langs} label={"Língua"} options={tesseractLangList} choice={tesseractChoice}/>
 
                         <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
                             <Button
@@ -342,7 +342,7 @@ class OcrMenu extends React.Component {
                                 sx={{border: '1px solid black', mr: '1rem', backgroundColor: '#e5de00', color: '#000', ':hover': {bgcolor: '#e6cc00'}}}
                                 onClick={() => this.performOCR()}
                             >
-                                Start
+                                Começar
                             </Button>
                         </Box>
 

@@ -22,7 +22,7 @@ class PageDisplayer extends React.Component {
                 >
                     <img
                         src={this.state.path}
-                        alt={`Page of ${this.state.path.split('/').slice(-1)}`}
+                        alt={`Página de ${this.state.path.split('/').slice(-1)}`}
                         style={{maxWidth: `${this.state.maxWidth}`}}
                     />
                 </a>

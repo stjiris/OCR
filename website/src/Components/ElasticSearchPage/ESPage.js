@@ -36,17 +36,17 @@ class ESItem extends React.Component {
                     display: 'flex',
                     flexDirection: 'column',
                 }}>
-                    <span><b>Path:</b> {this.state.page['_source']['Path'].split('/').slice(1,-2).join('/')}</span>                
-                    <span><b>Document:</b> {this.state.page['_source']['Document']}</span>                
+                    <span><b>Localização</b> {this.state.page['_source']['Path'].split('/').slice(1,-2).join('/')}</span>                
+                    <span><b>Documento:</b> {this.state.page['_source']['Document']}</span>                
                     {
                         this.state.page['_source']['Page'] !== undefined
-                        ? <span><b>Page:</b> {this.state.page['_source']['Page']}</span>
+                        ? <span><b>Página:</b> {this.state.page['_source']['Page']}</span>
                         : null
                     }
-                    <span><b>Algorithm:</b> {this.state.page['_source']['Algorithm']}</span>                
-                    <span><b>Configuration:</b> {this.state.page['_source']['Config']}</span>
+                    <span><b>Algoritmo:</b> {this.state.page['_source']['Algorithm']}</span>                
+                    <span><b>Configuração:</b> {this.state.page['_source']['Config']}</span>
                     <br/>
-                    <span><b>Text:</b><br/>{this.state.page['_source']['Text']}</span>
+                    <span><b>Texto:</b><br/>{this.state.page['_source']['Text']}</span>
                 </Box>
             </Box>
         )
@@ -232,11 +232,11 @@ class ESPage extends React.Component {
                         </Icon>
                         <p style={{fontSize: '15px'}}><b>{this.state.showing.length} Pages</b></p>
                     </Box>
-                    <TextField onChange={(e) => this.changeText(e)} ref={this.freeText} label="Free Text" variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
-                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.journal} label={"Journal"} options={[]} choice={[]} />
-                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"File Type"} options={[]} choice={[]} />
-                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.algorithm} label={"Algorithm"} options={[]} choice={[]} />
-                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.config} label={"Config"} options={[]} choice={[]} />
+                    <TextField onChange={(e) => this.changeText(e)} ref={this.freeText} label="Pesquisar" variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.journal} label={"Documento"} options={[]} choice={[]} />
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"Tipo de Ficheiro"} options={[]} choice={[]} />
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.algorithm} label={"Algoritmo"} options={[]} choice={[]} />
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.config} label={"Configuração"} options={[]} choice={[]} />
                 </Box>
 
                 <Box sx={{
