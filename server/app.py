@@ -67,7 +67,7 @@ def create_folder():
     folder = data["folder"]
 
     if os.path.exists(path + "/" + folder):
-        return {"success": False, "error": "That folder already exists"}
+        return {"success": False, "error": "Já existe uma pasta com esse nome"}
 
     os.mkdir(path + "/" + folder)
 
@@ -86,7 +86,7 @@ def file_exists():
     file = data["file"]
 
     if os.path.exists(f"{path}/{file}"):
-        return {"success": False, "error": "There is a file with that name already"}
+        return {"success": False, "error": "Já existe um ficheiro com esse nome"}
     else:
         return {"success": True}
 
@@ -116,7 +116,7 @@ def delete_path():
     delete_structure(client, path)        
     shutil.rmtree(path)
 
-    return {"success": True, "message": "Deleted with success", "files": get_filesystem("files")}
+    return {"success": True, "message": "Apagado com sucesso", "files": get_filesystem("files")}
 
 #####################################
 # FILES ROUTES
@@ -134,7 +134,7 @@ def upload_file():
 
     filename = file.filename
 
-    if os.path.exists(f"{path}/{filename}"): return {"success": False, "error": "There is a file with that name already"}
+    if os.path.exists(f"{path}/{filename}"): return {"success": False, "error": "Já existe um ficheiro com esse nome"}
 
     os.mkdir(f"{path}/{filename}")
     file.save(f"{path}/{filename}/{filename}")
@@ -188,7 +188,7 @@ def perform_ocr():
 
         WAITING_DOCS.append((f, ocr_folder, config, ocr_algorithm))
 
-    return {"success": True, "message": "OCR started, please wait", "files": get_filesystem("files")}
+    return {"success": True, "message": "O OCR começou, por favor aguarde", "files": get_filesystem("files")}
 
 @app.route("/index-doc", methods=["POST"])
 def index_doc():
@@ -228,7 +228,7 @@ def index_doc():
 
         update_data(path + "/_data.json", {"indexed": True})
 
-        return {"success": True, "message": "Document indexed", "files": get_filesystem("files")}
+        return {"success": True, "message": "Documento indexado", "files": get_filesystem("files")}
 
 @app.route("/remove-index-doc", methods=["POST"])
 def remove_index_doc():
@@ -259,7 +259,7 @@ def remove_index_doc():
 
         update_data(path + "/_data.json", {"indexed": False})
 
-        return {"success": True, "message": "Document removed", "files": get_filesystem("files")}
+        return {"success": True, "message": "Documento removido", "files": get_filesystem("files")}
 
 @app.route("/submit-text", methods=["POST"])
 def submit_text():
@@ -279,7 +279,7 @@ def submit_text():
         try:
             new_hocr = fix_ocr(words, text)
         except:
-            return {"success": False, "error": "An unexpected error occured while changing the text, please inform us"}
+            return {"success": False, "error": "Ocorreu um erro inesperado enquanto corrigiamos o texto, por favor informem-nos"}
         
         for l_id, l in enumerate(new_hocr):
             for w_id, w in enumerate(l):

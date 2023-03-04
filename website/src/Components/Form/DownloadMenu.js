@@ -80,7 +80,7 @@ class DownloadMenu extends React.Component {
                 <Modal open={this.state.open}>
                     <Box sx={style}>
                         <Typography id="modal-modal-title" variant="h6" component="h2">
-                            Select the download option
+                            Selecione a opção de download
                         </Typography>
 
                         <Button

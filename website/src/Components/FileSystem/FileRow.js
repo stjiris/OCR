@@ -94,7 +94,6 @@ export default class FileRow extends React.Component {
     }
 
     performOCR(e) {
-        console.log("Performing OCR on " + this.state.name);
         e.stopPropagation();
         this.state.filesystem.performOCR(false, this.state.name);
     }
@@ -163,7 +162,7 @@ export default class FileRow extends React.Component {
                         <Box>
                             <IconButton
                                 style={{color: "#e5de00"}}
-                                aria-label="delete"
+                                aria-label="search"
                                 onClick={(e) => this.performOCR(e)}
                             >
                                 <SearchIcon />

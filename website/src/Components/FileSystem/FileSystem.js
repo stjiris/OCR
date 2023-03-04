@@ -380,12 +380,12 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table">
                     <TableHead>
                         <TableRow>
-                            <TableCell><b>Name</b></TableCell>
-                            <TableCell align='center'><b>Date Created</b></TableCell>
-                            <TableCell align='center'><b>Date Modified</b></TableCell>
-                            <TableCell align='center'><b>Number of Files/Pages</b></TableCell>
-                            <TableCell align='center'><b>Size</b></TableCell>
-                            <TableCell align='center'><b>State</b></TableCell>
+                            <TableCell><b>Nome</b></TableCell>
+                            <TableCell align='center'><b>Data de Criação</b></TableCell>
+                            <TableCell align='center'><b>Data de Modificação</b></TableCell>
+                            <TableCell align='center'><b>Número de Documentos/Páginas</b></TableCell>
+                            <TableCell align='center'><b>Tamanho</b></TableCell>
+                            <TableCell align='center'><b>Estado</b></TableCell>
                             <TableCell align='center'></TableCell>
                         </TableRow>
                     </TableHead>
@@ -476,7 +476,7 @@ class FileExplorer extends React.Component {
                         sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', mr: '1rem', mb: '0.5rem', ':hover': {bgcolor: '#ddd'}}}
                         onClick={() => this.goBack()}
                     >
-                        Go Back
+                        Voltar atrás
                     </Button>
 
                     <Button
@@ -486,7 +486,7 @@ class FileExplorer extends React.Component {
                         sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
                         onClick={() => this.createFolder()}
                     >
-                        Create Folder
+                        Criar pasta
                     </Button>
 
                     <Button
@@ -496,7 +496,7 @@ class FileExplorer extends React.Component {
                         onClick={() => this.createFile()}
                         sx={{border: '1px solid black', mb: '0.5rem'}}
                     >
-                        Add Document
+                        Adicionar documento
                     </Button>
 
                     <Button
@@ -506,7 +506,7 @@ class FileExplorer extends React.Component {
                         onClick={() => this.performOCR(true)}
                         sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto', backgroundColor: '#e5de00', color: '#000', ':hover': {bgcolor: '#e6cc00'}}}
                     >
-                        Perform OCR
+                        Realizar o OCR
                     </Button>
                 </Box>
 

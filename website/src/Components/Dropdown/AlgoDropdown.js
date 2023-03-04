@@ -30,12 +30,12 @@ class AlgoDropdown extends React.Component {
     return (
       <Box sx={{ minWidth: 140, mt: '0.5rem', mb: '0.5rem'}}>
         <FormControl fullWidth size="small">
-          <InputLabel id="demo-simple-select-label">Algorithm</InputLabel>
+          <InputLabel id="demo-simple-select-label">Algoritmo</InputLabel>
           <Select
             labelId="demo-simple-select-label"
             id="demo-simple-select"
             value={this.state.algorithm}
-            label="Algorithm"
+            label="Algoritmo"
             onChange={this.changeAlgorithm}
           >
             <MenuItem value={"Tesseract"}>Tesseract</MenuItem>

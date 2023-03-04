@@ -92,7 +92,7 @@ class DeleteMenu extends React.Component {
                 <Modal open={this.state.open}>
                     <Box sx={style}>
                         <Typography id="modal-modal-title" variant="h6" component="h2">
-                            Are you sure you want to delete?
+                            Tem a certeza que quer apagar?
                         </Typography>
 
                         <Box sx={{
@@ -106,7 +106,7 @@ class DeleteMenu extends React.Component {
                                 sx={{border: '1px solid black', mt: '0.5rem'}}
                                 onClick={() => this.deleteItem()}
                             >
-                                Delete
+                                Apagar
                             </Button>
                         </Box>
 
