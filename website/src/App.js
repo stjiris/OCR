@@ -1,17 +1,14 @@
 import './App.css';
 import React from 'react';
 
-import { Box, Link, Button, IconButton } from '@mui/material';
-import CustomButton from './Components/Button/CustomButton.js';
-import CustomTextField from './Components/TextField/CustomTextField.js';
-import PageDisplayer from './Components/Displayer/PageDisplayer.js';
+import { Box, Link, IconButton } from '@mui/material';
 import Notification from './Components/Notification/Notifications';
 import VersionsMenu from './Components/Form/VersionsMenu';
 
 import { FileExplorer } from './Components/FileSystem/FileSystem.js';
 import ESPage from './Components/ElasticSearchPage/ESPage';
+import EditPage from './Components/EditPage/EditPage';
 
-import UndoIcon from '@mui/icons-material/Undo';
 import InfoIcon from '@mui/icons-material/Info';
 
 /**
@@ -51,6 +48,7 @@ function App() {
         this.versionsMenu = React.createRef();
 
         this.fileSystem = React.createRef();
+        this.editPage = React.createRef();
 
         this.sendChanges = this.sendChanges.bind(this);
     }
@@ -63,15 +61,6 @@ function App() {
          * @param {string} file - The name of the file
          */
         this.setState({path: path, fileOpened: file, fileSystemMode: false, editFileMode: true});
-        fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + file, {
-            method: 'GET'
-        })
-        .then(response => {return response.json()})
-        .then(data => {
-            this.setState({contents: data["doc"].sort((a, b) =>
-                (a["page_url"] > b["page_url"]) ? 1 : -1
-            )});
-        });
     }
 
     viewFile(file, algorithm, config) {
@@ -186,38 +175,7 @@ function App() {
                     this.state.fileSystemMode
                     ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
                     : this.state.editFileMode
-                        ? <Box>
-                            <Button
-                                disabled={this.state.backButtonDisabled}
-                                variant="contained"
-                                startIcon={<UndoIcon />} 
-                                sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', ml: '1.5rem', mb: '0.5rem', ':hover': {bgcolor: '#dddddd'}}}
-                                onClick={() => this.setState({contents: [], fileOpened: "", fileSystemMode: true})}
-                            >
-                                Voltar atrás
-                            </Button>
-
-                            {
-                                this.state.contents.map((page, index) => {
-                                    return (
-                                        <Box key={index} sx={{display: 'flex', ml: '1.5rem', mr: '1.5rem', mb: '0.5rem'}}>
-                                            <Box>
-                                                <PageDisplayer                                           
-                                                    path={page["page_url"]}
-                                                />
-                                            </Box>
-                                            <Box sx={{width: '100%'}}>
-                                                <CustomTextField defaultValue={page["content"]} sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={13} onChange={(e) => this.updateContents(e, index)} fullWidth disabled={this.state.disabled} multiline />
-                                            </Box>
-                                        </Box>
-                                    )
-                                })
-                            }
-
-                            <div className="footer-div">
-                                <CustomButton ref={this.saveButton} text="Guardar" disabled={this.state.disabled} clickFunction={this.sendChanges} />
-                            </div>
-                        </Box>
+                        ? <EditPage ref={this.editPage} app={this}/>
                         : <ESPage app={this}/>
                 }
             </div>

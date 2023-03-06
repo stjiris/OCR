@@ -57,7 +57,6 @@ export default class FileRow extends React.Component {
     }
 
     render() {
-        console.log(this.state.info);
         return (
             <TableRow
                 onClick={() => this.fileClicked()}

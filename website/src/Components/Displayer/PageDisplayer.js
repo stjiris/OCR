@@ -6,7 +6,7 @@ class PageDisplayer extends React.Component {
         super(props);
         this.state = {
             path: props.path,
-            maxWidth: '150px'
+            maxWidth: props.maxWidth || '150px'
         }
     }
     

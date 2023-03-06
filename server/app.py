@@ -154,10 +154,10 @@ def find_valid_filename(path, basename, extension):
     :return: valid filename
     """
     id = 1
-    while os.path.exists(f"{path}/{basename}_{id}.{extension}"):
+    while os.path.exists(f"{path}/{basename} ({id}).{extension}"):
         id += 1
 
-    return f"{basename}_{id}.{extension}"
+    return f"{basename} ({id}).{extension}"
 
 @app.route("/upload-file", methods=['POST'])
 def upload_file():

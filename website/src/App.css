@@ -38,3 +38,7 @@ span {
 .modal-image:hover {
   transform: scale(1.5);
 }
+
+img:hover {
+  transition: all 0.3s ease-in-out;
+}
