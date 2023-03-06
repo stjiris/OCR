@@ -8,6 +8,8 @@ import Button from '@mui/material/Button';
 
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import IconDatabaseOff from '../Icons/DatabaseOffIcon';
+import IconDatabaseImport from '../Icons/DatabaseInIcon';
 
 export default class FileRow extends React.Component {
     constructor(props) {
@@ -54,6 +56,16 @@ export default class FileRow extends React.Component {
     performOCR(e) {
         e.stopPropagation();
         this.state.filesystem.performOCR(false, this.state.name);
+    }
+
+    indexFile(e) {
+        e.stopPropagation();
+        this.state.filesystem.indexFile(this.state.name, false);
+    }
+
+    removeIndex(e) {
+        e.stopPropagation();
+        this.state.filesystem.removeIndexFile(this.state.name, false);
     }
 
     render() {
@@ -132,6 +144,24 @@ export default class FileRow extends React.Component {
 
                 <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
                     <Box>
+                        {
+                            this.state.info["indexed"]
+                            ? <IconButton
+                                color="error"
+                                aria-label="remove-database"
+                                onClick={(e) => this.removeIndex(e)}
+                            >
+                                <IconDatabaseOff />
+                            </IconButton>
+                            : <IconButton
+                                color="primary"
+                                aria-label="add-database"
+                                onClick={(e) => this.indexFile(e)}
+                            >
+                                <IconDatabaseImport />
+                            </IconButton>
+                        }
+
                         <IconButton
                             color="error"
                             aria-label="delete"
@@ -139,6 +169,7 @@ export default class FileRow extends React.Component {
                         >
                             <DeleteForeverIcon />
                         </IconButton>
+
                     </Box>
                 </TableCell>
             </TableRow>
