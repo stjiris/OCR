@@ -1,11 +1,12 @@
-import os, re, time, json
+import os, time, json
 from pdf2image import convert_from_path
 from PyPDF2 import PdfFileReader
 from PIL import Image
 from os import environ
 from difflib import SequenceMatcher
+from datetime import datetime
 
-from src.utils.text import clear_text
+from src.utils.export import export_file, json_to_text
 
 IMAGE_PREFIX = environ.get('IMAGE_PREFIX', '.')
 ##################################################
@@ -29,6 +30,7 @@ def get_file_parsed(path):
     :param path: path to the file
     :return: list with the text of each page
     """
+    path += "/ocr_results"
     files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".json" in f and "_data.json" not in f]
 
     data = []
@@ -103,7 +105,25 @@ def get_modification_time(path):
     m_time = time.strftime("%Y-%m-%d %H:%M:%S", t_obj)
     return m_time
 
-def get_size(path):
+def get_ocr_size(path):
+    """
+    Get the size of the hocr files
+
+    :param path: path to the folder
+    :return: size of the files
+    """
+
+    files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".json" in f]
+    size = 0
+    for file in files:
+        size += os.path.getsize(file)
+
+    if size < 1024: return f"{size} B"
+    elif size < 1024 ** 2: return f"{size / 1024:.2f} KB"
+    elif size < 1024 ** 3: return f"{size / 1024 ** 2:.2f} MB"
+    else: return f"{size / 1024 ** 3:.2f} GB"
+
+def get_size(path, path_complete = False):
     """
     Get the size of the file
 
@@ -112,7 +132,8 @@ def get_size(path):
     """
 
     name = path.split("/")[-1]
-    path = f"{path}/{name}"
+    if not path_complete:
+        path = f"{path}/{name}" 
 
     size = os.path.getsize(path)
 
@@ -130,15 +151,14 @@ def get_structure_info(path):
 
     for root, folders, _ in os.walk(path):
         for folder in folders:
+            if folder == "ocr_results": continue
             folder_path = f"{root}/{folder}".replace("\\", "/")
 
             data = get_data(f"{folder_path}/_data.json")
-            path_info = {"creation_date": get_creation_time(folder_path), "last_modified": get_modification_time(folder_path)}
-            path_info.update(data)
 
-            if data["type"] == "file": path_info["size"] = get_size(folder_path)
+            if data["type"] == "file": data["size"] = get_size(folder_path)
 
-            info[folder_path] = path_info
+            info[folder_path] = data
 
     return info
 
@@ -196,6 +216,15 @@ def get_file_basename(filename):
     :return: basename of the file
     """
     return '.'.join(filename.split("/")[-1].split(".")[:-1])
+
+def get_file_extension(filename):
+    """
+    Get the extension of a file
+
+    :param file: file name
+    :return: extension of the file
+    """
+    return filename.split(".")[-1]
 
 def get_pdf_pages(file):
     """
@@ -263,39 +292,49 @@ def prepare_file_ocr(path):
         img = Image.open(f"{path}/{basename}.{extension}")
         img.save(f"{path}/{basename}.jpg", "JPEG")
 
-def json_to_text(json_d):
-    """
-    Convert json to text
-    :param json_d: json with the hOCR data
-    :return: text
-    """
-    return '\n'.join([' '.join([w["text"] for w in l]) for l in json_d]).strip()
-
-def perform_file_ocr(path, ocr_folder, config, ocr_algorithm):
+def perform_file_ocr(path, config, ocr_algorithm):
     """
     Prepare the OCR of a file
     @param path: path to the file
-    @param ocr_folder: folder to save the results
     @param data: data to use
     @param ocr_algorithm: algorithm to use
     """
 
+    # Generate the images
     prepare_file_ocr(path)
-
     images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
 
-    data_folder = f"{path}/{ocr_folder}/_data.json"
+    data_folder = f"{path}/_data.json"
 
     for id, image in enumerate(images):
-        print(image)
+        # Generate the hOCR
         json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{image}"), config)
-        # text = clear_text(json_to_text(json_d))
 
         # Save the results
-        save_json_structure(json_d, f"{path}/{ocr_folder}/{get_file_basename(image)}.json")
-        # save_text_file(text, f"{path}/{ocr_folder}/{get_file_basename(image)}.txt")
+        save_json_structure(json_d, f"{path}/ocr_results/{get_file_basename(image)}.json")
 
-        update_data(data_folder, {"progress": int((id + 1) / len(images) * 100)})
+        if id == len(images) - 1:
+            export_file(path, "txt")
+            export_file(path, "pdf")
+
+            data = get_data(data_folder)
+            creation_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+            data["ocr"]["complete"] = True
+            data["ocr"]["size"] = get_ocr_size(f"{path}/ocr_results")
+            data["ocr"]["creation"] = creation_date
+
+            data["txt"]["complete"] = True            
+            data["txt"]["size"] = get_size(f"{path}/_text.txt", path_complete=True)
+            data["txt"]["creation"] = creation_date
+
+            data["pdf"]["complete"] = True
+            data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
+            data["pdf"]["creation"] = creation_date
+
+
+            data["indexed"] = False
+            update_data(data_folder, data)
 
 def similarity_score(text1, text2):
     """
