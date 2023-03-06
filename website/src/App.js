@@ -21,7 +21,7 @@ import InfoIcon from '@mui/icons-material/Info';
  * MINOR version when you add functionality in a backwards compatible manner
  * PATCH version when you make backwards compatible bug fixes
  */
-const VERSION = "0.2.2";
+const VERSION = "0.3.0";
 
 function App() {
   class Form extends React.Component {
@@ -49,6 +49,8 @@ function App() {
         this.errorNot = React.createRef();
 
         this.versionsMenu = React.createRef();
+
+        this.fileSystem = React.createRef();
 
         this.sendChanges = this.sendChanges.bind(this);
     }
@@ -127,6 +129,9 @@ function App() {
                 this.successNot.current.setMessage("Texto submetido com sucesso");
                 this.successNot.current.open();
                 this.setState({contents: [], fileOpened: "", fileSystemMode: true, editFileMode: false})
+
+                var info = data["info"];
+                this.fileSystem.current.setState({info: info}, this.fileSystem.current.updateInfo);
             } else {
                 this.errorNot.current.setMessage(data.error);
                 this.errorNot.current.open();
@@ -179,7 +184,7 @@ function App() {
                 <VersionsMenu ref={this.versionsMenu}/>
                 {
                     this.state.fileSystemMode
-                    ? <FileExplorer current_folder={this.state.path} files={{"files": []}} app={this}/>
+                    ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
                     : this.state.editFileMode
                         ? <Box>
                             <Button

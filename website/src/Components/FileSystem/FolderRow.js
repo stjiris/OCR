@@ -19,8 +19,7 @@ export default class FolderRow extends React.Component {
     }
 
     updateInfo(info) {
-        var key = Object.keys(info)[0];
-        this.setState({info: info[key]});
+        this.setState({info: info});
     }
 
     updateVersions(_) {
@@ -52,27 +51,21 @@ export default class FolderRow extends React.Component {
                         <p>{this.state.name}</p>    
                     </Box>
                 </TableCell>
+
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
                     {
-                        this.state.info["creation_date"]
+                        this.state.info["creation"]
                     }
                 </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    {
-                        this.state.info["last_modified"]
-                    }
-                </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    {
-                        this.state.info["files/pages"]
-                    }
-                </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    -
-                </TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                    -
-                </TableCell>
+                
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+
                 <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
                     <IconButton
                         color="error"

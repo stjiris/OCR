@@ -1,4 +1,5 @@
 import os, json, shutil, re
+from datetime import datetime
 
 from flask import Flask, request, send_file
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
@@ -17,7 +18,10 @@ from src.utils.file import (
     get_page_count,
     generate_uuid,
     json_to_text,
-    fix_ocr
+    fix_ocr,
+    get_file_basename,
+    get_file_extension,
+    get_size
 )
 
 from src.evaluate import evaluate
@@ -32,21 +36,51 @@ CORS(app)
 
 MAX_THREADS = 4
 WAITING_DOCS = []
+WAITING_CHANGES = []
 
-def manage_threads(pages):
+def make_changes(data, data_folder):
+    current_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    export_file(data_folder, "txt")
+    data["txt"]["complete"] = True
+    data["txt"]["creation"] = current_date
+    data["txt"]["size"] = get_size(data_folder + "/_text.txt", path_complete=True)
+
+    update_data(data_folder + "/_data.json", data)
+
+    export_file(data_folder, "pdf")
+    data["pdf"]["complete"] = True
+    data["pdf"]["creation"] = current_date
+    data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
+
+    update_data(data_folder + "/_data.json", data)
+
+def manage_threads(pages, changes):
     import time
-    active_threads = []
+    active_threads_docs = []
+    active_threads_changes = []
     print("Parser started!")
     while True:
+        # Make OCR of new files
         time.sleep(5)
-        for t in active_threads:
+        for t in active_threads_docs:
             if not t.is_alive():
-                active_threads.remove(t)
-        while len(pages) > 0 and len(active_threads) <= MAX_THREADS:
+                active_threads_docs.remove(t)
+        while len(pages) > 0 and len(active_threads_docs) <= MAX_THREADS:
             page = pages.pop()
             t = Thread(target=perform_file_ocr, args=(*page, ))
             t.start()
-            active_threads.append(t)
+            active_threads_docs.append(t)
+
+        # Create the _text.txt and the _search.pdf with the changes made
+        for t in active_threads_changes:
+            if not t.is_alive():
+                active_threads_changes.remove(t)
+        while len(changes) > 0 and len(active_threads_changes) <= MAX_THREADS:
+            change = changes.pop()
+            t = Thread(target=make_changes, args=(*change, ))
+            t.start()
+            active_threads_changes.append(t)
 
 #####################################
 # FILE SYSTEM ROUTES
@@ -74,21 +108,10 @@ def create_folder():
     with open(f"{path}/{folder}/_data.json", "w") as f:
         json.dump({
             "type": "folder",
-            "files/pages": 0
+            "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         }, f)
 
     return {"success": True, "files": get_filesystem("files")}
-
-@app.route("/file-exists", methods=["GET"])
-def file_exists():
-    data = request.values
-    path = data["path"]
-    file = data["file"]
-
-    if os.path.exists(f"{path}/{file}"):
-        return {"success": False, "error": "Já existe um ficheiro com esse nome"}
-    else:
-        return {"success": True}
 
 @app.route("/get-file", methods=["GET"])
 def get_file():
@@ -99,8 +122,7 @@ def get_file():
 @app.route("/get_txt", methods=["GET"])
 def get_txt():
     path = request.values["path"]
-    file = export_file(path, "txt")
-    return send_file(file)
+    return send_file(f"{path}/_text.txt")
 
 @app.route("/get_pdf", methods=["GET"])
 def get_pdf():
@@ -121,6 +143,22 @@ def delete_path():
 #####################################
 # FILES ROUTES
 #####################################
+def find_valid_filename(path, basename, extension):
+    """
+    Fidna valid name for a file so it doesn't overwrite another file
+
+    :param path: path to the file
+    :param basename: basename of the file
+    :param extension: extension of the file
+
+    :return: valid filename
+    """
+    id = 1
+    while os.path.exists(f"{path}/{basename}_{id}.{extension}"):
+        id += 1
+
+    return f"{basename}_{id}.{extension}"
+
 @app.route("/upload-file", methods=['POST'])
 def upload_file():
     """
@@ -134,7 +172,10 @@ def upload_file():
 
     filename = file.filename
 
-    if os.path.exists(f"{path}/{filename}"): return {"success": False, "error": "Já existe um ficheiro com esse nome"}
+    if os.path.exists(f"{path}/{filename}"):
+        basename = get_file_basename(filename)
+        extension = get_file_extension(filename)
+        filename = find_valid_filename(path, basename, extension)
 
     os.mkdir(f"{path}/{filename}")
     file.save(f"{path}/{filename}/{filename}")
@@ -142,16 +183,9 @@ def upload_file():
     with open(f"{path}/{filename}/_data.json", "w") as f:
         json.dump({
             "type": "file",
-            "ocr_results": 0,
-            "files/pages": get_page_count(f"{path}/{filename}/{filename}")
+            "pages": get_page_count(f"{path}/{filename}/{filename}"),
+            "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         }, f)
-
-    # Update the folders _data.json
-    with open(f"{path}/_data.json") as f:
-        data = json.load(f)
-        data["files/pages"] += 1
-
-    update_data(f"{path}/_data.json", data)
 
     return {"success": True, "file": filename, "filesystem": get_filesystem("files")}
 
@@ -172,7 +206,6 @@ def perform_ocr():
     multiple = data["multiple"]
 
     ocr_algorithm = tesseract if algorithm == "Tesseract" else easy_ocr
-    ocr_folder = f"{algorithm[:4].upper()}_{'_'.join(config)}"
 
     if multiple:
         files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
@@ -180,13 +213,23 @@ def perform_ocr():
         files = [path]
 
     for f in files:
-        if not os.path.exists(f"{f}/{ocr_folder}"):
-            os.mkdir(f"{f}/{ocr_folder}")
-            data_path = f"{f}/{ocr_folder}/_data.json"
-            with open(data_path, "w") as _f:
-                json.dump({"type": "ocr", "progress": 0, "indexed": False, "algorithm": algorithm, "config": '_'.join(config)}, _f)
+        # Delete previous results
+        if os.path.exists(f"{f}/ocr_results"): shutil.rmtree(f"{f}/ocr_results")
+        os.mkdir(f"{f}/ocr_results")
 
-        WAITING_DOCS.append((f, ocr_folder, config, ocr_algorithm))
+        # Update the information related to the OCR
+        data = get_data(f"{f}/_data.json")
+        data["ocr"] = {}
+        data["ocr"]["algorithm"] = algorithm
+        data["ocr"]["config"] = '_'.join(config)
+        data["ocr"]["complete"] = False
+        data["txt"] = {}
+        data["txt"]["complete"] = False
+        data["pdf"] = {}
+        data["pdf"]["complete"] = False
+        update_data(f"{f}/_data.json", data)
+
+        WAITING_DOCS.append((f, config, ocr_algorithm))
 
     return {"success": True, "message": "O OCR começou, por favor aguarde", "files": get_filesystem("files")}
 
@@ -265,7 +308,7 @@ def remove_index_doc():
 def submit_text():
     texts = request.json["text"] # estrutura com texto, nome do ficheiro e url da imagem
 
-    data_folder = '/'.join(texts[0]["original_file"].split("/")[:-1])
+    data_folder = '/'.join(texts[0]["original_file"].split("/")[:-2])
     data = get_data(data_folder + "/_data.json")
 
     for t in texts:
@@ -292,7 +335,11 @@ def submit_text():
             id = generate_uuid(filename)
             client.update_document(id, text)
 
-    return {"success": True}
+    update_data(data_folder + "/_data.json", {"txt": {"complete": False}, "pdf": {"complete": False}})
+
+    WAITING_CHANGES.append((data, data_folder))
+
+    return {"success": True, "files": get_filesystem("files")}
 
 #####################################
 # ELASTICSEARCH
@@ -308,7 +355,7 @@ if __name__ == "__main__":
     if not os.path.exists("./files/"):
         os.mkdir("./files/")
 
-    page_parser = Thread(target=manage_threads, args=(WAITING_DOCS, ), daemon=True)
+    page_parser = Thread(target=manage_threads, args=(WAITING_DOCS, WAITING_CHANGES,), daemon=True)
     page_parser.start()
                 
     app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
