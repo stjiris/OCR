@@ -56,7 +56,7 @@ def delete_structure(client, path):
     Delete all the files in the structure
     """
     data = get_data(path + "/_data.json")
-    if data["type"] == "ocr" and data["indexed"]:
+    if data["type"] == "file" and data["indexed"]:
         files = [f"{path}/{f}" for f in os.listdir(path) if f.endswith(".txt")]
         for file in files:
             id = generate_uuid(file)
