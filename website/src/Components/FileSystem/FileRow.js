@@ -147,6 +147,7 @@ export default class FileRow extends React.Component {
                         {
                             this.state.info["indexed"]
                             ? <IconButton
+                                disabled={this.state.info["ocr"] === undefined || !this.state.info["ocr"]["complete"]}
                                 color="error"
                                 aria-label="remove-database"
                                 onClick={(e) => this.removeIndex(e)}
@@ -154,6 +155,7 @@ export default class FileRow extends React.Component {
                                 <IconDatabaseOff />
                             </IconButton>
                             : <IconButton
+                                disabled={this.state.info["ocr"] === undefined || !this.state.info["ocr"]["complete"]}
                                 color="primary"
                                 aria-label="add-database"
                                 onClick={(e) => this.indexFile(e)}
