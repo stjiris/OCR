@@ -249,21 +249,21 @@ def index_doc():
 
         return {}
     else:
-        config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
+        hOCR_path = path + "/ocr_results"
         ocr_config = get_data(path + "/_data.json")
-        files = sorted([f for f in os.listdir(path) if f.endswith(".json") and f != "_data.json"])
+        files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
 
         for id, file in enumerate(files):
-            file_path = f"{path}/{file}"
+            file_path = f"{hOCR_path}/{file}"
 
             with open(file_path) as f:
                 hocr = json.load(f)
                 text = json_to_text(hocr)
 
-            if config["files/pages"] > 1:
-                doc = create_document(file_path, ocr_config["algorithm"], ocr_config["config"], text, id+1)
+            if ocr_config["pages"] > 1:
+                doc = create_document(file_path, ocr_config["ocr"]["algorithm"], ocr_config["ocr"]["config"], text, id+1)
             else:
-                doc = create_document(file_path, ocr_config["algorithm"], ocr_config["config"], text)
+                doc = create_document(file_path, ocr_config["ocr"]["algorithm"], ocr_config["ocr"]["config"], text)
 
             id = generate_uuid(file_path)
 
@@ -289,14 +289,12 @@ def remove_index_doc():
 
         return {}
     else:
+        hOCR_path = path + "/ocr_results"
         config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
-        files = [f for f in os.listdir(path) if f.endswith(".txt") and not f.endswith("-Text.txt")]
+        files = [f for f in os.listdir(hOCR_path) if f.endswith(".json")]
 
-        if config["files/pages"] > 1:
-            files = sorted(files, key=lambda x: re.findall(r"\d+", x)[-1])
-
-        for id, f in enumerate(files):
-            file_path = f"{path}/{f}"
+        for f in files:
+            file_path = f"{hOCR_path}/{f}"
             id = generate_uuid(file_path)
             client.delete_document(id)
 
