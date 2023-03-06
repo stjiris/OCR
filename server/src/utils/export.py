@@ -4,19 +4,33 @@
    Possible formats of output:
    - pure .txt 
    - .txt with delimiters between pages
-   - .docx (TODO)
-   - .pdf with transparent layer of text (TODO)
+   - .pdf with transparent layer of text
 """
 
 import re, os, base64, io, zlib, json
-from src.utils.file import get_file_basename
 
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 
-from lxml import etree, html
 from PIL import Image
+
+def json_to_text(json_d):
+    """
+    Convert json to text
+    :param json_d: json with the hOCR data
+    :return: text
+    """
+    return '\n'.join([' '.join([w["text"] for w in l]) for l in json_d]).strip()
+
+def get_file_basename(filename):
+    """
+    Get the basename of a file
+
+    :param file: file name
+    :return: basename of the file
+    """
+    return '.'.join(filename.split("/")[-1].split(".")[:-1])
 
 ####################################################
 # GENERAL FUNCTION
@@ -48,10 +62,10 @@ def export_txt(path, delimiter=None):
     :return: the path to the exported file
     """
 
-    basename = get_file_basename(path)
-    filename = f"{path}/{basename}-Text.txt"
+    filename = f"{path}/_text.txt"
+    ocr_folder = f"{path}/ocr_results"
 
-    files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and ".txt" in f and "Text.txt" not in f]
+    files = [os.path.join(ocr_folder, f) for f in os.listdir(ocr_folder) if os.path.isfile(os.path.join(ocr_folder, f)) and ".json" in f]
 
     if len(files) > 1:
         files = sorted(
@@ -61,22 +75,12 @@ def export_txt(path, delimiter=None):
 
     with open(filename, "w", encoding="utf-8") as f:
         for id, file in enumerate(files):
-
             with open(file, encoding="utf-8") as _f:
+                hOCR = json.load(_f)
                 f.write(f"----- PAGE {(id+1):04d} -----\n\n")
-                f.write(_f.read().strip() + "\n\n")
+                f.write(json_to_text(hOCR) + "\n\n")
 
     return filename
-
-####################################################
-# EXPORT DOC FUNCTIONS
-####################################################
-def export_doc(path):
-    """
-    Export the file as a .doc file
-    """
-
-    pass
 
 ####################################################
 # EXPORT PDF FUNCTIONS
@@ -85,13 +89,11 @@ def export_pdf(path):
     """
     Export the file as a .pdf file
     """
-    file_path = '/'.join(path.split('/')[:-1])
-    images = sorted([f"{file_path}/{f}" for f in os.listdir(file_path) if os.path.isfile(os.path.join(file_path, f)) and re.search(r"\.jpg", f)])
+    images = sorted([f"{path}/{f}" for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and re.search(r"\.jpg", f)])
 
     load_invisible_font()
   
-    basename = get_file_basename(file_path)
-    filename = f"{path}/{basename}_search.pdf"
+    filename = f"{path}/_search.pdf"
 
     pdf = Canvas(filename, pageCompression=1)
     pdf.setCreator('hocr-tools')
@@ -100,7 +102,7 @@ def export_pdf(path):
   
     for image in images:
         image_basename = get_file_basename(image)
-        hocr_path = f"{path}/{image_basename}.json"
+        hocr_path = f"{path}/ocr_results/{image_basename}.json"
 
         im = Image.open(image)
         w, h = im.size

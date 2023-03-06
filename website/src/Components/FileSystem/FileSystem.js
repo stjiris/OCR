@@ -13,7 +13,6 @@ import Paper from '@mui/material/Paper';
 import FolderMenu from '../Form/FolderMenu';
 import OcrMenu from '../Form/OcrMenu';
 import DeleteMenu from '../Form/DeleteMenu';
-import DownloadMenu from '../Form/DownloadMenu';
 
 import FolderRow from './FolderRow';
 import FileRow from './FileRow';
@@ -45,7 +44,6 @@ class FileExplorer extends React.Component {
         this.folderMenu = React.createRef();
         this.ocrMenu = React.createRef();
         this.deleteMenu = React.createRef();
-        this.downloadMenu = React.createRef();
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
@@ -86,18 +84,6 @@ class FileExplorer extends React.Component {
         this.rowRefs.forEach(ref => {
             var rowInfo = this.getInfo(this.state.current_folder.join("/") + "/" + ref.current.state.name);
             ref.current.updateInfo(rowInfo);
-
-            var path = this.state.current_folder.join("/") + "/" + ref.current.state.name;
-            var versions = [];
-
-            var infoKeys = Object.keys(this.state.info);
-
-            for (let i = 0; i < infoKeys.length; i++) {
-                var infoKey = infoKeys[i];
-                if (infoKey.includes(path) && infoKey !== path)
-                    versions.push(infoKey.split("/").pop())
-            }
-            ref.current.updateVersions(versions);
         });
     }
 
@@ -172,14 +158,6 @@ class FileExplorer extends React.Component {
         el.click();
     }
 
-    downloadFile(name) {
-        /**
-         * Download the file
-         */
-        this.downloadMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
-        this.downloadMenu.current.toggleOpen();
-    }
-
     goBack() {
         /**
          * Go back to the previous folder
@@ -196,18 +174,39 @@ class FileExplorer extends React.Component {
         this.displayFileSystem);
     }
 
+    getDocument(type, file) {
+        /**
+         * Export the .txt or .pdf file
+         */
+        var path = this.state.current_folder.join('/') + '/' + file;
+
+        fetch(process.env.REACT_APP_API_URL + "get_" + type + '?path=' + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+
+            var basename = file.split('.').slice(0, -1).join('.');
+            a.download = basename + '.' + type;
+            a.click();
+            a.remove();
+        });
+    }
+
     getTxt(file) {
         /**
          * Export the .txt file
          */
-        this.getDocument("get_txt", file);
+        this.getDocument("txt", file);
     }
 
     getPdf(file) {
         /**
          * Export the .pdf file
          */
-        this.getDocument("get_pdf", file);
+        this.getDocument("pdf", file);
     }
 
     editFile(file) {
@@ -284,15 +283,7 @@ class FileExplorer extends React.Component {
         /**
          * Get the info of the file
          */
-        var info = {};
-        var keys = Object.keys(this.state.info);
-        for (let i = 0; i < keys.length; i++) {
-            var key = keys[i];
-            if (key.startsWith(path)) {
-                info[key] = this.state.info[key];
-            }
-        }
-        return info;
+        return this.state.info[path];
     }
 
     sortContents(contents) {
@@ -338,16 +329,6 @@ class FileExplorer extends React.Component {
 
             var item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
-                var path = this.state.current_folder.join("/") + "/" + item;
-                var versions = [];
-                var infoKeys = Object.keys(this.state.info);
-
-                for (let i = 0; i < infoKeys.length; i++) {
-                    var infoKey = infoKeys[i];
-                    if (infoKey.includes(path) && infoKey !== path)
-                        versions.push(infoKey.split("/").pop())
-                }
-
                 items.push(
                     <FileRow
                         ref={ref}
@@ -355,7 +336,6 @@ class FileExplorer extends React.Component {
                         name={item}
                         info={this.getInfo(this.state.current_folder.join("/") + "/" + item)}
                         filesystem={this}
-                        versions={versions}
                     />
                 )
             } else {
@@ -365,7 +345,7 @@ class FileExplorer extends React.Component {
                         ref={ref}
                         key={key}
                         name={key}
-                        info={this.state.info[this.state.current_folder.join("/") + "/" + key]}
+                        info={this.getInfo(this.state.current_folder.join("/") + "/" + key)}
                         filesystem={this}
                     />
                 )
@@ -381,11 +361,13 @@ class FileExplorer extends React.Component {
                     <TableHead>
                         <TableRow>
                             <TableCell><b>Nome</b></TableCell>
+                            <TableCell align='center'><b>Páginas/Bytes</b></TableCell>
                             <TableCell align='center'><b>Data de Criação</b></TableCell>
-                            <TableCell align='center'><b>Data de Modificação</b></TableCell>
-                            <TableCell align='center'><b>Número de Documentos/Páginas</b></TableCell>
-                            <TableCell align='center'><b>Tamanho</b></TableCell>
-                            <TableCell align='center'><b>Estado</b></TableCell>
+                            <TableCell align='center'><b>OCR</b></TableCell>
+                            <TableCell align='center'><b>Texto</b></TableCell>
+                            <TableCell align='center'><b>PDF</b></TableCell>
+                            <TableCell align='center'><b>PDF Indexado</b></TableCell>
+                            <TableCell align='center'><b>Entidades</b></TableCell>
                             <TableCell align='center'></TableCell>
                         </TableRow>
                     </TableHead>
@@ -462,7 +444,6 @@ class FileExplorer extends React.Component {
                 <FolderMenu filesystem={this} ref={this.folderMenu}/>
                 <OcrMenu filesystem={this} ref={this.ocrMenu}/>
                 <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-                <DownloadMenu filesystem={this} ref={this.downloadMenu} />
 
                 <Box sx={{
                     display: 'flex',

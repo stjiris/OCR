@@ -4,14 +4,10 @@ import IconButton from '@mui/material/IconButton';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
+import Button from '@mui/material/Button';
 
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
-import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
-import SearchIcon from '@mui/icons-material/Search';
-
-import VersionRow from './VersionRow';
 
 export default class FileRow extends React.Component {
     constructor(props) {
@@ -19,45 +15,12 @@ export default class FileRow extends React.Component {
         this.state = {
             name: props.name,
             info: props.info,
-            filesystem: props.filesystem,
-
-            expanded: false,
-            versions: props.versions,
-            versionsComponents: []
+            filesystem: props.filesystem
         }
-
-        this.versionRefs = [];
-    }
-
-    componentDidMount() {
-        this.createVersions();
-    }
-
-    createVersions() {
-        var versions = this.state.versions;
-        var versionsComponents = [];
-
-        for (let i = 0; i < versions.length; i++) {
-            var ref = React.createRef();
-            this.versionRefs.push(ref);
-
-            var version = versions[i];
-            versionsComponents.push(
-                <VersionRow
-                    ref={ref}
-                    key={this.state.name + "_" + version}
-                    file={this.state.name}
-                    name={version}
-                    filesystem={this.state.filesystem}
-                    info={this.getInfo(version)}
-                />
-            );
-        }
-        this.setState({versionsComponents: versionsComponents});
     }
 
     updateInfo(info) {
-        this.setState({info: info, versionsComponents: []}, this.createVersions);
+        this.setState({info: info, versionsComponents: []});
     }
 
     updateVersions(versions) {
@@ -83,106 +46,102 @@ export default class FileRow extends React.Component {
         this.state.filesystem.deleteItem(this.state.name);
     }
 
-    getInfo(version) {
-        var keys = Object.keys(this.state.info);
-        for (let i = 0; i < keys.length; i++) {
-            var key = keys[i];
-            if (key.endsWith(version)) {
-                return this.state.info[key];
-            }
-        }
+    editFile(e) {
+        e.stopPropagation();
+        this.state.filesystem.editFile(this.state.name);
     }
-
+    
     performOCR(e) {
         e.stopPropagation();
         this.state.filesystem.performOCR(false, this.state.name);
     }
 
     render() {
-        var mainInfo = this.getInfo(this.state.name);
-        var style = {}
-        if (!this.state.expanded) {
-            style = {
-                '&:last-child td, &:last-child th': { border: 0 },
-                ":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'}
-            }
-        } else {
-            style = {
-                borderBottomLeftRadius: '6px',
-                borderBottomRightRadius: '6px',
-                borderColor: 'grey',
-                ":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer', borderBottomLeftRadius: '6px', borderBottomRightRadius: '6px',}
-            }
-        }
         return (
-            <>
-                <TableRow
-                    sx={style}
-                    onClick={() => this.fileClicked()}
-                >
-                    <TableCell sx={{paddingTop: 0, paddingBottom: 0}}>
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                        }}>
-                            {
-                                this.state.expanded
-                                ? <KeyboardArrowDownRoundedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
-                                : <KeyboardArrowRightRoundedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
-                            }
-                            <InsertDriveFileOutlinedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
-                            <p>{this.state.name}</p>    
-                        </Box>
-                    </TableCell>
-                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                        {
-                            mainInfo["creation_date"]
-                        }
-                    </TableCell>
-                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                        {
-                            mainInfo["last_modified"]
-                        }
-                    </TableCell>
-                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                        {
-                            mainInfo["files/pages"]
-                        }
-                    </TableCell>
-                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                        {
-                            mainInfo["size"]
-                        }
-                    </TableCell>
-                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
-                        -
-                    </TableCell>
-                    <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
-                        <Box>
-                            <IconButton
-                                style={{color: "#e5de00"}}
-                                aria-label="search"
-                                onClick={(e) => this.performOCR(e)}
-                            >
-                                <SearchIcon />
-                            </IconButton>
-                            <IconButton
-                                color="error"
-                                aria-label="delete"
-                                onClick={(e) => this.delete(e)}
-                            >
-                                <DeleteForeverIcon />
-                            </IconButton>
-                        </Box>
-                    </TableCell>
-                </TableRow>
-                {
-                    this.state.expanded
-                    ? this.state.versionsComponents.map((comp) => { return comp; } )
-                    : null
-                }
-            </>
+            <TableRow
+                onClick={() => this.fileClicked()}
+            >
+                <TableCell sx={{paddingTop: 0, paddingBottom: 0}}>
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                    }}>
+                        <InsertDriveFileOutlinedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
+                        <p>{this.state.name}</p>    
+                    </Box>
+                </TableCell>
+
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                    <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                        <span>{this.state.info["pages"]} page(s)</span>
+                        <span>{this.state.info['size']}</span>
+                    </Box>
+                </TableCell>
+
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                    {
+                        this.state.info["creation"]
+                    }
+                </TableCell>
+
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                    {
+                        this.state.info["ocr"] === undefined
+                        ? <Button variant="text" onClick={(e) => this.performOCR(e)}>Fazer</Button>
+                        : this.state.info["ocr"]["complete"]
+                            ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.editFile(e)}>{this.state.info["ocr"]["creation"]}</Button>
+                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>{this.state.info["ocr"]["algorithm"]}</Button>
+                                <span>{this.state.info["ocr"]["size"]}</span>
+                            </Box>
+                            : <p>Em progresso</p>
+                    }
+                </TableCell>
+
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                    {
+                        this.state.info["txt"] === undefined
+                        ? <p>-</p>
+                        : this.state.info["txt"]["complete"]
+                            ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                <span>{this.state.info["txt"]["creation"]}</span>
+                                <span>{this.state.info["txt"]["size"]}</span>
+                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.getTxt(e)}>Descarregar</Button>
+                            </Box>
+                            : <p>Em progresso</p>
+                    }
+                </TableCell>
+
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                    {
+                        this.state.info["pdf"] === undefined
+                        ? <p>-</p>
+                        : this.state.info["pdf"]["complete"]
+                            ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                <span>{this.state.info["pdf"]["creation"]}</span>
+                                <span>{this.state.info["pdf"]["size"]}</span>
+                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.getPdf(e)}>Descarregar</Button>
+                            </Box>
+                            : <p>Em progresso</p>
+                    }
+                </TableCell>
+
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+
+                <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
+                    <Box>
+                        <IconButton
+                            color="error"
+                            aria-label="delete"
+                            onClick={(e) => this.delete(e)}
+                        >
+                            <DeleteForeverIcon />
+                        </IconButton>
+                    </Box>
+                </TableCell>
+            </TableRow>
         )
     }
 }

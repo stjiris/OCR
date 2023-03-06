@@ -332,6 +332,8 @@ class OcrMenu extends React.Component {
                             Realizar o OCR
                         </Typography>
 
+                        <p style={{color: 'red'}}><b>Se já fez o OCR antes, irá perder todas as alterações anteriormente feitas</b></p>
+
                         <AlgoDropdown ref={this.algoDropdown} menu={this}/>
 
                         <ChecklistDropdown ref={this.langs} label={"Língua"} options={tesseractLangList} choice={tesseractChoice}/>

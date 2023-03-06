@@ -51,23 +51,30 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
-                            <p><b>Versão 0.2.2</b></p>
+                            <p><b>Versão 0.3.0 - 06/03/2023</b></p>
+                            <ul>
+                                <li>Nova estrutura da tabela</li>
+                                <li>Novo menu de edição de texto</li>
+                                <li>Geração de PDF e de TXT automaticamente após o OCR ou alteração de texto</li>
+                            </ul>
+
+                            <p><b>Versão 0.2.2 - 04/03/2023</b></p>
                             <ul>
                                 <li>Website traduzido para português</li>
                                 <li>Adicionado o menu de versões</li>
                             </ul>
 
-                            <p><b>Versão 0.2.1</b></p>
+                            <p><b>Versão 0.2.1 - 03/03/2023</b></p>
                             <ul>
                                 <li>Correção de erro relativo ao download do PDF</li>
                             </ul>
 
-                            <p><b>Versão 0.2.0</b></p>
+                            <p><b>Versão 0.2.0 - 03/03/2023</b></p>
                             <ul>
                                 <li>Texto no PDF inclui o texto alterado pelo utilizador</li>
                             </ul>
 
-                            <p><b>Versão 0.1.0</b></p>
+                            <p><b>Versão 0.1.0 - 28/02/2023</b></p>
                             <ul>
                                 <li>Primeira versão do website</li>
                             </ul>
