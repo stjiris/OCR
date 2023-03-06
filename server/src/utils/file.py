@@ -56,11 +56,12 @@ def delete_structure(client, path):
     Delete all the files in the structure
     """
     data = get_data(path + "/_data.json")
-    if data["type"] == "file" and data["indexed"]:
-        files = [f"{path}/{f}" for f in os.listdir(path) if f.endswith(".txt")]
-        for file in files:
-            id = generate_uuid(file)
-            client.delete_document(id)
+    if data["type"] == "file":
+        if data.get("indexed", False):
+            files = [f"{path}/{f}" for f in os.listdir(path) if f.endswith(".txt")]
+            for file in files:
+                id = generate_uuid(file)
+                client.delete_document(id)
 
     else:
         folders = [f"{path}/{f}" for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")]
