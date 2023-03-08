@@ -382,10 +382,10 @@ class FileExplorer extends React.Component {
     generateTable() {
         return (
             <TableContainer component={Paper}>
-                <Table aria-label="filesystem table">
+                <Table aria-label="filesystem table" sx={{border:"1px solid #d9d9d9"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell>
+                            <TableCell sx={{borderLeft:"1px solid #d9d9d9"}}>
                                 <Button 
                                     startIcon={<SwapVertIcon />} 
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}    
@@ -393,14 +393,14 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center'><b>Páginas/Bytes</b></TableCell>
-                            <TableCell align='center'><b>Data de Criação</b></TableCell>
-                            <TableCell align='center'><b>OCR</b></TableCell>
-                            <TableCell align='center'><b>Texto</b></TableCell>
-                            <TableCell align='center'><b>PDF</b></TableCell>
-                            <TableCell align='center'><b>PDF Indexado</b></TableCell>
-                            <TableCell align='center'><b>Entidades</b></TableCell>
-                            <TableCell align='center'></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Páginas/Bytes</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Data de Criação</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>OCR</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Texto</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF Indexado</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Entidades</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
