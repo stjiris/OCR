@@ -23,6 +23,7 @@ import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import UndoIcon from '@mui/icons-material/Undo';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SearchIcon from '@mui/icons-material/Search';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 const UPDATE_TIME = 15;
 const validExtensions = [".pdf", ".jpg", ".jpeg"];
@@ -314,6 +315,30 @@ class FileExplorer extends React.Component {
         return folders.concat(files);
     }
 
+    sortByName(contents) {
+        /**
+         * Order 'Nome' column
+         * by A-Z or Z-A when
+         * the  column is clicked
+         */
+
+        const isSorted = (a) => {
+            let sorted = true;
+            if (a.length > 1) {
+                if (a[0].key.localeCompare(a[1].key) === 1){
+                    sorted = false;
+                } 
+            }                                        
+            return sorted;
+        }
+
+        if (isSorted(contents)) {
+            this.setState({components: contents.sort((a, b) => (b.key).localeCompare(a.key))}, this.updateInfo);
+        } else {
+            this.setState({components: contents.sort((a, b) => (a.key).localeCompare(b.key))}, this.updateInfo);
+        }
+    }
+
     displayFileSystem() {
         /**
          * Iterate the contents of the folder and build the components
@@ -360,7 +385,14 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table">
                     <TableHead>
                         <TableRow>
-                            <TableCell><b>Nome</b></TableCell>
+                            <TableCell>
+                                <Button 
+                                    startIcon={<SwapVertIcon />} 
+                                    sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}    
+                                    onClick={() => this.sortByName(this.state.components)}>
+                                    <b>Nome</b>
+                                </Button>
+                            </TableCell>
                             <TableCell align='center'><b>Páginas/Bytes</b></TableCell>
                             <TableCell align='center'><b>Data de Criação</b></TableCell>
                             <TableCell align='center'><b>OCR</b></TableCell>

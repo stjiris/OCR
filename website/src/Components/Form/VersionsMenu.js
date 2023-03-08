@@ -51,6 +51,11 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.4.0 - 08/03/2023</b></p>
+                            <ul>
+                                <li>Ordenação da tabela por nome</li>
+                            </ul>
+
                             <p><b>Versão 0.3.0 - 06/03/2023</b></p>
                             <ul>
                                 <li>Nova estrutura da tabela</li>
