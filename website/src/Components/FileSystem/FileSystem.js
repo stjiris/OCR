@@ -323,14 +323,12 @@ class FileExplorer extends React.Component {
          */
 
         const isSorted = (a) => {
-            let sorted = true;                          
-            for (var i = 0; i < a.length; i++) {
-                for(var j = i+1; j < a.length; j++) {
-                    if (a[i].key.localeCompare(a[j].key) == 1){
-                        sorted = false;
-                    }  
-                }  
-            }                
+            let sorted = true;
+            if (a.length > 1) {
+                if (a[0].key.localeCompare(a[1].key) == 1){
+                    sorted = false;
+                } 
+            }                                        
             return sorted;
         }
 
@@ -390,7 +388,7 @@ class FileExplorer extends React.Component {
                             <TableCell>
                                 <Button 
                                     startIcon={<SwapVertIcon />} 
-                                    sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}}}    
+                                    sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}    
                                     onClick={() => this.sortByName(this.state.components)}>
                                     <b>Nome</b>
                                 </Button>
