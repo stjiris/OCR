@@ -84,65 +84,66 @@ export default class FileRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     <Box sx={{display: 'flex', flexDirection: 'column'}}>
                         <span>{this.state.info["pages"]} page(s)</span>
                         <span>{this.state.info['size']}</span>
                     </Box>
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     {
                         this.state.info["creation"]
                     }
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     {
                         this.state.info["ocr"] === undefined
                         ? <Button variant="text" onClick={(e) => this.performOCR(e)}>Fazer</Button>
                         : this.state.info["ocr"]["complete"]
                             ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.editFile(e)}>{this.state.info["ocr"]["creation"]}</Button>
+                                <span>{this.state.info["ocr"]["creation"]}</span>
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>{this.state.info["ocr"]["algorithm"]}</Button>
                                 <span>{this.state.info["ocr"]["size"]}</span>
+                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.editFile(e)}>Editar</Button>
                             </Box>
                             : <p>Em progresso</p>
                     }
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     {
                         this.state.info["txt"] === undefined
                         ? <p>-</p>
                         : this.state.info["txt"]["complete"]
                             ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["txt"]["creation"]}</span>
-                                <span>{this.state.info["txt"]["size"]}</span>
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.getTxt(e)}>Descarregar</Button>
+                                <span>{this.state.info["txt"]["size"]}</span>                                
                             </Box>
                             : <p>Em progresso</p>
                     }
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     {
                         this.state.info["pdf"] === undefined
                         ? <p>-</p>
                         : this.state.info["pdf"]["complete"]
                             ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["pdf"]["creation"]}</span>
-                                <span>{this.state.info["pdf"]["size"]}</span>
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.getPdf(e)}>Descarregar</Button>
+                                <span>{this.state.info["pdf"]["size"]}</span>
                             </Box>
                             : <p>Em progresso</p>
                     }
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
 
-                <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     <Box>
                         {
                             this.state.info["indexed"]
