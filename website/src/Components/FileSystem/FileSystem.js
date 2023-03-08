@@ -325,7 +325,7 @@ class FileExplorer extends React.Component {
         const isSorted = (a) => {
             let sorted = true;
             if (a.length > 1) {
-                if (a[0].key.localeCompare(a[1].key) == 1){
+                if (a[0].key.localeCompare(a[1].key) === 1){
                     sorted = false;
                 } 
             }                                        
