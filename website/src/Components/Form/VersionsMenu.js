@@ -51,6 +51,13 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.5.0 - 09/03/2023</b></p>
+                            <ul>                            
+                                <li>Adiciona divisores entre colunas</li>
+                                <li>Reordena os elementos de cada célula</li>
+                                <li>Adiciona link para editar no fim da célula do OCR</li>
+                            </ul>
+
                             <p><b>Versão 0.4.0 - 08/03/2023</b></p>
                             <ul>
                                 <li>Ordenação da tabela por nome</li>
