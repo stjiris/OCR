@@ -38,10 +38,10 @@ export default class FolderRow extends React.Component {
     render() {
         return (
             <TableRow
-                sx={{ '&:last-child td, &:last-child th': { border: 0 }, ":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}
+                sx={{":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}
                 onClick={() => this.folderClicked()}
             >
-                <TableCell sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -52,21 +52,21 @@ export default class FolderRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     {
                         this.state.info["creation"]
                     }
                 </TableCell>
                 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
 
-                <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     <IconButton
                         color="error"
                         aria-label="delete"
