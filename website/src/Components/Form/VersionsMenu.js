@@ -51,6 +51,10 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.6.0 - 10/03/2023</b></p>
+                            <ul>                            
+                                <li>É possível submeter e fazer OCR de ficheiros grandes (+1GB)</li>
+                            </ul>
                             <p><b>Versão 0.5.0 - 09/03/2023</b></p>
                             <ul>                            
                                 <li>Adiciona divisores entre colunas</li>
