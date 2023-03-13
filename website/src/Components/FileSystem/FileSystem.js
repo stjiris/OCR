@@ -480,7 +480,7 @@ class FileExplorer extends React.Component {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'row',
-                    flexWrap: 'wrap',
+                    flexWrap: 'wrap'
                 }}>
                     <Button
                         disabled={this.state.buttonsDisabled}

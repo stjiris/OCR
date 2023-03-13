@@ -4,10 +4,12 @@ import Button from '@mui/material/Button';
 import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 
-import EditImageDisplayer from '../Displayer/EditImageDisplayer.js';
-import PageDisplayer from '../Displayer/PageDisplayer.js';
-import CustomTextField from '../TextField/CustomTextField.js';
 import Notification from '../Notification/Notifications.js';
+
+import MultiplePageView from './MultiplePageView.js';
+import EditText from './EditText.js';
+import ConfirmLeave from './ConfirmLeave.js';
+
 
 export default class EditPage extends React.Component {
     constructor(props) {
@@ -18,7 +20,7 @@ export default class EditPage extends React.Component {
             contents: [],
 
             pageMode: true,
-            pageOpened: 0,
+            pageOpened: -1,
             text: "",
 
             loading: true
@@ -26,10 +28,21 @@ export default class EditPage extends React.Component {
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
+        this.confirmLeave = React.createRef();
+
+        this.multiplePage = React.createRef();
+        this.editText = React.createRef();
     }
 
     setFile(file) { this.setState({file: file}); }
-    editPage(index) { this.setState({pageMode: false, pageOpened: index, text: this.state.contents[index]["content"]}); }
+
+    editPage(index) {
+        if (this.state.pageOpened !== -1) {
+            this.editText.current.changePage(index);
+        }
+
+        this.setState({pageMode: false, pageOpened: index});
+    }
 
     componentDidMount() {
         fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + this.state.file, {
@@ -37,9 +50,11 @@ export default class EditPage extends React.Component {
         })
         .then(response => {return response.json()})
         .then(data => {
-            this.setState({loading: false, contents: data["doc"].sort((a, b) =>
+            var contents = data["doc"].sort((a, b) =>
                 (a["page_url"] > b["page_url"]) ? 1 : -1
-            )});
+            )
+            this.setState({loading: false, contents: contents});
+            this.multiplePage.current.updateContents(contents);
         });
     }
 
@@ -49,10 +64,15 @@ export default class EditPage extends React.Component {
 
     goBack() {
         if (!this.state.pageMode) {
-            this.setState({pageMode: true});
+            this.confirmLeave.current.toggleOpen();
         } else {
             this.state.app.setState({fileSystemMode: true, editFileMode: false});
         }
+    }
+
+    leave() {
+        this.setState({pageMode: true, pageOpened: -1});
+        this.confirmLeave.current.toggleOpen();
     }
 
     saveText() {
@@ -89,9 +109,12 @@ export default class EditPage extends React.Component {
 
     render() {
         return (
-            <Box sx={{ml: '1.5rem', mr: '1.5rem'}}>
+            <Box sx={{ml: '1.5rem', mr: '1.5rem', height: '100%'}}>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <Notification message={""} severity={"error"} ref={this.errorNot}/>
+
+                <ConfirmLeave ref={this.confirmLeave} page={this} />
+
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'row',
@@ -124,33 +147,13 @@ export default class EditPage extends React.Component {
                     ? <p>Loading...</p>
                     : null
                 }
-                {
-                    this.state.pageMode
-                    ? <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            flexWrap: 'wrap',
-                            justifyContent: 'space-around',
-                        }}
-                    >
-                        {
-                            this.state.contents.map((page, index) => {
-                                return <EditImageDisplayer index={index} path={page["page_url"]} key={index} editPage={this}/>
-                            })
-                        }
-                    </Box>
-                    : <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                        <Box>
-                            <PageDisplayer                                           
-                                path={this.state.contents[this.state.pageOpened]["page_url"]} maxWidth={'250px'}
-                            />
-                        </Box>
-                        <Box sx={{width: '100%'}}>
-                            <CustomTextField defaultValue={this.state.contents[this.state.pageOpened]["content"]} sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={18} onChange={(e) => this.updateContents(e)} fullWidth disabled={this.state.disabled} multiline />
-                        </Box>
-                    </Box>
-                }
+                <Box sx={{height: '100%'}}>
+                    {
+                        this.state.pageMode
+                        ? <MultiplePageView ref={this.multiplePage} editPage={this} contents={this.state.contents}/>
+                        : <EditText ref={this.editText} contents={this.state.contents} editPage={this}/>
+                    }
+                </Box>
             </Box>
         )
     }
