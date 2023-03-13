@@ -9,6 +9,10 @@ class PageDisplayer extends React.Component {
             maxWidth: props.maxWidth || '150px'
         }
     }
+
+    updatePath(path) {
+        this.setState({path: path});
+    }
     
     render() {
         return (
@@ -22,7 +26,7 @@ class PageDisplayer extends React.Component {
                 >
                     <img
                         src={this.state.path}
-                        alt={`Página de ${this.state.path.split('/').slice(-1)}`}
+                        alt={`Página de ${this.state.path}`}
                         style={{maxWidth: `${this.state.maxWidth}`}}
                     />
                 </a>
