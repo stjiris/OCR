@@ -1,16 +1,22 @@
 FROM python:3.10
 
+# Install missing Debian packages
+COPY install-packages.sh .
+RUN ./install-packages.sh
+
+# Keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED=1
+
+# Install pip requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /opt/app/
+
 WORKDIR /opt/app
 
-RUN apt-get update && apt-get install -y python3-opencv poppler-utils tesseract-ocr  tesseract-ocr-all
-
-RUN python -m venv env
-
-COPY ./requirements.txt .
-
-RUN ./env/bin/pip install -r requirements.txt
-
-COPY . .
-
-ENTRYPOINT [ "./env/bin/python", "app.py" ]
+ENTRYPOINT [ "python", "app.py" ]
 
