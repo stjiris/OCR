@@ -131,7 +131,14 @@ function App() {
     render() {
         return (
             <Box className="App" sx={{height: '100vh'}}>
-                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', ml: '1.5rem', mr: '2rem'}}>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    ml: '1.5rem',
+                    mr: '1.5rem',
+                    zIndex: '100',
+                }}>
                     <Box sx={{display: 'flex', flexDirection: 'row'}}>
                         <Link
                             className="link"
@@ -171,7 +178,8 @@ function App() {
                 </Box>
 
                 <VersionsMenu ref={this.versionsMenu}/>
-                <Box sx={{height: '80%'}}>
+
+                <Box sx={{}}>
                     {
                         this.state.fileSystemMode
                         ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
