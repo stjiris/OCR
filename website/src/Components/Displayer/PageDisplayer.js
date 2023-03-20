@@ -27,6 +27,7 @@ class PageDisplayer extends React.Component {
             <Box sx={{
                 maxWidth: `${this.state.width}`,
                 mr: '1rem',
+                pt: '1rem'
             }}>
                 <Box sx={{maxWidth: `${this.state.maxWidth}`}}>
                     <Slider
