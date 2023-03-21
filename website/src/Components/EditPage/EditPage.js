@@ -86,9 +86,6 @@ export default class EditPage extends React.Component {
                 this.successNot.current.setMessage("Texto submetido com sucesso");
                 this.successNot.current.open();
 
-                var info = data["info"];
-                this.state.app.setState({fileSystemMode: true, editFileMode: false, info: info})
-
             } else {
                 this.errorNot.current.setMessage(data.error);
                 this.errorNot.current.open();
