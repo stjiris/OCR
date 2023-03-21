@@ -18,7 +18,7 @@ import InfoIcon from '@mui/icons-material/Info';
  * MINOR version when you add functionality in a backwards compatible manner
  * PATCH version when you make backwards compatible bug fixes
  */
-const VERSION = "0.7.0";
+const VERSION = "0.7.1";
 
 function App() {
   class Form extends React.Component {

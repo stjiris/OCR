@@ -51,6 +51,10 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.7.1 - 21/03/2023</b></p>
+                            <ul>                            
+                                <li>Popup de saída do menu de edição apenas aparece quando há alterações não guardadas</li>
+                            </ul>
                             <p><b>Versão 0.7.0 - 21/03/2023</b></p>
                             <ul>                            
                                 <li>Novo menu de edição</li>
