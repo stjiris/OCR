@@ -16,6 +16,7 @@ export default class EditPage extends React.Component {
             app: props.app,
             file: props.app.state.fileOpened,
             contents: [],
+            uncommitedChanges: false,
 
             loading: true
         }
@@ -41,7 +42,7 @@ export default class EditPage extends React.Component {
     updateContents(index, contents) {
         var newContents = this.state.contents;
         newContents[index]["content"] = contents;
-        this.setState({contents: newContents});
+        this.setState({contents: newContents, uncommitedChanges: true});
     }
 
     componentDidMount() {
@@ -58,7 +59,7 @@ export default class EditPage extends React.Component {
     }
 
     goBack() {
-        if (!this.state.pageMode) {
+        if (this.state.uncommitedChanges) {
             this.confirmLeave.current.toggleOpen();
         } else {
             this.state.app.setState({fileSystemMode: true, editFileMode: false});
@@ -85,7 +86,7 @@ export default class EditPage extends React.Component {
             if (data.success) {
                 this.successNot.current.setMessage("Texto submetido com sucesso");
                 this.successNot.current.open();
-
+                this.setState({uncommitedChanges: false});
             } else {
                 this.errorNot.current.setMessage(data.error);
                 this.errorNot.current.open();
