@@ -6,10 +6,8 @@ import SaveIcon from '@mui/icons-material/Save';
 
 import Notification from '../Notification/Notifications.js';
 
-import MultiplePageView from './MultiplePageView.js';
-import EditText from './EditText.js';
 import ConfirmLeave from './ConfirmLeave.js';
-
+import PageItem from './PageItem.js';
 
 export default class EditPage extends React.Component {
     constructor(props) {
@@ -18,10 +16,6 @@ export default class EditPage extends React.Component {
             app: props.app,
             file: props.app.state.fileOpened,
             contents: [],
-
-            pageMode: true,
-            pageOpened: -1,
-            text: "",
 
             loading: true
         }
@@ -44,6 +38,12 @@ export default class EditPage extends React.Component {
         this.setState({pageMode: false, pageOpened: index});
     }
 
+    updateContents(index, contents) {
+        var newContents = this.state.contents;
+        newContents[index]["content"] = contents;
+        this.setState({contents: newContents});
+    }
+
     componentDidMount() {
         fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + this.state.file, {
             method: 'GET'
@@ -54,12 +54,7 @@ export default class EditPage extends React.Component {
                 (a["page_url"] > b["page_url"]) ? 1 : -1
             )
             this.setState({loading: false, contents: contents});
-            this.multiplePage.current.updateContents(contents);
         });
-    }
-
-    updateContents(e) {
-        this.setState({text: e.target.value});
     }
 
     goBack() {
@@ -71,40 +66,31 @@ export default class EditPage extends React.Component {
     }
 
     leave() {
-        this.setState({pageMode: true, pageOpened: -1});
+        this.state.app.setState({fileSystemMode: true, editFileMode: false});
         this.confirmLeave.current.toggleOpen();
     }
 
     saveText() {
-        if (!this.state.pageMode) {
-            var contents = this.state.contents;
-            contents[this.state.pageOpened]["content"] = this.state.text;
-            this.setState({contents: contents, pageMode: true});
-        } else {
-            fetch(process.env.REACT_APP_API_URL + 'submit-text', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "text": this.state.contents
-                })
+        fetch(process.env.REACT_APP_API_URL + 'submit-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "text": this.state.contents
             })
-            .then(response => {return response.json()})
-            .then(data => {
-                if (data.success) {
-                    this.successNot.current.setMessage("Texto submetido com sucesso");
-                    this.successNot.current.open();
+        })
+        .then(response => {return response.json()})
+        .then(data => {
+            if (data.success) {
+                this.successNot.current.setMessage("Texto submetido com sucesso");
+                this.successNot.current.open();
 
-                    var info = data["info"];
-                    this.state.app.setState({fileSystemMode: true, editFileMode: false, info: info})
-    
-                } else {
-                    this.errorNot.current.setMessage(data.error);
-                    this.errorNot.current.open();
-                }
-            });
-        }
+            } else {
+                this.errorNot.current.setMessage(data.error);
+                this.errorNot.current.open();
+            }
+        });
     }
 
     render() {
@@ -120,6 +106,14 @@ export default class EditPage extends React.Component {
                     flexDirection: 'row',
                     flexWrap: 'wrap',
                     justifyContent: 'space-between',
+                    position: 'sticky',                    
+                    top: 0,
+                    zIndex: 100,
+                    backgroundColor: '#fff',
+                    paddingTop: '1rem',
+                    paddingBottom: '1rem',
+                    marginBottom: '1rem',
+                    borderBottom: '1px solid black',                  
                 }}>
                     <Button
                         disabled={this.state.buttonsDisabled}
@@ -136,7 +130,7 @@ export default class EditPage extends React.Component {
                         variant="contained"
                         color="success"
                         startIcon={<SaveIcon />} 
-                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
+                        sx={{border: '1px solid black', mb: '0.5rem'}}
                         onClick={() => this.saveText()}
                     >
                         Guardar
@@ -145,15 +139,14 @@ export default class EditPage extends React.Component {
                 {
                     this.state.loading
                     ? <p>Loading...</p>
-                    : null
+                    : <Box>
+                        {
+                            this.state.contents.map((page, index) =>
+                                <PageItem key={index} page={this} contents={page["content"]} image={page["page_url"]} index={index} />
+                            )
+                        }
+                    </Box>
                 }
-                <Box sx={{height: '100%'}}>
-                    {
-                        this.state.pageMode
-                        ? <MultiplePageView ref={this.multiplePage} editPage={this} contents={this.state.contents}/>
-                        : <EditText ref={this.editText} contents={this.state.contents} editPage={this}/>
-                    }
-                </Box>
             </Box>
         )
     }
