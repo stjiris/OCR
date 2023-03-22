@@ -157,6 +157,7 @@ def get_structure_info(path):
             folder_path = f"{root}/{folder}".replace("\\", "/")
 
             data = get_data(f"{folder_path}/_data.json")
+            if data == {}: continue
 
             if data["type"] == "file": data["size"] = get_size(folder_path)
 
@@ -261,6 +262,8 @@ def save_json_structure(structure, path):
 ##################################################
 def get_data(file):
     with open(file, encoding="utf-8") as f:
+        text = f.read()
+        if text == "": return {}
         return json.load(f)
 
 def update_data(file, data):
