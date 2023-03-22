@@ -331,5 +331,6 @@ if __name__ == "__main__":
     docs_pool = ThreadPool(perform_file_ocr, WAITING_DOCS, MAX_THREADS)
     changes_pool = ThreadPool(make_changes, WAITING_CHANGES, MAX_THREADS)
     pages_pool = ThreadPool(perform_page_ocr, WAITING_PAGES, MAX_THREADS + 2, delay = 2)
-                
-    app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
+
+    app.config['DEBUG'] = os.environ.get('DEBUG', False)
+    app.run()

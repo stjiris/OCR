@@ -1,6 +1,7 @@
 wheel
 packaging==23.0
 lxml==4.9.1
+gunicorn==20.1.0
 Flask==2.2.3
 Flask-Cors==3.0.10
 elasticsearch==8.5.0

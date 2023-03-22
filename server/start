@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+
+
+if [ -n "$FLASK_DEBUG" ]; then
+        flask run --host=0.0.0.0 --port=5001
+else
+        gunicorn --bind 0.0.0.0:5001 --chdir=/app app:app
+fi
