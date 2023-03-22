@@ -1,10 +1,11 @@
-import os, time, json
+import os, time, json, re
 from pdf2image import convert_from_path
 from PyPDF2 import PdfFileReader
 from PIL import Image
 from os import environ
 from difflib import SequenceMatcher
 from datetime import datetime
+from pathlib import Path
 
 from src.utils.export import export_file, json_to_text
 
@@ -284,20 +285,70 @@ def prepare_file_ocr(path):
     extension = path.split(".")[-1]
     basename = get_file_basename(path)
 
+    print("A preparar páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+
     if extension == "pdf":
-        pages = convert_from_path(f"{path}/{basename}.pdf", 200)
+        pages = convert_from_path(f"{path}/{basename}.pdf", paths_only=True, output_folder=path, fmt="jpg", thread_count=4)
+        print("A trocar os nomes das páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         for i, page in enumerate(pages):
-            page.save(f"{path}/{basename}_{i}.jpg", "JPEG")
+            Path(page).rename(f"{path}/{basename}_{i}.jpg")
 
     elif extension in ["jpeg", "jpg"]:
         img = Image.open(f"{path}/{basename}.{extension}")
         img.save(f"{path}/{basename}.jpg", "JPEG")
 
-def perform_file_ocr(path, config, ocr_algorithm):
+def perform_page_ocr(path, filename, config, ocr_algorithm):
+    """
+    Perform the page OCR
+
+    :param path: path to the file
+    :param filename: filename of the page
+    :param config: config to use
+    :param ocr_algorithm: algorithm to use
+    """
+
+    data_folder = f"{path}/_data.json"
+    data = get_data(data_folder)
+
+    json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
+    save_json_structure(json_d, f"{path}/ocr_results/{get_file_basename(filename)}.json")
+
+    files = os.listdir(f"{path}/ocr_results")
+
+    if data["pages"] == len(files):
+        print("Acabei OCR", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+
+        data = get_data(data_folder)
+        creation_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+        data["ocr"]["complete"] = True
+        data["ocr"]["size"] = get_ocr_size(f"{path}/ocr_results")
+        data["ocr"]["creation"] = creation_date
+
+        update_data(data_folder, data)
+
+        export_file(path, "txt")
+        export_file(path, "pdf")
+
+        creation_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+        data["txt"]["complete"] = True            
+        data["txt"]["size"] = get_size(f"{path}/_text.txt", path_complete=True)
+        data["txt"]["creation"] = creation_date
+
+        data["pdf"]["complete"] = True
+        data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
+        data["pdf"]["creation"] = creation_date
+
+
+        data["indexed"] = False
+        update_data(data_folder, data)
+
+def perform_file_ocr(path, config, ocr_algorithm, WAITING_PAGES):
     """
     Prepare the OCR of a file
     @param path: path to the file
-    @param data: data to use
+    @param config: config to use
     @param ocr_algorithm: algorithm to use
     """
 
@@ -305,37 +356,10 @@ def perform_file_ocr(path, config, ocr_algorithm):
     prepare_file_ocr(path)
     images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
 
-    data_folder = f"{path}/_data.json"
+    print("A começar OCR", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
 
-    for id, image in enumerate(images):
-        # Generate the hOCR
-        json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{image}"), config)
-
-        # Save the results
-        save_json_structure(json_d, f"{path}/ocr_results/{get_file_basename(image)}.json")
-
-        if id == len(images) - 1:
-            export_file(path, "txt")
-            export_file(path, "pdf")
-
-            data = get_data(data_folder)
-            creation_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-
-            data["ocr"]["complete"] = True
-            data["ocr"]["size"] = get_ocr_size(f"{path}/ocr_results")
-            data["ocr"]["creation"] = creation_date
-
-            data["txt"]["complete"] = True            
-            data["txt"]["size"] = get_size(f"{path}/_text.txt", path_complete=True)
-            data["txt"]["creation"] = creation_date
-
-            data["pdf"]["complete"] = True
-            data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
-            data["pdf"]["creation"] = creation_date
-
-
-            data["indexed"] = False
-            update_data(data_folder, data)
+    for image in images:
+        WAITING_PAGES.append((path, image, config, ocr_algorithm))
 
 def similarity_score(text1, text2):
     """
