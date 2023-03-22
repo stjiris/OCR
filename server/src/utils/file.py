@@ -1,6 +1,6 @@
 import os, time, json, re
 from pdf2image import convert_from_path
-from PyPDF2 import PdfFileReader
+from PyPDF2 import PdfReader
 from PIL import Image
 from os import environ
 from difflib import SequenceMatcher
@@ -157,6 +157,7 @@ def get_structure_info(path):
             folder_path = f"{root}/{folder}".replace("\\", "/")
 
             data = get_data(f"{folder_path}/_data.json")
+            if data == {}: continue
 
             if data["type"] == "file": data["size"] = get_size(folder_path)
 
@@ -185,13 +186,14 @@ def get_structure(path):
 
     if path != "files":
         data = get_data(f"{path}/_data.json")
+        if data == {}: return None
         if data["type"] == "file": return name
 
     contents = []
     folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")])
     for folder in folders:
         file = get_structure(f"{path}/{folder}")
-        contents.append(file)
+        if file is not None: contents.append(file)
 
     filesystem[name] = contents
     return filesystem
@@ -206,7 +208,7 @@ def get_page_count(filename):
 
     extension = filename.split(".")[-1]
     if extension == "pdf":
-        return PdfFileReader(open(filename, "rb")).getNumPages()
+        return len(PdfReader(open(filename, "rb")).pages)
     elif extension in ["jpg", "jpeg"]:
         return 1
 
@@ -261,7 +263,9 @@ def save_json_structure(structure, path):
 ##################################################
 def get_data(file):
     with open(file, encoding="utf-8") as f:
-        return json.load(f)
+        text = f.read()
+        if text == "": return {}
+        return json.loads(text)
 
 def update_data(file, data):
     """

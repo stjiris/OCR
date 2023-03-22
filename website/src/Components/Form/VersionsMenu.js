@@ -54,6 +54,8 @@ class VersionsMenu extends React.Component {
                             <p><b>Versão 0.8.0 - 22/03/2023</b></p>
                             <ul>                            
                                 <li>Suporte para ficheiros de maiores dimensões</li>
+                                <li>Remoção do menu de OCR</li>
+                                <li>Reorganização da tabela</li>
                             </ul>
                             <p><b>Versão 0.7.1 - 21/03/2023</b></p>
                             <ul>                            
