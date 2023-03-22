@@ -264,7 +264,7 @@ def get_data(file):
     with open(file, encoding="utf-8") as f:
         text = f.read()
         if text == "": return {}
-        return json.load(f)
+        return json.loads(text)
 
 def update_data(file, data):
     """
