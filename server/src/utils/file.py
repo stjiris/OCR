@@ -186,13 +186,14 @@ def get_structure(path):
 
     if path != "files":
         data = get_data(f"{path}/_data.json")
+        if data == {}: return None
         if data["type"] == "file": return name
 
     contents = []
     folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")])
     for folder in folders:
         file = get_structure(f"{path}/{folder}")
-        contents.append(file)
+        if file is not None: contents.append(file)
 
     filesystem[name] = contents
     return filesystem
