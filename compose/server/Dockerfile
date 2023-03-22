@@ -78,4 +78,4 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
-ENTRYPOINT [ "python", "app.py" ]
+ENTRYPOINT [ "python3", "app.py" ]
