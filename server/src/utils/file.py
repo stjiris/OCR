@@ -1,6 +1,6 @@
 import os, time, json, re
 from pdf2image import convert_from_path
-from PyPDF2 import PdfFileReader
+from PyPDF2 import PdfReader
 from PIL import Image
 from os import environ
 from difflib import SequenceMatcher
@@ -208,7 +208,7 @@ def get_page_count(filename):
 
     extension = filename.split(".")[-1]
     if extension == "pdf":
-        return PdfFileReader(open(filename, "rb")).getNumPages()
+        return PdfReader(open(filename, "rb")).getNumPages()
     elif extension in ["jpg", "jpeg"]:
         return 1
 
