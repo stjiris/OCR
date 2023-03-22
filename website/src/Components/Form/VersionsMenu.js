@@ -68,6 +68,9 @@ class VersionsMenu extends React.Component {
                                 <li>Novo menu de edição</li>
                                 <li>Menu de confirmação antes de sair</li>
                                 <li>Correção de palavras em inglês</li>
+                            <p><b>Versão 0.6.0 - 10/03/2023</b></p>
+                            <ul>                            
+                                <li>É possível submeter e fazer OCR de ficheiros grandes (+1GB)</li>
                             </ul>
                             <p><b>Versão 0.5.0 - 09/03/2023</b></p>
                             <ul>                            

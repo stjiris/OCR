@@ -3,9 +3,9 @@ from datetime import datetime
 
 from flask import Flask, request, send_file
 from flask_cors import CORS # permitir requests de outros ips alem do servidor
-from threading import Thread
 
 from src.utils.export import export_file
+from src.thread_pool import ThreadPool
 
 from src.utils.file import (
     get_structure_info,
@@ -13,6 +13,7 @@ from src.utils.file import (
     get_file_parsed,
     delete_structure,
     perform_file_ocr,
+    perform_page_ocr,
     get_data,
     update_data,
     get_page_count,
@@ -37,6 +38,7 @@ CORS(app)
 MAX_THREADS = 4
 WAITING_DOCS = []
 WAITING_CHANGES = []
+WAITING_PAGES = []
 
 def make_changes(data, data_folder):
     current_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -54,33 +56,6 @@ def make_changes(data, data_folder):
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
 
     update_data(data_folder + "/_data.json", data)
-
-def manage_threads(pages, changes):
-    import time
-    active_threads_docs = []
-    active_threads_changes = []
-    print("Parser started!")
-    while True:
-        # Make OCR of new files
-        time.sleep(5)
-        for t in active_threads_docs:
-            if not t.is_alive():
-                active_threads_docs.remove(t)
-        while len(pages) > 0 and len(active_threads_docs) <= MAX_THREADS:
-            page = pages.pop()
-            t = Thread(target=perform_file_ocr, args=(*page, ))
-            t.start()
-            active_threads_docs.append(t)
-
-        # Create the _text.txt and the _search.pdf with the changes made
-        for t in active_threads_changes:
-            if not t.is_alive():
-                active_threads_changes.remove(t)
-        while len(changes) > 0 and len(active_threads_changes) <= MAX_THREADS:
-            change = changes.pop()
-            t = Thread(target=make_changes, args=(*change, ))
-            t.start()
-            active_threads_changes.append(t)
 
 #####################################
 # FILE SYSTEM ROUTES
@@ -229,7 +204,7 @@ def perform_ocr():
         data["pdf"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        WAITING_DOCS.append((f, config, ocr_algorithm))
+        WAITING_DOCS.append((f, config, ocr_algorithm, WAITING_PAGES))
 
     return {"success": True, "message": "O OCR começou, por favor aguarde", "files": get_filesystem("files")}
 
@@ -353,7 +328,8 @@ if __name__ == "__main__":
     if not os.path.exists("./files/"):
         os.mkdir("./files/")
 
-    page_parser = Thread(target=manage_threads, args=(WAITING_DOCS, WAITING_CHANGES,), daemon=True)
-    page_parser.start()
+    docs_pool = ThreadPool(perform_file_ocr, WAITING_DOCS, MAX_THREADS)
+    changes_pool = ThreadPool(make_changes, WAITING_CHANGES, MAX_THREADS)
+    pages_pool = ThreadPool(perform_page_ocr, WAITING_PAGES, MAX_THREADS + 2, delay = 2)
                 
     app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
