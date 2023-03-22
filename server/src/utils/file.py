@@ -208,7 +208,7 @@ def get_page_count(filename):
 
     extension = filename.split(".")[-1]
     if extension == "pdf":
-        return PdfReader(open(filename, "rb")).getNumPages()
+        return len(PdfReader(open(filename, "rb")).pages)
     elif extension in ["jpg", "jpeg"]:
         return 1
 
