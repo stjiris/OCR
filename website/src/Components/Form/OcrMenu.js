@@ -283,13 +283,14 @@ class OcrMenu extends React.Component {
         }
     }
 
-    performOCR() {
+    performOCR(algorithm = null, config = null, path = null, multiple = null) {
         /**
          * Request the OCR to the backend
          */
-
-        let algorithm = this.algoDropdown.current.getChoice();
-        let config = this.langs.current.getChoiceList();
+        if (algorithm === null) algorithm = this.algoDropdown.current.getChoice();
+        if (config === null) config = this.langs.current.getChoiceList();
+        if (path === null) path = this.state.path;
+        if (multiple === null) multiple = this.state.multiple;
 
         fetch(process.env.REACT_APP_API_URL + 'perform-ocr', {
             method: 'POST',
@@ -297,10 +298,10 @@ class OcrMenu extends React.Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                "path": this.state.path,
+                "path": path,
                 "algorithm": algorithm,
                 "config": config,
-                "multiple": this.state.multiple
+                "multiple": multiple
             }),
         })
         .then(response => response.json())

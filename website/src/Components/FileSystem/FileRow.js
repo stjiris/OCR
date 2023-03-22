@@ -6,10 +6,12 @@ import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
 
-import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import IconDatabaseOff from '../Icons/DatabaseOffIcon';
 import IconDatabaseImport from '../Icons/DatabaseInIcon';
+
+import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import EditIcon from '@mui/icons-material/Edit';
 
 export default class FileRow extends React.Component {
     constructor(props) {
@@ -104,9 +106,8 @@ export default class FileRow extends React.Component {
                         : this.state.info["ocr"]["complete"]
                             ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["ocr"]["creation"]}</span>
-                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>{this.state.info["ocr"]["algorithm"]}</Button>
+                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                 <span>{this.state.info["ocr"]["size"]}</span>
-                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.editFile(e)}>Editar</Button>
                             </Box>
                             : <p>Em progresso</p>
                     }
@@ -143,8 +144,18 @@ export default class FileRow extends React.Component {
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
 
-                <TableCell align='right' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     <Box>
+
+                        <IconButton
+                            disabled={this.state.info["ocr"] === undefined || !this.state.info["ocr"]["complete"]}
+                            color="primary"
+                            aria-label="edit"
+                            onClick={(e) => this.editFile(e)}
+                        >
+                            <EditIcon />
+                        </IconButton>
+
                         {
                             this.state.info["indexed"]
                             ? <IconButton
