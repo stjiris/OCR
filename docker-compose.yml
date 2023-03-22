@@ -32,7 +32,7 @@ services:
       elasticsearch:
         condition: service_healthy
     volumes:
-      - files_data:/opt/app/files 
+      - files_data:/app/files 
     restart: unless-stopped
 
   elasticsearch:
