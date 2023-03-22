@@ -18,7 +18,8 @@ import InfoIcon from '@mui/icons-material/Info';
  * MINOR version when you add functionality in a backwards compatible manner
  * PATCH version when you make backwards compatible bug fixes
  */
-const VERSION = "0.6.0";
+
+const VERSION = "0.7.1";
 
 function App() {
   class Form extends React.Component {
@@ -130,8 +131,15 @@ function App() {
 
     render() {
         return (
-            <div className="App">
-                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', ml: '1.5rem', mr: '2rem'}}>
+            <Box className="App" sx={{height: '100vh'}}>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    ml: '1.5rem',
+                    mr: '1.5rem',
+                    zIndex: '100',
+                }}>
                     <Box sx={{display: 'flex', flexDirection: 'row'}}>
                         <Link
                             className="link"
@@ -171,14 +179,17 @@ function App() {
                 </Box>
 
                 <VersionsMenu ref={this.versionsMenu}/>
-                {
-                    this.state.fileSystemMode
-                    ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
-                    : this.state.editFileMode
-                        ? <EditPage ref={this.editPage} app={this}/>
-                        : <ESPage app={this}/>
-                }
-            </div>
+
+                <Box sx={{}}>
+                    {
+                        this.state.fileSystemMode
+                        ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
+                        : this.state.editFileMode
+                            ? <EditPage ref={this.editPage} app={this}/>
+                            : <ESPage app={this}/>
+                    }
+                </Box>
+            </Box>
         )
     }
 }

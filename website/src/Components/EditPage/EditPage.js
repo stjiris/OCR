@@ -4,10 +4,10 @@ import Button from '@mui/material/Button';
 import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 
-import EditImageDisplayer from '../Displayer/EditImageDisplayer.js';
-import PageDisplayer from '../Displayer/PageDisplayer.js';
-import CustomTextField from '../TextField/CustomTextField.js';
 import Notification from '../Notification/Notifications.js';
+
+import ConfirmLeave from './ConfirmLeave.js';
+import PageItem from './PageItem.js';
 
 export default class EditPage extends React.Component {
     constructor(props) {
@@ -16,20 +16,34 @@ export default class EditPage extends React.Component {
             app: props.app,
             file: props.app.state.fileOpened,
             contents: [],
-
-            pageMode: true,
-            pageOpened: 0,
-            text: "",
+            uncommitedChanges: false,
 
             loading: true
         }
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
+        this.confirmLeave = React.createRef();
+
+        this.multiplePage = React.createRef();
+        this.editText = React.createRef();
     }
 
     setFile(file) { this.setState({file: file}); }
-    editPage(index) { this.setState({pageMode: false, pageOpened: index, text: this.state.contents[index]["content"]}); }
+
+    editPage(index) {
+        if (this.state.pageOpened !== -1) {
+            this.editText.current.changePage(index);
+        }
+
+        this.setState({pageMode: false, pageOpened: index});
+    }
+
+    updateContents(index, contents) {
+        var newContents = this.state.contents;
+        newContents[index]["content"] = contents;
+        this.setState({contents: newContents, uncommitedChanges: true});
+    }
 
     componentDidMount() {
         fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + this.state.file, {
@@ -37,66 +51,70 @@ export default class EditPage extends React.Component {
         })
         .then(response => {return response.json()})
         .then(data => {
-            this.setState({loading: false, contents: data["doc"].sort((a, b) =>
+            var contents = data["doc"].sort((a, b) =>
                 (a["page_url"] > b["page_url"]) ? 1 : -1
-            )});
+            )
+            this.setState({loading: false, contents: contents});
         });
     }
 
-    updateContents(e) {
-        this.setState({text: e.target.value});
-    }
-
     goBack() {
-        if (!this.state.pageMode) {
-            this.setState({pageMode: true});
+        if (this.state.uncommitedChanges) {
+            this.confirmLeave.current.toggleOpen();
         } else {
             this.state.app.setState({fileSystemMode: true, editFileMode: false});
         }
     }
 
-    saveText() {
-        if (!this.state.pageMode) {
-            var contents = this.state.contents;
-            contents[this.state.pageOpened]["content"] = this.state.text;
-            this.setState({contents: contents, pageMode: true});
-        } else {
-            fetch(process.env.REACT_APP_API_URL + 'submit-text', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "text": this.state.contents
-                })
-            })
-            .then(response => {return response.json()})
-            .then(data => {
-                if (data.success) {
-                    this.successNot.current.setMessage("Texto submetido com sucesso");
-                    this.successNot.current.open();
+    leave() {
+        this.state.app.setState({fileSystemMode: true, editFileMode: false});
+        this.confirmLeave.current.toggleOpen();
+    }
 
-                    var info = data["info"];
-                    this.state.app.setState({fileSystemMode: true, editFileMode: false, info: info})
-    
-                } else {
-                    this.errorNot.current.setMessage(data.error);
-                    this.errorNot.current.open();
-                }
-            });
-        }
+    saveText() {
+        fetch(process.env.REACT_APP_API_URL + 'submit-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "text": this.state.contents
+            })
+        })
+        .then(response => {return response.json()})
+        .then(data => {
+            if (data.success) {
+                this.successNot.current.setMessage("Texto submetido com sucesso");
+                this.successNot.current.open();
+                this.setState({uncommitedChanges: false});
+            } else {
+                this.errorNot.current.setMessage(data.error);
+                this.errorNot.current.open();
+            }
+        });
     }
 
     render() {
         return (
-            <Box sx={{ml: '1.5rem', mr: '1.5rem'}}>
+            <Box sx={{ml: '1.5rem', mr: '1.5rem', height: '100%'}}>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <Notification message={""} severity={"error"} ref={this.errorNot}/>
+
+                <ConfirmLeave ref={this.confirmLeave} page={this} />
+
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'row',
                     flexWrap: 'wrap',
                     justifyContent: 'space-between',
+                    position: 'sticky',                    
+                    top: 0,
+                    zIndex: 100,
+                    backgroundColor: '#fff',
+                    paddingTop: '1rem',
+                    paddingBottom: '1rem',
+                    marginBottom: '1rem',
+                    borderBottom: '1px solid black',                  
                 }}>
                     <Button
                         disabled={this.state.buttonsDisabled}
@@ -113,7 +131,7 @@ export default class EditPage extends React.Component {
                         variant="contained"
                         color="success"
                         startIcon={<SaveIcon />} 
-                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
+                        sx={{border: '1px solid black', mb: '0.5rem'}}
                         onClick={() => this.saveText()}
                     >
                         Guardar
@@ -122,33 +140,12 @@ export default class EditPage extends React.Component {
                 {
                     this.state.loading
                     ? <p>Loading...</p>
-                    : null
-                }
-                {
-                    this.state.pageMode
-                    ? <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            flexWrap: 'wrap',
-                            justifyContent: 'space-around',
-                        }}
-                    >
+                    : <Box>
                         {
-                            this.state.contents.map((page, index) => {
-                                return <EditImageDisplayer index={index} path={page["page_url"]} key={index} editPage={this}/>
-                            })
+                            this.state.contents.map((page, index) =>
+                                <PageItem key={index} page={this} contents={page["content"]} image={page["page_url"]} index={index} />
+                            )
                         }
-                    </Box>
-                    : <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                        <Box>
-                            <PageDisplayer                                           
-                                path={this.state.contents[this.state.pageOpened]["page_url"]} maxWidth={'250px'}
-                            />
-                        </Box>
-                        <Box sx={{width: '100%'}}>
-                            <CustomTextField defaultValue={this.state.contents[this.state.pageOpened]["content"]} sx={{"& .MuiInputBase-root": {height: '100%'}}} ref={this.textEditor} rows={18} onChange={(e) => this.updateContents(e)} fullWidth disabled={this.state.disabled} multiline />
-                        </Box>
                     </Box>
                 }
             </Box>

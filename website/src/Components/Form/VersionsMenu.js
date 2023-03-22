@@ -51,6 +51,23 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.7.1 - 21/03/2023</b></p>
+                            <ul>                            
+                                <li>Popup de saída do menu de edição apenas aparece quando há alterações não guardadas</li>
+                            </ul>
+                            <p><b>Versão 0.7.0 - 21/03/2023</b></p>
+                            <ul>                            
+                                <li>Novo menu de edição</li>
+                                <ul>                            
+                                    <li>Funcionalidade de slider</li>
+                                    <li>Cabeçalho de botões fixos</li>
+                                </ul>
+                            </ul>
+                            <p><b>Versão 0.6.0 - 13/03/2023</b></p>
+                            <ul>                            
+                                <li>Novo menu de edição</li>
+                                <li>Menu de confirmação antes de sair</li>
+                                <li>Correção de palavras em inglês</li>
                             <p><b>Versão 0.6.0 - 10/03/2023</b></p>
                             <ul>                            
                                 <li>É possível submeter e fazer OCR de ficheiros grandes (+1GB)</li>

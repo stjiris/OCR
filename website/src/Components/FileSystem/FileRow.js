@@ -86,7 +86,7 @@ export default class FileRow extends React.Component {
 
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                     <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                        <span>{this.state.info["pages"]} page(s)</span>
+                        <span>{this.state.info["pages"]} página(s)</span>
                         <span>{this.state.info['size']}</span>
                     </Box>
                 </TableCell>
