@@ -328,9 +328,9 @@ if __name__ == "__main__":
     if not os.path.exists("./files/"):
         os.mkdir("./files/")
 
-    docs_pool = ThreadPool(perform_file_ocr, WAITING_DOCS, MAX_THREADS)
-    changes_pool = ThreadPool(make_changes, WAITING_CHANGES, MAX_THREADS)
-    pages_pool = ThreadPool(perform_page_ocr, WAITING_PAGES, MAX_THREADS + 2, delay = 2)
+    docs_pool = ThreadPool(perform_file_ocr, 2, MAX_THREADS)
+    changes_pool = ThreadPool(make_changes, 1, MAX_THREADS)
+    pages_pool = ThreadPool(perform_page_ocr, WAITING_PAGES, 3, delay = 2)
 
     app.config['DEBUG'] = os.environ.get('DEBUG', False)
     app.run(port=5001, threaded=True)

@@ -289,11 +289,11 @@ def prepare_file_ocr(path):
     extension = path.split(".")[-1]
     basename = get_file_basename(path)
 
-    print("A preparar páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    print(path, "A preparar páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), flush=True)
 
     if extension == "pdf":
-        pages = convert_from_path(f"{path}/{basename}.pdf", paths_only=True, output_folder=path, fmt="jpg", thread_count=4)
-        print("A trocar os nomes das páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        pages = convert_from_path(f"{path}/{basename}.pdf", paths_only=True, output_folder=path, fmt="jpg")
+        print(path, "A trocar os nomes das páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), flush=True)
         for i, page in enumerate(pages):
             Path(page).rename(f"{path}/{basename}_{i}.jpg")
 
@@ -320,7 +320,7 @@ def perform_page_ocr(path, filename, config, ocr_algorithm):
     files = os.listdir(f"{path}/ocr_results")
 
     if data["pages"] == len(files):
-        print("Acabei OCR", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        print(path, "Acabei OCR", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), flush=True)
 
         data = get_data(data_folder)
         creation_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -360,7 +360,7 @@ def perform_file_ocr(path, config, ocr_algorithm, WAITING_PAGES):
     prepare_file_ocr(path)
     images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
 
-    print("A começar OCR", datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    print(path, "A começar OCR", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), flush=True)
 
     for image in images:
         WAITING_PAGES.append((path, image, config, ocr_algorithm))
