@@ -333,4 +333,4 @@ if __name__ == "__main__":
     pages_pool = ThreadPool(perform_page_ocr, WAITING_PAGES, MAX_THREADS + 2, delay = 2)
 
     app.config['DEBUG'] = os.environ.get('DEBUG', False)
-    app.run()
+    app.run(port=5001, threaded=True)
