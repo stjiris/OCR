@@ -157,7 +157,7 @@ def get_structure_info(path):
             folder_path = f"{root}/{folder}".replace("\\", "/")
 
             data = get_data(f"{folder_path}/_data.json")
-            if data == {}: continue
+            if "type" not in data: continue
 
             if data["type"] == "file": data["size"] = get_size(folder_path)
 
@@ -186,7 +186,7 @@ def get_structure(path):
 
     if path != "files":
         data = get_data(f"{path}/_data.json")
-        if data == {}: return None
+        if "type" not in data: return None
         if data["type"] == "file": return name
 
     contents = []
