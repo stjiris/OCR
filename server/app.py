@@ -328,8 +328,8 @@ if __name__ == "__main__":
     if not os.path.exists("./files/"):
         os.mkdir("./files/")
 
-    docs_pool = ThreadPool(perform_file_ocr, 2, MAX_THREADS)
-    changes_pool = ThreadPool(make_changes, 1, MAX_THREADS)
+    docs_pool = ThreadPool(perform_file_ocr, WAITING_DOCS, 2)
+    changes_pool = ThreadPool(make_changes, WAITING_CHANGES, 1)
     pages_pool = ThreadPool(perform_page_ocr, WAITING_PAGES, 3, delay = 2)
 
     app.config['DEBUG'] = os.environ.get('DEBUG', False)
