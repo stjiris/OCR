@@ -25,7 +25,7 @@ services:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
     environment:
-      - FLASK_APP=app
+      # - FLASK_APP=app
       - ES_URL=http://elasticsearch:9200
     ports:
       - "5001"

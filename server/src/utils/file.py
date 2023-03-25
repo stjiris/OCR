@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from src.utils.export import export_file, json_to_text
+from src.thread_pool import ThreadPool
 
 IMAGE_PREFIX = environ.get('IMAGE_PREFIX', '.')
 ##################################################
@@ -292,7 +293,7 @@ def prepare_file_ocr(path):
     print(path, "A preparar páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), flush=True)
 
     if extension == "pdf":
-        pages = convert_from_path(f"{path}/{basename}.pdf", paths_only=True, output_folder=path, fmt="jpg")
+        pages = convert_from_path(f"{path}/{basename}.pdf", paths_only=True, output_folder=path, fmt="jpg", thread_count=2)
         print(path, "A trocar os nomes das páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), flush=True)
         for i, page in enumerate(pages):
             Path(page).rename(f"{path}/{basename}_{i}.jpg")
@@ -301,7 +302,7 @@ def prepare_file_ocr(path):
         img = Image.open(f"{path}/{basename}.{extension}")
         img.save(f"{path}/{basename}.jpg", "JPEG")
 
-def perform_page_ocr(path, filename, config, ocr_algorithm):
+def perform_page_ocr(path, filename, config, ocr_algorithm, pool: ThreadPool):
     """
     Perform the page OCR
 
@@ -348,7 +349,9 @@ def perform_page_ocr(path, filename, config, ocr_algorithm):
         data["indexed"] = False
         update_data(data_folder, data)
 
-def perform_file_ocr(path, config, ocr_algorithm, WAITING_PAGES):
+    pool.update(finished=True)
+
+def perform_file_ocr(path, config, ocr_algorithm, pages_pool: ThreadPool, pool: ThreadPool):
     """
     Prepare the OCR of a file
     @param path: path to the file
@@ -363,7 +366,9 @@ def perform_file_ocr(path, config, ocr_algorithm, WAITING_PAGES):
     print(path, "A começar OCR", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), flush=True)
 
     for image in images:
-        WAITING_PAGES.append((path, image, config, ocr_algorithm))
+        pages_pool.add_to_queue((path, image, config, ocr_algorithm))
+
+    pool.update(finished=True)
 
 def similarity_score(text1, text2):
     """

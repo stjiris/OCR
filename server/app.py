@@ -35,12 +35,7 @@ client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
 
-MAX_THREADS = 4
-WAITING_DOCS = []
-WAITING_CHANGES = []
-WAITING_PAGES = []
-
-def make_changes(data, data_folder):
+def make_changes(data, data_folder, pool: ThreadPool):
     current_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     export_file(data_folder, "txt")
@@ -56,6 +51,7 @@ def make_changes(data, data_folder):
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
 
     update_data(data_folder + "/_data.json", data)
+    pool.update(finished=True)
 
 #####################################
 # FILE SYSTEM ROUTES
@@ -204,7 +200,7 @@ def perform_ocr():
         data["pdf"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        WAITING_DOCS.append((f, config, ocr_algorithm, WAITING_PAGES))
+        docs_pool.add_to_queue((f, config, ocr_algorithm, pages_pool))
 
     return {"success": True, "message": "O OCR começou, por favor aguarde", "files": get_filesystem("files")}
 
@@ -310,7 +306,7 @@ def submit_text():
 
     update_data(data_folder + "/_data.json", {"txt": {"complete": False}, "pdf": {"complete": False}})
 
-    WAITING_CHANGES.append((data, data_folder))
+    changes_pool.add_to_queue(data, data_folder)
 
     return {"success": True, "files": get_filesystem("files")}
 
@@ -328,9 +324,10 @@ if __name__ == "__main__":
     if not os.path.exists("./files/"):
         os.mkdir("./files/")
 
-    docs_pool = ThreadPool(perform_file_ocr, WAITING_DOCS, 2)
-    changes_pool = ThreadPool(make_changes, WAITING_CHANGES, 1)
-    pages_pool = ThreadPool(perform_page_ocr, WAITING_PAGES, 3, delay = 2)
+    docs_pool = ThreadPool(perform_file_ocr, 2)
+    changes_pool = ThreadPool(make_changes, 1)
+    pages_pool = ThreadPool(perform_page_ocr, 4)
 
-    app.config['DEBUG'] = os.environ.get('DEBUG', False)
-    app.run(port=5001, threaded=True)
+    # app.config['DEBUG'] = os.environ.get('DEBUG', False)
+    # app.run(port=5001, threaded=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
