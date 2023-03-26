@@ -296,7 +296,10 @@ def prepare_file_ocr(path):
         pages = convert_from_path(f"{path}/{basename}.pdf", paths_only=True, output_folder=path, fmt="jpg", thread_count=2)
         print(path, "A trocar os nomes das páginas", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), flush=True)
         for i, page in enumerate(pages):
-            Path(page).rename(f"{path}/{basename}_{i}.jpg")
+            if os.path.exists(f"{path}/{basename}_{i}.jpg"):
+                os.remove(page)
+            else:
+                Path(page).rename(f"{path}/{basename}_{i}.jpg")
 
     elif extension in ["jpeg", "jpg"]:
         img = Image.open(f"{path}/{basename}.{extension}")
@@ -349,7 +352,7 @@ def perform_page_ocr(path, filename, config, ocr_algorithm, pool: ThreadPool):
         data["indexed"] = False
         update_data(data_folder, data)
 
-    pool.update(finished=True)
+    pool.update(finished=path)
 
 def perform_file_ocr(path, config, ocr_algorithm, pages_pool: ThreadPool, pool: ThreadPool):
     """
@@ -368,7 +371,7 @@ def perform_file_ocr(path, config, ocr_algorithm, pages_pool: ThreadPool, pool: 
     for image in images:
         pages_pool.add_to_queue((path, image, config, ocr_algorithm))
 
-    pool.update(finished=True)
+    pool.update(finished=path)
 
 def similarity_score(text1, text2):
     """

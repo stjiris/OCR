@@ -35,7 +35,7 @@ client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 app = Flask(__name__)   # Aplicação em si
 CORS(app)
 
-def make_changes(data, data_folder, pool: ThreadPool):
+def make_changes(data_folder, data, pool: ThreadPool):
     current_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     export_file(data_folder, "txt")
@@ -51,7 +51,7 @@ def make_changes(data, data_folder, pool: ThreadPool):
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
 
     update_data(data_folder + "/_data.json", data)
-    pool.update(finished=True)
+    pool.update(finished=data_folder)
 
 #####################################
 # FILE SYSTEM ROUTES
@@ -306,7 +306,7 @@ def submit_text():
 
     update_data(data_folder + "/_data.json", {"txt": {"complete": False}, "pdf": {"complete": False}})
 
-    changes_pool.add_to_queue(data, data_folder)
+    changes_pool.add_to_queue(data_folder, data)
 
     return {"success": True, "files": get_filesystem("files")}
 
