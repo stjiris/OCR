@@ -21,12 +21,10 @@ class ThreadPool:
         if self.current_threads < self.max_threads and len(self.waiting_list) > 0:
             self.current_threads += 1
             self.execute()
-            
-    def execute(self):
-        # Get the list of all the files pending
+
+    def get_next_item(self):
         files = set([x[0] for x in self.waiting_list])
 
-        item = None
         for file in files:
             # Already processing this file, skip it
             if file in self.processing_list: continue
@@ -34,12 +32,14 @@ class ThreadPool:
             # Get the first item that is not being processed
             for id, f in enumerate(self.waiting_list):
                 if f[0] == file:
-                    item = self.waiting_list.pop(id)
-                    break
+                    return self.waiting_list.pop(id)
 
         # If can't find new file, just pop the first one
-        if item is None:
-            item = self.waiting_list.pop(0)
+        return self.waiting_list.pop(0)
+            
+    def execute(self):
+        # Get the list of all the files pending
+        item = self.get_next_item()
 
         self.processing_list.append(item[0])
 
