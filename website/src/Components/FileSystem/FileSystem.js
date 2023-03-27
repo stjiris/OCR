@@ -466,6 +466,19 @@ class FileExplorer extends React.Component {
         })
     }
 
+    checkOCRComplete() {
+        let obj = this.state.info;
+
+        for (let key in obj) {
+            if (obj[key] && typeof obj[key] === 'object') {
+              if (obj[key].ocr && !obj[key].ocr.complete) {
+                return false;
+              }
+            }
+        }
+        return true;
+    }
+
     render() {
         return (
             <Box sx={{
@@ -516,7 +529,7 @@ class FileExplorer extends React.Component {
                     </Button>
 
                     <Button
-                        disabled={this.state.buttonsDisabled || this.state.components.length === 0}
+                        disabled={this.state.buttonsDisabled || this.state.components.length === 0 || !this.checkOCRComplete()}
                         variant="contained"
                         startIcon={<SearchIcon />}
                         onClick={() => this.performOCR(true)}
