@@ -1,5 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 
 import TableCell from '@mui/material/TableCell';
@@ -109,7 +110,7 @@ export default class FileRow extends React.Component {
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                 <span>{this.state.info["ocr"]["size"]}</span>
                             </Box>
-                            : <p>Em progresso</p>
+                            : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress /></Box>
                     }
                 </TableCell>
 
@@ -123,7 +124,7 @@ export default class FileRow extends React.Component {
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.getTxt(e)}>Descarregar</Button>
                                 <span>{this.state.info["txt"]["size"]}</span>                                
                             </Box>
-                            : <p>Em progresso</p>
+                            : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress /></Box>
                     }
                 </TableCell>
 
@@ -137,7 +138,7 @@ export default class FileRow extends React.Component {
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.getPdf(e)}>Descarregar</Button>
                                 <span>{this.state.info["pdf"]["size"]}</span>
                             </Box>
-                            : <p>Em progresso</p>
+                            : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress /></Box>
                     }
                 </TableCell>
 
