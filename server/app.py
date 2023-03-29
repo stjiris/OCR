@@ -8,7 +8,6 @@ from flask import Flask
 from flask import request
 from flask import send_file
 from flask_cors import CORS  # permitir requests de outros ips alem do servidor
-from src.algorithms import easy_ocr
 from src.algorithms import tesseract
 from src.elastic_search import *
 from src.evaluate import evaluate
@@ -198,7 +197,7 @@ def perform_ocr():
     config = data["config"]
     multiple = data["multiple"]
 
-    ocr_algorithm = tesseract if algorithm == "Tesseract" else easy_ocr
+    ocr_algorithm = tesseract
 
     if multiple:
         files = [
