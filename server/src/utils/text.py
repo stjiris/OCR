@@ -4,7 +4,7 @@
 def clear_text(text):
     """
     Function used to clear the text from the OCR
-    
+
     Current steps:
     - Remove leading and ending spaces
 

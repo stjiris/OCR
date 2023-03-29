@@ -4,8 +4,8 @@ set -o errexit
 set -o pipefail
 
 
-if [ -n "$FLASK_DEBUG" ]; then
+if [ "$FLASK_ENV" == "development" ]; then
         flask run --host=0.0.0.0 --port=5001
 else
-        gunicorn app:app --chdir=/app --bind 0.0.0.0:5001 --log-file -
+        gunicorn -c gunicorn.py wsgi:app --chdir=/app
 fi

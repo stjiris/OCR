@@ -55,7 +55,7 @@ export default class FileRow extends React.Component {
         e.stopPropagation();
         this.state.filesystem.editFile(this.state.name);
     }
-    
+
     performOCR(e) {
         e.stopPropagation();
         this.state.filesystem.performOCR(false, this.state.name);
@@ -83,7 +83,7 @@ export default class FileRow extends React.Component {
                         alignItems: 'center',
                     }}>
                         <InsertDriveFileOutlinedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
-                        <p>{this.state.name}</p>    
+                        <p>{this.state.name}</p>
                     </Box>
                 </TableCell>
 
@@ -122,7 +122,7 @@ export default class FileRow extends React.Component {
                             ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["txt"]["creation"]}</span>
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.getTxt(e)}>Descarregar</Button>
-                                <span>{this.state.info["txt"]["size"]}</span>                                
+                                <span>{this.state.info["txt"]["size"]}</span>
                             </Box>
                             : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress /></Box>
                     }

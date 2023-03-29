@@ -2,18 +2,23 @@
    Functions used to export the files to the client
 
    Possible formats of output:
-   - pure .txt 
+   - pure .txt
    - .txt with delimiters between pages
    - .pdf with transparent layer of text
 """
+import base64
+import contextlib
+import io
+import json
+import os
+import re
+import zlib
 
-import re, os, base64, io, zlib, json
-
+from PIL import Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 
-from PIL import Image
 
 def json_to_text(json_d):
     """
@@ -21,7 +26,8 @@ def json_to_text(json_d):
     :param json_d: json with the hOCR data
     :return: text
     """
-    return '\n'.join([' '.join([w["text"] for w in l]) for l in json_d]).strip()
+    return "\n".join([" ".join([w["text"] for w in l]) for l in json_d]).strip()
+
 
 def get_file_basename(filename):
     """
@@ -30,7 +36,8 @@ def get_file_basename(filename):
     :param file: file name
     :return: basename of the file
     """
-    return '.'.join(filename.split("/")[-1].split(".")[:-1])
+    return ".".join(filename.split("/")[-1].split(".")[:-1])
+
 
 ####################################################
 # GENERAL FUNCTION
@@ -43,12 +50,13 @@ def export_file(path, filetype, delimiter=None):
     :param filetype: the filetype to export to
     :param delimiter: the delimiter to use between pages
     """
-    
+
     func = globals()[f"export_{filetype}"]
     if delimiter is None:
         return func(path)
-    
+
     return func(path, delimiter)
+
 
 ####################################################
 # EXPORT TXT FUNCTIONS
@@ -65,13 +73,14 @@ def export_txt(path, delimiter=None):
     filename = f"{path}/_text.txt"
     ocr_folder = f"{path}/ocr_results"
 
-    files = [os.path.join(ocr_folder, f) for f in os.listdir(ocr_folder) if os.path.isfile(os.path.join(ocr_folder, f)) and ".json" in f]
+    files = [
+        os.path.join(ocr_folder, f)
+        for f in os.listdir(ocr_folder)
+        if os.path.isfile(os.path.join(ocr_folder, f)) and ".json" in f
+    ]
 
     if len(files) > 1:
-        files = sorted(
-            files,
-            key=lambda x: int(re.findall('\d+', x)[-1])
-        )
+        files = sorted(files, key=lambda x: int(re.findall(r"\d+", x)[-1]))
 
     with open(filename, "w", encoding="utf-8") as f:
         for id, file in enumerate(files):
@@ -82,6 +91,7 @@ def export_txt(path, delimiter=None):
 
     return filename
 
+
 ####################################################
 # EXPORT PDF FUNCTIONS
 ####################################################
@@ -89,42 +99,48 @@ def export_pdf(path):
     """
     Export the file as a .pdf file
     """
-    images = sorted([f"{path}/{f}" for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and re.search(r"\.jpg", f)])
+    images = sorted(
+        [
+            f"{path}/{f}"
+            for f in os.listdir(path)
+            if os.path.isfile(os.path.join(path, f)) and re.search(r"\.jpg", f)
+        ]
+    )
 
     load_invisible_font()
-  
+
     filename = f"{path}/_search.pdf"
 
     pdf = Canvas(filename, pageCompression=1)
-    pdf.setCreator('hocr-tools')
+    pdf.setCreator("hocr-tools")
     pdf.setTitle(filename)
     dpi = 200
-  
+
     for image in images:
         image_basename = get_file_basename(image)
         hocr_path = f"{path}/ocr_results/{image_basename}.json"
 
         im = Image.open(image)
         w, h = im.size
-        try:
-            dpi = im.info['dpi'][0]
-        except KeyError:
-            pass
-  
-        width = (w * 72 / dpi)
-        height = (h * 72 / dpi)
+
+        with contextlib.suppress(KeyError):
+            dpi = im.info["dpi"][0]
+
+        width = w * 72 / dpi
+        height = h * 72 / dpi
         pdf.setPageSize((width, height))
         pdf.drawImage(image, 0, 0, width=width, height=height)
         add_text_layer(pdf, hocr_path, height, dpi)
         pdf.showPage()
-  
+
     pdf.save()
     return filename
+
 
 def add_text_layer(pdf, hocr_path, height, dpi):
     """Draw an invisible text layer for OCR data"""
 
-    with open(hocr_path, 'r') as f:
+    with open(hocr_path) as f:
         hocrfile = json.load(f)
 
     for line in hocrfile:
@@ -133,21 +149,23 @@ def add_text_layer(pdf, hocr_path, height, dpi):
             box = word["box"]
             b = word["b"]
 
-            font_width = pdf.stringWidth(rawtext, 'invisible', 8)
+            font_width = pdf.stringWidth(rawtext, "invisible", 8)
             if font_width <= 0:
                 continue
 
             text = pdf.beginText()
             text.setTextRenderMode(3)  # double invisible
-            text.setFont('invisible', 8)
+            text.setFont("invisible", 8)
             text.setTextOrigin(box[0] * 72 / dpi, height - b * 72 / dpi)
             box_width = (box[2] - box[0]) * 72 / dpi
             text.setHorizScale(100.0 * box_width / font_width)
             text.textLine(rawtext)
             pdf.drawText(text)
 
+
 def polyval(poly, x):
     return x * poly[0] + poly[1]
+
 
 # Glyphless variation of vedaal's invisible font retrieved from
 # http://www.angelfire.com/pr/pgpf/if.html, which says:
@@ -174,8 +192,10 @@ pL26nlWN2K+W1LhRjxlVGKmRTFYVo7CiJug09E+GJb+QocMCPMWBK1wvEOfRFF2U0klK8CppqqvG
 pylRc2Zn+XDQWZIL8iO5KC9S+1RekOex1uOyZGR/w/Hf1lhzqVfFsxE39B/ws7Rm3N3nDrhPuMfc
 w3R/aE28KsfY2J+RPNp+j+KaOoCey4h+Dd48b9O5G0v2K7j0AM6s+5WQ/E0wVoK+pA6/3bup7bJf
 CMGjwvxTsr74/f/F95m3TH9x8o0/TU//N+7/D/ScVcA=
-""".encode('latin1')
+""".encode(
+        "latin1"
+    )
     uncompressed = bytearray(zlib.decompress(base64.b64decode(font)))
     ttf = io.BytesIO(uncompressed)
     setattr(ttf, "name", "(invisible.ttf)")
-    pdfmetrics.registerFont(TTFont('invisible', ttf))
+    pdfmetrics.registerFont(TTFont("invisible", ttf))

@@ -52,35 +52,35 @@ class VersionsMenu extends React.Component {
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
                             <p><b>Versão 0.8.0 - 22/03/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Suporte para ficheiros de maiores dimensões</li>
                                 <li>Remoção do menu de OCR</li>
                                 <li>Reorganização da tabela</li>
                             </ul>
                             <p><b>Versão 0.7.1 - 21/03/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Popup de saída do menu de edição apenas aparece quando há alterações não guardadas</li>
                             </ul>
                             <p><b>Versão 0.7.0 - 21/03/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Novo menu de edição</li>
-                                <ul>                            
+                                <ul>
                                     <li>Funcionalidade de slider</li>
                                     <li>Cabeçalho de botões fixos</li>
                                 </ul>
                             </ul>
                             <p><b>Versão 0.6.0 - 13/03/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Novo menu de edição</li>
                                 <li>Menu de confirmação antes de sair</li>
                                 <li>Correção de palavras em inglês</li>
                             </ul>
                             <p><b>Versão 0.6.0 - 10/03/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>É possível submeter e fazer OCR de ficheiros grandes (+1GB)</li>
                             </ul>
                             <p><b>Versão 0.5.0 - 09/03/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Adiciona divisores entre colunas</li>
                                 <li>Reordena os elementos de cada célula</li>
                                 <li>Adiciona link para editar no fim da célula do OCR</li>
