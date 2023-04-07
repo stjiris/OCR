@@ -30,7 +30,7 @@ import { v4 as uuidv4 } from 'uuid';
 const UPDATE_TIME = 15;
 const validExtensions = [".pdf", ".jpg", ".jpeg"];
 
-const chunkSize = 1048576 * 100;
+const chunkSize = 1024 * 1024 * 3; // 3 MB
 
 class FileExplorer extends React.Component {
     constructor(props) {
