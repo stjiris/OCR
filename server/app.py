@@ -159,7 +159,7 @@ def upload_file():
     counter = int(request.form["counter"])
     total_count = int(request.form["totalCount"])
 
-    print(f"Uploading file {filename} ({counter}/{total_count})")
+    log.info(f"Uploading file {filename} ({counter}/{total_count})")
 
     # If only one chunk, save the file directly
     if total_count == 1:
@@ -221,7 +221,7 @@ def upload_file():
 
             shutil.rmtree(f"pending-files/{fileID}")
 
-            print(f"Finished uploading file {filename}")
+            log.info(f"Finished uploading file {filename}")
 
             return {"success": True, "finished": True, "filesystem": get_filesystem("files")}
 
