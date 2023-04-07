@@ -160,6 +160,7 @@ class FileExplorer extends React.Component {
                 var endChunk = chunkSize;
 
                 for (let i = 0; i < _totalCount; i++) {
+                    console.log("Uploading chunk " + (i+1) + " of " + _totalCount + " for file " + fileName);
                     var chunk = fileBlob.slice(startChunk, endChunk, fileType);
                     startChunk = endChunk;
                     endChunk = endChunk + chunkSize;
