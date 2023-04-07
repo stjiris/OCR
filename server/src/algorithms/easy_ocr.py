@@ -1,4 +1,4 @@
-import easyocr
+# import easyocr
 import numpy as np
 
 
@@ -8,7 +8,8 @@ def get_boxes(page, config):
 
     @param pages: list of pages
     """
-    return easyocr.Reader(config).readtext(np.array(page), slope_ths=0)
+    # return easyocr.Reader(config).readtext(np.array(page), slope_ths=0)
+    return []
 
 
 def get_structure(page, config):
