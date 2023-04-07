@@ -4,6 +4,7 @@ elasticsearch/
 IRIS.py
 
 files/
+pending-files/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

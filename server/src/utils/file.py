@@ -263,6 +263,7 @@ def save_json_structure(structure, path):
 # OCR UTILS
 ##################################################
 def get_data(file):
+    if not os.path.exists(file): return {}
     with open(file, encoding="utf-8") as f:
         text = f.read()
         if text == "": return {}
