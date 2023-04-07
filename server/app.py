@@ -273,7 +273,7 @@ def perform_ocr():
         data["pdf"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        DOCS_POOL.add_to_queue((f, config, ocr_algorithm, PAGES_POOL))
+        docs_pool.add_to_queue((f, config, ocr_algorithm, pages_pool))
 
     return {
         "success": True,
@@ -413,7 +413,7 @@ def submit_text():
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    CHANGES_POOL.add_to_queue(data_folder, data)
+    changes_pool.add_to_queue(data_folder, data)
 
     return {"success": True, "files": get_filesystem("files")}
 
