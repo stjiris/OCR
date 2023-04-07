@@ -3,12 +3,14 @@ import os
 import re
 import shutil
 from datetime import datetime
+from threading import Lock
 
 from flask import Flask
 from flask import request
 from flask import send_file
 from flask_cors import CORS  # permitir requests de outros ips alem do servidor
 from src.algorithms import tesseract
+from src.algorithms import easy_ocr
 from src.elastic_search import *
 from src.evaluate import evaluate
 from src.thread_pool import ThreadPool
@@ -29,12 +31,13 @@ from src.utils.file import perform_file_ocr
 from src.utils.file import perform_page_ocr
 from src.utils.file import update_data
 
-es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
-app = Flask(__name__)  # Aplicação em si
+app = Flask(__name__)   # Aplicação em si
 log = app.logger
 CORS(app)
 
+lock_system = dict()
 
 def make_changes(data_folder, data, pool: ThreadPool):
     current_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -115,7 +118,7 @@ def get_pdf():
 @app.route("/delete-path", methods=["POST"])
 def delete_path():
     data = request.json
-    path = data["path"]
+    path = data["path"] 
 
     delete_structure(es, path)
     shutil.rmtree(path)
@@ -132,7 +135,7 @@ def delete_path():
 #####################################
 def find_valid_filename(path, basename, extension):
     """
-    Fidna valid name for a file so it doesn't overwrite another file
+    Find valid name for a file so it doesn't overwrite another file
 
     :param path: path to the file
     :param basename: basename of the file
@@ -149,36 +152,80 @@ def find_valid_filename(path, basename, extension):
 
 @app.route("/upload-file", methods=["POST"])
 def upload_file():
-    """
-    Receive a file and save it in the server
-    @param file: file to be saved
-    @param path: path to save the file
-    """
-
     file = request.files["file"]
     path = request.form["path"]
+    filename = request.form["name"]
+    fileID = request.form["fileID"]
+    counter = int(request.form["counter"])
+    total_count = int(request.form["totalCount"])
 
-    filename = file.filename
+    print(f"Uploading file {filename} ({counter}/{total_count})")
 
-    if os.path.exists(f"{path}/{filename}"):
-        basename = get_file_basename(filename)
-        extension = get_file_extension(filename)
-        filename = find_valid_filename(path, basename, extension)
+    # If only one chunk, save the file directly
+    if total_count == 1:
+        if os.path.exists(f"{path}/{filename}"):
+            basename = get_file_basename(filename)
+            extension = get_file_extension(filename)
+            filename = find_valid_filename(path, basename, extension)
 
-    os.mkdir(f"{path}/{filename}")
-    file.save(f"{path}/{filename}/{filename}")
+        os.mkdir(f"{path}/{filename}")
+        file.save(f"{path}/{filename}/{filename}")
 
-    with open(f"{path}/{filename}/_data.json", "w") as f:
-        json.dump(
-            {
+        with open(f"{path}/{filename}/_data.json", "w") as f:
+            json.dump({
                 "type": "file",
                 "pages": get_page_count(f"{path}/{filename}/{filename}"),
-                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            },
-            f,
-        )
+                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            }, f)
 
-    return {"success": True, "file": filename, "filesystem": get_filesystem("files")}
+        return {"success": True, "finished": True, "filesystem": get_filesystem("files")}
+
+    # If multiple chunks, save the chunk and wait for the other chunks
+    file = file.read()
+
+    # Create a Lock to process the file
+    if fileID not in lock_system:
+        lock_system[fileID] = Lock()
+
+    # Create the folder to save the chunks
+    if not os.path.exists(f"pending-files/{fileID}"):
+        os.mkdir(f"pending-files/{fileID}")
+
+    # Save the chunk
+    with open(f"pending-files/{fileID}/{counter}", "wb") as f:
+        f.write(file)
+
+    with lock_system[fileID]:
+        # Number of chunks saved
+        chunks_saved = len(os.listdir(f"pending-files/{fileID}"))
+        if chunks_saved == total_count:
+            del lock_system[fileID]
+
+            if os.path.exists(f"{path}/{filename}"):
+                filename = find_valid_filename(path, filename, filename.split(".")[-1])
+
+            os.mkdir(f"{path}/{filename}")
+
+            # Save the file
+            with open(f"{path}/{filename}/{filename}", "wb") as f:
+                for i in range(total_count):
+                    with open(f"pending-files/{fileID}/{i+1}", "rb") as chunk:
+                        f.write(chunk.read())
+
+            with open(f"{path}/{filename}/_data.json", "w") as f:
+                json.dump({
+                    "type": "file",
+                    "pages": get_page_count(f"{path}/{filename}/{filename}"),
+                    "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                }, f)
+
+            shutil.rmtree(f"pending-files/{fileID}")
+
+            print(f"Finished uploading file {filename}")
+
+            return {"success": True, "finished": True, "filesystem": get_filesystem("files")}
+
+    return {"success": True, "finished": False}
 
 
 @app.route("/perform-ocr", methods=["POST"])
@@ -382,6 +429,17 @@ def get_elasticsearch():
 #####################################
 # JOB QUEUES
 #####################################
-DOCS_POOL = ThreadPool(perform_file_ocr, 2)
-CHANGES_POOL = ThreadPool(make_changes, 1)
-PAGES_POOL = ThreadPool(perform_page_ocr, 4)
+if __name__ == "__main__":
+    if not os.path.exists("./files/"):
+        os.mkdir("./files/")
+
+    if not os.path.exists("./pending-files/"):
+        os.mkdir("./pending-files/")
+
+    docs_pool = ThreadPool(perform_file_ocr, 2)
+    changes_pool = ThreadPool(make_changes, 1)
+    pages_pool = ThreadPool(perform_page_ocr, 4)
+
+    # app.config['DEBUG'] = os.environ.get('DEBUG', False)
+    # app.run(port=5001, threaded=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)

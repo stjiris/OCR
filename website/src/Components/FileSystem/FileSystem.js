@@ -25,8 +25,12 @@ import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SearchIcon from '@mui/icons-material/Search';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
+import { v4 as uuidv4 } from 'uuid';
+
 const UPDATE_TIME = 15;
 const validExtensions = [".pdf", ".jpg", ".jpeg"];
+
+const chunkSize = 1048576 * 100;
 
 class FileExplorer extends React.Component {
     constructor(props) {
@@ -140,23 +144,47 @@ class FileExplorer extends React.Component {
         el.addEventListener('change', () => {
             if (el.files.length === 0) return;
 
-            // Iterate the files and show the names
             for (let i = 0; i < el.files.length; i++) {
-                var formData = new FormData();
-                formData.append('file', el.files[i]);
-                formData.append('path', this.state.current_folder.join('/'));
+                var fileBlob = el.files[i];
+                var fileSize = el.files[i].size;
+                var fileName = el.files[i].name;
+                var fileType = el.files[i].type;
 
-                fetch(process.env.REACT_APP_API_URL + 'upload-file', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {return response.json()})
-                .then(data => {
-                    var filesystem = data["filesystem"];
-                    var info = filesystem["info"];
-                    var files = {'files': filesystem["files"]};
-                    this.setState({files: files, info: info}, this.displayFileSystem);
-                });
+                const _totalCount = fileSize % chunkSize === 0
+                ? fileSize / chunkSize
+                : Math.floor(fileSize / chunkSize) + 1;
+
+                const _fileID = uuidv4() + "." + fileName.split('.').pop();
+
+                var startChunk = 0;
+                var endChunk = chunkSize;
+
+                for (let i = 0; i < _totalCount; i++) {
+                    var chunk = fileBlob.slice(startChunk, endChunk, fileType);
+                    startChunk = endChunk;
+                    endChunk = endChunk + chunkSize;
+
+                    var formData = new FormData();
+                    formData.append('file', chunk);
+                    formData.append('path', this.state.current_folder.join('/'))
+                    formData.append('name', fileName);
+                    formData.append("fileID", _fileID);
+                    formData.append('counter', i+1);
+                    formData.append('totalCount', _totalCount);
+
+                    fetch(process.env.REACT_APP_API_URL + 'upload-file', {
+                        method: 'POST',
+                        body: formData
+                    }).then(response => {return response.json()})
+                    .then(data => {
+                        if (data['success'] && data["finished"]) {
+                            var filesystem = data["filesystem"];
+                            var info = filesystem["info"];
+                            var files = {'files': filesystem["files"]};
+                            this.setState({files: files, info: info}, this.displayFileSystem);    
+                        }
+                    });
+                }
             }
         });
         el.click();
