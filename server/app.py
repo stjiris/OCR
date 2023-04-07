@@ -1,36 +1,35 @@
-import os, json, shutil, re
+import json
+import os
+import re
+import shutil
 from datetime import datetime
-
-from flask import Flask, request, send_file
-from flask_cors import CORS # permitir requests de outros ips alem do servidor
-
-from src.utils.export import export_file
-from src.thread_pool import ThreadPool
-
 from threading import Lock
 
-from src.utils.file import (
-    get_structure_info,
-    get_filesystem,
-    get_file_parsed,
-    delete_structure,
-    perform_file_ocr,
-    perform_page_ocr,
-    get_data,
-    update_data,
-    get_page_count,
-    generate_uuid,
-    json_to_text,
-    fix_ocr,
-    get_file_basename,
-    get_file_extension,
-    get_size
-)
-
-from src.evaluate import evaluate
-
-from src.algorithms import tesseract, easy_ocr
+from flask import Flask
+from flask import request
+from flask import send_file
+from flask_cors import CORS  # permitir requests de outros ips alem do servidor
+from src.algorithms import tesseract
+from src.algorithms import easy_ocr
 from src.elastic_search import *
+from src.evaluate import evaluate
+from src.thread_pool import ThreadPool
+from src.utils.export import export_file
+from src.utils.file import delete_structure
+from src.utils.file import fix_ocr
+from src.utils.file import generate_uuid
+from src.utils.file import get_data
+from src.utils.file import get_file_basename
+from src.utils.file import get_file_extension
+from src.utils.file import get_file_parsed
+from src.utils.file import get_filesystem
+from src.utils.file import get_page_count
+from src.utils.file import get_size
+from src.utils.file import get_structure_info
+from src.utils.file import json_to_text
+from src.utils.file import perform_file_ocr
+from src.utils.file import perform_page_ocr
+from src.utils.file import update_data
 
 client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
@@ -107,7 +106,7 @@ def get_pdf():
 
 @app.route("/delete-path", methods=["POST"])
 def delete_path():
-    data = data = request.json
+    data = request.json
     path = data["path"] 
 
     delete_structure(client, path)        
