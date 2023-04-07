@@ -31,7 +31,7 @@ from src.utils.file import perform_file_ocr
 from src.utils.file import perform_page_ocr
 from src.utils.file import update_data
 
-client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
 app = Flask(__name__)   # Aplicação em si
 log = app.logger
