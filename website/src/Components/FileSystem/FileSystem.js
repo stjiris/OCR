@@ -79,7 +79,7 @@ class FileExplorer extends React.Component {
             .then(response => {return response.json()})
             .then(data => {
                 var info = data["info"];
-                
+
                 this.setState({info: info}, this.updateInfo);
             });
         }, 1000 * UPDATE_TIME);
@@ -132,7 +132,7 @@ class FileExplorer extends React.Component {
          * This is a hack to get around the fact that the input type="file" element
          * cannot be accessed from the React code. This is because the element is
          * not rendered by React, but by the browser itself.
-         * 
+         *
          * Function to select the files to be submitted
          */
 
@@ -358,8 +358,8 @@ class FileExplorer extends React.Component {
             if (a.length > 1) {
                 if (a[0].key.localeCompare(a[1].key) === 1){
                     sorted = false;
-                } 
-            }                                        
+                }
+            }
             return sorted;
         }
 
@@ -417,9 +417,9 @@ class FileExplorer extends React.Component {
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{borderLeft:"1px solid #d9d9d9"}}>
-                                <Button 
-                                    startIcon={<SwapVertIcon />} 
-                                    sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}    
+                                <Button
+                                    startIcon={<SwapVertIcon />}
+                                    sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
                                     onClick={() => this.sortByName(this.state.components)}>
                                     <b>Nome</b>
                                 </Button>
@@ -494,6 +494,19 @@ class FileExplorer extends React.Component {
         })
     }
 
+    checkOCRComplete() {
+        let obj = this.state.info;
+
+        for (let key in obj) {
+            if (obj[key] && typeof obj[key] === 'object') {
+              if (obj[key].ocr && !obj[key].ocr.complete) {
+                return false;
+              }
+            }
+        }
+        return true;
+    }
+
     render() {
         return (
             <Box sx={{
@@ -516,7 +529,7 @@ class FileExplorer extends React.Component {
                     <Button
                         disabled={this.state.buttonsDisabled}
                         variant="contained"
-                        startIcon={<UndoIcon />} 
+                        startIcon={<UndoIcon />}
                         sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', mr: '1rem', mb: '0.5rem', ':hover': {bgcolor: '#ddd'}}}
                         onClick={() => this.goBack()}
                     >
@@ -544,7 +557,7 @@ class FileExplorer extends React.Component {
                     </Button>
 
                     <Button
-                        disabled={this.state.buttonsDisabled || this.state.components.length === 0}
+                        disabled={this.state.buttonsDisabled || this.state.components.length === 0 || !this.checkOCRComplete()}
                         variant="contained"
                         startIcon={<SearchIcon />}
                         onClick={() => this.performOCR(true)}

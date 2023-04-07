@@ -48,7 +48,7 @@ export default class FolderRow extends React.Component {
                         alignItems: 'center',
                     }}>
                         <FolderOpenRoundedIcon color="success" sx={{ fontSize: 30, mr: '0.5rem' }} />
-                        <p>{this.state.name}</p>    
+                        <p>{this.state.name}</p>
                     </Box>
                 </TableCell>
 
@@ -59,7 +59,7 @@ export default class FolderRow extends React.Component {
                         this.state.info["creation"]
                     }
                 </TableCell>
-                
+
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>

@@ -1,5 +1,6 @@
 import cv2
 
+
 ##################################################
 # IMAGE UTILS
 ##################################################
@@ -7,7 +8,8 @@ def distance_between_coords(x1, y1, x2, y2):
     """
     Calculate the distance difference between two points
     """
-    return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 1/2
+    return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 1 / 2
+
 
 def filter_contours(contours):
     """
@@ -48,6 +50,7 @@ def filter_contours(contours):
             # If not inside, add it to the list
             keeping.append(coords)
 
+
 def parse_image():
     import cv2
     import numpy as np
@@ -60,17 +63,16 @@ def parse_image():
 
     # reading image
     img = np.array(pages[0])
-    
+
     # converting image into grayscale image
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
+
     # setting threshold of gray image
     _, threshold = cv2.threshold(gray, 110, 255, cv2.THRESH_BINARY)
-    
+
     # using a findContours() function
-    contours, _ = cv2.findContours(
-        threshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    
+    contours, _ = cv2.findContours(threshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
     i = 0
 
     keeping_contours = {}
@@ -79,23 +81,26 @@ def parse_image():
             i = 1
             continue
 
-        if cv2.contourArea(contour) < 2000: continue
+        if cv2.contourArea(contour) < 2000:
+            continue
         x, y, w, h = cv2.boundingRect(contour)
 
-        if w < 200 and h < 200: continue
-        if x < 25 or y < 25: continue
+        if w < 200 and h < 200:
+            continue
+        if x < 25 or y < 25:
+            continue
 
-        approx = cv2.approxPolyDP(
-            contour, 0.01 * cv2.arcLength(contour, True), True)
+        approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
 
-        if len(approx) > 10: continue
+        if len(approx) > 10:
+            continue
 
         keeping_contours[(x, y, w, h)] = contour
 
     filter_contours(keeping_contours)
     for id, (_, v) in enumerate(keeping_contours.items()):
-        cv2.drawContours(img, [v], 0, colors[id%4], 5)
+        cv2.drawContours(img, [v], 0, colors[id % 4], 5)
 
     reshaped_image = cv2.resize(img, (500, 700))
-    cv2.imshow('shapes', reshaped_image)
-    cv2.waitKey(0)            
+    cv2.imshow("shapes", reshaped_image)
+    cv2.waitKey(0)

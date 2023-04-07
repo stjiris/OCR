@@ -34,6 +34,7 @@ from src.utils.file import update_data
 client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
 app = Flask(__name__)   # Aplicação em si
+log = app.logger
 CORS(app)
 
 lock_system = dict()
@@ -56,6 +57,7 @@ def make_changes(data_folder, data, pool: ThreadPool):
     update_data(data_folder + "/_data.json", data)
     pool.update(finished=data_folder)
 
+
 #####################################
 # FILE SYSTEM ROUTES
 #####################################
@@ -63,9 +65,11 @@ def make_changes(data_folder, data, pool: ThreadPool):
 def get_file_system():
     return get_filesystem("files")
 
+
 @app.route("/info", methods=["GET"])
 def get_info():
-    return {'info': get_structure_info("files")}
+    return {"info": get_structure_info("files")}
+
 
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
@@ -80,12 +84,16 @@ def create_folder():
     os.mkdir(path + "/" + folder)
 
     with open(f"{path}/{folder}/_data.json", "w") as f:
-        json.dump({
-            "type": "folder",
-            "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        }, f)
+        json.dump(
+            {
+                "type": "folder",
+                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            },
+            f,
+        )
 
     return {"success": True, "files": get_filesystem("files")}
+
 
 @app.route("/get-file", methods=["GET"])
 def get_file():
@@ -93,26 +101,34 @@ def get_file():
     doc = get_file_parsed(path)
     return {"doc": doc}
 
+
 @app.route("/get_txt", methods=["GET"])
 def get_txt():
     path = request.values["path"]
     return send_file(f"{path}/_text.txt")
 
+
 @app.route("/get_pdf", methods=["GET"])
 def get_pdf():
     path = request.values["path"]
-    file = export_file(path, "pdf")        
+    file = export_file(path, "pdf")
     return send_file(file)
+
 
 @app.route("/delete-path", methods=["POST"])
 def delete_path():
     data = request.json
     path = data["path"] 
 
-    delete_structure(client, path)        
+    delete_structure(es, path)
     shutil.rmtree(path)
 
-    return {"success": True, "message": "Apagado com sucesso", "files": get_filesystem("files")}
+    return {
+        "success": True,
+        "message": "Apagado com sucesso",
+        "files": get_filesystem("files"),
+    }
+
 
 #####################################
 # FILES ROUTES
@@ -133,7 +149,8 @@ def find_valid_filename(path, basename, extension):
 
     return f"{basename} ({id}).{extension}"
 
-@app.route("/upload-file", methods=['POST'])
+
+@app.route("/upload-file", methods=["POST"])
 def upload_file():
     file = request.files["file"]
     path = request.form["path"]
@@ -210,6 +227,7 @@ def upload_file():
 
     return {"success": True, "finished": False}
 
+
 @app.route("/perform-ocr", methods=["POST"])
 def perform_ocr():
     """
@@ -226,23 +244,28 @@ def perform_ocr():
     config = data["config"]
     multiple = data["multiple"]
 
-    ocr_algorithm = tesseract if algorithm == "Tesseract" else easy_ocr
+    ocr_algorithm = tesseract
 
     if multiple:
-        files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+        files = [
+            f"{path}/{f}"
+            for f in os.listdir(path)
+            if os.path.isdir(os.path.join(path, f))
+        ]
     else:
         files = [path]
 
     for f in files:
         # Delete previous results
-        if os.path.exists(f"{f}/ocr_results"): shutil.rmtree(f"{f}/ocr_results")
+        if os.path.exists(f"{f}/ocr_results"):
+            shutil.rmtree(f"{f}/ocr_results")
         os.mkdir(f"{f}/ocr_results")
 
         # Update the information related to the OCR
         data = get_data(f"{f}/_data.json")
         data["ocr"] = {}
         data["ocr"]["algorithm"] = algorithm
-        data["ocr"]["config"] = '_'.join(config)
+        data["ocr"]["config"] = "_".join(config)
         data["ocr"]["complete"] = False
         data["txt"] = {}
         data["txt"]["complete"] = False
@@ -250,9 +273,14 @@ def perform_ocr():
         data["pdf"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        docs_pool.add_to_queue((f, config, ocr_algorithm, pages_pool))
+        DOCS_POOL.add_to_queue((f, config, ocr_algorithm, PAGES_POOL))
 
-    return {"success": True, "message": "O OCR começou, por favor aguarde", "files": get_filesystem("files")}
+    return {
+        "success": True,
+        "message": "O OCR começou, por favor aguarde",
+        "files": get_filesystem("files"),
+    }
+
 
 @app.route("/index-doc", methods=["POST"])
 def index_doc():
@@ -282,17 +310,33 @@ def index_doc():
                 text = json_to_text(hocr)
 
             if ocr_config["pages"] > 1:
-                doc = create_document(file_path, ocr_config["ocr"]["algorithm"], ocr_config["ocr"]["config"], text, id+1)
+                doc = create_document(
+                    file_path,
+                    ocr_config["ocr"]["algorithm"],
+                    ocr_config["ocr"]["config"],
+                    text,
+                    id + 1,
+                )
             else:
-                doc = create_document(file_path, ocr_config["ocr"]["algorithm"], ocr_config["ocr"]["config"], text)
+                doc = create_document(
+                    file_path,
+                    ocr_config["ocr"]["algorithm"],
+                    ocr_config["ocr"]["config"],
+                    text,
+                )
 
             id = generate_uuid(file_path)
 
-            client.add_document(id, doc)
+            es.add_document(id, doc)
 
         update_data(path + "/_data.json", {"indexed": True})
 
-        return {"success": True, "message": "Documento indexado", "files": get_filesystem("files")}
+        return {
+            "success": True,
+            "message": "Documento indexado",
+            "files": get_filesystem("files"),
+        }
+
 
 @app.route("/remove-index-doc", methods=["POST"])
 def remove_index_doc():
@@ -311,23 +355,30 @@ def remove_index_doc():
         return {}
     else:
         hOCR_path = path + "/ocr_results"
-        config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
+        # config = get_data("/".join(path.split("/")[:-1]) + "/_data.json")
         files = [f for f in os.listdir(hOCR_path) if f.endswith(".json")]
 
         for f in files:
             file_path = f"{hOCR_path}/{f}"
             id = generate_uuid(file_path)
-            client.delete_document(id)
+            es.delete_document(id)
 
         update_data(path + "/_data.json", {"indexed": False})
 
-        return {"success": True, "message": "Documento removido", "files": get_filesystem("files")}
+        return {
+            "success": True,
+            "message": "Documento removido",
+            "files": get_filesystem("files"),
+        }
+
 
 @app.route("/submit-text", methods=["POST"])
 def submit_text():
-    texts = request.json["text"] # estrutura com texto, nome do ficheiro e url da imagem
+    texts = request.json[
+        "text"
+    ]  # estrutura com texto, nome do ficheiro e url da imagem
 
-    data_folder = '/'.join(texts[0]["original_file"].split("/")[:-2])
+    data_folder = "/".join(texts[0]["original_file"].split("/")[:-2])
     data = get_data(data_folder + "/_data.json")
 
     for t in texts:
@@ -340,9 +391,12 @@ def submit_text():
 
         try:
             new_hocr = fix_ocr(words, text)
-        except:
-            return {"success": False, "error": "Ocorreu um erro inesperado enquanto corrigiamos o texto, por favor informem-nos"}
-        
+        except:  # noqa: E722
+            return {
+                "success": False,
+                "error": "Ocorreu um erro inesperado enquanto corrigiamos o texto, por favor informem-nos",
+            }
+
         for l_id, l in enumerate(new_hocr):
             for w_id, w in enumerate(l):
                 hocr[l_id][w_id]["text"] = w
@@ -352,23 +406,28 @@ def submit_text():
 
         if data["indexed"]:
             id = generate_uuid(filename)
-            client.update_document(id, text)
+            es.update_document(id, text)
 
-    update_data(data_folder + "/_data.json", {"txt": {"complete": False}, "pdf": {"complete": False}})
+    update_data(
+        data_folder + "/_data.json",
+        {"txt": {"complete": False}, "pdf": {"complete": False}},
+    )
 
-    changes_pool.add_to_queue(data_folder, data)
+    CHANGES_POOL.add_to_queue(data_folder, data)
 
     return {"success": True, "files": get_filesystem("files")}
+
 
 #####################################
 # ELASTICSEARCH
 #####################################
 @app.route("/get_elasticsearch", methods=["GET"])
 def get_elasticsearch():
-    return client.get_docs()
+    return es.get_docs()
+
 
 #####################################
-# MAIN
+# JOB QUEUES
 #####################################
 if __name__ == "__main__":
     if not os.path.exists("./files/"):

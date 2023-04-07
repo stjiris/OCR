@@ -16,8 +16,8 @@ services:
     volumes:
       - files_data:/usr/share/nginx/html/files
     environment:
-      - PUBLIC_URL=/ocr/
-      - REACT_APP_API_URL=./api/
+      PUBLIC_URL: /ocr/
+      REACT_APP_API_URL: ./api/
     restart: unless-stopped
 
   server:
@@ -25,15 +25,17 @@ services:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
     environment:
-      # - FLASK_APP=app
-      - ES_URL=http://elasticsearch:9200
+      FLASK_APP: app
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+      ES_URL: http://elasticsearch:9200
     ports:
       - "5001"
     depends_on:
       elasticsearch:
         condition: service_healthy
     volumes:
-      - files_data:/app/files 
+      - files_data:/app/files
     restart: unless-stopped
 
   elasticsearch:
@@ -45,8 +47,8 @@ services:
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
-      - xpack.security.enabled=false
-      - discovery.type=single-node
+      xpack.security.enabled: false
+      discovery.type: single-node
     healthcheck:
       test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:9200
       interval: 10s

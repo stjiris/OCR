@@ -1,5 +1,6 @@
 from threading import Thread
 
+
 class ThreadPool:
     def __init__(self, target_function, max_threads):
         self.target_function = target_function
@@ -23,11 +24,12 @@ class ThreadPool:
             self.execute()
 
     def get_next_item(self):
-        files = set([x[0] for x in self.waiting_list])
+        files = {x[0] for x in self.waiting_list}
 
         for file in files:
             # Already processing this file, skip it
-            if file in self.processing_list: continue
+            if file in self.processing_list:
+                continue
 
             # Get the first item that is not being processed
             for id, f in enumerate(self.waiting_list):
@@ -36,7 +38,7 @@ class ThreadPool:
 
         # If can't find new file, just pop the first one
         return self.waiting_list.pop(0)
-            
+
     def execute(self):
         # Get the list of all the files pending
         item = self.get_next_item()
@@ -44,5 +46,11 @@ class ThreadPool:
         self.processing_list.append(item[0])
 
         # Start thread
-        thread = Thread(target=self.target_function, args=(*item, self, ))
+        thread = Thread(
+            target=self.target_function,
+            args=(
+                *item,
+                self,
+            ),
+        )
         thread.start()

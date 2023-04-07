@@ -1,86 +1,63 @@
-from src.utils.file import get_file_basename
-from elasticsearch import Elasticsearch
 from os import environ
 
-ES_URL = environ.get('ES_URL', 'http://localhost:9200/')
-IMAGE_PREFIX = environ.get('IMAGE_PREFIX', '.')
+from elasticsearch import Elasticsearch
+from src.utils.file import get_file_basename
+
+ES_URL = environ.get("ES_URL", "http://localhost:9200/")
+IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 ES_INDEX = "jornais.0.1"
 
 settings = {
     "analysis": {
         "normalizer": {
             "term_normalizer": {
-                "type": 'custom',
-                "filter": ['lowercase', 'asciifolding']
+                "type": "custom",
+                "filter": ["lowercase", "asciifolding"],
             }
         }
     },
     "number_of_shards": 1,
     "number_of_replicas": 0,
-    "max_result_window": 550000
+    "max_result_window": 550000,
 }
 
 mapping = {
     "properties": {
-        "Id": {
-            "type": "keyword",
-            "normalizer": "term_normalizer"
-        },
+        "Id": {"type": "keyword", "normalizer": "term_normalizer"},
         "Document": {
-            "type": 'text',
+            "type": "text",
             "fields": {
-                "raw": {
-                    "type": "keyword"
-                },
-                "keyword": {
-                    "type": "keyword",
-                    "normalizer": "term_normalizer"
-                }
-            }
+                "raw": {"type": "keyword"},
+                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
+            },
         },
         "Path": {
-            "type": 'text',
+            "type": "text",
             "fields": {
-                "raw": {
-                    "type": "keyword"
-                },
-                "keyword": {
-                    "type": "keyword",
-                    "normalizer": "term_normalizer"
-                }
-            }
+                "raw": {"type": "keyword"},
+                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
+            },
         },
         "Page": {
-            "type": 'integer',
+            "type": "integer",
             "fields": {
-                "raw": {
-                    "type": "keyword"
-                },
-                "keyword": {
-                    "type": "keyword",
-                    "normalizer": "term_normalizer"
-                }
-            }
+                "raw": {"type": "keyword"},
+                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
+            },
         },
         "Text": {
-            "type": 'text',
+            "type": "text",
             "fields": {
-                "raw": {
-                    "type": "keyword"
-                },
-                "keyword": {
-                    "type": "keyword",
-                    "normalizer": "term_normalizer"
-                }
-            }
+                "raw": {"type": "keyword"},
+                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
+            },
         },
-        " Page Image": {
-            "enabled": False
-        },
+        " Page Image": {"enabled": False},
     }
 }
 
-class ElasticSearchClient():
+
+class ElasticSearchClient:
     def __init__(self, ES_URL, ES_INDEX, mapping, settings):
         self.ES_URL = ES_URL
         self.ES_INDEX = ES_INDEX
@@ -98,9 +75,7 @@ class ElasticSearchClient():
         """
 
         self.client.indices.create(
-            index=self.ES_INDEX,
-            mappings=self.mapping,
-            settings=self.settings
+            index=self.ES_INDEX, mappings=self.mapping, settings=self.settings
         )
 
     def delete_index(self):
@@ -108,79 +83,68 @@ class ElasticSearchClient():
         Delete the index
         """
 
-        self.client.indices.delete(
-            index=self.ES_INDEX,
-            ignore=[400, 404]
-        )
+        self.client.indices.delete(index=self.ES_INDEX, ignore=[400, 404])
 
     def add_document(self, id, document):
         """
         Add the document to the index
         """
 
-        self.client.index(
-            index=self.ES_INDEX,
-            id=id,
-            document=document
-        )
+        self.client.index(index=self.ES_INDEX, id=id, document=document)
 
     def update_document(self, id, text):
         """
         Update the document with the new text
         """
 
-        self.client.update(
-            index=self.ES_INDEX,
-            id=id,
-            body={
-                "doc" : {
-                    "Text": text
-                }
-            }
-        )
+        self.client.update(index=self.ES_INDEX, id=id, body={"doc": {"Text": text}})
 
     def delete_document(self, id):
         """
         Delete the document from the index
         """
 
-        self.client.delete(
-            index=self.ES_INDEX,
-            id=id
-        )
+        self.client.delete(index=self.ES_INDEX, id=id)
 
     def get_docs(self):
         """
         Get the documents from the index
         """
 
-        return list(self.client.search(index=self.ES_INDEX, body={
-            'size': 1000,
-            'query': {
-                'match_all': {}
-            }
-        })["hits"]["hits"])
+        return list(
+            self.client.search(
+                index=self.ES_INDEX, body={"size": 1000, "query": {"match_all": {}}}
+            )["hits"]["hits"]
+        )
+
 
 def create_document(path, algorithm, config, text, page=None):
     basename = get_file_basename(path)
-    image = IMAGE_PREFIX + "/images/" + '/'.join(path.split('/')[1:-2]) + '/' + basename + ".jpg"
+    image = (
+        IMAGE_PREFIX
+        + "/images/"
+        + "/".join(path.split("/")[1:-2])
+        + "/"
+        + basename
+        + ".jpg"
+    )
 
     if page is None:
         return {
             "Path": path,
             "Algorithm": algorithm,
             "Config": config,
-            "Document": path.split('/')[-3],
+            "Document": path.split("/")[-3],
             "Page Image": image,
-            "Text": text
+            "Text": text,
         }
     else:
         return {
             "Path": path,
             "Algorithm": algorithm,
             "Config": config,
-            "Document": path.split('/')[-3],
+            "Document": path.split("/")[-3],
             "Page": page,
             "Page Image": image,
-            "Text": text
+            "Text": text,
         }
