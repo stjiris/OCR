@@ -429,16 +429,16 @@ def get_elasticsearch():
 #####################################
 # JOB QUEUES
 #####################################
+docs_pool = ThreadPool(perform_file_ocr, 2)
+changes_pool = ThreadPool(make_changes, 1)
+pages_pool = ThreadPool(perform_page_ocr, 4)
+
 if __name__ == "__main__":
     if not os.path.exists("./files/"):
         os.mkdir("./files/")
 
     if not os.path.exists("./pending-files/"):
         os.mkdir("./pending-files/")
-
-    docs_pool = ThreadPool(perform_file_ocr, 2)
-    changes_pool = ThreadPool(make_changes, 1)
-    pages_pool = ThreadPool(perform_page_ocr, 4)
 
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
     # app.run(port=5001, threaded=True)
