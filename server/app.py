@@ -159,7 +159,6 @@ def upload_file():
     counter = int(request.form["counter"])
     total_count = int(request.form["totalCount"])
 
-    log.info(f"Uploading file {filename} ({counter}/{total_count})")
 
     # If only one chunk, save the file directly
     if total_count == 1:
@@ -198,6 +197,8 @@ def upload_file():
     with lock_system[fileID]:
         # Number of chunks saved
         chunks_saved = len(os.listdir(f"pending-files/{fileID}"))
+        log.info(f"Uploading file {filename} ({counter}/{total_count}) - {chunks_saved/total_count:.2f}%")
+
         if chunks_saved == total_count:
             del lock_system[fileID]
 
