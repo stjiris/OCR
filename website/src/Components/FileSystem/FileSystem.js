@@ -127,6 +127,32 @@ class FileExplorer extends React.Component {
         // this.ocrMenu.current.toggleOpen();
     }
 
+    sendChunk(i, chunk, fileName, _totalCount, _fileID) {
+        var formData = new FormData();
+        formData.append('file', chunk);
+        formData.append('path', this.state.current_folder.join('/'))
+        formData.append('name', fileName);
+        formData.append("fileID", _fileID);
+        formData.append('counter', i+1);
+        formData.append('totalCount', _totalCount);
+
+        fetch(process.env.REACT_APP_API_URL + 'upload-file', {
+            method: 'POST',
+            body: formData
+        }).then(response => {return response.json()})
+        .then(data => {
+            if (data['success'] && data["finished"]) {
+                var filesystem = data["filesystem"];
+                var info = filesystem["info"];
+                var files = {'files': filesystem["files"]};
+                this.setState({files: files, info: info}, this.displayFileSystem);    
+            }
+        })
+        .catch(error => {
+            this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
+        });
+    }
+
     createFile() {
         /**
          * This is a hack to get around the fact that the input type="file" element
@@ -165,26 +191,7 @@ class FileExplorer extends React.Component {
                     startChunk = endChunk;
                     endChunk = endChunk + chunkSize;
 
-                    var formData = new FormData();
-                    formData.append('file', chunk);
-                    formData.append('path', this.state.current_folder.join('/'))
-                    formData.append('name', fileName);
-                    formData.append("fileID", _fileID);
-                    formData.append('counter', i+1);
-                    formData.append('totalCount', _totalCount);
-
-                    fetch(process.env.REACT_APP_API_URL + 'upload-file', {
-                        method: 'POST',
-                        body: formData
-                    }).then(response => {return response.json()})
-                    .then(data => {
-                        if (data['success'] && data["finished"]) {
-                            var filesystem = data["filesystem"];
-                            var info = filesystem["info"];
-                            var files = {'files': filesystem["files"]};
-                            this.setState({files: files, info: info}, this.displayFileSystem);    
-                        }
-                    });
+                    this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                 }
             }
         });
