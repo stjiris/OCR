@@ -36,6 +36,11 @@ export default class FileRow extends React.Component {
         this.setState({expanded: !this.state.expanded});
     }
 
+    getOriginalFile(e) {
+        e.stopPropagation();
+        this.state.filesystem.getOriginalFile(this.state.name);
+    }
+
     getTxt(e) {
         e.stopPropagation();
         this.state.filesystem.getTxt(this.state.name);
@@ -83,7 +88,17 @@ export default class FileRow extends React.Component {
                         alignItems: 'center',
                     }}>
                         <InsertDriveFileOutlinedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
-                        <p>{this.state.name}</p>
+                        <Button
+                            onClick={(e) => this.getOriginalFile(e)}
+                            style={{
+                                p: 0,
+                                textTransform: 'none',
+                                display: "flex",
+                                textAlign: "left",
+                            }}
+                        >
+                            {this.state.name}
+                        </Button>
                     </Box>
                 </TableCell>
 

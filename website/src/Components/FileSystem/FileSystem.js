@@ -235,6 +235,23 @@ class FileExplorer extends React.Component {
         });
     }
 
+    getOriginalFile(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+
+        fetch(process.env.REACT_APP_API_URL + "get_original?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+
+            a.download = file;
+            a.click();
+            a.remove();
+        });
+    }
+
     getTxt(file) {
         /**
          * Export the .txt file

@@ -114,6 +114,11 @@ def get_pdf():
     file = export_file(path, "pdf")
     return send_file(file)
 
+@app.route("/get_original", methods=["GET"])
+def get_original():
+    path = request.values["path"]
+    file = path + "/" + path.split("/")[-1]
+    return send_file(file)
 
 @app.route("/delete-path", methods=["POST"])
 def delete_path():
