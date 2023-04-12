@@ -266,7 +266,7 @@ def perform_ocr():
         data["ocr"] = {}
         data["ocr"]["algorithm"] = algorithm
         data["ocr"]["config"] = "_".join(config)
-        data["ocr"]["complete"] = False
+        data["ocr"]["progress"] = 0
         data["txt"] = {}
         data["txt"]["complete"] = False
         data["pdf"] = {}

@@ -104,13 +104,15 @@ export default class FileRow extends React.Component {
                     {
                         this.state.info["ocr"] === undefined
                         ? <Button variant="text" onClick={(e) => this.performOCR(e)}>Fazer</Button>
-                        : this.state.info["ocr"]["complete"]
+                        : this.state.info["ocr"]["progress"] === this.state.info["pages"]
                             ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["ocr"]["creation"]}</span>
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                 <span>{this.state.info["ocr"]["size"]}</span>
                             </Box>
-                            : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress /></Box>
+                            : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}>
+                                <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}</span>
+                            </Box>
                     }
                 </TableCell>
 

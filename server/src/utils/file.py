@@ -395,13 +395,16 @@ def perform_page_ocr(path, filename, config, ocr_algorithm, pool: ThreadPool):
 
     files = os.listdir(f"{path}/ocr_results")
 
+    data = get_data(data_folder)
+    data["ocr"]["progress"] = len(files)
+    update_data(data_folder, data)
+
     if data["pages"] == len(files):
         log.info("{path}: Acabei OCR")
 
-        data = get_data(data_folder)
         creation_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-        data["ocr"]["complete"] = True
+        data["ocr"]["progress"] = len(files)
         data["ocr"]["size"] = get_ocr_size(f"{path}/ocr_results")
         data["ocr"]["creation"] = creation_date
 
