@@ -43,6 +43,10 @@ class FileExplorer extends React.Component {
             buttonsDisabled: props.current_folder.split('/').length === 1,
             components: [],
 
+            updatingRows: [],
+            updatingRate: 15,
+            updateCount: 0,
+
             loading: false,
         }
 
@@ -80,16 +84,20 @@ class FileExplorer extends React.Component {
             .then(data => {
                 var info = data["info"];
 
-                this.setState({info: info}, this.updateInfo);
+                this.setState({info: info, updateCount: 0}, this.updateInfo);
             });
         }, 1000 * UPDATE_TIME);
     }
 
     updateInfo() {
         this.rowRefs.forEach(ref => {
-            var rowInfo = this.getInfo(this.state.current_folder.join("/") + "/" + ref.current.state.name);
-            ref.current.updateInfo(rowInfo);
+            var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
+            if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
+                var rowInfo = this.getInfo(filename);
+                ref.current.updateInfo(rowInfo);
+            }
         });
+        this.setState({updateCount: 0, updatingRows: []});
     }
 
     componentWillUnmount() {
@@ -141,11 +149,24 @@ class FileExplorer extends React.Component {
             body: formData
         }).then(response => {return response.json()})
         .then(data => {
-            if (data['success'] && data["finished"]) {
-                var filesystem = data["filesystem"];
-                var info = filesystem["info"];
-                var files = {'files': filesystem["files"]};
-                this.setState({files: files, info: info}, this.displayFileSystem);    
+            if (data['success']) {
+                var info = this.state.info;
+
+                for (var k in data["info"]) {
+                    info[k] = data["info"][k];
+                }
+
+                var updatingList = this.state.updatingRows;
+                var complete_filename = this.state.current_folder.join("/") + "/" + fileName;
+                if (!updatingList.includes(complete_filename)) {
+                    updatingList.push(complete_filename);
+                }
+
+                if (data["finished"] || this.state.updateCount === this.state.updatingRate) {
+                    this.setState({info: info, updateCount: 0, updatingRows: updatingList}, this.updateInfo);
+                } else {
+                    this.setState({updateCount: this.state.updateCount + 1});
+                }
             }
         })
         .catch(error => {
@@ -170,11 +191,14 @@ class FileExplorer extends React.Component {
         el.addEventListener('change', () => {
             if (el.files.length === 0) return;
 
-            for (let i = 0; i < el.files.length; i++) {
-                var fileBlob = el.files[i];
-                var fileSize = el.files[i].size;
-                var fileName = el.files[i].name;
-                var fileType = el.files[i].type;
+            // Sort files by size (ascending)
+            var files = Array.from(el.files).sort((a, b) => a.size - b.size);
+
+            for (let i = 0; i < files.length; i++) {
+                let fileBlob = files[i];
+                let fileSize = files[i].size;
+                let fileName = files[i].name;
+                let fileType = files[i].type;
 
                 const _totalCount = fileSize % chunkSize === 0
                 ? fileSize / chunkSize
@@ -182,17 +206,38 @@ class FileExplorer extends React.Component {
 
                 const _fileID = uuidv4() + "." + fileName.split('.').pop();
 
-                var startChunk = 0;
-                var endChunk = chunkSize;
+                fetch(process.env.REACT_APP_API_URL + 'prepare-upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        path: this.state.current_folder.join('/'),
+                        name: fileName,
+                    })
+                }).then(response => {return response.json()})
+                .then(data => {
+                    if (data['success']) {
+                        var filesystem = data["filesystem"];
+                        var info = filesystem["info"];
+                        var files = {'files': filesystem["files"]};
+                        this.setState({files: files, info: info}, this.displayFileSystem);
+                        fileName = data["filename"];
 
-                for (let i = 0; i < _totalCount; i++) {
-                    console.log("Uploading chunk " + (i+1) + " of " + _totalCount + " for file " + fileName);
-                    var chunk = fileBlob.slice(startChunk, endChunk, fileType);
-                    startChunk = endChunk;
-                    endChunk = endChunk + chunkSize;
+                        // Send chunks
+                        var startChunk = 0;
+                        var endChunk = chunkSize;
+        
+                        for (let i = 0; i < _totalCount; i++) {
+                            var chunk = fileBlob.slice(startChunk, endChunk, fileType);
+                            startChunk = endChunk;
+                            endChunk = endChunk + chunkSize;
+        
+                            this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
+                        }
+                    }
+                });
 
-                    this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
-                }
             }
         });
         el.click();

@@ -3,7 +3,7 @@ import os
 import re
 import shutil
 from datetime import datetime
-from threading import Lock
+from threading import Lock, Thread
 
 from flask import Flask
 from flask import request
@@ -25,6 +25,7 @@ from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
 from src.utils.file import get_page_count
 from src.utils.file import get_size
+from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
 from src.utils.file import perform_file_ocr
@@ -138,6 +139,30 @@ def delete_path():
 #####################################
 # FILES ROUTES
 #####################################
+def is_filename_reserved(path, filename):
+    """
+    Check if a filename is reserved
+    A filename can be reserved if:
+        - It is a folder
+        - It is a file that is being processed
+
+    :param path: path to the file
+    :param filename: filename to check
+
+    :return: True if reserved, False otherwise
+    """
+    for f in os.listdir(path):
+        # If f is a folder
+        if not os.path.isdir(f"{path}/{f}"): continue
+        if f == filename: return True
+
+        data = get_data(f"{path}/{f}/_data.json")
+        if "original_filename" in data and data["original_filename"] == filename:
+            return True
+        
+    return False
+
+
 def find_valid_filename(path, basename, extension):
     """
     Find valid name for a file so it doesn't overwrite another file
@@ -149,29 +174,62 @@ def find_valid_filename(path, basename, extension):
     :return: valid filename
     """
     id = 1
-    while os.path.exists(f"{path}/{basename} ({id}).{extension}"):
+    while is_filename_reserved(path, f"{basename} ({id}).{extension}"):
         id += 1
 
     return f"{basename} ({id}).{extension}"
 
+@app.route("/prepare-upload", methods=["POST"])
+def prepare_upload():
+    data = request.json
+    path = data["path"] 
+    filename = data["name"]
+
+    if is_filename_reserved(path, filename):
+        basename = get_file_basename(filename)
+        extension = get_file_extension(filename)
+        filename = find_valid_filename(path, basename, extension)
+
+    os.mkdir(f"{path}/{filename}")
+    with open(f"{path}/{filename}/_data.json", "w") as f:
+        json.dump(
+            {
+                "type": "file",
+                "progress": 0.00,
+                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            },
+            f,
+        )
+    return {"success": True, "filesystem": get_filesystem("files"), "filename": filename}
+
+def join_chunks(path, filename, total_count, complete_filename):
+    # Save the file
+    with open(f"{path}/{filename}/{filename}", "wb") as f:
+        for i in range(total_count):
+            with open(f"pending-files/{complete_filename}/{i+1}", "rb") as chunk:
+                f.write(chunk.read())
+
+    update_data(f"{path}/{filename}/_data.json", {
+        "pages": get_page_count(f"{path}/{filename}/{filename}"),
+        "progress": True
+    })
+
+    shutil.rmtree(f"pending-files/{complete_filename}")
+
+    log.info(f"Finished uploading file {filename}")
 
 @app.route("/upload-file", methods=["POST"])
 def upload_file():
     file = request.files["file"]
     path = request.form["path"]
     filename = request.form["name"]
-    fileID = request.form["fileID"]
     counter = int(request.form["counter"])
     total_count = int(request.form["totalCount"])
 
+    complete_filename = path.replace("/", "_") + "_" + filename
+
     # If only one chunk, save the file directly
     if total_count == 1:
-        if os.path.exists(f"{path}/{filename}"):
-            basename = get_file_basename(filename)
-            extension = get_file_extension(filename)
-            filename = find_valid_filename(path, basename, extension)
-
-        os.mkdir(f"{path}/{filename}")
         file.save(f"{path}/{filename}/{filename}")
 
         with open(f"{path}/{filename}/_data.json", "w") as f:
@@ -181,56 +239,43 @@ def upload_file():
                 "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             }, f)
 
-        return {"success": True, "finished": True, "filesystem": get_filesystem("files")}
+        return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}
+
+    # Create a Lock to process the file
+    if complete_filename not in lock_system:
+        lock_system[complete_filename] = Lock()
 
     # If multiple chunks, save the chunk and wait for the other chunks
     file = file.read()
 
-    # Create a Lock to process the file
-    if fileID not in lock_system:
-        lock_system[fileID] = Lock()
-
     # Create the folder to save the chunks
-    if not os.path.exists(f"pending-files/{fileID}"):
-        os.mkdir(f"pending-files/{fileID}")
+    if not os.path.exists(f"pending-files/{complete_filename}"):
+        os.mkdir(f"pending-files/{complete_filename}")
 
-    # Save the chunk
-    with open(f"pending-files/{fileID}/{counter}", "wb") as f:
-        f.write(file)
+    with lock_system[complete_filename]:
+        # Save the chunk
+        with open(f"pending-files/{complete_filename}/{counter}", "wb") as f:
+            f.write(file)
 
-    with lock_system.get(fileID, Lock()):
         # Number of chunks saved
-        chunks_saved = len(os.listdir(f"pending-files/{fileID}"))
-        log.info(f"Uploading file {filename} ({counter}/{total_count}) - {chunks_saved/total_count:.2f}%")
+        chunks_saved = len(os.listdir(f"pending-files/{complete_filename}"))
+        progress = round(100 * chunks_saved/total_count, 2)
+
+        log.info(f"Uploading file {filename} ({counter}/{total_count}) - {progress}%")
+
+        update_data(f"{path}/{filename}/_data.json", {"progress": progress})
 
         if chunks_saved == total_count:
-            del lock_system[fileID]
+            del lock_system[complete_filename]
 
-            if os.path.exists(f"{path}/{filename}"):
-                filename = find_valid_filename(path, filename, filename.split(".")[-1])
+            Thread(
+                target=join_chunks,
+                args=(path, filename, total_count, complete_filename)
+            ).start()
 
-            os.mkdir(f"{path}/{filename}")
+            return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}
 
-            # Save the file
-            with open(f"{path}/{filename}/{filename}", "wb") as f:
-                for i in range(total_count):
-                    with open(f"pending-files/{fileID}/{i+1}", "rb") as chunk:
-                        f.write(chunk.read())
-
-            with open(f"{path}/{filename}/_data.json", "w") as f:
-                json.dump({
-                    "type": "file",
-                    "pages": get_page_count(f"{path}/{filename}/{filename}"),
-                    "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                }, f)
-
-            shutil.rmtree(f"pending-files/{fileID}")
-
-            log.info(f"Finished uploading file {filename}")
-
-            return {"success": True, "finished": True, "filesystem": get_filesystem("files")}
-
-    return {"success": True, "finished": False}
+    return {"success": True, "finished": False, "info": get_folder_info(f"{path}/{filename}")}
 
 
 @app.route("/perform-ocr", methods=["POST"])
