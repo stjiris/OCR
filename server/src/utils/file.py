@@ -188,6 +188,21 @@ def get_size(path, path_complete=False):
     else:
         return f"{size / 1024 ** 3:.2f} GB"
 
+def get_folder_info(path):
+    """
+    Get the info of the folder
+    :param path: path to the folder
+    """
+    info = {}
+    data = get_data(f"{path}/_data.json")
+    if "type" not in data:
+        return {}
+
+    if data["type"] == "file" and ("progress" not in data or data["progress"] == True):
+        data["size"] = get_size(path)
+
+    info[path] = data
+    return info
 
 def get_structure_info(path):
     """
@@ -198,18 +213,11 @@ def get_structure_info(path):
 
     for root, folders, _ in os.walk(path):
         for folder in folders:
-            if folder == "ocr_results":
-                continue
             folder_path = f"{root}/{folder}".replace("\\", "/")
 
-            data = get_data(f"{folder_path}/_data.json")
-            if "type" not in data:
-                continue
+            folder_info = get_folder_info(folder_path)
 
-            if data["type"] == "file":
-                data["size"] = get_size(folder_path)
-
-            info[folder_path] = data
+            info = {**info, **folder_info}
 
     return info
 
