@@ -107,6 +107,8 @@ def export_pdf(path):
         ]
     )
 
+    words = {}
+
     load_invisible_font()
 
     filename = f"{path}/_search.pdf"
@@ -130,7 +132,46 @@ def export_pdf(path):
         height = h * 72 / dpi
         pdf.setPageSize((width, height))
         pdf.drawImage(image, 0, 0, width=width, height=height)
-        add_text_layer(pdf, hocr_path, height, dpi)
+        new_words = add_text_layer(pdf, hocr_path, height, dpi)
+
+        for word in new_words:
+            words[word] = words.get(word, 0) + new_words[word]
+
+        pdf.showPage()
+
+    # Sort the `words` dict by key
+    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0])]
+
+    rows = 55
+    cols = 4
+    size = 8
+
+    for id in range(0, len(words), rows*cols):
+        set_words = words[id : id + rows*cols]
+        pdf.setPageSize((width, height))
+
+        x, y = 10, height-20
+
+        for col in range(cols):
+            for row in range(rows):
+                id = col * rows + row
+                if id >= len(set_words):
+                    break
+
+                w = set_words[id]
+
+                text = pdf.beginText()
+                text.setTextRenderMode(2)
+                text.setFont("Courier", size)
+                text.setTextOrigin(x, y)
+                text.textLine(f"{w[0]} ({w[1]})")
+                pdf.drawText(text)
+
+                y -= 15
+
+            y = height-20
+            x += width // 4
+
         pdf.showPage()
 
     pdf.save()
@@ -140,6 +181,9 @@ def export_pdf(path):
 def add_text_layer(pdf, hocr_path, height, dpi):
     """Draw an invisible text layer for OCR data"""
 
+    words = {}
+    remove_chars = ".,;:!?()[]{}\"'"
+
     with open(hocr_path) as f:
         hocrfile = json.load(f)
 
@@ -148,6 +192,12 @@ def add_text_layer(pdf, hocr_path, height, dpi):
             rawtext = word["text"]
             box = word["box"]
             b = word["b"]
+
+            for w in rawtext.split():
+                w = w.strip().lower()
+                for c in remove_chars:
+                    w = w.replace(c, "")
+                words[w] = words.get(w, 0) + 1
 
             font_width = pdf.stringWidth(rawtext, "invisible", 8)
             if font_width <= 0:
@@ -162,6 +212,7 @@ def add_text_layer(pdf, hocr_path, height, dpi):
             text.textLine(rawtext)
             pdf.drawText(text)
 
+    return words
 
 def polyval(poly, x):
     return x * poly[0] + poly[1]
