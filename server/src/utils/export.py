@@ -120,8 +120,6 @@ def export_pdf(path):
 
     words = {}
 
-    words = {}
-
     load_invisible_font()
 
     filename = f"{path}/_search.pdf"
