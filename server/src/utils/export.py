@@ -14,7 +14,9 @@ import os
 import re
 import zlib
 
+from pathlib import Path
 from PIL import Image
+from pdf2image import convert_from_path
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
@@ -99,45 +101,58 @@ def export_pdf(path):
     """
     Export the file as a .pdf file
     """
-    images = sorted(
-        [
-            f"{path}/{f}"
-            for f in os.listdir(path)
-            if os.path.isfile(os.path.join(path, f)) and re.search(r"\.jpg", f)
-        ]
-    )
+    
+    pdf_basename = get_file_basename(path)
+    pages = convert_from_path(
+            f"{path}/{pdf_basename}.pdf",
+            paths_only=True,
+            output_folder=path,
+            fmt="jpg",
+            thread_count=2,
+            dpi=72
+        )
+
+    for i, page in enumerate(pages):
+        if os.path.exists(f"{path}/{pdf_basename}_{i}*.jpg"):
+            os.remove(page)
+        else:
+            Path(page).rename(f"{path}/{pdf_basename}_{i}*.jpg")
 
     load_invisible_font()
 
     filename = f"{path}/_search.pdf"
-
+    
     pdf = Canvas(filename, pageCompression=1)
     pdf.setCreator("hocr-tools")
     pdf.setTitle(filename)
-    dpi = 200
+    
+    dpi_original = 200
+    dpi_compressed = 72
 
+    images = sorted([x for x in os.listdir(path) if x.endswith("*.jpg")])
     for image in images:
         image_basename = get_file_basename(image)
+        image_basename = image_basename[:-1]
         hocr_path = f"{path}/ocr_results/{image_basename}.json"
 
-        im = Image.open(image)
+        im = Image.open(f"{path}/{image}")
         w, h = im.size
-
-        with contextlib.suppress(KeyError):
-            dpi = im.info["dpi"][0]
-
-        width = w * 72 / dpi
-        height = h * 72 / dpi
-        pdf.setPageSize((width, height))
-        pdf.drawImage(image, 0, 0, width=width, height=height)
-        add_text_layer(pdf, hocr_path, height, dpi)
+        pdf.setPageSize((w, h))
+        pdf.drawImage(f"{path}/{image}", 0, 0, width=w, height=h)
+        add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
         pdf.showPage()
 
     pdf.save()
+
+    # Delete compressed images
+    for compressed_image in os.listdir(path):
+        if compressed_image.endswith("*.jpg"):
+            os.remove(os.path.join(path, compressed_image))
+
     return filename
 
 
-def add_text_layer(pdf, hocr_path, height, dpi):
+def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
     """Draw an invisible text layer for OCR data"""
 
     with open(hocr_path) as f:
@@ -156,8 +171,8 @@ def add_text_layer(pdf, hocr_path, height, dpi):
             text = pdf.beginText()
             text.setTextRenderMode(3)  # double invisible
             text.setFont("invisible", 8)
-            text.setTextOrigin(box[0] * 72 / dpi, height - b * 72 / dpi)
-            box_width = (box[2] - box[0]) * 72 / dpi
+            text.setTextOrigin(box[0] * dpi_compressed / dpi_original, height - b * dpi_compressed / dpi_original)
+            box_width = (box[2] - box[0]) * dpi_compressed / dpi_original
             text.setHorizScale(100.0 * box_width / font_width)
             text.textLine(rawtext)
             pdf.drawText(text)
