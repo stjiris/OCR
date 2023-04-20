@@ -120,6 +120,8 @@ def export_pdf(path):
 
     words = {}
 
+    words = {}
+
     load_invisible_font()
 
     filename = f"{path}/_search.pdf"
@@ -182,6 +184,50 @@ def export_pdf(path):
 
             y = h-20
             x += w // 4
+
+        width = w * 72 / dpi
+        height = h * 72 / dpi
+        pdf.setPageSize((width, height))
+        pdf.drawImage(image, 0, 0, width=width, height=height)
+        new_words = add_text_layer(pdf, hocr_path, height, dpi)
+
+        for word in new_words:
+            words[word] = words.get(word, 0) + new_words[word]
+
+        pdf.showPage()
+
+    # Sort the `words` dict by key
+    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0])]
+
+    rows = 55
+    cols = 4
+    size = 8
+
+    for id in range(0, len(words), rows*cols):
+        set_words = words[id : id + rows*cols]
+        pdf.setPageSize((width, height))
+
+        x, y = 10, height-20
+
+        for col in range(cols):
+            for row in range(rows):
+                id = col * rows + row
+                if id >= len(set_words):
+                    break
+
+                w = set_words[id]
+
+                text = pdf.beginText()
+                text.setTextRenderMode(2)
+                text.setFont("Courier", size)
+                text.setTextOrigin(x, y)
+                text.textLine(f"{w[0]} ({w[1]})")
+                pdf.drawText(text)
+
+                y -= 15
+
+            y = height-20
+            x += width // 4
 
         pdf.showPage()
 
