@@ -568,10 +568,13 @@ class FileExplorer extends React.Component {
         let obj = this.state.info;
 
         for (let key in obj) {
+            console.log(obj);
             if (obj[key] && typeof obj[key] === 'object') {
-              if (obj[key].ocr && !obj[key].ocr.complete) {
-                return false;
-              }
+                if (obj[key].ocr){
+                    if ((obj[key].ocr.progress) !== obj[key].pages) {
+                        return false;
+                    }
+                }
             }
         }
         return true;
