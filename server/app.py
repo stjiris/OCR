@@ -18,6 +18,7 @@ from src.utils.export import export_file
 from src.utils.file import delete_structure
 from src.utils.file import fix_ocr
 from src.utils.file import generate_uuid
+from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_file_basename
 from src.utils.file import get_file_extension
@@ -41,7 +42,7 @@ CORS(app)
 lock_system = dict()
 
 def make_changes(data_folder, data, pool: ThreadPool):
-    current_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    current_date = get_current_time()
 
     export_file(data_folder, "txt")
     data["txt"]["complete"] = True
@@ -88,7 +89,7 @@ def create_folder():
         json.dump(
             {
                 "type": "folder",
-                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                "creation": get_current_time(),
             },
             f,
         )
@@ -196,7 +197,7 @@ def prepare_upload():
             {
                 "type": "file",
                 "progress": 0.00,
-                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                "creation": get_current_time(),
             },
             f,
         )
@@ -236,7 +237,7 @@ def upload_file():
             json.dump({
                 "type": "file",
                 "pages": get_page_count(f"{path}/{filename}/{filename}"),
-                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                "creation": get_current_time()
             }, f)
 
         return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}

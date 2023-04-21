@@ -51,6 +51,10 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.9.3 - 21/04/2023</b></p>
+                            <ul>                            
+                                <li>Correção das horas</li>
+                            </ul>
                             <p><b>Versão 0.9.2 - 20/04/2023</b></p>
                             <ul>                            
                                 <li>Introdução do caminho atual e respetivos links para rápido acesso</li>
