@@ -152,15 +152,16 @@ export default class FileRow extends React.Component {
                                         <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                         <span>{this.state.info["ocr"]["size"]}</span>
                                     </Box>
-                                    : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}>
+                                    : <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}</span>
+                                        <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1.5rem' /></Box>
                                     </Box>
                             }
                         </TableCell>
 
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             {
-                                this.state.info["txt"] === undefined
+                                this.state.info["txt"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]
                                 ? <p>-</p>
                                 : this.state.info["txt"]["complete"]
                                     ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
@@ -174,7 +175,7 @@ export default class FileRow extends React.Component {
 
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             {
-                                this.state.info["pdf"] === undefined
+                                this.state.info["pdf"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]
                                 ? <p>-</p>
                                 : this.state.info["pdf"]["complete"]
                                     ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
