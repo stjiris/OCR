@@ -19,7 +19,7 @@ import InfoIcon from '@mui/icons-material/Info';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.8.0";
+const VERSION = "0.9.2";
 
 function App() {
   class Form extends React.Component {
@@ -38,7 +38,7 @@ function App() {
             algorithmChoice: [],
             configChoice: [],
         }
-        
+
         this.saveButton = React.createRef();
         this.textEditor = React.createRef();
         this.pageDisplayer = React.createRef();
@@ -57,7 +57,7 @@ function App() {
     editFile(path, file) {
         /**
          * Open a file in the text editor
-         * 
+         *
          * @param {string} path - The path of the file
          * @param {string} file - The name of the file
          */
@@ -67,7 +67,7 @@ function App() {
     viewFile(file, algorithm, config) {
         /**
          * View a file in ES page
-         * 
+         *
          * @param {string} file - The name of the file
          */
         this.setState(
@@ -84,7 +84,7 @@ function App() {
     updateContents(event, index) {
         /**
          * Update the content of the text editor
-         * 
+         *
          * @param {event} event - The event
          * @param {int} index - The index of the text field changed
          */

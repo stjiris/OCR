@@ -36,14 +36,14 @@ class ESItem extends React.Component {
                     display: 'flex',
                     flexDirection: 'column',
                 }}>
-                    <span><b>Localização</b> {this.state.page['_source']['Path'].split('/').slice(1,-2).join('/')}</span>                
-                    <span><b>Documento:</b> {this.state.page['_source']['Document']}</span>                
+                    <span><b>Localização</b> {this.state.page['_source']['Path'].split('/').slice(1,-2).join('/')}</span>
+                    <span><b>Documento:</b> {this.state.page['_source']['Document']}</span>
                     {
                         this.state.page['_source']['Page'] !== undefined
                         ? <span><b>Página:</b> {this.state.page['_source']['Page']}</span>
                         : null
                     }
-                    <span><b>Algoritmo:</b> {this.state.page['_source']['Algorithm']}</span>                
+                    <span><b>Algoritmo:</b> {this.state.page['_source']['Algorithm']}</span>
                     <span><b>Configuração:</b> {this.state.page['_source']['Config']}</span>
                     <br/>
                     <span><b>Texto:</b><br/>{this.state.page['_source']['Text']}</span>
@@ -76,7 +76,7 @@ class ESPage extends React.Component {
     get_journal(data) {
         /**
          * Get the journal name from the file path
-         * 
+         *
          * ! Needs to keep some of the path otherwise can get duplicates with other folders
          */
         var journal = data['_source']['Path'].split('/').slice(1, -2).join('/');
@@ -194,9 +194,9 @@ class ESPage extends React.Component {
                 return page["_source"][key];
             });
             values.push(page["_id"]);
-            
+
             if (
-                values.some(containsFreeText) && 
+                values.some(containsFreeText) &&
                 (journal.length === 0 || journal.includes(this.get_journal(page))) &&
                 (fileType.length === 0 || fileType.includes(this.get_fileType(page))) &&
                 (algorithm.length === 0 || algorithm.includes(this.get_algorithm(page))) &&
@@ -246,7 +246,7 @@ class ESPage extends React.Component {
                     mr: '1.5rem',
                     ml: '1rem',
                 }}>
-                    {   
+                    {
                         this.state.loading
                         ? <p style={{fontSize: '20px'}}><b>Loading...</b></p>
 
@@ -259,7 +259,7 @@ class ESPage extends React.Component {
                                         return a_source['Page Number'] > b_source['Page Number'] ? 1 : -1;
                                     }
                                     return a_source['Path'] > b_source['Path'] ? 1 : -1;
-                                    
+
                                 }).map((page, index) => {
                                 return(
                                     <Box key={page['_id']} sx={{

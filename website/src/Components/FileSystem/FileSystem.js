@@ -25,8 +25,12 @@ import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SearchIcon from '@mui/icons-material/Search';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
+import { v4 as uuidv4 } from 'uuid';
+
 const UPDATE_TIME = 15;
 const validExtensions = [".pdf", ".jpg", ".jpeg"];
+
+const chunkSize = 1024 * 1024 * 3; // 3 MB
 
 class FileExplorer extends React.Component {
     constructor(props) {
@@ -38,6 +42,10 @@ class FileExplorer extends React.Component {
             current_folder: props.current_folder.split('/'),
             buttonsDisabled: props.current_folder.split('/').length === 1,
             components: [],
+
+            updatingRows: [],
+            updatingRate: 15,
+            updateCount: 0,
 
             loading: false,
         }
@@ -75,17 +83,21 @@ class FileExplorer extends React.Component {
             .then(response => {return response.json()})
             .then(data => {
                 var info = data["info"];
-                
-                this.setState({info: info}, this.updateInfo);
+
+                this.setState({info: info, updateCount: 0}, this.updateInfo);
             });
         }, 1000 * UPDATE_TIME);
     }
 
     updateInfo() {
         this.rowRefs.forEach(ref => {
-            var rowInfo = this.getInfo(this.state.current_folder.join("/") + "/" + ref.current.state.name);
-            ref.current.updateInfo(rowInfo);
+            var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
+            if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
+                var rowInfo = this.getInfo(filename);
+                ref.current.updateInfo(rowInfo);
+            }
         });
+        this.setState({updateCount: 0, updatingRows: []});
     }
 
     componentWillUnmount() {
@@ -123,12 +135,51 @@ class FileExplorer extends React.Component {
         // this.ocrMenu.current.toggleOpen();
     }
 
+    sendChunk(i, chunk, fileName, _totalCount, _fileID) {
+        var formData = new FormData();
+        formData.append('file', chunk);
+        formData.append('path', this.state.current_folder.join('/'))
+        formData.append('name', fileName);
+        formData.append("fileID", _fileID);
+        formData.append('counter', i+1);
+        formData.append('totalCount', _totalCount);
+
+        fetch(process.env.REACT_APP_API_URL + 'upload-file', {
+            method: 'POST',
+            body: formData
+        }).then(response => {return response.json()})
+        .then(data => {
+            if (data['success']) {
+                var info = this.state.info;
+
+                for (var k in data["info"]) {
+                    info[k] = data["info"][k];
+                }
+
+                var updatingList = this.state.updatingRows;
+                var complete_filename = this.state.current_folder.join("/") + "/" + fileName;
+                if (!updatingList.includes(complete_filename)) {
+                    updatingList.push(complete_filename);
+                }
+
+                if (data["finished"] || this.state.updateCount === this.state.updatingRate) {
+                    this.setState({info: info, updateCount: 0, updatingRows: updatingList}, this.updateInfo);
+                } else {
+                    this.setState({updateCount: this.state.updateCount + 1});
+                }
+            }
+        })
+        .catch(error => {
+            this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
+        });
+    }
+
     createFile() {
         /**
          * This is a hack to get around the fact that the input type="file" element
          * cannot be accessed from the React code. This is because the element is
          * not rendered by React, but by the browser itself.
-         * 
+         *
          * Function to select the files to be submitted
          */
 
@@ -140,23 +191,53 @@ class FileExplorer extends React.Component {
         el.addEventListener('change', () => {
             if (el.files.length === 0) return;
 
-            // Iterate the files and show the names
-            for (let i = 0; i < el.files.length; i++) {
-                var formData = new FormData();
-                formData.append('file', el.files[i]);
-                formData.append('path', this.state.current_folder.join('/'));
+            // Sort files by size (ascending)
+            var files = Array.from(el.files).sort((a, b) => a.size - b.size);
 
-                fetch(process.env.REACT_APP_API_URL + 'upload-file', {
+            for (let i = 0; i < files.length; i++) {
+                let fileBlob = files[i];
+                let fileSize = files[i].size;
+                let fileName = files[i].name;
+                let fileType = files[i].type;
+
+                const _totalCount = fileSize % chunkSize === 0
+                ? fileSize / chunkSize
+                : Math.floor(fileSize / chunkSize) + 1;
+
+                const _fileID = uuidv4() + "." + fileName.split('.').pop();
+
+                fetch(process.env.REACT_APP_API_URL + 'prepare-upload', {
                     method: 'POST',
-                    body: formData
-                })
-                .then(response => {return response.json()})
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        path: this.state.current_folder.join('/'),
+                        name: fileName,
+                    })
+                }).then(response => {return response.json()})
                 .then(data => {
-                    var filesystem = data["filesystem"];
-                    var info = filesystem["info"];
-                    var files = {'files': filesystem["files"]};
-                    this.setState({files: files, info: info}, this.displayFileSystem);
+                    if (data['success']) {
+                        var filesystem = data["filesystem"];
+                        var info = filesystem["info"];
+                        var files = {'files': filesystem["files"]};
+                        this.setState({files: files, info: info}, this.displayFileSystem);
+                        fileName = data["filename"];
+
+                        // Send chunks
+                        var startChunk = 0;
+                        var endChunk = chunkSize;
+        
+                        for (let i = 0; i < _totalCount; i++) {
+                            var chunk = fileBlob.slice(startChunk, endChunk, fileType);
+                            startChunk = endChunk;
+                            endChunk = endChunk + chunkSize;
+        
+                            this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
+                        }
+                    }
                 });
+
             }
         });
         el.click();
@@ -194,6 +275,23 @@ class FileExplorer extends React.Component {
 
             var basename = file.split('.').slice(0, -1).join('.');
             a.download = basename + '.' + type;
+            a.click();
+            a.remove();
+        });
+    }
+
+    getOriginalFile(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+
+        fetch(process.env.REACT_APP_API_URL + "get_original?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+
+            a.download = file;
             a.click();
             a.remove();
         });
@@ -330,8 +428,8 @@ class FileExplorer extends React.Component {
             if (a.length > 1) {
                 if (a[0].key.localeCompare(a[1].key) === 1){
                     sorted = false;
-                } 
-            }                                        
+                }
+            }
             return sorted;
         }
 
@@ -389,9 +487,9 @@ class FileExplorer extends React.Component {
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{borderLeft:"1px solid #d9d9d9"}}>
-                                <Button 
-                                    startIcon={<SwapVertIcon />} 
-                                    sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}    
+                                <Button
+                                    startIcon={<SwapVertIcon />}
+                                    sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
                                     onClick={() => this.sortByName(this.state.components)}>
                                     <b>Nome</b>
                                 </Button>
@@ -466,6 +564,71 @@ class FileExplorer extends React.Component {
         })
     }
 
+    checkOCRComplete() {
+        let obj = this.state.info;
+
+        for (let key in obj) {
+            if (obj[key] && typeof obj[key] === 'object') {
+              if (obj[key].ocr && !obj[key].ocr.complete) {
+                return false;
+              }
+            }
+        }
+        return true;
+    }
+
+    changeFolderFromPath(folder_name) {
+        var current_folder = this.state.current_folder;
+
+        // Remove the last element of the path until we find folder_name
+        while (current_folder[current_folder.length - 1] !== folder_name) {
+            current_folder.pop();
+        }
+
+        var buttonsDisabled = current_folder.length === 1;
+        var createFileButtonDisabled = current_folder.length === 1;
+
+        this.setState({
+            current_folder: current_folder,
+            buttonsDisabled: buttonsDisabled,
+            createFileButtonDisabled: createFileButtonDisabled,
+        }, this.displayFileSystem);
+    }
+
+    generatePath() {
+        return (
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap'
+            }}>
+                {
+                    this.state.current_folder.map((folder, index) => {
+                        return (
+                            <Box sx={{display: "flex", flexDirection: "row"}} key={"Box" + folder}>
+                                <Button 
+                                    key={folder}
+                                    onClick={() => this.changeFolderFromPath(folder)}
+                                    style={{
+                                        margin: 0,
+                                        padding: '0px 15px 0px 15px',
+                                        textTransform: 'none',
+                                        display: "flex",
+                                        textAlign: "left",
+                                    }}
+                                    variant="text"
+                                >
+                                    {folder}
+                                </Button>
+                                <p key={index}>/</p>
+                            </Box>
+                        )
+                    })
+                }
+            </Box>
+        )
+    }
+
     render() {
         return (
             <Box sx={{
@@ -488,7 +651,7 @@ class FileExplorer extends React.Component {
                     <Button
                         disabled={this.state.buttonsDisabled}
                         variant="contained"
-                        startIcon={<UndoIcon />} 
+                        startIcon={<UndoIcon />}
                         sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', mr: '1rem', mb: '0.5rem', ':hover': {bgcolor: '#ddd'}}}
                         onClick={() => this.goBack()}
                     >
@@ -516,7 +679,7 @@ class FileExplorer extends React.Component {
                     </Button>
 
                     <Button
-                        disabled={this.state.buttonsDisabled || this.state.components.length === 0}
+                        disabled={this.state.buttonsDisabled || this.state.components.length === 0 || !this.checkOCRComplete()}
                         variant="contained"
                         startIcon={<SearchIcon />}
                         onClick={() => this.performOCR(true)}
@@ -525,6 +688,10 @@ class FileExplorer extends React.Component {
                         Realizar o OCR
                     </Button>
                 </Box>
+
+                {
+                    this.generatePath()
+                }
 
                 {
                     this.generateTable()

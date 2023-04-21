@@ -107,19 +107,19 @@ export default class EditPage extends React.Component {
                     flexDirection: 'row',
                     flexWrap: 'wrap',
                     justifyContent: 'space-between',
-                    position: 'sticky',                    
+                    position: 'sticky',
                     top: 0,
                     zIndex: 100,
                     backgroundColor: '#fff',
                     paddingTop: '1rem',
                     paddingBottom: '1rem',
                     marginBottom: '1rem',
-                    borderBottom: '1px solid black',                  
+                    borderBottom: '1px solid black',
                 }}>
                     <Button
                         disabled={this.state.buttonsDisabled}
                         variant="contained"
-                        startIcon={<UndoIcon />} 
+                        startIcon={<UndoIcon />}
                         sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', mr: '1rem', mb: '0.5rem', ':hover': {bgcolor: '#ddd'}}}
                         onClick={() => this.goBack()}
                     >
@@ -130,7 +130,7 @@ export default class EditPage extends React.Component {
                         disabled={this.state.buttonsDisabled}
                         variant="contained"
                         color="success"
-                        startIcon={<SaveIcon />} 
+                        startIcon={<SaveIcon />}
                         sx={{border: '1px solid black', mb: '0.5rem'}}
                         onClick={() => this.saveText()}
                     >

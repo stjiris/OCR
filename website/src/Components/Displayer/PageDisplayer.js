@@ -21,7 +21,7 @@ class PageDisplayer extends React.Component {
         var newWidth = 150 + 450 * (value/100);
         this.setState({width: newWidth + 'px'});
     }
-    
+
     render() {
         return (
             <Box sx={{

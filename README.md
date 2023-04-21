@@ -1,46 +1,75 @@
 # Dissertacao-OCR
 
-# How to setup
-## Change the `nginx.conf` file to match your directory
+# Setup
+## Environment Variables for Local Testing
 ```
-location / {
-    root path/to/Dissertacao-OCR/website/build;
-    index index.html;
-}
-```
-
-```
-location /images/ {
-    alias path/to/Dissertacao-OCR/server/file_uploads/;
-}
+DEBUG=True
+ES_URL=http://localhost:9200/
+IMAGE_PREFIX=http://localhost
 ```
 
-This 2 routes need to be changed. Everything else should be the same.
+## `.env` file for the website
+```
+PORT=3001
+REACT_APP_API_URL='http://localhost/api/'
+REACT_APP_IMAGES_PREFIX = 'http://localhost'
+```
+
+## NGINX config file
+After downloading, you should go to `path/to/NGINX/conf/nginx.conf` and replace its contents with something similar to (`path/to/` should be replaced with the path from your own PC):
+
+```
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        location / {
+            root path/to/Dissertacao-OCR/website/build;
+            index index.html;
+        }
+
+        location /api/ {
+            proxy_pass http://localhost:5001/;
+            client_max_body_size 0;
+        }
+
+        location /images/ {
+            alias path/to/Dissertacao-OCR/server/files/;
+        }
+    }
+
+}
+
+```
+
+# Running the system
+## Start the NGINX
+Go to the location where you downloaded NGINX and open `nginx.exe`.
 
 ## Start the backend server
 ```
 $ cd server
+$ pip install -r requirements.txt
 $ python app.py
 ```
 
-## Build the OCR Server
+## Start the website
 ```
 $ cd website
-$ npm run build
+$ npm install
+$ npm start
 ```
-
-## Start the elastic search server
-```
-$ cd elastic_search
-$ node server.js
-```
-
-# How to run
-Start the NGINX and access the url `http://localhost`.
-
-# How to use the website
-Press the button "Insert File" and select a PDF file.  
-The file will be uploaded to the server and the text will be extracted.  
-The extracted text will be displayed in the text area and the corresponding page image will be shown on its left.
-
-Now you can fix the text and press the button "Save Text" to save the changes.

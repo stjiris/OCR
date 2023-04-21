@@ -1,46 +1,46 @@
-import os, json, shutil, re
+import json
+import os
+import re
+import shutil
 from datetime import datetime
+from threading import Lock, Thread
 
-from flask import Flask, request, send_file
-from flask_cors import CORS # permitir requests de outros ips alem do servidor
-
-from src.utils.export import export_file
-from src.thread_pool import ThreadPool
-
-from src.utils.file import (
-    get_structure_info,
-    get_filesystem,
-    get_file_parsed,
-    delete_structure,
-    perform_file_ocr,
-    perform_page_ocr,
-    get_data,
-    update_data,
-    get_page_count,
-    generate_uuid,
-    json_to_text,
-    fix_ocr,
-    get_file_basename,
-    get_file_extension,
-    get_size
-)
-
-from src.evaluate import evaluate
-
-from src.algorithms import tesseract, easy_ocr
+from flask import Flask
+from flask import request
+from flask import send_file
+from flask_cors import CORS  # permitir requests de outros ips alem do servidor
+from src.algorithms import tesseract
+from src.algorithms import easy_ocr
 from src.elastic_search import *
+from src.evaluate import evaluate
+from src.thread_pool import ThreadPool
+from src.utils.export import export_file
+from src.utils.file import delete_structure
+from src.utils.file import fix_ocr
+from src.utils.file import generate_uuid
+from src.utils.file import get_data
+from src.utils.file import get_file_basename
+from src.utils.file import get_file_extension
+from src.utils.file import get_file_parsed
+from src.utils.file import get_filesystem
+from src.utils.file import get_page_count
+from src.utils.file import get_size
+from src.utils.file import get_folder_info
+from src.utils.file import get_structure_info
+from src.utils.file import json_to_text
+from src.utils.file import perform_file_ocr
+from src.utils.file import perform_page_ocr
+from src.utils.file import update_data
 
-client = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
 app = Flask(__name__)   # Aplicação em si
+log = app.logger
 CORS(app)
 
-MAX_THREADS = 4
-WAITING_DOCS = []
-WAITING_CHANGES = []
-WAITING_PAGES = []
+lock_system = dict()
 
-def make_changes(data, data_folder):
+def make_changes(data_folder, data, pool: ThreadPool):
     current_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     export_file(data_folder, "txt")
@@ -56,6 +56,8 @@ def make_changes(data, data_folder):
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
 
     update_data(data_folder + "/_data.json", data)
+    pool.update(finished=data_folder)
+
 
 #####################################
 # FILE SYSTEM ROUTES
@@ -64,9 +66,11 @@ def make_changes(data, data_folder):
 def get_file_system():
     return get_filesystem("files")
 
+
 @app.route("/info", methods=["GET"])
 def get_info():
-    return {'info': get_structure_info("files")}
+    return {"info": get_structure_info("files")}
+
 
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
@@ -81,12 +85,16 @@ def create_folder():
     os.mkdir(path + "/" + folder)
 
     with open(f"{path}/{folder}/_data.json", "w") as f:
-        json.dump({
-            "type": "folder",
-            "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        }, f)
+        json.dump(
+            {
+                "type": "folder",
+                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            },
+            f,
+        )
 
     return {"success": True, "files": get_filesystem("files")}
+
 
 @app.route("/get-file", methods=["GET"])
 def get_file():
@@ -94,33 +102,70 @@ def get_file():
     doc = get_file_parsed(path)
     return {"doc": doc}
 
+
 @app.route("/get_txt", methods=["GET"])
 def get_txt():
     path = request.values["path"]
     return send_file(f"{path}/_text.txt")
 
+
 @app.route("/get_pdf", methods=["GET"])
 def get_pdf():
     path = request.values["path"]
-    file = export_file(path, "pdf")        
+    file = export_file(path, "pdf")
+    return send_file(file)
+
+@app.route("/get_original", methods=["GET"])
+def get_original():
+    path = request.values["path"]
+    file = path + "/" + path.split("/")[-1]
     return send_file(file)
 
 @app.route("/delete-path", methods=["POST"])
 def delete_path():
-    data = data = request.json
-    path = data["path"]
+    data = request.json
+    path = data["path"] 
 
-    delete_structure(client, path)        
+    delete_structure(es, path)
     shutil.rmtree(path)
 
-    return {"success": True, "message": "Apagado com sucesso", "files": get_filesystem("files")}
+    return {
+        "success": True,
+        "message": "Apagado com sucesso",
+        "files": get_filesystem("files"),
+    }
+
 
 #####################################
 # FILES ROUTES
 #####################################
+def is_filename_reserved(path, filename):
+    """
+    Check if a filename is reserved
+    A filename can be reserved if:
+        - It is a folder
+        - It is a file that is being processed
+
+    :param path: path to the file
+    :param filename: filename to check
+
+    :return: True if reserved, False otherwise
+    """
+    for f in os.listdir(path):
+        # If f is a folder
+        if not os.path.isdir(f"{path}/{f}"): continue
+        if f == filename: return True
+
+        data = get_data(f"{path}/{f}/_data.json")
+        if "original_filename" in data and data["original_filename"] == filename:
+            return True
+        
+    return False
+
+
 def find_valid_filename(path, basename, extension):
     """
-    Fidna valid name for a file so it doesn't overwrite another file
+    Find valid name for a file so it doesn't overwrite another file
 
     :param path: path to the file
     :param basename: basename of the file
@@ -129,40 +174,109 @@ def find_valid_filename(path, basename, extension):
     :return: valid filename
     """
     id = 1
-    while os.path.exists(f"{path}/{basename} ({id}).{extension}"):
+    while is_filename_reserved(path, f"{basename} ({id}).{extension}"):
         id += 1
 
     return f"{basename} ({id}).{extension}"
 
-@app.route("/upload-file", methods=['POST'])
-def upload_file():
-    """
-    Receive a file and save it in the server
-    @param file: file to be saved
-    @param path: path to save the file
-    """
+@app.route("/prepare-upload", methods=["POST"])
+def prepare_upload():
+    data = request.json
+    path = data["path"] 
+    filename = data["name"]
 
-    file = request.files["file"]
-    path = request.form["path"]
-
-    filename = file.filename
-
-    if os.path.exists(f"{path}/{filename}"):
+    if is_filename_reserved(path, filename):
         basename = get_file_basename(filename)
         extension = get_file_extension(filename)
         filename = find_valid_filename(path, basename, extension)
 
     os.mkdir(f"{path}/{filename}")
-    file.save(f"{path}/{filename}/{filename}")
-
     with open(f"{path}/{filename}/_data.json", "w") as f:
-        json.dump({
-            "type": "file",
-            "pages": get_page_count(f"{path}/{filename}/{filename}"),
-            "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        }, f)
+        json.dump(
+            {
+                "type": "file",
+                "progress": 0.00,
+                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            },
+            f,
+        )
+    return {"success": True, "filesystem": get_filesystem("files"), "filename": filename}
 
-    return {"success": True, "file": filename, "filesystem": get_filesystem("files")}
+def join_chunks(path, filename, total_count, complete_filename):
+    # Save the file
+    with open(f"{path}/{filename}/{filename}", "wb") as f:
+        for i in range(total_count):
+            with open(f"pending-files/{complete_filename}/{i+1}", "rb") as chunk:
+                f.write(chunk.read())
+
+    update_data(f"{path}/{filename}/_data.json", {
+        "pages": get_page_count(f"{path}/{filename}/{filename}"),
+        "progress": True
+    })
+
+    shutil.rmtree(f"pending-files/{complete_filename}")
+
+    log.info(f"Finished uploading file {filename}")
+
+@app.route("/upload-file", methods=["POST"])
+def upload_file():
+    file = request.files["file"]
+    path = request.form["path"]
+    filename = request.form["name"]
+    counter = int(request.form["counter"])
+    total_count = int(request.form["totalCount"])
+
+    complete_filename = path.replace("/", "_") + "_" + filename
+
+    # If only one chunk, save the file directly
+    if total_count == 1:
+        file.save(f"{path}/{filename}/{filename}")
+
+        with open(f"{path}/{filename}/_data.json", "w") as f:
+            json.dump({
+                "type": "file",
+                "pages": get_page_count(f"{path}/{filename}/{filename}"),
+                "creation": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            }, f)
+
+        return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}
+
+    # Create a Lock to process the file
+    if complete_filename not in lock_system:
+        lock_system[complete_filename] = Lock()
+
+    # If multiple chunks, save the chunk and wait for the other chunks
+    file = file.read()
+
+    # Create the folder to save the chunks
+    if not os.path.exists(f"pending-files/{complete_filename}"):
+        os.mkdir(f"pending-files/{complete_filename}")
+
+    with lock_system[complete_filename]:
+        # Save the chunk
+        with open(f"pending-files/{complete_filename}/{counter}", "wb") as f:
+            f.write(file)
+
+        # Number of chunks saved
+        chunks_saved = len(os.listdir(f"pending-files/{complete_filename}"))
+        progress = round(100 * chunks_saved/total_count, 2)
+
+        log.info(f"Uploading file {filename} ({counter}/{total_count}) - {progress}%")
+
+        update_data(f"{path}/{filename}/_data.json", {"progress": progress})
+
+        if chunks_saved == total_count:
+            del lock_system[complete_filename]
+
+            Thread(
+                target=join_chunks,
+                args=(path, filename, total_count, complete_filename)
+            ).start()
+
+            return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}
+
+    return {"success": True, "finished": False, "info": get_folder_info(f"{path}/{filename}")}
+
 
 @app.route("/perform-ocr", methods=["POST"])
 def perform_ocr():
@@ -180,33 +294,43 @@ def perform_ocr():
     config = data["config"]
     multiple = data["multiple"]
 
-    ocr_algorithm = tesseract if algorithm == "Tesseract" else easy_ocr
+    ocr_algorithm = tesseract
 
     if multiple:
-        files = [f"{path}/{f}" for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+        files = [
+            f"{path}/{f}"
+            for f in os.listdir(path)
+            if os.path.isdir(os.path.join(path, f))
+        ]
     else:
         files = [path]
 
     for f in files:
         # Delete previous results
-        if os.path.exists(f"{f}/ocr_results"): shutil.rmtree(f"{f}/ocr_results")
+        if os.path.exists(f"{f}/ocr_results"):
+            shutil.rmtree(f"{f}/ocr_results")
         os.mkdir(f"{f}/ocr_results")
 
         # Update the information related to the OCR
         data = get_data(f"{f}/_data.json")
         data["ocr"] = {}
         data["ocr"]["algorithm"] = algorithm
-        data["ocr"]["config"] = '_'.join(config)
-        data["ocr"]["complete"] = False
+        data["ocr"]["config"] = "_".join(config)
+        data["ocr"]["progress"] = 0
         data["txt"] = {}
         data["txt"]["complete"] = False
         data["pdf"] = {}
         data["pdf"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        WAITING_DOCS.append((f, config, ocr_algorithm, WAITING_PAGES))
+        docs_pool.add_to_queue((f, config, ocr_algorithm, pages_pool))
 
-    return {"success": True, "message": "O OCR começou, por favor aguarde", "files": get_filesystem("files")}
+    return {
+        "success": True,
+        "message": "O OCR começou, por favor aguarde",
+        "files": get_filesystem("files"),
+    }
+
 
 @app.route("/index-doc", methods=["POST"])
 def index_doc():
@@ -236,17 +360,33 @@ def index_doc():
                 text = json_to_text(hocr)
 
             if ocr_config["pages"] > 1:
-                doc = create_document(file_path, ocr_config["ocr"]["algorithm"], ocr_config["ocr"]["config"], text, id+1)
+                doc = create_document(
+                    file_path,
+                    ocr_config["ocr"]["algorithm"],
+                    ocr_config["ocr"]["config"],
+                    text,
+                    id + 1,
+                )
             else:
-                doc = create_document(file_path, ocr_config["ocr"]["algorithm"], ocr_config["ocr"]["config"], text)
+                doc = create_document(
+                    file_path,
+                    ocr_config["ocr"]["algorithm"],
+                    ocr_config["ocr"]["config"],
+                    text,
+                )
 
             id = generate_uuid(file_path)
 
-            client.add_document(id, doc)
+            es.add_document(id, doc)
 
         update_data(path + "/_data.json", {"indexed": True})
 
-        return {"success": True, "message": "Documento indexado", "files": get_filesystem("files")}
+        return {
+            "success": True,
+            "message": "Documento indexado",
+            "files": get_filesystem("files"),
+        }
+
 
 @app.route("/remove-index-doc", methods=["POST"])
 def remove_index_doc():
@@ -265,23 +405,30 @@ def remove_index_doc():
         return {}
     else:
         hOCR_path = path + "/ocr_results"
-        config = get_data('/'.join(path.split('/')[:-1]) + "/_data.json")
+        # config = get_data("/".join(path.split("/")[:-1]) + "/_data.json")
         files = [f for f in os.listdir(hOCR_path) if f.endswith(".json")]
 
         for f in files:
             file_path = f"{hOCR_path}/{f}"
             id = generate_uuid(file_path)
-            client.delete_document(id)
+            es.delete_document(id)
 
         update_data(path + "/_data.json", {"indexed": False})
 
-        return {"success": True, "message": "Documento removido", "files": get_filesystem("files")}
+        return {
+            "success": True,
+            "message": "Documento removido",
+            "files": get_filesystem("files"),
+        }
+
 
 @app.route("/submit-text", methods=["POST"])
 def submit_text():
-    texts = request.json["text"] # estrutura com texto, nome do ficheiro e url da imagem
+    texts = request.json[
+        "text"
+    ]  # estrutura com texto, nome do ficheiro e url da imagem
 
-    data_folder = '/'.join(texts[0]["original_file"].split("/")[:-2])
+    data_folder = "/".join(texts[0]["original_file"].split("/")[:-2])
     data = get_data(data_folder + "/_data.json")
 
     for t in texts:
@@ -294,9 +441,12 @@ def submit_text():
 
         try:
             new_hocr = fix_ocr(words, text)
-        except:
-            return {"success": False, "error": "Ocorreu um erro inesperado enquanto corrigiamos o texto, por favor informem-nos"}
-        
+        except:  # noqa: E722
+            return {
+                "success": False,
+                "error": "Ocorreu um erro inesperado enquanto corrigiamos o texto, por favor informem-nos",
+            }
+
         for l_id, l in enumerate(new_hocr):
             for w_id, w in enumerate(l):
                 hocr[l_id][w_id]["text"] = w
@@ -306,30 +456,39 @@ def submit_text():
 
         if data["indexed"]:
             id = generate_uuid(filename)
-            client.update_document(id, text)
+            es.update_document(id, text)
 
-    update_data(data_folder + "/_data.json", {"txt": {"complete": False}, "pdf": {"complete": False}})
+    update_data(
+        data_folder + "/_data.json",
+        {"txt": {"complete": False}, "pdf": {"complete": False}},
+    )
 
-    WAITING_CHANGES.append((data, data_folder))
+    changes_pool.add_to_queue(data_folder, data)
 
     return {"success": True, "files": get_filesystem("files")}
+
 
 #####################################
 # ELASTICSEARCH
 #####################################
 @app.route("/get_elasticsearch", methods=["GET"])
 def get_elasticsearch():
-    return client.get_docs()
+    return es.get_docs()
+
 
 #####################################
-# MAIN
+# JOB QUEUES
 #####################################
-if __name__ == "__main__":
-    if not os.path.exists("./files/"):
-        os.mkdir("./files/")
+if not os.path.exists("./files/"):
+    os.mkdir("./files/")
 
-    docs_pool = ThreadPool(perform_file_ocr, WAITING_DOCS, MAX_THREADS)
-    changes_pool = ThreadPool(make_changes, WAITING_CHANGES, MAX_THREADS)
-    pages_pool = ThreadPool(perform_page_ocr, WAITING_PAGES, MAX_THREADS + 2, delay = 2)
-                
-    app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
+if not os.path.exists("./pending-files/"):
+    os.mkdir("./pending-files/")
+
+docs_pool = ThreadPool(perform_file_ocr, 2)
+changes_pool = ThreadPool(make_changes, 1)
+pages_pool = ThreadPool(perform_page_ocr, 4)
+
+# app.config['DEBUG'] = os.environ.get('DEBUG', False)
+# app.run(port=5001, threaded=True)
+app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
