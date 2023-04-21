@@ -144,7 +144,7 @@ function App() {
                         <Link
                             className="link"
                             sx={{
-                                color: ((this.state.fileSystemMode || this.state.editFileMode) ? '#338141' : '#48954f'),
+                                color: '#1976d2',
                                 mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
                             }}
                             style={{textDecoration: 'none'}}
@@ -156,7 +156,7 @@ function App() {
                         <Link
                             className="link"
                             sx={{
-                                color: (!(this.state.fileSystemMode || this.state.editFileMode) ? '#338141' : '#48954f'),
+                                color: '#1976d2',
                                 mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
                             }}
                             style={{textDecoration: 'none'}}

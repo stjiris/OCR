@@ -652,14 +652,13 @@ class FileExplorer extends React.Component {
                         disabled={this.state.buttonsDisabled}
                         variant="contained"
                         startIcon={<UndoIcon />}
-                        sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', mr: '1rem', mb: '0.5rem', ':hover': {bgcolor: '#ddd'}}}
+                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
                         onClick={() => this.goBack()}
                     >
                         Voltar atrás
                     </Button>
 
                     <Button
-                        color="success"
                         variant="contained"
                         startIcon={<CreateNewFolderIcon />}
                         sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
@@ -683,7 +682,7 @@ class FileExplorer extends React.Component {
                         variant="contained"
                         startIcon={<SearchIcon />}
                         onClick={() => this.performOCR(true)}
-                        sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto', backgroundColor: '#e5de00', color: '#000', ':hover': {bgcolor: '#e6cc00'}}}
+                        sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
                     >
                         Realizar o OCR
                     </Button>
