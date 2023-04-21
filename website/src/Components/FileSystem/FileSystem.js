@@ -577,6 +577,58 @@ class FileExplorer extends React.Component {
         return true;
     }
 
+    changeFolderFromPath(folder_name) {
+        var current_folder = this.state.current_folder;
+
+        // Remove the last element of the path until we find folder_name
+        while (current_folder[current_folder.length - 1] !== folder_name) {
+            current_folder.pop();
+        }
+
+        var buttonsDisabled = current_folder.length === 1;
+        var createFileButtonDisabled = current_folder.length === 1;
+
+        this.setState({
+            current_folder: current_folder,
+            buttonsDisabled: buttonsDisabled,
+            createFileButtonDisabled: createFileButtonDisabled,
+        }, this.displayFileSystem);
+    }
+
+    generatePath() {
+        return (
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap'
+            }}>
+                {
+                    this.state.current_folder.map((folder, index) => {
+                        return (
+                            <Box sx={{display: "flex", flexDirection: "row"}} key={"Box" + folder}>
+                                <Button 
+                                    key={folder}
+                                    onClick={() => this.changeFolderFromPath(folder)}
+                                    style={{
+                                        margin: 0,
+                                        padding: '0px 15px 0px 15px',
+                                        textTransform: 'none',
+                                        display: "flex",
+                                        textAlign: "left",
+                                    }}
+                                    variant="text"
+                                >
+                                    {folder}
+                                </Button>
+                                <p key={index}>/</p>
+                            </Box>
+                        )
+                    })
+                }
+            </Box>
+        )
+    }
+
     render() {
         return (
             <Box sx={{
@@ -636,6 +688,10 @@ class FileExplorer extends React.Component {
                         Realizar o OCR
                     </Button>
                 </Box>
+
+                {
+                    this.generatePath()
+                }
 
                 {
                     this.generateTable()
