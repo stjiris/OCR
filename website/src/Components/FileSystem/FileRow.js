@@ -109,7 +109,7 @@ export default class FileRow extends React.Component {
                 {
                     this.state.info["progress"] !== undefined && this.state.info["progress"] !== true
                     ? <>
-                        <TableCell align='center' sx={{paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
                             {
                                 this.state.info["progress"] !== 100.00
                                 ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
@@ -147,51 +147,71 @@ export default class FileRow extends React.Component {
                                 this.state.info["creation"]
                             }
                         </TableCell>
-
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        
+                        { 
+                            this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] === this.state.info["pages"] ? 
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
                             {
                                 this.state.info["ocr"] === undefined
                                 ? <Button variant="text" onClick={(e) => this.performOCR(e)}>Fazer</Button>
-                                : this.state.info["ocr"]["progress"] === this.state.info["pages"]
-                                    ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                                        <span>{this.state.info["ocr"]["creation"]}</span>
-                                        <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
-                                        <span>{this.state.info["ocr"]["size"]}</span>
-                                    </Box>
-                                    : <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
-                                        <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}</span>
-                                        <CircularProgress size='1rem' />
-                                    </Box>
-                            }
-                        </TableCell>
+                                : 
+                                  <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                      <span>{this.state.info["ocr"]["creation"]}</span>
+                                      <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
+                                      <span>{this.state.info["ocr"]["size"]}</span>
+                                  </Box>
+                            } 
+                            </TableCell>
+                            :
+                            <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
+                                <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
+                                    <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}</span>
+                                    <CircularProgress size='1rem' />
+                                </Box>                             
+                            </TableCell>
+                        }
 
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                            {
-                                this.state.info["txt"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]
-                                ? <p>-</p>
-                                : this.state.info["txt"]["complete"]
-                                    ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                        {   
+                            this.state.info["txt"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"] ?
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                <p>-</p>
+                            </TableCell> :
+                            <>{
+                                this.state.info["txt"]["complete"] ?
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                    <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>{this.state.info["txt"]["creation"]}</span>
                                         <Button sx={{p: 0}} variant="text" onClick={(e) => this.getTxt(e)}>Descarregar</Button>
                                         <span>{this.state.info["txt"]["size"]}</span>
                                     </Box>
-                                    : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
-                            }
-                        </TableCell>
+                                </TableCell> :
+                                <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                    <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
+                                </TableCell>                        
+                            }</>                          
+                        }
 
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        {
+                            this.state.info["pdf"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"] ?
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                <p>-</p>
+                            </TableCell> :
+                            <>
                             {
-                                this.state.info["pdf"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]
-                                ? <p>-</p>
-                                : this.state.info["pdf"]["complete"]
-                                    ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                this.state.info["pdf"]["complete"] ?
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                   <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>{this.state.info["pdf"]["creation"]}</span>
                                         <Button sx={{p: 0}} variant="text" onClick={(e) => this.getPdf(e)}>Descarregar</Button>
                                         <span>{this.state.info["pdf"]["size"]}</span>
                                     </Box>
-                                    : <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
+                                </TableCell> :
+                                <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                    <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
+                                </TableCell> 
                             }
-                        </TableCell>
+                            </>
+                        }
 
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
