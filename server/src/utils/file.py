@@ -9,6 +9,7 @@ from datetime import datetime
 from difflib import SequenceMatcher
 from os import environ
 from pathlib import Path
+import pytz
 
 from pdf2image import convert_from_path
 from PIL import Image
@@ -18,6 +19,7 @@ from src.utils.export import export_file
 from src.utils.export import json_to_text
 
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
+TIMEZONE = pytz.timezone("Europe/Lisbon")
 ##################################################
 # FILESYSTEM UTILS
 ##################################################
@@ -32,6 +34,13 @@ IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 #       - conf.txt                      (the conf file of the OCR engine used)
 # - folder2
 
+def get_current_time():
+    """
+    Get the current time in the correct format
+
+    :return: current time
+    """
+    return datetime.now().astimezone(TIMEZONE).strftime("%d/%m/%Y %H:%M:%S")
 
 def get_file_parsed(path):
     """
@@ -410,7 +419,7 @@ def perform_page_ocr(path, filename, config, ocr_algorithm, pool: ThreadPool):
     if data["pages"] == len(files):
         log.info("{path}: Acabei OCR")
 
-        creation_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        creation_date = get_current_time()
 
         data["ocr"]["progress"] = len(files)
         data["ocr"]["size"] = get_ocr_size(f"{path}/ocr_results")
@@ -421,7 +430,7 @@ def perform_page_ocr(path, filename, config, ocr_algorithm, pool: ThreadPool):
         export_file(path, "txt")
         export_file(path, "pdf")
 
-        creation_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        creation_date = get_current_time()
 
         data["txt"]["complete"] = True
         data["txt"]["size"] = get_size(f"{path}/_text.txt", path_complete=True)
