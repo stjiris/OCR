@@ -19,7 +19,7 @@ import InfoIcon from '@mui/icons-material/Info';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.9.3";
+const VERSION = "0.9.4";
 
 function App() {
   class Form extends React.Component {
