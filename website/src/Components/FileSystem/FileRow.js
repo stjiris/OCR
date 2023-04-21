@@ -109,14 +109,20 @@ export default class FileRow extends React.Component {
                 {
                     this.state.info["progress"] !== undefined && this.state.info["progress"] !== true
                     ? <>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
                             {
                                 this.state.info["progress"] !== 100.00
                                 ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                     <span>Carregamento</span>
-                                    <span>{this.state.info["progress"]}%</span>
+                                    <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
+                                        <span>{this.state.info["progress"]}%</span>
+                                        <CircularProgress size='0.8rem' />
+                                    </Box>
                                 </Box>
-                                : <span>A juntar páginas</span>
+                                : <Box>
+                                    <span>A juntar páginas</span>
+                                    <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
+                                  </Box>
 
                             }
                         </TableCell>
