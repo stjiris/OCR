@@ -131,7 +131,8 @@ def export_pdf(path):
     dpi_original = 200
     dpi_compressed = 72
 
-    images = sorted([x for x in os.listdir(path) if x.endswith("*.jpg")])
+    filenames_asterisk = [x for x in os.listdir(path) if x.endswith("*.jpg")]
+    images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\*', x).group(1)))
     for image in images:
         image_basename = get_file_basename(image)
         image_basename = image_basename[:-1]
