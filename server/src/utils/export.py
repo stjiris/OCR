@@ -154,9 +154,9 @@ def export_pdf(path):
     # Sort the `words` dict by key
     words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0])]
 
-    rows = 55
-    cols = 4
-    size = 8
+    rows = 54
+    cols = 3
+    size = 12
 
     for id in range(0, len(words), rows*cols):
         set_words = words[id : id + rows*cols]
@@ -173,8 +173,8 @@ def export_pdf(path):
                 word = set_words[id]
 
                 text = pdf.beginText()
-                text.setTextRenderMode(2)
-                text.setFont("Courier", size)
+                text.setTextRenderMode(0)
+                text.setFont("Helvetica", size)
                 text.setTextOrigin(x, y)
                 text.textLine(f"{word[0]} ({word[1]})")
                 pdf.drawText(text)
@@ -182,7 +182,7 @@ def export_pdf(path):
                 y -= 15
 
             y = h-20
-            x += w // 4
+            x += w // 3
 
         pdf.showPage()
 
