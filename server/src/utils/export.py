@@ -212,7 +212,7 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
             b = word["b"]
 
             for w in rawtext.split():
-                w = w.strip().lower()
+                w = w.strip()
                 for c in remove_chars:
                     w = w.replace(c, "")
                 words[w] = words.get(w, 0) + 1
