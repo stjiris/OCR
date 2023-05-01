@@ -51,6 +51,10 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.10.0 - 01/05/2023</b></p>
+                            <ul>                            
+                                <li>Índice de palavras passa a não converter todas as letras em letras minúsculas</li>
+                            </ul>
                             <p><b>Versão 0.9.6 - 01/05/2023</b></p>
                             <ul>                            
                                 <li>Melhoria da legibilidade do índice de palavras</li>
