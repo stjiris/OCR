@@ -152,7 +152,7 @@ def export_pdf(path):
         pdf.showPage()
 
     # Sort the `words` dict by key
-    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0])]
+    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
 
     rows = 54
     cols = 3
