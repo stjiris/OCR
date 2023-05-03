@@ -286,7 +286,7 @@ class FileExplorer extends React.Component {
             a.href = URL.createObjectURL(data);
 
             var basename = file.split('.').slice(0, -1).join('.');
-            a.download = basename + '_ocr' + '.' + type;
+            a.download = basename + '_ocr.' + type;
             a.click();
             a.remove();
         });
