@@ -1,13 +1,14 @@
 import './App.css';
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import { Box, Link, IconButton } from '@mui/material';
 import Notification from './Components/Notification/Notifications';
 import VersionsMenu from './Components/Form/VersionsMenu';
-
 import { FileExplorer } from './Components/FileSystem/FileSystem.js';
 import ESPage from './Components/ElasticSearchPage/ESPage';
 import EditPage from './Components/EditPage/EditPage';
+import PrivateSession from './Components/PrivateSession/PrivateSession';
 
 import InfoIcon from '@mui/icons-material/Info';
 
@@ -195,7 +196,12 @@ function App() {
 }
 
 return (
-    <Form />
+    <Router>
+      <Routes>
+        <Route exact path="/" element={<Form/>}/>
+        <Route path="/private/:sessionId" element={<PrivateSession/>}/>
+      </Routes>
+    </Router>
 );
 }
 

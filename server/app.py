@@ -1,7 +1,9 @@
 import json
 import os
 import re
+import random
 import shutil
+import string
 from datetime import datetime
 from threading import Lock, Thread
 
@@ -40,6 +42,7 @@ log = app.logger
 CORS(app)
 
 lock_system = dict()
+private_sessions = dict()
 
 def make_changes(data_folder, data, pool: ThreadPool):
     current_date = get_current_time()
@@ -476,6 +479,27 @@ def submit_text():
 def get_elasticsearch():
     return es.get_docs()
 
+#####################################
+# PRIVATE SESSIONS
+#####################################
+@app.route("/create-private-session", methods=["GET"])
+def create_private_session():
+    session_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    private_sessions[session_id] = {}
+
+    return {"success": True, "sessionId": session_id}
+
+@app.route('/validate-private-session', methods=['POST'])
+def validate_private_session():
+    data = request.json
+    session_id = data["sessionId"]
+    
+    if session_id in private_sessions:
+        response = {"success": True, "valid": True}
+    else:
+        response = {"success": True, "valid": False}
+
+    return response
 
 #####################################
 # JOB QUEUES

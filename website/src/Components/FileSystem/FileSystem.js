@@ -20,6 +20,7 @@ import FileRow from './FileRow';
 import Notification from '../Notification/Notifications';
 
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import LockIcon from '@mui/icons-material/Lock';
 import UndoIcon from '@mui/icons-material/Undo';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SearchIcon from '@mui/icons-material/Search';
@@ -241,6 +242,17 @@ class FileExplorer extends React.Component {
             }
         });
         el.click();
+    }
+
+    createPrivateSession() {
+        fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
+            method: 'GET'
+        })
+        .then(response => {return response.json()})
+        .then(data => {
+            var sessionId = data["sessionId"];
+            window.location.href = `/private/${sessionId}`;
+        });
     }
 
     goBack() {
@@ -674,9 +686,18 @@ class FileExplorer extends React.Component {
                         variant="contained"
                         startIcon={<NoteAddIcon />}
                         onClick={() => this.createFile()}
-                        sx={{border: '1px solid black', mb: '0.5rem'}}
+                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
                     >
                         Adicionar documento
+                    </Button>
+
+                    <Button
+                        variant="contained"
+                        startIcon={<LockIcon />}
+                        onClick={() => this.createPrivateSession()}
+                        sx={{border: '1px solid black', mb: '0.5rem'}}
+                    >
+                        Sessão privada
                     </Button>
 
                     <Button
