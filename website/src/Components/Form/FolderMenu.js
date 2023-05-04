@@ -99,7 +99,6 @@ class FolderMenu extends React.Component {
                         <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Nome da pasta" variant="outlined" />
                         <Button
                             disabled={this.state.buttonDisabled}
-                            color="success"
                             variant="contained"
                             sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem'}}
                             onClick={() => this.createFolder()}

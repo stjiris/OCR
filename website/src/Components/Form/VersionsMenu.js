@@ -51,6 +51,25 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.10.0 - 01/05/2023</b></p>
+                            <ul>                            
+                                <li>Índice de palavras passa a não converter todas as letras em letras minúsculas</li>
+                            </ul>
+                            <p><b>Versão 0.9.6 - 01/05/2023</b></p>
+                            <ul>                            
+                                <li>Melhoria da legibilidade do índice de palavras</li>
+                                <li>Mudança do nome de documentos gerados</li>
+                            </ul>
+                            <p><b>Versão 0.9.5 - 26/04/2023</b></p>
+                            <ul>                            
+                                <li>Correção da ordem das páginas do PDF gerado</li>
+                            </ul>
+                            <p><b>Versão 0.9.4 - 21/04/2023</b></p>
+                            <ul>                            
+                                <li>Adiciona roda de progressão e mudança de cor em todas as células que estão a trabalhar</li>
+                                <li>Alteração de cores de botões</li>
+                                <li>Correção da função que permite usar o botão 'Realizar o OCR'</li>
+                            </ul>
                             <p><b>Versão 0.9.3 - 21/04/2023</b></p>
                             <ul>                            
                                 <li>Correção das horas</li>

@@ -131,7 +131,8 @@ def export_pdf(path):
     dpi_original = 200
     dpi_compressed = 72
 
-    images = sorted([x for x in os.listdir(path) if x.endswith("*.jpg")])
+    filenames_asterisk = [x for x in os.listdir(path) if x.endswith("*.jpg")]
+    images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\*', x).group(1)))
     for image in images:
         image_basename = get_file_basename(image)
         image_basename = image_basename[:-1]
@@ -151,11 +152,11 @@ def export_pdf(path):
         pdf.showPage()
 
     # Sort the `words` dict by key
-    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0])]
+    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
 
-    rows = 55
-    cols = 4
-    size = 8
+    rows = 54
+    cols = 3
+    size = 12
 
     for id in range(0, len(words), rows*cols):
         set_words = words[id : id + rows*cols]
@@ -172,8 +173,8 @@ def export_pdf(path):
                 word = set_words[id]
 
                 text = pdf.beginText()
-                text.setTextRenderMode(2)
-                text.setFont("Courier", size)
+                text.setTextRenderMode(0)
+                text.setFont("Helvetica", size)
                 text.setTextOrigin(x, y)
                 text.textLine(f"{word[0]} ({word[1]})")
                 pdf.drawText(text)
@@ -181,7 +182,7 @@ def export_pdf(path):
                 y -= 15
 
             y = h-20
-            x += w // 4
+            x += w // 3
 
         pdf.showPage()
 
@@ -211,7 +212,7 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
             b = word["b"]
 
             for w in rawtext.split():
-                w = w.strip().lower()
+                w = w.strip()
                 for c in remove_chars:
                     w = w.replace(c, "")
                 words[w] = words.get(w, 0) + 1
