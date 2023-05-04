@@ -68,12 +68,21 @@ def make_changes(data_folder, data, pool: ThreadPool):
 #####################################
 @app.route("/files", methods=["GET"])
 def get_file_system():
-    return get_filesystem("files")
+    if "path" not in request.values:
+        return get_filesystem("files")
+    
+    path = request.values["path"].split("/")[0]
+    print(path)
+    return get_filesystem(path)
 
 
 @app.route("/info", methods=["GET"])
 def get_info():
-    return {"info": get_structure_info("files")}
+    if "path" not in request.values:
+        return get_filesystem("files")
+    
+    path = request.values["path"].split("/")[0]
+    return {"info": get_structure_info(path)}
 
 
 @app.route("/create-folder", methods=["POST"])
@@ -133,10 +142,12 @@ def delete_path():
     delete_structure(es, path)
     shutil.rmtree(path)
 
+    session = path.split("/")[0]
+
     return {
         "success": True,
         "message": "Apagado com sucesso",
-        "files": get_filesystem("files"),
+        "files": get_filesystem(session),
     }
 
 
@@ -189,6 +200,8 @@ def prepare_upload():
     path = data["path"] 
     filename = data["name"]
 
+    session = path.split("/")[0]
+
     if is_filename_reserved(path, filename):
         basename = get_file_basename(filename)
         extension = get_file_extension(filename)
@@ -204,7 +217,7 @@ def prepare_upload():
             },
             f,
         )
-    return {"success": True, "filesystem": get_filesystem("files"), "filename": filename}
+    return {"success": True, "filesystem": get_filesystem(session), "filename": filename}
 
 def join_chunks(path, filename, total_count, complete_filename):
     # Save the file
@@ -298,6 +311,8 @@ def perform_ocr():
     config = data["config"]
     multiple = data["multiple"]
 
+    session = path.split("/")[0]
+
     ocr_algorithm = tesseract
 
     if multiple:
@@ -332,7 +347,7 @@ def perform_ocr():
     return {
         "success": True,
         "message": "O OCR começou, por favor aguarde",
-        "files": get_filesystem("files"),
+        "files": get_filesystem(session),
     }
 
 
@@ -346,6 +361,8 @@ def index_doc():
     data = request.json
     path = data["path"]
     multiple = data["multiple"]
+
+    session = path.split("/")[0]
 
     if multiple:
         pass
@@ -388,7 +405,7 @@ def index_doc():
         return {
             "success": True,
             "message": "Documento indexado",
-            "files": get_filesystem("files"),
+            "files": get_filesystem(session),
         }
 
 
@@ -402,6 +419,8 @@ def remove_index_doc():
     data = request.json
     path = data["path"]
     multiple = data["multiple"]
+
+    session = path.split("/")[0]
 
     if multiple:
         pass
@@ -422,7 +441,7 @@ def remove_index_doc():
         return {
             "success": True,
             "message": "Documento removido",
-            "files": get_filesystem("files"),
+            "files": get_filesystem(session),
         }
 
 
@@ -434,6 +453,8 @@ def submit_text():
 
     data_folder = "/".join(texts[0]["original_file"].split("/")[:-2])
     data = get_data(data_folder + "/_data.json")
+
+    session = data_folder.split("/")[0]
 
     for t in texts:
         text = t["content"]
@@ -469,7 +490,7 @@ def submit_text():
 
     changes_pool.add_to_queue(data_folder, data)
 
-    return {"success": True, "files": get_filesystem("files")}
+    return {"success": True, "files": get_filesystem(session)}
 
 
 #####################################
@@ -486,6 +507,8 @@ def get_elasticsearch():
 def create_private_session():
     session_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     private_sessions[session_id] = {}
+
+    os.mkdir(session_id)
 
     return {"success": True, "sessionId": session_id}
 

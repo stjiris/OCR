@@ -114,6 +114,11 @@ def get_filesystem(path):
     files = get_structure(path)
     info = get_structure_info(path)
 
+    print(files, info)
+    if files is None:
+        files = {path: []}
+
+
     return {**files, "info": info}
 
 
@@ -250,7 +255,7 @@ def get_structure(path):
     filesystem = {}
     name = path.split("/")[-1]
 
-    if path != "files":
+    if path != name:
         data = get_data(f"{path}/_data.json")
         if "type" not in data:
             return None

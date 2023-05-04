@@ -37,11 +37,11 @@ class PrivateFileExplorer extends React.Component {
             app: props.app,
             files: props.files,
 
-            sessionID: props.sessionID,
-
             info: {},
             current_folder: props.current_folder.split('/'),
-            buttonsDisabled: true,
+            addDisabled: true,
+            ocrDisabled: true,
+
             components: [],
 
             updatingRows: [],
@@ -72,8 +72,17 @@ class PrivateFileExplorer extends React.Component {
         .then(response => {return response.json()})
         .then(data => {
             var info = data["info"];
-            var files = {"files": data["files"]};
-            this.setState({files: files, info: info, loading: false}, this.displayFileSystem);
+
+            var keys = Object.keys(data);
+            keys.splice(keys.indexOf("info"), 1);
+            var session = keys[0];
+            var files = {};
+
+            files[session] = data[session];
+
+            var disabled = data[session].length !== 0;
+
+            this.setState({files: files, info: info, loading: false, addDisabled: disabled}, this.displayFileSystem);
         });
 
         // Update the info every UPDATE_TIME seconds
@@ -111,7 +120,7 @@ class PrivateFileExplorer extends React.Component {
          * Update the files and info
          */
 
-        var files = {'files': data['files']}
+        var files = {'files': data[this.state.current_folder.join("/")]}
         var info = data['info'];
 
         this.setState({ files: files, info: info }, this.displayFileSystem);
@@ -221,8 +230,10 @@ class PrivateFileExplorer extends React.Component {
                     if (data['success']) {
                         var filesystem = data["filesystem"];
                         var info = filesystem["info"];
-                        var files = {'files': filesystem["files"]};
-                        this.setState({files: files, info: info}, this.displayFileSystem);
+                        var files = {}
+                        files[this.state.current_folder.join("/")] = filesystem[this.state.current_folder.join("/")];
+
+                        this.setState({files: files, info: info, addDisabled: true, ocrDisabled: false}, this.displayFileSystem);
                         fileName = data["filename"];
 
                         // Send chunks
@@ -253,22 +264,6 @@ class PrivateFileExplorer extends React.Component {
             var sessionId = data["sessionId"];
             window.location.href = `/private/${sessionId}`;
         });
-    }
-
-    goBack() {
-        /**
-         * Go back to the previous folder
-         */
-        var current_folder = this.state.current_folder;
-        current_folder.pop();
-        var buttonsDisabled = current_folder.length === 1;
-        var createFileButtonDisabled = current_folder.length === 1;
-        this.state.app.setState({path: current_folder.join('/')});
-        this.setState({
-            current_folder: current_folder,
-            buttonsDisabled: buttonsDisabled,
-            createFileButtonDisabled: createFileButtonDisabled},
-        this.displayFileSystem);
     }
 
     getDocument(type, file) {
@@ -345,20 +340,6 @@ class PrivateFileExplorer extends React.Component {
          */
         this.deleteMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
         this.deleteMenu.current.toggleOpen();
-    }
-
-    enterFolder(folder) {
-        /**
-         * Enter the folder and update the path
-         */
-        var current_folder = this.state.current_folder;
-        current_folder.push(folder);
-        this.state.app.setState({path: current_folder.join('/')});
-        this.setState({
-            current_folder: current_folder,
-            buttonsDisabled: false,
-            createFileButtonDisabled: false},
-        this.displayFileSystem);
     }
 
     findFolder(files, folder) {
@@ -587,24 +568,6 @@ class PrivateFileExplorer extends React.Component {
         return true;
     }
 
-    changeFolderFromPath(folder_name) {
-        var current_folder = this.state.current_folder;
-
-        // Remove the last element of the path until we find folder_name
-        while (current_folder[current_folder.length - 1] !== folder_name) {
-            current_folder.pop();
-        }
-
-        var buttonsDisabled = current_folder.length === 1;
-        var createFileButtonDisabled = current_folder.length === 1;
-
-        this.setState({
-            current_folder: current_folder,
-            buttonsDisabled: buttonsDisabled,
-            createFileButtonDisabled: createFileButtonDisabled,
-        }, this.displayFileSystem);
-    }
-
     render() {
         return (
             <Box sx={{
@@ -625,7 +588,7 @@ class PrivateFileExplorer extends React.Component {
                     flexWrap: 'wrap'
                 }}>
                     <Button
-                        disabled={this.state.buttonsDisabled}
+                        disabled={this.state.addDisabled}
                         variant="contained"
                         startIcon={<NoteAddIcon />}
                         onClick={() => this.createFile()}
@@ -635,7 +598,7 @@ class PrivateFileExplorer extends React.Component {
                     </Button>
 
                     <Button
-                        disabled={this.state.buttonsDisabled || !this.checkOCRComplete()}
+                        disabled={this.state.ocrDisabled || !this.checkOCRComplete()}
                         variant="contained"
                         startIcon={<SearchIcon />}
                         onClick={() => this.performOCR(true)}
