@@ -9,6 +9,8 @@ import ESPage from './Components/ElasticSearchPage/ESPage';
 import EditPage from './Components/EditPage/EditPage';
 import { PrivateFileExplorer } from './Components/PrivateSession/PrivateFileSystem';
 
+import logoSTJ from './static/logoSTJ.png';
+
 import InfoIcon from '@mui/icons-material/Info';
 
 /**
@@ -182,6 +184,12 @@ function App() {
                             <Notification message={""} severity={"success"} ref={this.successNot}/>
                             <Notification message={""} severity={"error"} ref={this.errorNot}/>
                         </Box>
+
+                        {
+                            this.getPrivateSession() == null
+                            ? null
+                            : <img src={logoSTJ} alt="logoSTJ" style={{height: '4rem', width: 'auto'}}/>
+                        }
 
                         <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
                             <p>{`Versão: ${VERSION}`}</p>

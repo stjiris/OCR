@@ -14,6 +14,8 @@ import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutl
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
 
+import calculateEstimatedTime from '../../utils/waitingTime';
+
 export default class FileRow extends React.Component {
     constructor(props) {
         super(props);
@@ -165,7 +167,7 @@ export default class FileRow extends React.Component {
                             :
                             <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
                                 <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
-                                    <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}</span>
+                                    <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
                                     <CircularProgress size='1rem' />
                                 </Box>                             
                             </TableCell>

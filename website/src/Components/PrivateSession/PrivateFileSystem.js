@@ -263,7 +263,7 @@ class PrivateFileExplorer extends React.Component {
         .then(response => {return response.json()})
         .then(data => {
             var sessionId = data["sessionId"];
-            window.location.href = `/private/${sessionId}`;
+            window.location.href = window.location.href + `/${sessionId}`;
         });
     }
 
