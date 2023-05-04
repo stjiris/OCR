@@ -120,7 +120,8 @@ class PrivateFileExplorer extends React.Component {
          * Update the files and info
          */
 
-        var files = {'files': data[this.state.current_folder.join("/")]}
+        var files = {}
+        files[this.state.current_folder.join("/")] = data[this.state.current_folder.join("/")]
         var info = data['info'];
 
         this.setState({ files: files, info: info }, this.displayFileSystem);
