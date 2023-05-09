@@ -21,7 +21,7 @@ import InfoIcon from '@mui/icons-material/Info';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.11.2";
+const VERSION = "0.11.3";
 
 function App() {
     class Form extends React.Component {
@@ -148,49 +148,70 @@ function App() {
                         ml: '1.5rem',
                         mr: '1.5rem',
                         mb: '1.5rem',
+                        mt: '1.5rem',
                         zIndex: '100'
                     }}>
                         <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                            <Link
-                                className="link"
-                                sx={{
-                                    color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
-                                    mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
-                                }}
-                                style={{textDecoration: 'none'}}
-                                onClick={() => {
-                                        this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []});
-                                        window.location.href = '/';
+                            {process.env.REACT_APP_HEADER_STYLE !== 'STJ' &&
+                                <>
+                                    {   
+                                        this.getPrivateSession() == null
+                                        ? <Link
+                                            className="link"
+                                            sx={{
+                                                color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
+                                                mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
+                                            }}
+                                            style={{textDecoration: 'none'}}
+                                            onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
+                                            underline="hover"
+                                        >
+                                            <h1>Início</h1>
+                                        </Link>
+                                        : null
                                     }
-                                }
-                                underline="hover"
-                            >
-                                <h1>Início</h1>
-                            </Link>
-
-                            {
-                                this.getPrivateSession() == null
-                                ? <Link
-                                    className="link"
-                                    sx={{
-                                        color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
-                                        mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
-                                    }}
-                                    style={{textDecoration: 'none'}}
-                                    onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
-                                    underline="hover"
-                                >
-                                    <h1>Pesquisar</h1>
-                                </Link>
-                                : null
+                                    {
+                                        this.getPrivateSession() == null
+                                        ? <Link
+                                            className="link"
+                                            sx={{
+                                                color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
+                                                mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
+                                            }}
+                                            style={{textDecoration: 'none'}}
+                                            onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
+                                            underline="hover"
+                                        >
+                                            <h1>Pesquisar</h1>
+                                        </Link>
+                                        : null
+                                    }
+                                </>
                             }
-                            
-
+                            {process.env.REACT_APP_HEADER_STYLE === 'STJ' && 
+                                <>
+                                    <img src={logoSTJ} alt="logoSTJ" style={{height: '4.5rem', width: 'auto'}}/>
+                                    <Link
+                                        className="link"
+                                        sx={{
+                                            color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
+                                            ml: '2rem', mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
+                                        }}
+                                        style={{textDecoration: 'none'}}
+                                        onClick={() => {
+                                                this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []});
+                                                window.location.href = '/';
+                                            }
+                                        }
+                                        underline="hover"
+                                    >
+                                        <h1 className='fancy-font'>OCR</h1>
+                                    </Link>                                
+                                </>
+                            }
                             <Notification message={""} severity={"success"} ref={this.successNot}/>
                             <Notification message={""} severity={"error"} ref={this.errorNot}/>
                         </Box>
-
-                        {process.env.REACT_APP_HEADER_STYLE === 'STJ' && <img src={logoSTJ} alt="logoSTJ" style={{height: '4.5rem', width: 'auto'}}/>}
 
                         <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
                             <p>{`Versão: ${VERSION}`}</p>

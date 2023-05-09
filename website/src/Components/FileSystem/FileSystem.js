@@ -21,9 +21,8 @@ import Notification from '../Notification/Notifications';
 
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import LockIcon from '@mui/icons-material/Lock';
-import UndoIcon from '@mui/icons-material/Undo';
+// import UndoIcon from '@mui/icons-material/Undo';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-import SearchIcon from '@mui/icons-material/Search';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -618,6 +617,13 @@ class FileExplorer extends React.Component {
             }}>
                 {
                     this.state.current_folder.map((folder, index) => {
+                        var name;
+                        if (folder !== 'files') {
+                            name = folder;
+                        }
+                        else {
+                            name = 'Início';
+                        }
                         return (
                             <Box sx={{display: "flex", flexDirection: "row"}} key={"Box" + folder}>
                                 <Button 
@@ -629,10 +635,11 @@ class FileExplorer extends React.Component {
                                         textTransform: 'none',
                                         display: "flex",
                                         textAlign: "left",
+                                        textDecoration: "underline",
                                     }}
                                     variant="text"
                                 >
-                                    {folder}
+                                    {name}
                                 </Button>
                                 <p key={index}>/</p>
                             </Box>
@@ -662,7 +669,7 @@ class FileExplorer extends React.Component {
                     flexDirection: 'row',
                     flexWrap: 'wrap'
                 }}>
-                    <Button
+                    {/* <Button
                         disabled={this.state.buttonsDisabled}
                         variant="contained"
                         startIcon={<UndoIcon />}
@@ -670,7 +677,7 @@ class FileExplorer extends React.Component {
                         onClick={() => this.goBack()}
                     >
                         Voltar atrás
-                    </Button>
+                    </Button> */}
 
                     <Button
                         variant="contained"
@@ -695,12 +702,12 @@ class FileExplorer extends React.Component {
                         variant="contained"
                         startIcon={<LockIcon />}
                         onClick={() => this.createPrivateSession()}
-                        sx={{border: '1px solid black', mb: '0.5rem'}}
+                        sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
                     >
                         Sessão privada
                     </Button>
 
-                    <Button
+                    {/* <Button
                         disabled={this.state.buttonsDisabled || this.state.components.length === 0 || !this.checkOCRComplete()}
                         variant="contained"
                         startIcon={<SearchIcon />}
@@ -708,7 +715,7 @@ class FileExplorer extends React.Component {
                         sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
                     >
                         Realizar o OCR
-                    </Button>
+                    </Button> */}
                 </Box>
 
                 {

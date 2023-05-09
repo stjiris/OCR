@@ -19,9 +19,6 @@ import FolderRow from '../FileSystem/FolderRow';
 import PrivateFileRow from './PrivateFileRow';
 
 import Notification from '../Notification/Notifications';
-
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import SearchIcon from '@mui/icons-material/Search';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -585,32 +582,6 @@ class PrivateFileExplorer extends React.Component {
                 <OcrMenu filesystem={this} ref={this.ocrMenu}/>
                 <DeleteMenu filesystem={this} ref={this.deleteMenu} />
                 <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
-
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    flexWrap: 'wrap'
-                }}>
-                    <Button
-                        disabled={this.state.addDisabled}
-                        variant="contained"
-                        startIcon={<NoteAddIcon />}
-                        onClick={() => this.createFile()}
-                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
-                    >
-                        Adicionar documento
-                    </Button>
-
-                    <Button
-                        disabled={this.state.ocrDisabled || !this.checkOCRComplete()}
-                        variant="contained"
-                        startIcon={<SearchIcon />}
-                        onClick={() => this.performOCR(true)}
-                        sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
-                    >
-                        Realizar o OCR
-                    </Button>
-                </Box>
 
                 {
                     this.generateTable()
