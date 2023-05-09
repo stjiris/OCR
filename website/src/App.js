@@ -147,17 +147,22 @@ function App() {
                         justifyContent: 'space-between',
                         ml: '1.5rem',
                         mr: '1.5rem',
-                        zIndex: '100',
+                        mb: '1.5rem',
+                        zIndex: '100'
                     }}>
                         <Box sx={{display: 'flex', flexDirection: 'row'}}>
                             <Link
                                 className="link"
                                 sx={{
-                                    color: '#1976d2',
+                                    color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
                                     mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
                                 }}
                                 style={{textDecoration: 'none'}}
-                                onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
+                                onClick={() => {
+                                        this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []});
+                                        window.location.href = '/';
+                                    }
+                                }
                                 underline="hover"
                             >
                                 <h1>Início</h1>
@@ -168,7 +173,7 @@ function App() {
                                 ? <Link
                                     className="link"
                                     sx={{
-                                        color: '#1976d2',
+                                        color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
                                         mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
                                     }}
                                     style={{textDecoration: 'none'}}
@@ -185,11 +190,7 @@ function App() {
                             <Notification message={""} severity={"error"} ref={this.errorNot}/>
                         </Box>
 
-                        {
-                            this.getPrivateSession() == null
-                            ? null
-                            : <img src={logoSTJ} alt="logoSTJ" style={{height: '4rem', width: 'auto'}}/>
-                        }
+                        {process.env.REACT_APP_HEADER_STYLE === 'STJ' && <img src={logoSTJ} alt="logoSTJ" style={{height: '4.5rem', width: 'auto'}}/>}
 
                         <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
                             <p>{`Versão: ${VERSION}`}</p>
@@ -218,16 +219,6 @@ function App() {
             )
         }
     }
-
-// return (
-//     <Router>
-//       <Routes>
-//         <Route exact path="/" element={<Form/>}/>
-//         <Route path="/private/:sessionId" element={<PrivateSession/>}/>
-//       </Routes>
-//     </Router>
-// );
-// }
 
     return (
         <Form />
