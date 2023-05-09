@@ -21,7 +21,7 @@ import InfoIcon from '@mui/icons-material/Info';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.11.2";
+const VERSION = "0.11.3";
 
 function App() {
     class Form extends React.Component {
@@ -154,23 +154,22 @@ function App() {
                         <Box sx={{display: 'flex', flexDirection: 'row'}}>
                             {process.env.REACT_APP_HEADER_STYLE !== 'STJ' &&
                                 <>
-                                    <Link
-                                        className="link"
-                                        sx={{
-                                            color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
-                                            mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
-                                        }}
-                                        style={{textDecoration: 'none'}}
-                                        onClick={() => {
-                                                this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []});
-                                                window.location.href = '/';
-                                            }
-                                        }
-                                        underline="hover"
-                                    >
-                                        <h1>Início</h1>
-                                    </Link>
-
+                                    {   
+                                        this.getPrivateSession() == null
+                                        ? <Link
+                                            className="link"
+                                            sx={{
+                                                color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
+                                                mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
+                                            }}
+                                            style={{textDecoration: 'none'}}
+                                            onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
+                                            underline="hover"
+                                        >
+                                            <h1>Início</h1>
+                                        </Link>
+                                        : null
+                                    }
                                     {
                                         this.getPrivateSession() == null
                                         ? <Link
