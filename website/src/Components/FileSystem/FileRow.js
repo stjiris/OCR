@@ -12,7 +12,9 @@ import IconDatabaseImport from '../Icons/DatabaseInIcon';
 
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import EditIcon from '@mui/icons-material/Edit';
+// import EditIcon from '@mui/icons-material/Edit';
+
+import calculateEstimatedTime from '../../utils/waitingTime';
 
 export default class FileRow extends React.Component {
     constructor(props) {
@@ -165,7 +167,7 @@ export default class FileRow extends React.Component {
                             :
                             <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
                                 <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
-                                    <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}</span>
+                                    <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
                                     <CircularProgress size='1rem' />
                                 </Box>                             
                             </TableCell>
@@ -219,14 +221,14 @@ export default class FileRow extends React.Component {
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             <Box>
 
-                                <IconButton
+                                {/* <IconButton
                                     disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
                                     color="primary"
                                     aria-label="edit"
                                     onClick={(e) => this.editFile(e)}
                                 >
                                     <EditIcon />
-                                </IconButton>
+                                </IconButton> */}
 
                                 {
                                     this.state.info["indexed"]

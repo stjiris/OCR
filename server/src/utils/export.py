@@ -113,10 +113,10 @@ def export_pdf(path):
         )
 
     for i, page in enumerate(pages):
-        if os.path.exists(f"{path}/{pdf_basename}_{i}*.jpg"):
+        if os.path.exists(f"{path}/{pdf_basename}_{i}$.jpg"):
             os.remove(page)
         else:
-            Path(page).rename(f"{path}/{pdf_basename}_{i}*.jpg")
+            Path(page).rename(f"{path}/{pdf_basename}_{i}$.jpg")
 
     words = {}
 
@@ -131,8 +131,8 @@ def export_pdf(path):
     dpi_original = 200
     dpi_compressed = 72
 
-    filenames_asterisk = [x for x in os.listdir(path) if x.endswith("*.jpg")]
-    images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\*', x).group(1)))
+    filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
+    images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
     for image in images:
         image_basename = get_file_basename(image)
         image_basename = image_basename[:-1]
@@ -190,7 +190,7 @@ def export_pdf(path):
 
     # Delete compressed images
     for compressed_image in os.listdir(path):
-        if compressed_image.endswith("*.jpg"):
+        if compressed_image.endswith("$.jpg"):
             os.remove(os.path.join(path, compressed_image))
 
     return filename
