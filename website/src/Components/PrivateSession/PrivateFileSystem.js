@@ -13,6 +13,7 @@ import Paper from '@mui/material/Paper';
 import FolderMenu from '../Form/FolderMenu';
 import OcrMenu from '../Form/OcrMenu';
 import DeleteMenu from '../Form/DeleteMenu';
+import PrivateSessionMenu from '../Form/PrivateSessionMenu';
 
 import FolderRow from '../FileSystem/FolderRow';
 import PrivateFileRow from './PrivateFileRow';
@@ -54,6 +55,7 @@ class PrivateFileExplorer extends React.Component {
         this.folderMenu = React.createRef();
         this.ocrMenu = React.createRef();
         this.deleteMenu = React.createRef();
+        this.privateSessionMenu = React.createRef();
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
@@ -263,7 +265,7 @@ class PrivateFileExplorer extends React.Component {
         .then(response => {return response.json()})
         .then(data => {
             var sessionId = data["sessionId"];
-            window.location.href = window.location.href + `/${sessionId}`;
+            window.location.href = window.location.href + `${sessionId}`;
         });
     }
 
@@ -491,7 +493,7 @@ class PrivateFileExplorer extends React.Component {
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Páginas/Bytes</b></TableCell>
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Data de Criação</b></TableCell>
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Progresso</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell>
+                            {/* <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell> */}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -582,6 +584,7 @@ class PrivateFileExplorer extends React.Component {
                 <FolderMenu filesystem={this} ref={this.folderMenu}/>
                 <OcrMenu filesystem={this} ref={this.ocrMenu}/>
                 <DeleteMenu filesystem={this} ref={this.deleteMenu} />
+                <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
 
                 <Box sx={{
                     display: 'flex',
