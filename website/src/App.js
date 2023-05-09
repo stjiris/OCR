@@ -168,7 +168,7 @@ function App() {
                                         >
                                             <h1>Início</h1>
                                         </Link>
-                                        : <h1 sx={{color: '#1976d2', mr: '2rem', mt: '0.25rem'}}>Sessão Privada</h1>
+                                        : <h1>Sessão Privada</h1>
                                     }
                                     {
                                         this.getPrivateSession() == null
