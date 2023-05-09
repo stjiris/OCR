@@ -168,7 +168,7 @@ function App() {
                                         >
                                             <h1>Início</h1>
                                         </Link>
-                                        : null
+                                        : <h1>Sessão Privada</h1>
                                     }
                                     {
                                         this.getPrivateSession() == null
@@ -200,7 +200,6 @@ function App() {
                                         style={{textDecoration: 'none'}}
                                         onClick={() => {
                                                 this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []});
-                                                window.location.href = '/';
                                             }
                                         }
                                         underline="hover"
