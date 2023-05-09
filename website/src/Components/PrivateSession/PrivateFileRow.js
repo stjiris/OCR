@@ -1,12 +1,12 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
+// import IconButton from '@mui/material/IconButton';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
-import EditIcon from '@mui/icons-material/Edit';
+// import EditIcon from '@mui/icons-material/Edit';
 
 import calculateEstimatedTime from '../../utils/waitingTime';
 
@@ -150,7 +150,7 @@ export default class PrivateFileRow extends React.Component {
                                 </TableCell>
                             }
 
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
 
                                     <IconButton
@@ -163,7 +163,7 @@ export default class PrivateFileRow extends React.Component {
                                     </IconButton>
 
                                 </Box>
-                            </TableCell>
+                            </TableCell> */}
                         </>
                     }
                 </TableRow>
@@ -191,7 +191,7 @@ export default class PrivateFileRow extends React.Component {
                             <span>{this.state.info["txt"]["creation"]}</span>
                         </TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
                     </TableRow>
                     : null
                 }
@@ -219,7 +219,7 @@ export default class PrivateFileRow extends React.Component {
                             <span>{this.state.info["pdf"]["creation"]}</span>
                         </TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
                     </TableRow>
                     : null
                 }
