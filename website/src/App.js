@@ -21,7 +21,7 @@ import InfoIcon from '@mui/icons-material/Info';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.11.3";
+const VERSION = "0.12.0";
 
 function App() {
     class Form extends React.Component {
