@@ -150,6 +150,22 @@ def delete_path():
         "files": get_filesystem(session),
     }
 
+@app.route("/set-upload-stuck", methods=["POST"])
+def set_upload_stuck():
+    data = request.json
+    path = data["path"]
+
+    session = path.split("/")[0]
+
+    data = get_data(f"{path}/_data.json")
+    data["upload_stuck"] = True
+    update_data(f"{path}/_data.json", data)
+
+    return {
+        "success": True,
+        "message": "O upload do ficheiro falhou",
+        "files": get_filesystem(session),
+    }
 
 #####################################
 # FILES ROUTES

@@ -114,7 +114,6 @@ def get_filesystem(path):
     files = get_structure(path)
     info = get_structure_info(path)
 
-    print(files, info)
     if files is None:
         files = {path: []}
 
@@ -371,30 +370,36 @@ def prepare_file_ocr(path):
     @param path: path to the file
     @param ocr_folder: folder to save the results
     """
+    try:
+        extension = path.split(".")[-1]
+        basename = get_file_basename(path)
 
-    extension = path.split(".")[-1]
-    basename = get_file_basename(path)
+        log.info("{path}: A preparar páginas")
 
-    log.info("{path}: A preparar páginas")
+        if extension == "pdf":
+            pages = convert_from_path(
+                f"{path}/{basename}.pdf",
+                paths_only=True,
+                output_folder=path,
+                fmt="jpg",
+                thread_count=2,
+            )
+            log.info("{path}: A trocar os nomes das páginas")
+            for i, page in enumerate(pages):
+                if os.path.exists(f"{path}/{basename}_{i}.jpg"):
+                    os.remove(page)
+                else:
+                    Path(page).rename(f"{path}/{basename}_{i}.jpg")
 
-    if extension == "pdf":
-        pages = convert_from_path(
-            f"{path}/{basename}.pdf",
-            paths_only=True,
-            output_folder=path,
-            fmt="jpg",
-            thread_count=2,
-        )
-        log.info("{path}: A trocar os nomes das páginas")
-        for i, page in enumerate(pages):
-            if os.path.exists(f"{path}/{basename}_{i}.jpg"):
-                os.remove(page)
-            else:
-                Path(page).rename(f"{path}/{basename}_{i}.jpg")
-
-    elif extension in ["jpeg", "jpg"]:
-        img = Image.open(f"{path}/{basename}.{extension}")
-        img.save(f"{path}/{basename}.jpg", "JPEG")
+        elif extension in ["jpeg", "jpg"]:
+            img = Image.open(f"{path}/{basename}.{extension}")
+            img.save(f"{path}/{basename}.jpg", "JPEG")
+    except Exception as e:
+        data_folder = f"{path}/_data.json"
+        data = get_data(data_folder)
+        data["ocr"]["exceptions"] = str(e)
+        update_data(data_folder, data)
+        log.error(f"Error in preparing OCR for file at {path}: {e}")
 
 
 def perform_page_ocr(path, filename, config, ocr_algorithm, pool: ThreadPool):
@@ -407,48 +412,55 @@ def perform_page_ocr(path, filename, config, ocr_algorithm, pool: ThreadPool):
     :param ocr_algorithm: algorithm to use
     """
 
-    data_folder = f"{path}/_data.json"
-    data = get_data(data_folder)
+    try:
+        data_folder = f"{path}/_data.json"
+        data = get_data(data_folder)
 
-    json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
-    save_json_structure(
-        json_d, f"{path}/ocr_results/{get_file_basename(filename)}.json"
-    )
+        json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
+        save_json_structure(
+            json_d, f"{path}/ocr_results/{get_file_basename(filename)}.json"
+        )
 
-    files = os.listdir(f"{path}/ocr_results")
+        files = os.listdir(f"{path}/ocr_results")
 
-    data = get_data(data_folder)
-    data["ocr"]["progress"] = len(files)
-    update_data(data_folder, data)
-
-    if data["pages"] == len(files):
-        log.info("{path}: Acabei OCR")
-
-        creation_date = get_current_time()
-
+        data = get_data(data_folder)
         data["ocr"]["progress"] = len(files)
-        data["ocr"]["size"] = get_ocr_size(f"{path}/ocr_results")
-        data["ocr"]["creation"] = creation_date
-
         update_data(data_folder, data)
 
-        export_file(path, "txt")
-        export_file(path, "pdf")
+        if data["pages"] == len(files):
+            log.info("{path}: Acabei OCR")
 
-        creation_date = get_current_time()
+            creation_date = get_current_time()
 
-        data["txt"]["complete"] = True
-        data["txt"]["size"] = get_size(f"{path}/_text.txt", path_complete=True)
-        data["txt"]["creation"] = creation_date
+            data["ocr"]["progress"] = len(files)
+            data["ocr"]["size"] = get_ocr_size(f"{path}/ocr_results")
+            data["ocr"]["creation"] = creation_date
 
-        data["pdf"]["complete"] = True
-        data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
-        data["pdf"]["creation"] = creation_date
+            update_data(data_folder, data)
 
-        data["indexed"] = False
+            export_file(path, "txt")
+            export_file(path, "pdf")
+
+            creation_date = get_current_time()
+
+            data["txt"]["complete"] = True
+            data["txt"]["size"] = get_size(f"{path}/_text.txt", path_complete=True)
+            data["txt"]["creation"] = creation_date
+
+            data["pdf"]["complete"] = True
+            data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
+            data["pdf"]["creation"] = creation_date
+
+            data["indexed"] = False
+            update_data(data_folder, data)
+
+        pool.update(finished=path)
+    except Exception as e:
+        data_folder = f"{path}/_data.json"
+        data = get_data(data_folder)
+        data["ocr"]["exceptions"] = str(e)
         update_data(data_folder, data)
-
-    pool.update(finished=path)
+        log.error(f"Error in performing a page's OCR for file at {path}: {e}")
 
 
 def perform_file_ocr(
@@ -462,15 +474,22 @@ def perform_file_ocr(
     """
 
     # Generate the images
-    prepare_file_ocr(path)
-    images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
+    try:
+        prepare_file_ocr(path)
+        images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
 
-    log.info("{path}: A começar OCR")
+        log.info("{path}: A começar OCR")
 
-    for image in images:
-        pages_pool.add_to_queue((path, image, config, ocr_algorithm))
+        for image in images:
+            pages_pool.add_to_queue((path, image, config, ocr_algorithm))
 
-    pool.update(finished=path)
+        pool.update(finished=path)
+    except Exception as e:
+        data_folder = f"{path}/_data.json"
+        data = get_data(data_folder)
+        data["ocr"]["exceptions"] = str(e)
+        update_data(data_folder, data)
+        log.error(f"Error in performing OCR for file at {path}: {e}")
 
 
 def similarity_score(text1, text2):
