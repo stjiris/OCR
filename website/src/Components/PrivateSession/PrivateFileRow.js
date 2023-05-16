@@ -93,23 +93,32 @@ export default class PrivateFileRow extends React.Component {
                     {
                         this.state.info["progress"] !== undefined && this.state.info["progress"] !== true
                         ? <>
-                            <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
-                                {
-                                    this.state.info["progress"] !== 100.00
-                                    ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                            {
+                                this.state.info["upload_stuck"] === true
+                                ? <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                    <Box>
+                                        <span>Erro ao carregar ficheiro</span>
+                                    </Box>
+                                </TableCell>
+                                : this.state.info["progress"] !== 100.00
+                                ? <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                    <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>Carregamento</span>
                                         <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
                                             <span>{this.state.info["progress"]}%</span>
                                             <CircularProgress size='0.8rem' />
                                         </Box>
                                     </Box>
-                                    : <Box>
+                                </TableCell>
+                                :
+                                <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                    <Box>
                                         <span>A juntar páginas</span>
                                         <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
                                     </Box>
-
-                                }
-                            </TableCell>
+                                </TableCell>
+                            }
+                            
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                         </>
