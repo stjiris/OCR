@@ -12,7 +12,7 @@ import IconDatabaseImport from '../Icons/DatabaseInIcon';
 
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-// import EditIcon from '@mui/icons-material/Edit';
+import EditIcon from '@mui/icons-material/Edit';
 
 import calculateEstimatedTime from '../../utils/waitingTime';
 
