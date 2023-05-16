@@ -111,30 +111,49 @@ export default class FileRow extends React.Component {
                 {
                     this.state.info["progress"] !== undefined && this.state.info["progress"] !== true
                     ? <>
-                        <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
-                            {
-                                this.state.info["progress"] !== 100.00
-                                ? <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                        {
+                            this.state.info["upload_stuck"] === true
+                            ? <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                <Box>
+                                    <span>Erro ao carregar ficheiro</span>
+                                </Box>
+                            </TableCell>
+                            : this.state.info["progress"] !== 100.00
+                            ? <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                     <span>Carregamento</span>
                                     <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
                                         <span>{this.state.info["progress"]}%</span>
                                         <CircularProgress size='0.8rem' />
                                     </Box>
                                 </Box>
-                                : <Box>
+                            </TableCell>
+                            :
+                            <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                <Box>
                                     <span>A juntar páginas</span>
                                     <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
-                                  </Box>
-
-                            }
+                                </Box>
+                            </TableCell>
+                        }
+                        
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <Box>
+                                <IconButton
+                                    color="error"
+                                    aria-label="delete"
+                                    onClick={(e) => this.delete(e)}
+                                >
+                                    <DeleteForeverIcon />
+                                </IconButton>
+                            </Box>
                         </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                     </>
                     : <>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
@@ -164,13 +183,24 @@ export default class FileRow extends React.Component {
                                   </Box>
                             } 
                             </TableCell>
-                            :
-                            <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
-                                <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
-                                    <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
-                                    <CircularProgress size='1rem' />
-                                </Box>                             
-                            </TableCell>
+                            : 
+                            (
+                                this.state.info["ocr"]["exceptions"] ? (
+                                    <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
+                                        <Box sx={{overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent:'space-evenly' }}>
+                                            <span>Erro ao fazer OCR</span>
+                                            <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
+                                        </Box>                             
+                                    </TableCell>
+                                ) : (
+                                <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
+                                    <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
+                                        <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
+                                        <CircularProgress size='1rem' />
+                                    </Box>                             
+                                </TableCell>
+                                )
+                            )
                         }
 
                         {   
@@ -221,33 +251,37 @@ export default class FileRow extends React.Component {
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             <Box>
 
-                                {/* <IconButton
-                                    disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                    color="primary"
-                                    aria-label="edit"
-                                    onClick={(e) => this.editFile(e)}
-                                >
-                                    <EditIcon />
-                                </IconButton> */}
-
-                                {
-                                    this.state.info["indexed"]
-                                    ? <IconButton
-                                        disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                        color="error"
-                                        aria-label="remove-database"
-                                        onClick={(e) => this.removeIndex(e)}
-                                    >
-                                        <IconDatabaseOff />
-                                    </IconButton>
-                                    : <IconButton
+                                {process.env.REACT_APP_HEADER_STYLE !== 'STJ' &&
+                                    <IconButton
                                         disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
                                         color="primary"
-                                        aria-label="add-database"
-                                        onClick={(e) => this.indexFile(e)}
+                                        aria-label="edit"
+                                        onClick={(e) => this.editFile(e)}
                                     >
-                                        <IconDatabaseImport />
+                                        <EditIcon />
                                     </IconButton>
+                                }
+                                
+                                {process.env.REACT_APP_HEADER_STYLE !== 'STJ' &&
+                                    (
+                                        this.state.info["indexed"]
+                                        ? <IconButton
+                                            disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
+                                            color="error"
+                                            aria-label="remove-database"
+                                            onClick={(e) => this.removeIndex(e)}
+                                        >
+                                            <IconDatabaseOff />
+                                        </IconButton>
+                                        : <IconButton
+                                            disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
+                                            color="primary"
+                                            aria-label="add-database"
+                                            onClick={(e) => this.indexFile(e)}
+                                        >
+                                            <IconDatabaseImport />
+                                        </IconButton>
+                                    )
                                 }
 
                                 <IconButton

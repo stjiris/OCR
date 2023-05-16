@@ -28,6 +28,7 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { v4 as uuidv4 } from 'uuid';
 
 const UPDATE_TIME = 15;
+const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
 const validExtensions = [".pdf", ".jpg", ".jpeg"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
@@ -87,6 +88,42 @@ class FileExplorer extends React.Component {
                 this.setState({info: info, updateCount: 0}, this.updateInfo);
             });
         }, 1000 * UPDATE_TIME);
+
+        // Check for stuck uploads every STUCK_UPDATE_TIME seconds
+        this.interval = setInterval(() => {
+            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.join("/"), {
+                method: 'GET'
+            })
+            .then(response => {return response.json()})
+            .then(data => {
+                var info = data["info"];
+                // Find if a upload is stuck
+                for (const [path, value] of Object.entries(info)) {
+                    if (value.type === "file") {
+                        if ("progress" in value && value["progress"] !== true) {
+                            const creationTime = new Date(value.creation.replace(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
+                            const currentTime = new Date();
+                            const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
+                        
+                            if (timeDiffMinutes >= 10) {
+                                fetch(process.env.REACT_APP_API_URL + 'set-upload-stuck', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        "path": path,
+                                    }),
+                                })
+                                .then(response => response.json());                                
+                            }
+                        }
+                    }
+                }
+
+                this.setState({info: info, updateCount: 0}, this.updateInfo);
+            });
+        }, 1000 * STUCK_UPDATE_TIME);
     }
 
     updateInfo() {
