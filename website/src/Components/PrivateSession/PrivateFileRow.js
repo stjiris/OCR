@@ -141,13 +141,24 @@ export default class PrivateFileRow extends React.Component {
                                     </Box>
                                 } 
                                 </TableCell>
-                                :
-                                <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
-                                    <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
-                                        <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
-                                        <CircularProgress size='1rem' />
-                                    </Box>                             
-                                </TableCell>
+                                : 
+                                (
+                                    this.state.info["ocr"]["exceptions"] ? (
+                                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
+                                            <Box sx={{overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent:'space-evenly' }}>
+                                                <span>Erro ao fazer OCR</span>
+                                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
+                                            </Box>                             
+                                        </TableCell>
+                                    ) : (
+                                    <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
+                                        <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
+                                            <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
+                                            <CircularProgress size='1rem' />
+                                        </Box>                             
+                                    </TableCell>
+                                    )
+                                )
                             }
 
                             {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
