@@ -251,33 +251,37 @@ export default class FileRow extends React.Component {
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             <Box>
 
-                                {/* <IconButton
-                                    disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                    color="primary"
-                                    aria-label="edit"
-                                    onClick={(e) => this.editFile(e)}
-                                >
-                                    <EditIcon />
-                                </IconButton> */}
-
-                                {
-                                    this.state.info["indexed"]
-                                    ? <IconButton
-                                        disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                        color="error"
-                                        aria-label="remove-database"
-                                        onClick={(e) => this.removeIndex(e)}
-                                    >
-                                        <IconDatabaseOff />
-                                    </IconButton>
-                                    : <IconButton
+                                {process.env.REACT_APP_HEADER_STYLE !== 'STJ' &&
+                                    <IconButton
                                         disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
                                         color="primary"
-                                        aria-label="add-database"
-                                        onClick={(e) => this.indexFile(e)}
+                                        aria-label="edit"
+                                        onClick={(e) => this.editFile(e)}
                                     >
-                                        <IconDatabaseImport />
+                                        <EditIcon />
                                     </IconButton>
+                                }
+                                
+                                {process.env.REACT_APP_HEADER_STYLE !== 'STJ' &&
+                                    (
+                                        this.state.info["indexed"]
+                                        ? <IconButton
+                                            disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
+                                            color="error"
+                                            aria-label="remove-database"
+                                            onClick={(e) => this.removeIndex(e)}
+                                        >
+                                            <IconDatabaseOff />
+                                        </IconButton>
+                                        : <IconButton
+                                            disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
+                                            color="primary"
+                                            aria-label="add-database"
+                                            onClick={(e) => this.indexFile(e)}
+                                        >
+                                            <IconDatabaseImport />
+                                        </IconButton>
+                                    )
                                 }
 
                                 <IconButton
