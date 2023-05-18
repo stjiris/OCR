@@ -549,9 +549,9 @@ if not os.path.exists("./files/"):
 if not os.path.exists("./pending-files/"):
     os.mkdir("./pending-files/")
 
-docs_pool = ThreadPool(perform_file_ocr, 2)
+docs_pool = ThreadPool(perform_file_ocr, 6)
 changes_pool = ThreadPool(make_changes, 1)
-pages_pool = ThreadPool(perform_page_ocr, 4)
+pages_pool = ThreadPool(perform_page_ocr, 6)
 
 # app.config['DEBUG'] = os.environ.get('DEBUG', False)
 # app.run(port=5001, threaded=True)
