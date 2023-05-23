@@ -521,6 +521,7 @@ class FileExplorer extends React.Component {
                         name={key}
                         info={this.getInfo(this.state.current_folder.join("/") + "/" + key)}
                         filesystem={this}
+                        current_folder={this.state.current_folder}
                     />
                 )
             }
@@ -542,11 +543,11 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Páginas/Bytes</b></TableCell>
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Páginas/Bytes</b></TableCell>}
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Data de Criação</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>OCR</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Texto</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF (com texto)</b></TableCell>
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>OCR</b></TableCell>}
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Texto</b></TableCell>}
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF (com texto)</b></TableCell>}
                             {/* <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF Indexado</b></TableCell>
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Entidades</b></TableCell> */}
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell>
