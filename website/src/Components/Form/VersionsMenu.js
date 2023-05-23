@@ -51,9 +51,14 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
-                            <p><b>Versão 0.12.1 - 23/05/2023</b></p>
+                            <p><b>Versão 0.12.2 - 23/05/2023</b></p>
                             <ul>                            
                                 <li>Remoção de colunas do sistema de ficheiros</li>
+                            </ul>
+                            <p><b>Versão 0.12.1 - 17/05/2023</b></p>
+                            <ul>                            
+                                <li>Mudança visual em alguns botões</li>
+                                <li>Mudança na quantidade de threads que cada pool usa</li>
                             </ul>
                             <p><b>Versão 0.12.0 - 15/05/2023</b></p>
                             <ul>                            
