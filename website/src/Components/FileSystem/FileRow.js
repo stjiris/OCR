@@ -131,7 +131,7 @@ export default class FileRow extends React.Component {
                             :
                             <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
-                                    <span>A juntar páginas</span>
+                                    <span>A preparar o documento</span>
                                     <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
                                 </Box>
                             </TableCell>
