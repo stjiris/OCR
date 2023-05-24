@@ -11,7 +11,8 @@ import { PrivateFileExplorer } from './Components/PrivateSession/PrivateFileSyst
 
 import logoSTJ from './static/logoSTJ.png';
 
-import InfoIcon from '@mui/icons-material/Info';
+// import InfoIcon from '@mui/icons-material/Info';
+import HelpIcon from '@mui/icons-material/Help';
 
 /**
  * About Versioning:
@@ -235,9 +236,16 @@ function App() {
 
                         <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
                             <p>{`Versão: ${VERSION}`}</p>
-                            <IconButton onClick={() => this.openVersionsMenu()}>
+                            {/* <IconButton onClick={() => this.openVersionsMenu()}>
                                 <InfoIcon />
-                            </IconButton>
+                            </IconButton> */}
+                            <Button sx={{ml: '1.5rem', padding: '0rem', color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2'}} 
+                                    onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
+                            >
+                                <HelpIcon sx={{mr: '0.3rem'}}>
+                                </HelpIcon>
+                                Ajuda
+                            </Button>
                         </Box>
                     </Box>
 
