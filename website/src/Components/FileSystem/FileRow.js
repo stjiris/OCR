@@ -140,8 +140,8 @@ export default class FileRow extends React.Component {
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell> */}
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell> */}
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             <Box>
@@ -158,16 +158,17 @@ export default class FileRow extends React.Component {
                     : <>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                <span>{this.state.info["creation"]}</span>
                                 <span>{this.state.info["pages"]} página(s)</span>
                                 <span>{this.state.info['size']}</span>
                             </Box>
                         </TableCell>
 
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             {
                                 this.state.info["creation"]
                             }
-                        </TableCell>
+                        </TableCell> */}
                         
                         { 
                             this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] === this.state.info["pages"] ? 
@@ -178,8 +179,8 @@ export default class FileRow extends React.Component {
                                 : 
                                   <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                       <span>{this.state.info["ocr"]["creation"]}</span>
-                                      <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                       <span>{this.state.info["ocr"]["size"]}</span>
+                                      <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                   </Box>
                             } 
                             </TableCell>
@@ -213,8 +214,8 @@ export default class FileRow extends React.Component {
                                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                     <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>{this.state.info["txt"]["creation"]}</span>
-                                        <Button sx={{p: 0}} variant="text" onClick={(e) => this.getTxt(e)}>Descarregar</Button>
                                         <span>{this.state.info["txt"]["size"]}</span>
+                                        <Button sx={{p: 0}} variant="text" onClick={(e) => this.getTxt(e)}>Descarregar</Button>
                                     </Box>
                                 </TableCell> :
                                 <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
@@ -234,8 +235,9 @@ export default class FileRow extends React.Component {
                                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                    <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>{this.state.info["pdf"]["creation"]}</span>
-                                        <Button sx={{p: 0}} variant="text" onClick={(e) => this.getPdf(e)}>Descarregar</Button>
+                                        <span>{this.state.info["pdf"]["pages"]} página(s)</span>
                                         <span>{this.state.info["pdf"]["size"]}</span>
+                                        <Button sx={{p: 0}} variant="text" onClick={(e) => this.getPdf(e)}>Descarregar</Button>
                                     </Box>
                                 </TableCell> :
                                 <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>

@@ -53,12 +53,10 @@ export default class FolderRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                {this.state.current_folder.length > 1 &&  <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>}
+                {/* {this.state.current_folder.length > 1 &&  <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>} */}
 
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                    {
-                        this.state.info["creation"]
-                    }
+                    {this.state.info["creation"]}
                 </TableCell>
 
                 {this.state.current_folder.length > 1 && <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>}
