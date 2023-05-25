@@ -525,8 +525,8 @@ class PrivateFileExplorer extends React.Component {
                                     <b>Ficheiro</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Páginas/Bytes</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Data de Criação</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>
+                            {/* <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Data de Criação</b></TableCell> */}
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Progresso</b></TableCell>
                             {/* <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell> */}
                         </TableRow>
