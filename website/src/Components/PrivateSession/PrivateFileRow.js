@@ -104,8 +104,8 @@ export default class PrivateFileRow extends React.Component {
                                 ? <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
                                     <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>Carregamento</span>
-                                        <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
-                                            <span>{this.state.info["progress"]}%</span>
+                                        <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                            <span style={{marginRight:'1rem'}}>{this.state.info["progress"]}%</span>
                                             <CircularProgress size='0.8rem' />
                                         </Box>
                                     </Box>
@@ -113,28 +113,29 @@ export default class PrivateFileRow extends React.Component {
                                 :
                                 <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
                                     <Box>
-                                        <span>A juntar páginas</span>
+                                        <span>A preparar o documento</span>
                                         <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
                                     </Box>
                                 </TableCell>
                             }
                             
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                            {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell> */}
                         </>
                         : <>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                    <span>{this.state.info["creation"]}</span>
                                     <span>{this.state.info["pages"]} página(s)</span>
                                     <span>{this.state.info['size']}</span>
                                 </Box>
                             </TableCell>
 
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 {
                                     this.state.info["creation"]
                                 }
-                            </TableCell>
+                            </TableCell> */}
                             
                             { 
                                 this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] === this.state.info["pages"] ? 
@@ -205,10 +206,10 @@ export default class PrivateFileRow extends React.Component {
                             </Button>
                         </TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                            <span>{this.state.info["txt"]["size"]}</span>
-                        </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                            <span>{this.state.info["txt"]["creation"]}</span>
+                            <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                <span>{this.state.info["txt"]["creation"]}</span>
+                                <span>{this.state.info["txt"]["size"]}</span>
+                            </Box>
                         </TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
                         {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
@@ -233,10 +234,11 @@ export default class PrivateFileRow extends React.Component {
                             </Button>
                         </TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                            <span>{this.state.info["pdf"]["size"]}</span>
-                        </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                            <span>{this.state.info["pdf"]["creation"]}</span>
+                            <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                <span>{this.state.info["pdf"]["creation"]}</span>
+                                <span>{this.state.info["pdf"]["pages"]} página(s)</span>
+                                <span>{this.state.info["pdf"]["size"]}</span>
+                            </Box>
                         </TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
                         {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}

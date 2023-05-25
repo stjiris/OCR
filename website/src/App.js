@@ -1,7 +1,7 @@
 import './App.css';
 import React from 'react';
 
-import { Box, Link, IconButton } from '@mui/material';
+import { Button, Box, Link, IconButton } from '@mui/material';
 import Notification from './Components/Notification/Notifications';
 import VersionsMenu from './Components/Form/VersionsMenu';
 import { FileExplorer } from './Components/FileSystem/FileSystem.js';
@@ -11,7 +11,8 @@ import { PrivateFileExplorer } from './Components/PrivateSession/PrivateFileSyst
 
 import logoSTJ from './static/logoSTJ.png';
 
-import InfoIcon from '@mui/icons-material/Info';
+// import InfoIcon from '@mui/icons-material/Info';
+import HelpIcon from '@mui/icons-material/Help';
 
 /**
  * About Versioning:
@@ -21,7 +22,7 @@ import InfoIcon from '@mui/icons-material/Info';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.12.2";
+const VERSION = "0.12.3";
 
 function App() {
     class Form extends React.Component {
@@ -102,6 +103,25 @@ function App() {
             this.setState({contents: contents});
         }
 
+        redirectHome() {
+            var currentURL = window.location.href;
+
+            // Check if the current URL is deployed
+            if (currentURL.includes('iris.sysresearch.org')) {
+                if (currentURL.includes('ocr-dev')) {
+                    window.location.href = 'https://iris.sysresearch.org/ocr-dev/';
+                } else if (currentURL.includes('ocr-prod')) {
+                    window.location.href = 'https://iris.sysresearch.org/ocr-prod/';
+                } else {
+                    window.location.href = 'https://iris.sysresearch.org/ocr/';
+                }
+            }
+            // Check if the current URL is in the local environment
+            else if (currentURL.includes('localhost')) {
+                window.location.href = 'http://localhost:3001/';
+            }
+        }
+
         openVersionsMenu() {
             /**
              * Open the versions menu
@@ -147,29 +167,30 @@ function App() {
                         justifyContent: 'space-between',
                         ml: '1.5rem',
                         mr: '1.5rem',
-                        mb: '1.5rem',
-                        mt: '1.5rem',
+                        mb: '1rem',
+                        mt: '1rem',
                         zIndex: '100'
                     }}>
                         <Box sx={{display: 'flex', flexDirection: 'row'}}>
                             {process.env.REACT_APP_HEADER_STYLE !== 'STJ' &&
                                 <>
-                                    {   
-                                        this.getPrivateSession() == null
-                                        ? <Link
-                                            className="link"
-                                            sx={{
-                                                color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
-                                                mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
-                                            }}
-                                            style={{textDecoration: 'none'}}
-                                            onClick={() => this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
-                                            underline="hover"
-                                        >
-                                            <h1>Início</h1>
-                                        </Link>
-                                        : <h1>Sessão Privada</h1>
-                                    }
+                                    {this.getPrivateSession() !== null && <h1 style={{marginRight: '2rem', marginTop: '1.25rem', fontSize: '1.5rem'}}>Sessão Privada</h1>}
+                                    <Link
+                                        className="link"
+                                        sx={{
+                                            color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
+                                            mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
+                                        }}
+                                        style={{textDecoration: 'none'}}
+                                        onClick={() => {
+                                                this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})
+                                                this.redirectHome();                                                
+                                            }
+                                        }
+                                        underline="hover"
+                                    >
+                                        <h1>Início</h1>
+                                    </Link>
                                     {
                                         this.getPrivateSession() == null
                                         ? <Link
@@ -190,22 +211,23 @@ function App() {
                             }
                             {process.env.REACT_APP_HEADER_STYLE === 'STJ' && 
                                 <>
-                                    <img src={logoSTJ} alt="logoSTJ" style={{height: '4.5rem', width: 'auto'}}/>
-                                    <Link
+                                    <img src={logoSTJ} alt="logoSTJ" style={{paddingTop:'0.5rem', height: '4.5rem', width: 'auto'}}/>
+                                    <Button
                                         className="link"
                                         sx={{
                                             color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
-                                            ml: '2rem', mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
+                                            ml: '2rem', mr: '2rem',  fontSize: '0.75rem'
                                         }}
                                         style={{textDecoration: 'none'}}
                                         onClick={() => {
                                                 this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []});
+                                                this.redirectHome();
                                             }
                                         }
                                         underline="hover"
                                     >
                                         <h1 className='fancy-font'>OCR</h1>
-                                    </Link>                                
+                                    </Button>                                
                                 </>
                             }
                             <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -214,9 +236,16 @@ function App() {
 
                         <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
                             <p>{`Versão: ${VERSION}`}</p>
-                            <IconButton onClick={() => this.openVersionsMenu()}>
+                            {/* <IconButton onClick={() => this.openVersionsMenu()}>
                                 <InfoIcon />
-                            </IconButton>
+                            </IconButton> */}
+                            <Button sx={{ml: '1.5rem', padding: '0rem', color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2'}} 
+                                    onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
+                            >
+                                <HelpIcon sx={{mr: '0.3rem'}}>
+                                </HelpIcon>
+                                Ajuda
+                            </Button>
                         </Box>
                     </Box>
 

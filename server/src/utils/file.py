@@ -450,6 +450,7 @@ def perform_page_ocr(path, filename, config, ocr_algorithm, pool: ThreadPool):
             data["pdf"]["complete"] = True
             data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
             data["pdf"]["creation"] = creation_date
+            data["pdf"]["pages"] = get_page_count(f"{path}/_search.pdf")
 
             data["indexed"] = False
             update_data(data_folder, data)
