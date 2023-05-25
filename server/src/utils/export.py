@@ -109,7 +109,7 @@ def export_pdf(path):
             output_folder=path,
             fmt="jpg",
             thread_count=2,
-            dpi=72
+            dpi=150
         )
 
     for i, page in enumerate(pages):
@@ -129,7 +129,7 @@ def export_pdf(path):
     pdf.setTitle(filename)
     
     dpi_original = 200
-    dpi_compressed = 72
+    dpi_compressed = 150
 
     filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
     images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
@@ -217,15 +217,15 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
                     w = w.replace(c, "")
                 words[w] = words.get(w, 0) + 1
 
-            font_width = pdf.stringWidth(rawtext, "invisible", 8)
+            font_width = pdf.stringWidth(rawtext, "invisible", 14)
             if font_width <= 0:
                 continue
 
             text = pdf.beginText()
             text.setTextRenderMode(3)  # double invisible
-            text.setFont("invisible", 8)
-            text.setTextOrigin(box[0] * dpi_compressed / dpi_original, height - b * dpi_compressed / dpi_original)
-            box_width = (box[2] - box[0]) * dpi_compressed / dpi_original
+            text.setFont("invisible", 14)
+            text.setTextOrigin(box[0] * (dpi_compressed-50) / dpi_original, height - b * (dpi_compressed-50) / dpi_original)
+            box_width = (box[2] - box[0]) * (dpi_compressed-50) / dpi_original
             text.setHorizScale(100.0 * box_width / font_width)
             text.textLine(rawtext)
             pdf.drawText(text)
