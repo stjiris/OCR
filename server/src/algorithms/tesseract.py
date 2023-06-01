@@ -14,7 +14,7 @@ def get_hocr(page, config):
     :return: hocr
     """
     return pytesseract.image_to_pdf_or_hocr(
-        page, extension="hocr", config="+".join(config)
+        page, lang="por", extension="hocr", config="+".join(config)
     )
 
 
