@@ -51,6 +51,11 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.12.5 - 02/06/2023</b></p>
+                            <ul>                            
+                                <li>Melhoria da qualidade do PDF gerado</li>
+                                <li>Melhoria da velocidade de download de .txt e de pdf gerado</li>
+                            </ul>
                             <p><b>Versão 0.12.4 - 01/06/2023</b></p>
                             <ul>                            
                                 <li>OCR reconhece caracteres Portugueses</li>

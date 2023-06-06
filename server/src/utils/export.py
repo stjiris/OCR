@@ -101,99 +101,100 @@ def export_pdf(path):
     """
     Export the file as a .pdf file
     """
-    
-    pdf_basename = get_file_basename(path)
-    pages = convert_from_path(
+    filename = f"{path}/_search.pdf"
+
+    if os.path.exists(filename):
+        return filename
+    else:
+        pdf_basename = get_file_basename(path)
+        pages = convert_from_path(
             f"{path}/{pdf_basename}.pdf",
             paths_only=True,
             output_folder=path,
             fmt="jpg",
             thread_count=2,
-            dpi=72
+            dpi=150
         )
 
-    for i, page in enumerate(pages):
-        if os.path.exists(f"{path}/{pdf_basename}_{i}$.jpg"):
-            os.remove(page)
-        else:
-            Path(page).rename(f"{path}/{pdf_basename}_{i}$.jpg")
+        for i, page in enumerate(pages):
+            if os.path.exists(f"{path}/{pdf_basename}_{i}$.jpg"):
+                os.remove(page)
+            else:
+                Path(page).rename(f"{path}/{pdf_basename}_{i}$.jpg")
 
-    words = {}
+        words = {}
 
-    load_invisible_font()
+        load_invisible_font()
 
-    filename = f"{path}/_search.pdf"
-    
-    pdf = Canvas(filename, pageCompression=1)
-    pdf.setCreator("hocr-tools")
-    pdf.setTitle(filename)
-    
-    dpi_original = 200
-    dpi_compressed = 72
+        pdf = Canvas(filename, pageCompression=1)
+        pdf.setCreator("hocr-tools")
+        pdf.setTitle(filename)
 
-    filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
-    images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
-    for image in images:
-        image_basename = get_file_basename(image)
-        image_basename = image_basename[:-1]
-        hocr_path = f"{path}/ocr_results/{image_basename}.json"
+        dpi_original = 200
+        dpi_compressed = 150  # Adjust the DPI value for positioning and scaling
 
-        im = Image.open(f"{path}/{image}")
-        w, h = im.size
-        pdf.setPageSize((w, h))
-        pdf.drawImage(f"{path}/{image}", 0, 0, width=w, height=h)
-        add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
+        filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
+        images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
+        for image in images:
+            image_basename = get_file_basename(image)
+            image_basename = image_basename[:-1]
+            hocr_path = f"{path}/ocr_results/{image_basename}.json"
 
-        new_words = add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
+            im = Image.open(f"{path}/{image}")
+            w, h = im.size
+            pdf.setPageSize((w, h))
+            pdf.drawImage(f"{path}/{image}", 0, 0, width=w, height=h)
 
-        for word in new_words:
-            words[word] = words.get(word, 0) + new_words[word]
+            new_words = add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
 
-        pdf.showPage()
+            for word in new_words:
+                words[word] = words.get(word, 0) + new_words[word]
 
-    # Sort the `words` dict by key
-    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
+            pdf.showPage()
 
-    rows = 54
-    cols = 3
-    size = 12
+        # Sort the `words` dict by key
+        words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
 
-    for id in range(0, len(words), rows*cols):
-        set_words = words[id : id + rows*cols]
-        pdf.setPageSize((w, h))
+        rows = 54
+        cols = 3
+        size = 12
 
-        x, y = 10, h-20
+        for id in range(0, len(words), rows * cols):
+            set_words = words[id: id + rows * cols]
+            pdf.setPageSize((w, h))
 
-        for col in range(cols):
-            for row in range(rows):
-                id = col * rows + row
-                if id >= len(set_words):
-                    break
+            x, y = 10, h - 20
 
-                word = set_words[id]
+            for col in range(cols):
+                for row in range(rows):
+                    id = col * rows + row
+                    if id >= len(set_words):
+                        break
 
-                text = pdf.beginText()
-                text.setTextRenderMode(0)
-                text.setFont("Helvetica", size)
-                text.setTextOrigin(x, y)
-                text.textLine(f"{word[0]} ({word[1]})")
-                pdf.drawText(text)
+                    word = set_words[id]
 
-                y -= 15
+                    text = pdf.beginText()
+                    text.setTextRenderMode(0)
+                    text.setFont("Helvetica", size)
+                    text.setTextOrigin(x, y)
+                    text.textLine(f"{word[0]} ({word[1]})")
+                    pdf.drawText(text)
 
-            y = h-20
-            x += w // 3
+                    y -= 15
 
-        pdf.showPage()
+                y = h - 20
+                x += w // 3
 
-    pdf.save()
+            pdf.showPage()
 
-    # Delete compressed images
-    for compressed_image in os.listdir(path):
-        if compressed_image.endswith("$.jpg"):
-            os.remove(os.path.join(path, compressed_image))
+        pdf.save()
 
-    return filename
+        # Delete compressed images
+        for compressed_image in os.listdir(path):
+            if compressed_image.endswith("$.jpg"):
+                os.remove(os.path.join(path, compressed_image))
+
+        return filename
 
 
 def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
@@ -224,9 +225,12 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
             text = pdf.beginText()
             text.setTextRenderMode(3)  # double invisible
             text.setFont("invisible", 8)
-            text.setTextOrigin(box[0] * dpi_compressed / dpi_original, height - b * dpi_compressed / dpi_original)
+            x_offset = box[0] * dpi_compressed / dpi_original  # Adjust X offset
+            y_offset = height - b * dpi_compressed / dpi_original  # Adjust Y offset
+            text.setTextOrigin(x_offset, y_offset)
             box_width = (box[2] - box[0]) * dpi_compressed / dpi_original
-            text.setHorizScale(100.0 * box_width / font_width)
+            width_scale = 100.0 * box_width / font_width  # Adjust width scaling
+            text.setHorizScale(width_scale)
             text.textLine(rawtext)
             pdf.drawText(text)
 
