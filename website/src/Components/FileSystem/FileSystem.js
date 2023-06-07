@@ -325,9 +325,6 @@ class FileExplorer extends React.Component {
             a.download = basename + '_ocr.' + type;
             a.click();
             a.remove();
-
-            this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
-            this.successNot.current.open();
         });
     }
 
@@ -345,9 +342,6 @@ class FileExplorer extends React.Component {
             a.download = file;
             a.click();
             a.remove();
-
-            this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
-            this.successNot.current.open();
         });
     }
 
