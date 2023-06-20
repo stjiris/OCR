@@ -236,7 +236,7 @@ export default class PrivateFileRow extends React.Component {
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["pdf"]["creation"]}</span>
-                                <span>{this.state.info["pdf"]["pages"]} página(s)</span>
+                                <span>{this.state.info["pages"]} página(s) + {this.state.info["pdf"]["pages"] - this.state.info["pages"]} página(s) de índice</span>
                                 <span>{this.state.info["pdf"]["size"]}</span>
                             </Box>
                         </TableCell>
