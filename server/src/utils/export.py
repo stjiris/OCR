@@ -20,7 +20,7 @@ from pdf2image import convert_from_path
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
-
+from reportlab.lib.pagesizes import letter
 
 def json_to_text(json_d):
     """
@@ -126,7 +126,7 @@ def export_pdf(path):
 
         load_invisible_font()
 
-        pdf = Canvas(filename, pageCompression=1)
+        pdf = Canvas(filename, pageCompression=1, pagesize=letter)
         pdf.setCreator("hocr-tools")
         pdf.setTitle(filename)
 
@@ -155,24 +155,33 @@ def export_pdf(path):
         # Sort the `words` dict by key
         words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
 
-        rows = 54
+        rows = 100
         cols = 3
-        size = 12
+        size = 15
+        margin = 20
 
-        for id in range(0, len(words), rows * cols):
-            set_words = words[id: id + rows * cols]
+        word_count = len(words)
+
+        for id in range(0, word_count, rows * cols):
             pdf.setPageSize((w, h))
 
-            x, y = 10, h - 20
+            x, y = margin, h - margin
 
+            set_words = words[id: id + rows * cols]
+
+            available_height = h - 2 * margin
+
+            max_rows = available_height // size
+
+            rows = (len(set_words) - 1) // cols + 1
+            rows = min(max_rows, rows) 
             for col in range(cols):
                 for row in range(rows):
-                    id = col * rows + row
-                    if id >= len(set_words):
+                    index = col * rows + row
+                    if index >= len(set_words):
                         break
 
-                    word = set_words[id]
-
+                    word = set_words[index]
                     text = pdf.beginText()
                     text.setTextRenderMode(0)
                     text.setFont("Helvetica", size)
@@ -180,10 +189,10 @@ def export_pdf(path):
                     text.textLine(f"{word[0]} ({word[1]})")
                     pdf.drawText(text)
 
-                    y -= 15
+                    y -= size
 
-                y = h - 20
-                x += w // 3
+                y = h - margin
+                x += (w - 2 * margin) // cols
 
             pdf.showPage()
 

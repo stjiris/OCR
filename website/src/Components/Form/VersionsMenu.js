@@ -51,6 +51,16 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.12.7 - 20/06/2023</b></p>
+                            <ul>                            
+                                <li>Adiciona tooltip para quando começa a transferência de ficheiros nas sessões privadas</li>
+                                <li>Adiciona nr de páginas do índice</li>
+                                <li>Ajusta o tamanho ocupado pelo índice</li>
+                            </ul>
+                            <p><b>Versão 0.12.6 - 07/06/2023</b></p>
+                            <ul>                            
+                                <li>Adiciona tooltip para quando começa a transferência de ficheiros</li>
+                            </ul>
                             <p><b>Versão 0.12.5 - 02/06/2023</b></p>
                             <ul>                            
                                 <li>Melhoria da qualidade do PDF gerado</li>
