@@ -504,7 +504,7 @@ def submit_text():
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    changes_pool.add_to_queue(data_folder, data)
+    changes_pool.add_to_queue((data_folder, data))
 
     return {"success": True, "files": get_filesystem(session)}
 
