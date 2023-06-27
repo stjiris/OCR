@@ -54,6 +54,7 @@ def make_changes(data_folder, data, pool: ThreadPool):
 
     update_data(data_folder + "/_data.json", data)
 
+    os.remove(data_folder + "/_search.pdf")
     export_file(data_folder, "pdf")
     data["pdf"]["complete"] = True
     data["pdf"]["creation"] = current_date
