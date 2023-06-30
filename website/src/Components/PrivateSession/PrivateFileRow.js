@@ -9,6 +9,7 @@ import Button from '@mui/material/Button';
 // import EditIcon from '@mui/icons-material/Edit';
 
 import calculateEstimatedTime from '../../utils/waitingTime';
+import Notification from '../Notification/Notifications.js';
 
 export default class PrivateFileRow extends React.Component {
     constructor(props) {
@@ -18,6 +19,8 @@ export default class PrivateFileRow extends React.Component {
             info: props.info,
             filesystem: props.filesystem
         }
+
+        this.successNot = React.createRef();
     }
 
     updateInfo(info) {
@@ -31,16 +34,22 @@ export default class PrivateFileRow extends React.Component {
     getOriginalFile(e) {
         e.stopPropagation();
         this.state.filesystem.getOriginalFile(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
     }
 
     getTxt(e) {
         e.stopPropagation();
         this.state.filesystem.getTxt(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
     }
 
     getPdf(e) {
         e.stopPropagation();
         this.state.filesystem.getPdf(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
     }
 
     delete(e) {
@@ -71,6 +80,7 @@ export default class PrivateFileRow extends React.Component {
     render() {
         return (
             <>
+                <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <TableRow>
                     <TableCell sx={{paddingTop: 0, paddingBottom: 0}}>
                         {
@@ -236,7 +246,7 @@ export default class PrivateFileRow extends React.Component {
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["pdf"]["creation"]}</span>
-                                <span>{this.state.info["pdf"]["pages"]} página(s)</span>
+                                <span>{this.state.info["pages"]} página(s) + {this.state.info["pdf"]["pages"] - this.state.info["pages"]} página(s) de índice</span>
                                 <span>{this.state.info["pdf"]["size"]}</span>
                             </Box>
                         </TableCell>
