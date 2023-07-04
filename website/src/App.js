@@ -23,7 +23,7 @@ import HelpIcon from '@mui/icons-material/Help';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.12.8";
+const VERSION = "0.13.0";
 
 function App() {
     class Form extends React.Component {
