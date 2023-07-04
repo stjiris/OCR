@@ -54,6 +54,7 @@ def make_changes(data_folder, data, pool: ThreadPool):
 
     update_data(data_folder + "/_data.json", data)
 
+    os.remove(data_folder + "/_search.pdf")
     export_file(data_folder, "pdf")
     data["pdf"]["complete"] = True
     data["pdf"]["creation"] = current_date
@@ -504,7 +505,7 @@ def submit_text():
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    changes_pool.add_to_queue(data_folder, data)
+    changes_pool.add_to_queue((data_folder, data))
 
     return {"success": True, "files": get_filesystem(session)}
 
