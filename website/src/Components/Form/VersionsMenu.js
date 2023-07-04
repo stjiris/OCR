@@ -51,6 +51,10 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.13.0 - 04/07/2023</b></p>
+                            <ul>                            
+                                <li>Adiciona estilo da NOVA SBE</li>
+                            </ul>
                             <p><b>Versão 0.12.7 - 20/06/2023</b></p>
                             <ul>                            
                                 <li>Adiciona tooltip para quando começa a transferência de ficheiros nas sessões privadas</li>
