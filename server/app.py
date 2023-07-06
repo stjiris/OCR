@@ -4,13 +4,13 @@ import re
 import random
 import shutil
 import string
+
+from celery import Celery
 from datetime import datetime
 from threading import Lock, Thread
 
-from flask import Flask
 from flask import request
 from flask import send_file
-from flask_cors import CORS  # permitir requests de outros ips alem do servidor
 from src.algorithms import tesseract
 from src.algorithms import easy_ocr
 from src.elastic_search import *
@@ -35,11 +35,11 @@ from src.utils.file import perform_file_ocr
 from src.utils.file import perform_page_ocr
 from src.utils.file import update_data
 
+from celery_app import app, celery
+
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
-app = Flask(__name__)   # Aplicação em si
 log = app.logger
-CORS(app)
 
 lock_system = dict()
 private_sessions = dict()
