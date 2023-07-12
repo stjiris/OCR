@@ -10,6 +10,7 @@ import EditPage from './Components/EditPage/EditPage';
 import { PrivateFileExplorer } from './Components/PrivateSession/PrivateFileSystem';
 
 import logoSTJ from './static/logoSTJ.png';
+import logoNovaSBE from './static/logoNovaSBE.png';
 
 // import InfoIcon from '@mui/icons-material/Info';
 import HelpIcon from '@mui/icons-material/Help';
@@ -22,7 +23,7 @@ import HelpIcon from '@mui/icons-material/Help';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.12.7";
+const VERSION = "0.13.0";
 
 function App() {
     class Form extends React.Component {
@@ -172,7 +173,7 @@ function App() {
                         zIndex: '100'
                     }}>
                         <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                            {process.env.REACT_APP_HEADER_STYLE !== 'STJ' &&
+                            {process.env.REACT_APP_HEADER_STYLE !== 'NOVASBE' && process.env.REACT_APP_HEADER_STYLE !== 'STJ' && 
                                 <>
                                     {this.getPrivateSession() !== null && <h1 style={{marginRight: '2rem', marginTop: '1.25rem', fontSize: '1.5rem'}}>Sessão Privada</h1>}
                                     <Link
@@ -209,6 +210,43 @@ function App() {
                                     }
                                 </>
                             }
+                            {process.env.REACT_APP_HEADER_STYLE === 'NOVASBE' &&
+                                <Box sx={{display:'flex', flexDirection: 'row', alignItems: 'center'}}>  
+                                    <img src={logoNovaSBE} alt="logoNovaSBE" style={{paddingTop:'0.rem', paddingBottom: '0.5rem', marginRight:'2rem', height: '5rem', width: 'auto'}}/>
+                                    <Link
+                                        className="link"
+                                        sx={{
+                                            color: '#000000',
+                                            mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
+                                        }}
+                                        style={{textDecoration: 'none'}}
+                                        onClick={() => {
+                                                this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})
+                                                this.redirectHome();                                                
+                                            }
+                                        }
+                                        underline="hover"
+                                    >
+                                        <h1>Início</h1>
+                                    </Link>
+                                    {
+                                        this.getPrivateSession() == null
+                                        ? <Link
+                                            className="link"
+                                            sx={{
+                                                color: '#000000',
+                                                mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
+                                            }}
+                                            style={{textDecoration: 'none'}}
+                                            onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
+                                            underline="hover"
+                                        >
+                                            <h1>Pesquisar</h1>
+                                        </Link>
+                                        : null
+                                    }
+                                </Box>
+                            }
                             {process.env.REACT_APP_HEADER_STYLE === 'STJ' && 
                                 <>
                                     <img src={logoSTJ} alt="logoSTJ" style={{paddingTop:'0.5rem', height: '4.5rem', width: 'auto'}}/>
@@ -239,7 +277,8 @@ function App() {
                             {/* <IconButton onClick={() => this.openVersionsMenu()}>
                                 <InfoIcon />
                             </IconButton> */}
-                            <Button sx={{ml: '1.5rem', padding: '0rem', color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2'}} 
+                            <Button sx={{ml: '1.5rem', padding: '0rem', color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514' :
+                                                                               process.env.REACT_APP_HEADER_STYLE === 'NOVASBE' ? '#000000' : '#1976d2'}} 
                                     onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
                             >
                                 <HelpIcon sx={{mr: '0.3rem'}}>
