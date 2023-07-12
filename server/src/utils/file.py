@@ -383,6 +383,7 @@ def prepare_file_ocr(path):
                 output_folder=path,
                 fmt="jpg",
                 thread_count=2,
+                dpi=300
             )
             log.info("{path}: A trocar os nomes das páginas")
             for i, page in enumerate(pages):
