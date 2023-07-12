@@ -113,7 +113,7 @@ def export_pdf(path):
             output_folder=path,
             fmt="jpg",
             thread_count=2,
-            dpi=150
+            dpi=300
         )
 
         for i, page in enumerate(pages):
@@ -130,8 +130,8 @@ def export_pdf(path):
         pdf.setCreator("hocr-tools")
         pdf.setTitle(filename)
 
-        dpi_original = 200
-        dpi_compressed = 150  # Adjust the DPI value for positioning and scaling
+        dpi_original = 300
+        dpi_compressed = 300  # Adjust the DPI value for positioning and scaling
 
         filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
         images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
@@ -155,9 +155,9 @@ def export_pdf(path):
         # Sort the `words` dict by key
         words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
 
-        rows = 100
+        rows = 80
         cols = 3
-        size = 15
+        size = 30
         margin = 20
 
         word_count = len(words)
@@ -165,7 +165,7 @@ def export_pdf(path):
         for id in range(0, word_count, rows * cols):
             pdf.setPageSize((w, h))
 
-            x, y = margin, h - margin
+            x, y = margin, h - margin - 20
 
             set_words = words[id: id + rows * cols]
 
@@ -191,7 +191,7 @@ def export_pdf(path):
 
                     y -= size
 
-                y = h - margin
+                y = h - margin - 20
                 x += (w - 2 * margin) // cols
 
             pdf.showPage()
@@ -205,12 +205,47 @@ def export_pdf(path):
 
         return filename
 
+def find_index_words(hocr_path):
+    index_words = {}
+    remove_chars = "«»“”.,;:!?()[]{}\"'"
+    with open(hocr_path) as f:
+        hocrfile = json.load(f)
+
+    hyphenated_last_word = False
+
+    for line_index, line in enumerate(hocrfile):
+        if hyphenated_last_word:
+            previous_word = hocrfile[line_index - 1][-1]["text"]
+            current_word = line[0]["text"]
+            joined_word = previous_word.rstrip("-") + current_word
+            line[0]["text"] = joined_word
+            hyphenated_last_word = False
+
+            # Remove subwords of the joined word from the index
+            if index_words.get(previous_word, 0) != 0:
+                index_words[previous_word] = index_words.get(previous_word, 0) - 1
+                if index_words[previous_word] == 0:
+                    del index_words[previous_word]
+
+        for i, word in enumerate(line):
+            rawtext = word["text"]
+
+            if (i == len(line) - 1) and rawtext.endswith("-"):
+                hyphenated_last_word = True
+
+            for w in rawtext.split():
+                w = w.strip()
+                for c in remove_chars:
+                    w = w.replace(c, "")
+                index_words[w] = index_words.get(w, 0) + 1
+
+    return index_words
+
 
 def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
     """Draw an invisible text layer for OCR data"""
 
-    words = {}
-    remove_chars = ".,;:!?()[]{}\"'"
+    index_words = find_index_words(hocr_path)
 
     with open(hocr_path) as f:
         hocrfile = json.load(f)
@@ -220,12 +255,6 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
             rawtext = word["text"]
             box = word["box"]
             b = word["b"]
-
-            for w in rawtext.split():
-                w = w.strip()
-                for c in remove_chars:
-                    w = w.replace(c, "")
-                words[w] = words.get(w, 0) + 1
 
             font_width = pdf.stringWidth(rawtext, "invisible", 8)
             if font_width <= 0:
@@ -243,7 +272,7 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
             text.textLine(rawtext)
             pdf.drawText(text)
 
-    return words
+    return index_words
 
 def polyval(poly, x):
     return x * poly[0] + poly[1]
