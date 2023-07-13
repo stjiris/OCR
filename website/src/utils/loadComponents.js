@@ -1,8 +1,8 @@
-function loadComponent(path, document) {
+function loadComponent(folder, document) {
     try {
-        return require(`${path}/${process.env.REACT_APP_HEADER_STYLE}/${document}`);
+        return require(`../Components/${folder}/${process.env.REACT_APP_HEADER_STYLE}/${document}`).default;
     } catch (e) {
-        return require(`${path}/Geral/${document}`);
+        return require(`../Components/${folder}/Geral/${document}`).default;
     }
 }
 

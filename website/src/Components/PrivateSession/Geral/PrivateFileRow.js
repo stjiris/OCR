@@ -1,15 +1,13 @@
 import React from 'react';
+
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-// import IconButton from '@mui/material/IconButton';
-
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
-// import EditIcon from '@mui/icons-material/Edit';
 
-import calculateEstimatedTime from '../../utils/waitingTime';
-import Notification from '../Notification/Notifications.js';
+import calculateEstimatedTime from '../../../utils/waitingTime';
+import loadComponent from '../../../utils/loadComponents';
 
 export default class PrivateFileRow extends React.Component {
     constructor(props) {
@@ -78,6 +76,8 @@ export default class PrivateFileRow extends React.Component {
     }
 
     render() {
+        const Notification = loadComponent('Notification', 'Notifications');
+
         return (
             <>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -130,7 +130,6 @@ export default class PrivateFileRow extends React.Component {
                             }
                             
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
-                            {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell> */}
                         </>
                         : <>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
@@ -140,12 +139,6 @@ export default class PrivateFileRow extends React.Component {
                                     <span>{this.state.info['size']}</span>
                                 </Box>
                             </TableCell>
-
-                            {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                                {
-                                    this.state.info["creation"]
-                                }
-                            </TableCell> */}
                             
                             { 
                                 this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] === this.state.info["pages"] ? 

@@ -10,38 +10,33 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-import FolderMenu from '../Form/FolderMenu';
-import OcrMenu from '../Form/OcrMenu';
-import DeleteMenu from '../Form/DeleteMenu';
-import PrivateSessionMenu from '../Form/PrivateSessionMenu';
-
-import FolderRow from '../FileSystem/FolderRow';
-import PrivateFileRow from './PrivateFileRow';
-
-import Notification from '../Notification/Notifications';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import LockIcon from '@mui/icons-material/Lock';
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { v4 as uuidv4 } from 'uuid';
 
+import loadComponent from '../../../utils/loadComponents';
+
+// import FolderRow from './FolderRow';
+// import FileRow from './FileRow';
+
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
-
 const validExtensions = [".pdf", ".jpg", ".jpeg"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
-class PrivateFileExplorer extends React.Component {
+class FileExplorer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             app: props.app,
             files: props.files,
-
             info: {},
             current_folder: props.current_folder.split('/'),
-            addDisabled: true,
-            ocrDisabled: true,
-
+            buttonsDisabled: props.current_folder.split('/').length === 1,
             components: [],
 
             updatingRows: [],
@@ -54,7 +49,6 @@ class PrivateFileExplorer extends React.Component {
         this.folderMenu = React.createRef();
         this.ocrMenu = React.createRef();
         this.deleteMenu = React.createRef();
-        this.privateSessionMenu = React.createRef();
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
@@ -67,23 +61,14 @@ class PrivateFileExplorer extends React.Component {
         /**
          * Fetch the files and info from the server
          */
-        fetch(process.env.REACT_APP_API_URL + 'files?path=' + this.state.current_folder.join("/"), {
+        fetch(process.env.REACT_APP_API_URL + 'files', {
             method: 'GET'
         })
         .then(response => {return response.json()})
         .then(data => {
             var info = data["info"];
-
-            var keys = Object.keys(data);
-            keys.splice(keys.indexOf("info"), 1);
-            var session = keys[0];
-            var files = {};
-
-            files[session] = data[session];
-
-            var disabled = data[session].length !== 0;
-
-            this.setState({files: files, info: info, loading: false, addDisabled: disabled}, this.displayFileSystem);
+            var files = {'files': data["files"]};
+            this.setState({files: files, info: info, loading: false}, this.displayFileSystem);
         });
 
         // Update the info every UPDATE_TIME seconds
@@ -157,8 +142,7 @@ class PrivateFileExplorer extends React.Component {
          * Update the files and info
          */
 
-        var files = {}
-        files[this.state.current_folder.join("/")] = data[this.state.current_folder.join("/")]
+        var files = {'files': data['files']}
         var info = data['info'];
 
         this.setState({ files: files, info: info }, this.displayFileSystem);
@@ -268,10 +252,8 @@ class PrivateFileExplorer extends React.Component {
                     if (data['success']) {
                         var filesystem = data["filesystem"];
                         var info = filesystem["info"];
-                        var files = {}
-                        files[this.state.current_folder.join("/")] = filesystem[this.state.current_folder.join("/")];
-
-                        this.setState({files: files, info: info, addDisabled: true, ocrDisabled: false}, this.displayFileSystem);
+                        var files = {'files': filesystem["files"]};
+                        this.setState({files: files, info: info}, this.displayFileSystem);
                         fileName = data["filename"];
 
                         // Send chunks
@@ -302,6 +284,22 @@ class PrivateFileExplorer extends React.Component {
             var sessionId = data["sessionId"];
             window.location.href = window.location.href + `${sessionId}`;
         });
+    }
+
+    goBack() {
+        /**
+         * Go back to the previous folder
+         */
+        var current_folder = this.state.current_folder;
+        current_folder.pop();
+        var buttonsDisabled = current_folder.length === 1;
+        var createFileButtonDisabled = current_folder.length === 1;
+        this.state.app.setState({path: current_folder.join('/')});
+        this.setState({
+            current_folder: current_folder,
+            buttonsDisabled: buttonsDisabled,
+            createFileButtonDisabled: createFileButtonDisabled},
+        this.displayFileSystem);
     }
 
     getDocument(type, file) {
@@ -378,6 +376,20 @@ class PrivateFileExplorer extends React.Component {
          */
         this.deleteMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
         this.deleteMenu.current.toggleOpen();
+    }
+
+    enterFolder(folder) {
+        /**
+         * Enter the folder and update the path
+         */
+        var current_folder = this.state.current_folder;
+        current_folder.push(folder);
+        this.state.app.setState({path: current_folder.join('/')});
+        this.setState({
+            current_folder: current_folder,
+            buttonsDisabled: false,
+            createFileButtonDisabled: false},
+        this.displayFileSystem);
     }
 
     findFolder(files, folder) {
@@ -475,6 +487,9 @@ class PrivateFileExplorer extends React.Component {
         /**
          * Iterate the contents of the folder and build the components
          */
+        const FileRow = loadComponent('FileSystem', 'FileRow');
+        const FolderRow = loadComponent('FileSystem', 'FolderRow');
+
         var contents = this.sortContents(this.getPathContents());
         this.rowRefs = [];
 
@@ -487,7 +502,7 @@ class PrivateFileExplorer extends React.Component {
             var item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
                 items.push(
-                    <PrivateFileRow
+                    <FileRow
                         ref={ref}
                         key={item}
                         name={item}
@@ -504,6 +519,7 @@ class PrivateFileExplorer extends React.Component {
                         name={key}
                         info={this.getInfo(this.state.current_folder.join("/") + "/" + key)}
                         filesystem={this}
+                        current_folder={this.state.current_folder}
                     />
                 )
             }
@@ -522,13 +538,14 @@ class PrivateFileExplorer extends React.Component {
                                     startIcon={<SwapVertIcon />}
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
                                     onClick={() => this.sortByName(this.state.components)}>
-                                    <b>Ficheiro</b>
+                                    <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>
-                            {/* <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Data de Criação</b></TableCell> */}
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Progresso</b></TableCell>
-                            {/* <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell> */}
+                            {<TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>}
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>OCR</b></TableCell>}
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Texto</b></TableCell>}
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF (com texto)</b></TableCell>}
+                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -606,7 +623,72 @@ class PrivateFileExplorer extends React.Component {
         return true;
     }
 
+    changeFolderFromPath(folder_name) {
+        var current_folder = this.state.current_folder;
+
+        // Remove the last element of the path until we find folder_name
+        while (current_folder[current_folder.length - 1] !== folder_name) {
+            current_folder.pop();
+        }
+
+        var buttonsDisabled = current_folder.length === 1;
+        var createFileButtonDisabled = current_folder.length === 1;
+
+        this.setState({
+            current_folder: current_folder,
+            buttonsDisabled: buttonsDisabled,
+            createFileButtonDisabled: createFileButtonDisabled,
+        }, this.displayFileSystem);
+    }
+
+    generatePath() {
+        return (
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap'
+            }}>
+                {
+                    this.state.current_folder.map((folder, index) => {
+                        var name;
+                        if (folder !== 'files') {
+                            name = folder;
+                        }
+                        else {
+                            name = 'Início';
+                        }
+                        return (
+                            <Box sx={{display: "flex", flexDirection: "row"}} key={"Box" + folder}>
+                                <Button 
+                                    key={folder}
+                                    onClick={() => this.changeFolderFromPath(folder)}
+                                    style={{
+                                        margin: 0,
+                                        padding: '0px 15px 0px 15px',
+                                        textTransform: 'none',
+                                        display: "flex",
+                                        textAlign: "left",
+                                        textDecoration: "underline",
+                                    }}
+                                    variant="text"
+                                >
+                                    {name}
+                                </Button>
+                                <p key={index}>/</p>
+                            </Box>
+                        )
+                    })
+                }
+            </Box>
+        )
+    }
+
     render() {
+        const Notification = loadComponent('Notification', 'Notifications');
+        const FolderMenu = loadComponent('Form', 'FolderMenu');
+        const OcrMenu = loadComponent('Form', 'OcrMenu');
+        const DeleteMenu = loadComponent('Form', 'DeleteMenu');
+
         return (
             <Box sx={{
                 ml: '1.5rem',
@@ -619,7 +701,64 @@ class PrivateFileExplorer extends React.Component {
                 <FolderMenu filesystem={this} ref={this.folderMenu}/>
                 <OcrMenu filesystem={this} ref={this.ocrMenu}/>
                 <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-                <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
+
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    flexWrap: 'wrap'
+                }}>
+                    {/* <Button
+                        disabled={this.state.buttonsDisabled}
+                        variant="contained"
+                        startIcon={<UndoIcon />}
+                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
+                        onClick={() => this.goBack()}
+                    >
+                        Voltar atrás
+                    </Button> */}
+
+                    <Button
+                        variant="contained"
+                        startIcon={<CreateNewFolderIcon />}
+                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
+                        onClick={() => this.createFolder()}
+                    >
+                        Criar pasta
+                    </Button>
+
+                    <Button
+                        disabled={this.state.buttonsDisabled}
+                        variant="contained"
+                        startIcon={<NoteAddIcon />}
+                        onClick={() => this.createFile()}
+                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
+                    >
+                        Adicionar documento
+                    </Button>
+
+                    <Button
+                        variant="contained"
+                        startIcon={<LockIcon />}
+                        onClick={() => this.createPrivateSession()}
+                        sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
+                    >
+                        Sessão privada
+                    </Button>
+
+                    {/* <Button
+                        disabled={this.state.buttonsDisabled || this.state.components.length === 0 || !this.checkOCRComplete()}
+                        variant="contained"
+                        startIcon={<SearchIcon />}
+                        onClick={() => this.performOCR(true)}
+                        sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
+                    >
+                        Realizar o OCR
+                    </Button> */}
+                </Box>
+
+                {
+                    this.generatePath()
+                }
 
                 {
                     this.generateTable()
@@ -629,4 +768,4 @@ class PrivateFileExplorer extends React.Component {
     }
 }
 
-export { PrivateFileExplorer };
+export default FileExplorer;

@@ -1,4 +1,5 @@
 import React from 'react';
+
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
@@ -7,8 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-
-import Notification from '../Notification/Notifications';
+import loadComponent from '../../../utils/loadComponents';
 
 const style = {
     position: 'absolute',
@@ -59,6 +59,8 @@ class PrivateSessionMenu extends React.Component {
     }
 
     render() {
+        const Notification = loadComponent('Notification', 'Notifications');
+
         return (
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
