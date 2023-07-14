@@ -104,17 +104,13 @@ function App() {
 
             // Check if the current URL is deployed
             if (currentURL.includes('iris.sysresearch.org')) {
-                if (currentURL.includes('ocr-dev')) {
-                    window.location.href = 'https://iris.sysresearch.org/ocr-dev/';
-                } else if (currentURL.includes('ocr-prod')) {
-                    window.location.href = 'https://iris.sysresearch.org/ocr-prod/';
-                } else {
-                    window.location.href = 'https://iris.sysresearch.org/ocr/';
-                }
+                var deployedURL = currentURL.split("/")[3];
+                window.location.href = 'https://iris.sysresearch.org/' + deployedURL + '/';
             }
             // Check if the current URL is in the local environment
             else if (currentURL.includes('localhost')) {
-                window.location.href = 'http://localhost:3001/';
+                var port = currentURL.split(":")[2].split("/")[0];
+                window.location.href = 'http://localhost:' + port + '/';
             }
         }
 

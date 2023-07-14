@@ -30,7 +30,7 @@ services:
       FLASK_DEBUG: 1
       ES_URL: http://elasticsearch:9200
     ports:
-      - "5001"
+      - "5001:5001"
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -45,7 +45,7 @@ services:
       context: ./compose/elasticsearch
       dockerfile: Dockerfile
     ports:
-     - "9200"
+     - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
