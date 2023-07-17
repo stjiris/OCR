@@ -69,6 +69,8 @@ services:
       timeout: 30s
       retries: 15
       start_period: 10s
+    volumes:
+      - files_data:/app/files
     restart: unless-stopped
 
   celery_worker:

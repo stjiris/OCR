@@ -5,14 +5,11 @@ import random
 import shutil
 import string
 
-from celery import Celery
-from datetime import datetime
 from threading import Lock, Thread
 
 from flask import request
 from flask import send_file
-from src.algorithms import tesseract
-from src.algorithms import easy_ocr
+
 from src.elastic_search import *
 from src.evaluate import evaluate
 from src.thread_pool import ThreadPool
@@ -31,11 +28,9 @@ from src.utils.file import get_size
 from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
-from src.utils.file import perform_file_ocr
-from src.utils.file import perform_page_ocr
 from src.utils.file import update_data
 
-from celery_app import app, celery
+from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 
@@ -44,29 +39,10 @@ log = app.logger
 lock_system = dict()
 private_sessions = dict()
 
-def make_changes(data_folder, data, pool: ThreadPool):
-    current_date = get_current_time()
-
-    export_file(data_folder, "txt")
-    data["txt"]["complete"] = True
-    data["txt"]["creation"] = current_date
-    data["txt"]["size"] = get_size(data_folder + "/_text.txt", path_complete=True)
-
-    update_data(data_folder + "/_data.json", data)
-
-    os.remove(data_folder + "/_search.pdf")
-    export_file(data_folder, "pdf")
-    data["pdf"]["complete"] = True
-    data["pdf"]["creation"] = current_date
-    data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
-
-    update_data(data_folder + "/_data.json", data)
-    pool.update(finished=data_folder)
-
-
 #####################################
 # FILE SYSTEM ROUTES
 #####################################
+
 @app.route("/files", methods=["GET"])
 def get_file_system():
     if "path" not in request.values:
@@ -74,6 +50,7 @@ def get_file_system():
     
     path = request.values["path"].split("/")[0]
     print(path)
+
     return get_filesystem(path)
 
 
@@ -330,7 +307,7 @@ def perform_ocr():
 
     session = path.split("/")[0]
 
-    ocr_algorithm = tesseract
+    ocr_algorithm = "tesseract"
 
     if multiple:
         files = [
@@ -359,7 +336,7 @@ def perform_ocr():
         data["pdf"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        docs_pool.add_to_queue((f, config, ocr_algorithm, pages_pool))
+        task_file_ocr.delay(f, config, ocr_algorithm)
 
     return {
         "success": True,
@@ -505,7 +482,8 @@ def submit_text():
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    changes_pool.add_to_queue((data_folder, data))
+    make_changes.delay(data_folder, data)
+    # changes_pool.add_to_queue((data_folder, data))
 
     return {"success": True, "files": get_filesystem(session)}
 
@@ -549,10 +527,6 @@ if not os.path.exists("./files/"):
 
 if not os.path.exists("./pending-files/"):
     os.mkdir("./pending-files/")
-
-docs_pool = ThreadPool(perform_file_ocr, 6)
-changes_pool = ThreadPool(make_changes, 1)
-pages_pool = ThreadPool(perform_page_ocr, 6)
 
 # app.config['DEBUG'] = os.environ.get('DEBUG', False)
 # app.run(port=5001, threaded=True)

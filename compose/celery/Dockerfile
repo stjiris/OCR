@@ -12,7 +12,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3 \
   libqpdf-dev \
   zlib1g \
-  liblept5
+  liblept5 \
+  poppler-utils \
+  tesseract-ocr \
+  tesseract-ocr-chi-sim \
+  tesseract-ocr-deu \
+  tesseract-ocr-eng \
+  tesseract-ocr-fra \
+  tesseract-ocr-por \
+  tesseract-ocr-spa
 
 FROM base as builder
 
@@ -47,8 +55,8 @@ ENV CELERY_BROKER_URL redis://redis:6379/0
 ENV CELERY_RESULT_BACKEND redis://redis:6379/0
 ENV C_FORCE_ROOT true
 
-COPY . /queue
+COPY . /app
 
-WORKDIR /queue
+WORKDIR /app
 
 RUN pip3 install --no-cache-dir -r requirements.txt
