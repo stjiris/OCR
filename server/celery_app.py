@@ -25,7 +25,7 @@ CORS(app)
 
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://dissertacao-ocr-redis-1:6379'),
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://dissertacao-ocr-redis-1:6379')
-celery = Celery("celery_app", broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
+celery = Celery("celery_app", broker=CELERY_BROKER_URL)
 
 @celery.task(name="changes")
 def make_changes(data_folder, data):

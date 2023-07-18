@@ -10,7 +10,7 @@ services:
       context: .
       dockerfile: ./compose/nginx/Dockerfile
     ports:
-      - "8888:80"
+      - "80:80"
     depends_on:
       - server
     volumes:
@@ -77,7 +77,7 @@ services:
     build:
       context: ./server
       dockerfile: ../compose/celery/Dockerfile
-    command: celery -A celery_app.celery worker --loglevel=info --concurrency=12
+    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
     volumes:
       - files_data:/app/files
     links:
