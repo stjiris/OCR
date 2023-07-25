@@ -3,11 +3,6 @@ import React from 'react';
 
 import Box from '@mui/material/Box';
 
-// import { FileExplorer } from './Components/FileSystem/FileSystem.js';
-// import ESPage from './Components/ElasticSearchPage/ESPage';
-// import EditPage from './Components/EditPage/EditPage';
-// import { PrivateFileExplorer } from './Components/PrivateSession/PrivateFileSystem';
-
 import loadComponent from './utils/loadComponents';
 
 /**

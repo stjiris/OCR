@@ -78,6 +78,41 @@ def get_file_parsed(path):
             )
     return data
 
+def get_file_layouts(path):
+    layouts = []
+    basename = get_file_basename(path)
+    data = get_data(f"{path}/_data.json")
+
+    for page in range(data["pages"]):
+        filename = f"{path}/layouts/{basename}_{page}.json"
+        page_url = IMAGE_PREFIX + "/images/" + "/".join(path.split("/")[1:]) + f"/{basename}_{page}.jpg"
+
+        if os.path.exists(filename):
+            with open(filename, encoding="utf-8") as f:
+                layouts.append({
+                    "boxes": json.load(f),
+                    "page_url": page_url
+                })
+        else:
+            layouts.append({
+                "boxes": [],
+                "page_url": page_url
+            })
+
+    return layouts
+
+def save_file_layouts(path, layouts):
+    basename = get_file_basename(path)
+    if not os.path.isdir(f"{path}/layouts"):
+        os.mkdir(f"{path}/layouts")
+
+    for id, page in enumerate(layouts):
+        layouts = page["boxes"]
+        filename = f"{path}/layouts/{basename}_{id}.json"
+
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(layouts, f, indent=2)
+        
 
 def generate_uuid(path):
     random.seed(path)
@@ -337,7 +372,6 @@ def save_json_structure(structure, path):
     """
     with open(path, "w", encoding="utf-8") as f:
         json.dump(structure, f, indent=2)
-
 
 ##################################################
 # OCR UTILS

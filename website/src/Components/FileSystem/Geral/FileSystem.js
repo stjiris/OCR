@@ -44,6 +44,9 @@ class FileExplorer extends React.Component {
             updateCount: 0,
 
             loading: false,
+
+            layoutMenu: false,
+            layoutFilename: null,
         }
 
         this.folderMenu = React.createRef();
@@ -72,17 +75,7 @@ class FileExplorer extends React.Component {
         });
 
         // Update the info every UPDATE_TIME seconds
-        this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.join("/"), {
-                method: 'GET'
-            })
-            .then(response => {return response.json()})
-            .then(data => {
-                var info = data["info"];
-
-                this.setState({info: info, updateCount: 0}, this.updateInfo);
-            });
-        }, 1000 * UPDATE_TIME);
+        this.createUpdateInfo();
 
         // Check for stuck uploads every STUCK_UPDATE_TIME seconds
         this.interval = setInterval(() => {
@@ -121,7 +114,22 @@ class FileExplorer extends React.Component {
         }, 1000 * STUCK_UPDATE_TIME);
     }
 
+    createUpdateInfo() {
+        this.interval = setInterval(() => {
+            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.join("/"), {
+                method: 'GET'
+            })
+            .then(response => {return response.json()})
+            .then(data => {
+                var info = data["info"];
+
+                this.setState({info: info, updateCount: 0}, this.updateInfo);
+            });
+        }, 1000 * UPDATE_TIME);
+    }
+
     updateInfo() {
+        if (this.state.layoutMenu) return;
         this.rowRefs.forEach(ref => {
             var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
             if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
@@ -527,6 +535,10 @@ class FileExplorer extends React.Component {
         this.setState({components: items}, this.updateInfo);
     }
 
+    createLayout(filename) {
+        this.setState({layoutMenu: true, layoutFilename: filename});
+    }
+
     generateTable() {
         return (
             <TableContainer component={Paper}>
@@ -688,82 +700,70 @@ class FileExplorer extends React.Component {
         const FolderMenu = loadComponent('Form', 'FolderMenu');
         const OcrMenu = loadComponent('Form', 'OcrMenu');
         const DeleteMenu = loadComponent('Form', 'DeleteMenu');
+        const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
 
         return (
-            <Box sx={{
-                ml: '1.5rem',
-                mr: '1.5rem',
-                mb: '1.5rem',
-            }}>
-                <Notification message={""} severity={"success"} ref={this.successNot}/>
-                <Notification message={""} severity={"error"} ref={this.errorNot}/>
-
-                <FolderMenu filesystem={this} ref={this.folderMenu}/>
-                <OcrMenu filesystem={this} ref={this.ocrMenu}/>
-                <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    flexWrap: 'wrap'
-                }}>
-                    {/* <Button
-                        disabled={this.state.buttonsDisabled}
-                        variant="contained"
-                        startIcon={<UndoIcon />}
-                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
-                        onClick={() => this.goBack()}
-                    >
-                        Voltar atrás
-                    </Button> */}
-
-                    <Button
-                        variant="contained"
-                        startIcon={<CreateNewFolderIcon />}
-                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
-                        onClick={() => this.createFolder()}
-                    >
-                        Criar pasta
-                    </Button>
-
-                    <Button
-                        disabled={this.state.buttonsDisabled}
-                        variant="contained"
-                        startIcon={<NoteAddIcon />}
-                        onClick={() => this.createFile()}
-                        sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
-                    >
-                        Adicionar documento
-                    </Button>
-
-                    <Button
-                        variant="contained"
-                        startIcon={<LockIcon />}
-                        onClick={() => this.createPrivateSession()}
-                        sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
-                    >
-                        Sessão privada
-                    </Button>
-
-                    {/* <Button
-                        disabled={this.state.buttonsDisabled || this.state.components.length === 0 || !this.checkOCRComplete()}
-                        variant="contained"
-                        startIcon={<SearchIcon />}
-                        onClick={() => this.performOCR(true)}
-                        sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
-                    >
-                        Realizar o OCR
-                    </Button> */}
-                </Box>
-
+            <>
                 {
-                    this.generatePath()
-                }
+                    this.state.layoutMenu
+                    ? <LayoutMenu filesystem={this} filename={this.state.layoutFilename} />
+                    : <Box sx={{
+                        ml: '1.5rem',
+                        mr: '1.5rem',
+                        mb: '1.5rem',
+                    }}>
+                        <Notification message={""} severity={"success"} ref={this.successNot}/>
+                        <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                {
-                    this.generateTable()
+                        <FolderMenu filesystem={this} ref={this.folderMenu}/>
+                        <OcrMenu filesystem={this} ref={this.ocrMenu}/>
+                        <DeleteMenu filesystem={this} ref={this.deleteMenu} />
+
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            flexWrap: 'wrap'
+                        }}>
+
+                            <Button
+                                variant="contained"
+                                startIcon={<CreateNewFolderIcon />}
+                                sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
+                                onClick={() => this.createFolder()}
+                            >
+                                Criar pasta
+                            </Button>
+
+                            <Button
+                                disabled={this.state.buttonsDisabled}
+                                variant="contained"
+                                startIcon={<NoteAddIcon />}
+                                onClick={() => this.createFile()}
+                                sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
+                            >
+                                Adicionar documento
+                            </Button>
+
+                            <Button
+                                variant="contained"
+                                startIcon={<LockIcon />}
+                                onClick={() => this.createPrivateSession()}
+                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
+                            >
+                                Sessão privada
+                            </Button>
+                        </Box>
+
+                        {
+                            this.generatePath()
+                        }
+
+                        {
+                            this.generateTable()
+                        }
+                    </Box>
                 }
-            </Box>
+            </>
         );
     }
 }
