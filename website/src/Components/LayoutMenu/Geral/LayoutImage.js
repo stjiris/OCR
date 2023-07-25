@@ -118,8 +118,7 @@ class LayoutBox extends React.Component {
         var mouseY = e.clientY - shiftY + this.state.view.current.scrollTop;
 
         if (
-            mouseX <= 0 || mouseY <= 0 || 
-            mouseX >= this.state.view.current.offsetWidth || mouseY >= this.state.view.current.offsetHeight
+            mouseX <= 0 || mouseY <= 0
         ) return;
 
         var coords = this.screenToImageCoordinates(mouseX, mouseY);
