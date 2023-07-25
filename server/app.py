@@ -30,6 +30,9 @@ from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
 from src.utils.file import update_data
 
+from src.utils.file import get_file_layouts
+from src.utils.file import save_file_layouts
+
 from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
@@ -483,7 +486,6 @@ def submit_text():
     )
 
     make_changes.delay(data_folder, data)
-    # changes_pool.add_to_queue((data_folder, data))
 
     return {"success": True, "files": get_filesystem(session)}
 
@@ -518,6 +520,24 @@ def validate_private_session():
         response = {"success": True, "valid": False}
 
     return response
+
+#####################################
+# LAYOUTS
+#####################################
+@app.route("/get-layouts", methods=["GET"])
+def get_layouts():
+    path = request.values["path"]
+    return {"layouts": get_file_layouts(path)}
+
+@app.route("/save-layouts", methods=["POST"])
+def save_layouts():
+    data = request.json
+    path = data["path"]
+    layouts = data["layouts"]
+
+    save_file_layouts(path, layouts)
+
+    return {"success": True}
 
 #####################################
 # JOB QUEUES

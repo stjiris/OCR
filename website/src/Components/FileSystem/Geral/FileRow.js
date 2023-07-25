@@ -85,6 +85,11 @@ export default class FileRow extends React.Component {
         this.state.filesystem.removeIndexFile(this.state.name, false);
     }
 
+    createLayout(e) {
+        e.stopPropagation();
+        this.state.filesystem.createLayout(this.state.name);
+    }
+
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
         const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
@@ -174,6 +179,7 @@ export default class FileRow extends React.Component {
                                     <span>{this.state.info["creation"]}</span>
                                     <span>{this.state.info["pages"]} página(s)</span>
                                     <span>{this.state.info['size']}</span>
+                                    <Button sx={{p: 0}} variant="text" onClick={(e) => this.createLayout(e)}>Criar Layout</Button>
                                 </Box>
                             </TableCell>
                             
