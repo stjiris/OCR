@@ -153,7 +153,7 @@ export default class LayoutMenu extends React.Component {
                 (a["page_url"] > b["page_url"]) ? 1 : -1
             )
 
-            this.setState({contents: contents}, this.generateBoxes);
+            this.setState({contents: contents}, () => {this.generateBoxes(); this.image.current.loadBoxes()});
         });
     }
 
@@ -247,7 +247,7 @@ export default class LayoutMenu extends React.Component {
             boxRefs.push(ref);
         }
         this.boxRefs = boxRefs;
-        this.setState({boxes: newBoxes}, this.image.current.loadBoxes());
+        this.setState({boxes: newBoxes});
     }
 
     goBack() {
