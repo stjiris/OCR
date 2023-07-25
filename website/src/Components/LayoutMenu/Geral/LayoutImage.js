@@ -80,8 +80,8 @@ class LayoutBox extends React.Component {
         var domX = x / ratioX;
         var domY = y / ratioY;
 
-        var screenX = domX - this.state.view.current.scrollLeft + image.offsetLeft;
-        var screenY = domY - this.state.view.current.scrollTop + image.offsetTop;
+        var screenX = domX + image.offsetLeft;
+        var screenY = domY + image.offsetTop;
 
         return {x: screenX, y: screenY};
     }
@@ -92,8 +92,8 @@ class LayoutBox extends React.Component {
         var ratioX = image.naturalWidth / image.offsetWidth;
         var ratioY = image.naturalHeight / image.offsetHeight;
 
-        var domX = x + this.state.view.current.scrollLeft - image.offsetLeft;
-        var domY = y + this.state.view.current.scrollTop - image.offsetTop;
+        var domX = x - image.offsetLeft;
+        var domY = y - image.offsetTop;
 
         var imgX = domX * ratioX;
         var imgY = domY * ratioY;
@@ -114,8 +114,8 @@ class LayoutBox extends React.Component {
         var shiftX = this.state.view.current.offsetLeft;
         var shiftY = this.state.view.current.offsetTop;
 
-        var mouseX = e.clientX - shiftX;
-        var mouseY = e.clientY - shiftY;
+        var mouseX = e.clientX - shiftX + this.state.view.current.scrollLeft;
+        var mouseY = e.clientY - shiftY + this.state.view.current.scrollTop;
 
         if (
             mouseX <= 0 || mouseY <= 0 || 
@@ -341,8 +341,8 @@ export default class LayoutImage extends React.Component {
         var ratioX = image.naturalWidth / image.offsetWidth;
         var ratioY = image.naturalHeight / image.offsetHeight;
 
-        var domX = x + this.view.current.scrollLeft - this.image.current.offsetLeft;
-        var domY = y + this.view.current.scrollTop - this.image.current.offsetTop;
+        var domX = x - this.image.current.offsetLeft;
+        var domY = y - this.image.current.offsetTop;
 
         var imgX = domX * ratioX;
         var imgY = domY * ratioY;
