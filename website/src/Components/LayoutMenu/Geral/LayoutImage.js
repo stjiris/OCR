@@ -353,8 +353,8 @@ export default class LayoutImage extends React.Component {
     dragStart(e) {
         e.stopPropagation();
 
-        var x = e.clientX - this.view.current.offsetLeft;
-        var y = e.clientY - this.view.current.offsetTop;
+        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft;
+        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop;
 
         this.preview.current.toggleVisibility();
         this.preview.current.setInitialCoordinates(y, x);
@@ -370,8 +370,8 @@ export default class LayoutImage extends React.Component {
     duringDrag(e) {
         if (!this.state.dragging) return;
 
-        var x = e.clientX - this.view.current.offsetLeft;
-        var y = e.clientY - this.view.current.offsetTop;
+        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft;
+        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop;
 
         this.preview.current.updateCoordinates(y, x);
     }
@@ -384,7 +384,7 @@ export default class LayoutImage extends React.Component {
         if (!this.state.dragging) return;
 
         var initialCoords = this.screenToImageCoordinates(this.state.initialCoords.x, this.state.initialCoords.y);
-        var finalCoords = this.screenToImageCoordinates(e.clientX - this.view.current.offsetLeft, e.clientY - this.view.current.offsetTop);
+        var finalCoords = this.screenToImageCoordinates(e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft, e.clientY - this.view.current.offsetTop + this.view.current.scrollTop);
 
         var boxes = [...this.state.boxes];
         var refs = [...this.state.boxRefs];
