@@ -26,6 +26,11 @@ export default class EditPage extends React.Component {
         this.editText = React.createRef();
     }
 
+    preventExit(event) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
     setFile(file) { this.setState({file: file}); }
 
     editPage(index) {
@@ -40,6 +45,7 @@ export default class EditPage extends React.Component {
         var newContents = this.state.contents;
         newContents[index]["content"] = contents;
         this.setState({contents: newContents, uncommittedChanges: true});
+        window.addEventListener('beforeunload', this.preventExit);
     }
 
     componentDidMount() {
@@ -59,11 +65,13 @@ export default class EditPage extends React.Component {
         if (this.state.uncommittedChanges) {
             this.confirmLeave.current.toggleOpen();
         } else {
+            window.removeEventListener('beforeunload', this.preventExit);
             this.state.app.setState({fileSystemMode: true, editFileMode: false});
         }
     }
 
     leave() {
+        window.removeEventListener('beforeunload', this.preventExit);
         this.state.app.setState({fileSystemMode: true, editFileMode: false});
         this.confirmLeave.current.toggleOpen();
     }
@@ -84,6 +92,7 @@ export default class EditPage extends React.Component {
                 this.successNot.current.setMessage("Texto submetido com sucesso");
                 this.successNot.current.open();
                 this.setState({uncommittedChanges: false});
+                window.removeEventListener('beforeunload', this.preventExit);
             } else {
                 this.errorNot.current.setMessage(data.error);
                 this.errorNot.current.open();

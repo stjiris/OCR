@@ -142,6 +142,11 @@ export default class LayoutMenu extends React.Component {
         this.warningNot = React.createRef();
     }
 
+    preventExit(event) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
     componentDidMount() {
         const path = this.state.filesystem.state.current_folder.join("/");
 
@@ -170,6 +175,7 @@ export default class LayoutMenu extends React.Component {
         var contents = this.state.contents;
         contents[this.state.page - 1]["boxes"] = boxes;
         this.setState({contents: contents, uncommittedChanges: true}, this.generateBoxes);
+        window.addEventListener('beforeunload', this.preventExit);
     }
 
     deleteBox(index) {
@@ -181,6 +187,7 @@ export default class LayoutMenu extends React.Component {
         this.setState({contents: contents, uncommittedChanges: true}, () => {
             this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
             this.generateBoxes();
+            window.addEventListener('beforeunload', this.preventExit);
         });
     }
 
@@ -224,6 +231,7 @@ export default class LayoutMenu extends React.Component {
         this.setState({contents: contents, uncommittedChanges: true}, () => {
             this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
             this.generateBoxes();
+            window.addEventListener('beforeunload', this.preventExit);
         });
     }
 
@@ -254,11 +262,13 @@ export default class LayoutMenu extends React.Component {
         if (this.state.uncommittedChanges) {
             this.confirmLeave.current.toggleOpen();
         } else {
+            window.removeEventListener('beforeunload', this.preventExit);
             this.state.filesystem.setState({layoutMenu: false});
         }
     }
 
     leave() {
+        window.removeEventListener('beforeunload', this.preventExit);
         this.state.filesystem.setState({layoutMenu: false})
         this.confirmLeave.current.toggleOpen();
     }
