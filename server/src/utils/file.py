@@ -14,7 +14,6 @@ import pytz
 from pdf2image import convert_from_path
 from PIL import Image
 from PyPDF2 import PdfReader
-from src.thread_pool import ThreadPool
 from src.utils.export import export_file
 from src.utils.export import json_to_text
 

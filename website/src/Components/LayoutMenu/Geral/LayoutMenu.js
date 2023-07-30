@@ -61,7 +61,7 @@ class BoxLine extends React.Component {
                 sx={{
                     position: this.state.dragging ? 'absolute' : 'block',
                     zIndex: this.state.dragging ? 100 : 0,
-                    width: this.state.dragging ? '90%' : '100%',
+                    width: this.state.dragging ? '80%' : '95%',
                     opacity: this.state.dragging ? 0.5 : 1,
                     top: `${this.state.top}px`,
                     right: this.state.dragging ? '0' : 'auto',
@@ -319,16 +319,15 @@ export default class LayoutMenu extends React.Component {
                     top: 0,
                     zIndex: 100,
                     backgroundColor: '#fff',
-                    paddingTop: '1rem',
                     paddingBottom: '1rem',
-                    marginBottom: '1rem',
+                    marginBottom: '0.5rem',
                     borderBottom: '1px solid black',
                 }}>
                     <Button
                         disabled={this.state.buttonsDisabled}
                         variant="contained"
                         startIcon={<UndoIcon />}
-                        sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', mr: '1rem', mb: '0.5rem', ':hover': {bgcolor: '#ddd'}}}
+                        sx={{backgroundColor: '#ffffff', color: '#000000', border: '1px solid black', mr: '1rem', ':hover': {bgcolor: '#ddd'}}}
                         onClick={() => this.goBack()}
                     >
                         Voltar atrás
@@ -339,7 +338,7 @@ export default class LayoutMenu extends React.Component {
                         variant="contained"
                         color="success"
                         startIcon={<SaveIcon />}
-                        sx={{border: '1px solid black', mb: '0.5rem'}}
+                        sx={{border: '1px solid black'}}
                         onClick={() => this.saveLayout()}
                     >
                         Guardar
@@ -381,8 +380,10 @@ export default class LayoutMenu extends React.Component {
                         width: '290px',
                         display: 'flex',
                         flexDirection: 'column',
+                        // height: `${window.innerHeight - 250}px`
+                        // overflowY: 'scroll'
                     }}>
-                        <span style={{fontSize: '20px'}}><b>Boxes</b></span>
+                        <span style={{fontSize: '20px'}}><b>Caixas de Texto</b></span>
                         {
                             this.state.boxes
                         }
