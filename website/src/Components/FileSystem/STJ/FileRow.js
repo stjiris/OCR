@@ -9,7 +9,6 @@ import Button from '@mui/material/Button';
 
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import EditIcon from '@mui/icons-material/Edit';
 
 import loadComponent from '../../../utils/loadComponents';
 import calculateEstimatedTime from '../../../utils/waitingTime';
@@ -87,8 +86,6 @@ export default class FileRow extends React.Component {
 
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
-        const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
-        const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
 
         return (
             <>

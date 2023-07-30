@@ -6,7 +6,7 @@ import ZoomOutRoundedIcon from '@mui/icons-material/ZoomOutRounded';
 import { IconButton } from '@mui/material';
 
 const height = window.innerHeight;
-const heightReduction = 300;
+const heightReduction = 250;
 
 class LayoutPreview extends React.Component {
     constructor(props) {
