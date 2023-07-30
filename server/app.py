@@ -1,6 +1,6 @@
 import json
+import logging
 import os
-import re
 import random
 import shutil
 import string
@@ -12,7 +12,6 @@ from flask import send_file
 
 from src.elastic_search import *
 from src.evaluate import evaluate
-from src.thread_pool import ThreadPool
 from src.utils.export import export_file
 from src.utils.file import delete_structure
 from src.utils.file import fix_ocr
@@ -29,10 +28,17 @@ from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
 from src.utils.file import update_data
+from src.utils.file import get_file_layouts
+from src.utils.file import save_file_layouts
+
+from src.utils.system import get_free_space
+from src.utils.system import get_logs
+from src.utils.system import get_private_sessions
 
 from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
 log = app.logger
 
@@ -61,6 +67,17 @@ def get_info():
     
     path = request.values["path"].split("/")[0]
     return {"info": get_structure_info(path)}
+
+
+@app.route("/system-info", methods=["GET"])
+def get_system_info():
+    free_space, free_space_percentage = get_free_space()
+    return {
+        "free_space": free_space,
+        "free_space_percentage": free_space_percentage,
+        "logs": get_logs(),
+        "private_sessions": get_private_sessions(),
+    }
 
 
 @app.route("/create-folder", methods=["POST"])
@@ -126,6 +143,21 @@ def delete_path():
         "success": True,
         "message": "Apagado com sucesso",
         "files": get_filesystem(session),
+    }
+
+@app.route("/delete-private-session", methods=["POST"])
+def delete_private_session():
+    data = request.json
+    session_id = data["sessionId"]
+
+    shutil.rmtree(session_id)
+    if session_id in private_sessions:
+        del private_sessions[session_id]
+
+    return {
+        "success": True,
+        "message": "Apagado com sucesso",
+        "private_sessions": get_private_sessions(),
     }
 
 @app.route("/set-upload-stuck", methods=["POST"])
@@ -483,7 +515,6 @@ def submit_text():
     )
 
     make_changes.delay(data_folder, data)
-    # changes_pool.add_to_queue((data_folder, data))
 
     return {"success": True, "files": get_filesystem(session)}
 
@@ -518,6 +549,24 @@ def validate_private_session():
         response = {"success": True, "valid": False}
 
     return response
+
+#####################################
+# LAYOUTS
+#####################################
+@app.route("/get-layouts", methods=["GET"])
+def get_layouts():
+    path = request.values["path"]
+    return {"layouts": get_file_layouts(path)}
+
+@app.route("/save-layouts", methods=["POST"])
+def save_layouts():
+    data = request.json
+    path = data["path"]
+    layouts = data["layouts"]
+
+    save_file_layouts(path, layouts)
+
+    return {"success": True}
 
 #####################################
 # JOB QUEUES

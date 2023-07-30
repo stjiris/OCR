@@ -11,16 +11,12 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import LockIcon from '@mui/icons-material/Lock';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
-
-// import FolderRow from './FolderRow';
-// import FileRow from './FileRow';
 
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
@@ -290,7 +286,7 @@ class FileExplorer extends React.Component {
         .then(response => {return response.json()})
         .then(data => {
             var sessionId = data["sessionId"];
-            window.location.href = window.location.href + `/${sessionId}`;
+            window.location.href = window.location.href + `${sessionId}`;
         });
     }
 
@@ -742,15 +738,6 @@ class FileExplorer extends React.Component {
                                 sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
                             >
                                 Adicionar documento
-                            </Button>
-
-                            <Button
-                                variant="contained"
-                                startIcon={<LockIcon />}
-                                onClick={() => this.createPrivateSession()}
-                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
-                            >
-                                Sessão privada
                             </Button>
                         </Box>
 

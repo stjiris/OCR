@@ -13,7 +13,7 @@ export default class EditPage extends React.Component {
             app: props.app,
             file: props.app.state.fileOpened,
             contents: [],
-            uncommitedChanges: false,
+            uncommittedChanges: false,
 
             loading: true
         }
@@ -24,6 +24,11 @@ export default class EditPage extends React.Component {
 
         this.multiplePage = React.createRef();
         this.editText = React.createRef();
+    }
+
+    preventExit(event) {
+        event.preventDefault();
+        event.returnValue = '';
     }
 
     setFile(file) { this.setState({file: file}); }
@@ -39,7 +44,8 @@ export default class EditPage extends React.Component {
     updateContents(index, contents) {
         var newContents = this.state.contents;
         newContents[index]["content"] = contents;
-        this.setState({contents: newContents, uncommitedChanges: true});
+        this.setState({contents: newContents, uncommittedChanges: true});
+        window.addEventListener('beforeunload', this.preventExit);
     }
 
     componentDidMount() {
@@ -56,14 +62,16 @@ export default class EditPage extends React.Component {
     }
 
     goBack() {
-        if (this.state.uncommitedChanges) {
+        if (this.state.uncommittedChanges) {
             this.confirmLeave.current.toggleOpen();
         } else {
+            window.removeEventListener('beforeunload', this.preventExit);
             this.state.app.setState({fileSystemMode: true, editFileMode: false});
         }
     }
 
     leave() {
+        window.removeEventListener('beforeunload', this.preventExit);
         this.state.app.setState({fileSystemMode: true, editFileMode: false});
         this.confirmLeave.current.toggleOpen();
     }
@@ -83,7 +91,8 @@ export default class EditPage extends React.Component {
             if (data.success) {
                 this.successNot.current.setMessage("Texto submetido com sucesso");
                 this.successNot.current.open();
-                this.setState({uncommitedChanges: false});
+                this.setState({uncommittedChanges: false});
+                window.removeEventListener('beforeunload', this.preventExit);
             } else {
                 this.errorNot.current.setMessage(data.error);
                 this.errorNot.current.open();

@@ -3,11 +3,6 @@ import React from 'react';
 
 import Box from '@mui/material/Box';
 
-// import { FileExplorer } from './Components/FileSystem/FileSystem.js';
-// import ESPage from './Components/ElasticSearchPage/ESPage';
-// import EditPage from './Components/EditPage/EditPage';
-// import { PrivateFileExplorer } from './Components/PrivateSession/PrivateFileSystem';
-
 import loadComponent from './utils/loadComponents';
 
 /**
@@ -18,7 +13,8 @@ import loadComponent from './utils/loadComponents';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.13.0";
+const VERSION = "0.15.0";
+const UPDATE_TIME = 30;
 
 function App() {
     class Form extends React.Component {
@@ -43,11 +39,13 @@ function App() {
             this.saveButton = React.createRef();
             this.textEditor = React.createRef();
             this.pageDisplayer = React.createRef();
+            this.header = React.createRef();
 
             this.successNot = React.createRef();
             this.errorNot = React.createRef();
 
             this.versionsMenu = React.createRef();
+            this.logsMenu = React.createRef();
 
             this.fileSystem = React.createRef();
             this.editPage = React.createRef();
@@ -55,8 +53,38 @@ function App() {
             this.sendChanges = this.sendChanges.bind(this);
         }
 
+        componentDidMount() {
+            if (window.location.href.includes(process.env.REACT_APP_ADMIN)) {
+                fetch(process.env.REACT_APP_API_URL + 'system-info', {
+                    method: 'GET'
+                })
+                .then(response => {return response.json()})
+                .then(data => {
+                    if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
+                    if (this.header.current !== null) {
+                        this.header.current.setFreeSpace(data["free_space"], data["free_space_percentage"]);
+                        this.header.current.setPrivateSessions(data["private_sessions"]);
+                    }
+                });
+
+                this.interval = setInterval(() => {
+                    fetch(process.env.REACT_APP_API_URL + 'system-info', {
+                        method: 'GET'
+                    })
+                    .then(response => {return response.json()})
+                    .then(data => {
+                        if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
+                        if (this.header.current !== null) {
+                            this.header.current.setFreeSpace(data["free_space"], data["free_space_percentage"]);
+                            this.header.current.setPrivateSessions(data["private_sessions"]);
+                        }
+                    });
+                }, 1000 * UPDATE_TIME);
+            }
+        }
+
         getPrivateSession() {
-            if (["", "ocr", "ocr-dev"].includes(this.state.sessionId)) return null;
+            if (["", "ocr", "ocr-dev", process.env.REACT_APP_ADMIN].includes(this.state.sessionId)) return null;
             return this.state.sessionId;
         }
 
@@ -104,12 +132,12 @@ function App() {
 
             // Check if the current URL is deployed
             if (currentURL.includes('iris.sysresearch.org')) {
-                var deployedURL = currentURL.split("/")[3];
+                var deployedURL = currentURL.split("/")[3] + (currentURL.includes(process.env.REACT_APP_ADMIN) ? process.env.REACT_APP_ADMIN : "");
                 window.location.href = 'https://iris.sysresearch.org/' + deployedURL + '/';
             }
             // Check if the current URL is in the local environment
             else if (currentURL.includes('localhost')) {
-                var port = currentURL.split(":")[2].split("/")[0];
+                var port = currentURL.split(":")[2].split("/")[0] + (currentURL.includes(process.env.REACT_APP_ADMIN) ? process.env.REACT_APP_ADMIN : "");
                 window.location.href = 'http://localhost:' + port + '/';
             }
         }
@@ -119,6 +147,13 @@ function App() {
              * Open the versions menu
              */
             this.versionsMenu.current.toggleOpen();
+        }
+
+        openLogsMenu() {
+            /**
+             * Open the logs menu
+             */
+            this.logsMenu.current.toggleOpen();
         }
 
         sendChanges() {
@@ -154,6 +189,7 @@ function App() {
             const Notification = loadComponent('Notification', 'Notifications');
             const Header = loadComponent('Header', 'Header');
             const VersionsMenu = loadComponent('Form', 'VersionsMenu');
+            const LogsMenu = loadComponent('Form', 'LogsMenu');
             const FileExplorer = loadComponent('FileSystem', 'FileSystem');
             const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
             const EditPage = loadComponent('EditPage', 'EditPage');
@@ -164,9 +200,10 @@ function App() {
                     <Notification message={""} severity={"success"} ref={this.successNot}/>
                     <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                    <Header app={this} privateSession={this.getPrivateSession()} version={VERSION}/>
+                    <Header ref={this.header} app={this} privateSession={this.getPrivateSession()} version={VERSION}/>
 
                     <VersionsMenu ref={this.versionsMenu}/>
+                    <LogsMenu ref={this.logsMenu}/>
 
                     <Box>
                         {
