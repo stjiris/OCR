@@ -8,6 +8,7 @@
 """
 import base64
 import contextlib
+import csv
 import io
 import json
 import os
@@ -93,6 +94,18 @@ def export_txt(path, delimiter=None):
 
     return filename
 
+####################################################
+# EXPORT CSV FUNCTIONS
+####################################################
+
+def export_csv(filename_csv, index_data):
+    with open(filename_csv, mode='w', encoding='utf-8') as csvfile:
+        csv_out = csv.writer(csvfile)
+        csv_out.writerow(['Word', 'Count'])
+        csv_out.writerow([' '])
+        csv_out.writerows(index_data)
+        
+    return filename_csv
 
 ####################################################
 # EXPORT PDF FUNCTIONS
@@ -102,9 +115,10 @@ def export_pdf(path):
     Export the file as a .pdf file
     """
     filename = f"{path}/_search.pdf"
+    filename_csv = f"{path}/_index.csv"
 
-    if os.path.exists(filename):
-        return filename
+    if os.path.exists(filename) and os.path.exists(filename_csv):
+        return filename      
     else:
         pdf_basename = get_file_basename(path)
         pages = convert_from_path(
@@ -154,6 +168,7 @@ def export_pdf(path):
 
         # Sort the `words` dict by key
         words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
+        export_csv(filename_csv, words)
 
         rows = 100
         cols = 3
