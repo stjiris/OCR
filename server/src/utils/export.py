@@ -237,6 +237,9 @@ def find_index_words(hocr_path):
                 w = w.strip()
                 for c in remove_chars:
                     w = w.replace(c, "")
+
+                w = w.lower()
+
                 index_words[w] = index_words.get(w, 0) + 1
 
     return index_words
