@@ -340,6 +340,13 @@ class PrivateFileExplorer extends React.Component {
         this.getDocument("txt", file);
     }
 
+    getCSV(file) {
+        /**
+         * Export the .csv file
+         */
+         this.getDocument("csv", file);
+    }
+
     getPdf(file) {
         /**
          * Export the .pdf file
