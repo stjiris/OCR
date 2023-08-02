@@ -51,6 +51,13 @@ export default class FileRow extends React.Component {
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
+    
+    getCSV(file) {
+        /**
+         * Export the .csv file
+         */
+         this.getDocument("csv", file);
+    }
 
     getPdf(e) {
         e.stopPropagation();
@@ -224,6 +231,26 @@ export default class FileRow extends React.Component {
                                             </TableCell>                        
                                         }
                                     </>                          
+                            }
+
+                            {   
+                                this.state.info["csv"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"] ?
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                    <p>-</p>
+                                </TableCell> :
+                                <>{
+                                    this.state.info["csv"]["complete"] ?
+                                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                        <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                            <span>{this.state.info["csv"]["creation"]}</span>
+                                            <span>{this.state.info["csv"]["size"]}</span>
+                                            <Button sx={{p: 0}} variant="text" onClick={(e) => this.getCSV(e)}>Descarregar</Button>
+                                        </Box>
+                                    </TableCell> :
+                                    <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                        <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
+                                    </TableCell>                        
+                                }</>                          
                             }
 
                             {
