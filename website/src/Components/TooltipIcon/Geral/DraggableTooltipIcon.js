@@ -10,6 +10,7 @@ export default class DraggableTooltipIcon extends React.Component {
 
             color: props.color || 'black',
             padding: props.padding || '0px',
+            disabled: props.disabled || false,
             icon: props.icon,
             message: props.message || "",
             clickFunction: props.clickFunction,
@@ -23,7 +24,7 @@ export default class DraggableTooltipIcon extends React.Component {
         return (
             <Box sx={{position: "relative"}}>
                 {
-                    this.state.showTooltip && !this.state.dragging
+                    this.state.showTooltip && !this.state.dragging && !this.state.disabled
                     ? <>
                         <Box sx={{
                             position: "absolute",
@@ -53,7 +54,7 @@ export default class DraggableTooltipIcon extends React.Component {
                     </>                        
                     : null
                 }
-                <IconButton draggable sx={{
+                <IconButton disabled={this.state.disabled} draggable sx={{
                     color: this.state.color,
                     padding: this.state.padding
                 }}

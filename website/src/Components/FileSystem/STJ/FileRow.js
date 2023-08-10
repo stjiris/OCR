@@ -1,7 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
@@ -86,6 +85,7 @@ export default class FileRow extends React.Component {
 
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
         return (
             <>
@@ -153,14 +153,13 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                                <Box>
-                                    <IconButton
-                                        color="error"
-                                        aria-label="delete"
-                                        onClick={(e) => this.delete(e)}
-                                    >
-                                        <DeleteForeverIcon />
-                                    </IconButton>
+                                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                                    <TooltipIcon
+                                        color="#f00"
+                                        message="Apagar"
+                                        clickFunction={(e) => this.delete(e)}
+                                        icon={<DeleteForeverIcon/>}
+                                    />
                                 </Box>
                             </TableCell>
                         </>
@@ -251,14 +250,12 @@ export default class FileRow extends React.Component {
 
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
-
-                                    <IconButton
-                                        color="error"
-                                        aria-label="delete"
-                                        onClick={(e) => this.delete(e)}
-                                    >
-                                        <DeleteForeverIcon />
-                                    </IconButton>
+                                    <TooltipIcon
+                                        color="#f00"
+                                        message="Apagar"
+                                        clickFunction={(e) => this.delete(e)}
+                                        icon={<DeleteForeverIcon/>}
+                                    />
 
                                 </Box>
                             </TableCell>

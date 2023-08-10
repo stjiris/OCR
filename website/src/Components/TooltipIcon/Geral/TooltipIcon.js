@@ -8,7 +8,8 @@ export default class TooltipIcon extends React.Component {
             showTooltip: false,
 
             color: props.color || 'black',
-            padding: props.padding || '0px',
+            padding: props.padding,
+            disabled: props.disabled || false,
             icon: props.icon,
             message: props.message || "",
             clickFunction: props.clickFunction
@@ -19,7 +20,7 @@ export default class TooltipIcon extends React.Component {
         return (
             <Box sx={{position: "relative"}}>
                 {
-                    this.state.showTooltip
+                    this.state.showTooltip && !this.state.disabled
                     ? <>
                         <Box sx={{
                             position: "absolute",
@@ -49,7 +50,7 @@ export default class TooltipIcon extends React.Component {
                     </>                        
                     : null
                 }
-                <IconButton sx={{
+                <IconButton disabled={this.state.disabled} sx={{
                     color: this.state.color,
                     padding: this.state.padding
                 }}

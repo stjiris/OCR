@@ -1,7 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
@@ -94,6 +93,7 @@ export default class FileRow extends React.Component {
         const Notification = loadComponent('Notification', 'Notifications');
         const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
         const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
         return (
             <>
@@ -162,13 +162,12 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
-                                    <IconButton
-                                        color="error"
-                                        aria-label="delete"
-                                        onClick={(e) => this.delete(e)}
-                                    >
-                                        <DeleteForeverIcon />
-                                    </IconButton>
+                                    <TooltipIcon
+                                        color="#f00"
+                                        message="Apagar"
+                                        clickFunction={(e) => this.delete(e)}
+                                        icon={<DeleteForeverIcon/>}
+                                    />
                                 </Box>
                             </TableCell>
                         </>
@@ -259,44 +258,40 @@ export default class FileRow extends React.Component {
                             }
 
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                                <Box>
-                                    <IconButton
+                                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                                    <TooltipIcon
+                                        color="#1976d2"
+                                        message="Editar"
                                         disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                        color="primary"
-                                        aria-label="edit"
-                                        onClick={(e) => this.editFile(e)}
-                                    >
-                                        <EditIcon />
-                                    </IconButton>
+                                        clickFunction={(e) => this.editFile(e)}
+                                        icon={<EditIcon/>}
+                                    />
                                     
                                     {
                                         this.state.info["indexed"]
-                                            ? <IconButton
+                                            ? <TooltipIcon
+                                                color="#f00"
+                                                message="Remover da Base de Dados"
                                                 disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                                color="error"
-                                                aria-label="remove-database"
-                                                onClick={(e) => this.removeIndex(e)}
-                                            >
-                                                <IconDatabaseOff />
-                                            </IconButton>
-
-                                            : <IconButton
+                                                clickFunction={(e) => this.removeIndex(e)}
+                                                icon={<IconDatabaseOff/>}
+                                            />
+                                            
+                                            : <TooltipIcon
+                                                color="#1976d2"
+                                                message="Adicionar à Base de Dados"
                                                 disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                                color="primary"
-                                                aria-label="add-database"
-                                                onClick={(e) => this.indexFile(e)}
-                                            >
-                                                <IconDatabaseImport />
-                                            </IconButton>
+                                                clickFunction={(e) => this.indexFile(e)}
+                                                icon={<IconDatabaseImport/>}
+                                            />
                                     }
 
-                                    <IconButton
-                                        color="error"
-                                        aria-label="delete"
-                                        onClick={(e) => this.delete(e)}
-                                    >
-                                        <DeleteForeverIcon />
-                                    </IconButton>
+                                    <TooltipIcon
+                                        color="#f00"
+                                        message="Apagar"
+                                        clickFunction={(e) => this.delete(e)}
+                                        icon={<DeleteForeverIcon/>}
+                                    />
 
                                 </Box>
                             </TableCell>

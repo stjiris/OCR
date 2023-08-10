@@ -1,12 +1,13 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 
 import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+
+import loadComponent from '../../../utils/loadComponents';
 
 export default class FolderRow extends React.Component {
     constructor(props) {
@@ -37,6 +38,8 @@ export default class FolderRow extends React.Component {
     }
 
     render() {
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+
         return (
             <TableRow
                 sx={{":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}
@@ -62,13 +65,12 @@ export default class FolderRow extends React.Component {
                 {this.state.current_folder.length > 1 && <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>}
 
                 <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                    <IconButton
-                        color="error"
-                        aria-label="delete"
-                        onClick={(e) => this.delete(e)}
-                    >
-                        <DeleteForeverIcon />
-                    </IconButton>
+                    <TooltipIcon
+                        color="#f00"
+                        message="Apagar"
+                        clickFunction={(e) => this.delete(e)}
+                        icon={<DeleteForeverIcon/>}
+                    />
                 </TableCell>
             </TableRow>
         )
