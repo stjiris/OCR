@@ -13,6 +13,7 @@ import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRound
 import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
 import DeleteForeverRoundedIcon from '@mui/icons-material/DeleteForeverRounded';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import ImageIcon from '@mui/icons-material/Image';
@@ -32,6 +33,8 @@ class BoxLine extends React.Component {
             lastSpacing: false,
             dragging: false,
             top: 0,
+
+            open: false,
 
             type: props.type || "text",
         }
@@ -74,12 +77,34 @@ class BoxLine extends React.Component {
         this.setState({type: e.target.value});
     }
 
+    closeMenu() {
+        this.setState({open: false});
+    }
+
+    toggleMenu(e) {
+        e.stopPropagation();
+        if (!this.state.open)
+            this.state.menu.closeAllMenus();
+
+        this.setState({open: !this.state.open});
+    }
+
+    addBoxToAllPages(e) {
+        e.stopPropagation();
+        var box = this.state.size;
+        box["type"] = this.state.type;
+        this.state.menu.addBoxToAllPages(box);
+    }
+
     render() {
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+        const DraggableTooltipIcon = loadComponent('TooltipIcon', 'DraggableTooltipIcon')
+
         return (
             <Box
                 key={this.state.box + " " + this.state.size.top + " " + this.state.size.left + " " + this.state.size.bottom + " " + this.state.size.right + " " + this.state.spacing}
                 sx={{
-                    position: this.state.dragging ? 'absolute' : 'block',
+                    position: this.state.dragging ? 'absolute' : 'relative',
                     zIndex: this.state.dragging ? 100 : 0,
                     width: '95%',
                     opacity: this.state.dragging ? 0.5 : 1,
@@ -95,12 +120,36 @@ class BoxLine extends React.Component {
                     backgroundColor: '#f5f5f5',
                     borderRadius: '5px',
                     padding: '0.3rem',
-                    border: this.state.type === "text" ? '2px solid #00f' : this.state.type === "image" ? '2px solid #F28C28' : '2px solid #f00',
+                    border: this.state.type === "text" ? '2px solid #00f' : this.state.type === "image" ? '2px solid #08A045' : '2px solid #F05E16',
                 }}
             >
+                {
+                    this.state.open
+                    ? <Box sx={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '60%',
+                        transform: 'translate(-50%, -50%)',
+                        border: '1px solid #000',
+                        height: '90%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: '#f5f5f5',
+                        zIndex: '100',
+                        borderRadius: '5px',
+                        padding: '0rem 0.5rem',
+                        cursor: 'pointer',
+                    }}
+                    onClick={(e) => alert("Hey")}
+                    >
+                        <span>Copiar para as outras páginas</span>
+                    </Box>
+                    : null
+                }
                 <Box
                     sx={{
-                        backgroundColor: this.state.type === "text" ? "#00f" : this.state.type === "image" ? "#F28C28" : "#f00",
+                        backgroundColor: this.state.type === "text" ? "#00f" : this.state.type === "image" ? "#08A045" : "#F05E16",
                         width: "30px",
                         height: "30px",
                         borderRadius: "50%",
@@ -129,7 +178,7 @@ class BoxLine extends React.Component {
                         </MenuItem>
                         <MenuItem value={"image"}>
                             <Icon>
-                                <ImageIcon sx={{color: "#F28C28"}}/>
+                                <ImageIcon sx={{color: "#08A045"}}/>
                             </Icon>
                         </MenuItem>
                         <MenuItem value={"ignore"}>
@@ -139,26 +188,37 @@ class BoxLine extends React.Component {
                         </MenuItem>
                     </Select>
                 </FormControl>
-                <Box>
-                    <IconButton sx={{
-                        color: '#f00'
-                    }} onClick={(e) => {
-                        e.stopPropagation();
-                        this.state.menu.deleteBox(this.state.type, this.state.box);
-                    }}>
-                        <DeleteForeverRoundedIcon/>
-                    </IconButton>
-                    <IconButton draggable sx={{
-                        color: this.state.type === "text" ? '#00f' : this.state.type === "image" ? '#F28C28' : '#f00',
-                        cursor: 'grab',
-                    }}
-                        onClick={(e) => this.orderingClick(e)}
-                        onDragStart={(e) => {this.startDrag(e)}}
-                        onDrag={(e) => {this.reorderBox(e)}}
-                        onDragEnd={(e) => {this.endReorderBox(e)}}
-                    >
-                        <SwapVertIcon/>
-                    </IconButton>
+                <Box sx={{display: 'flex', flexDirection: 'row'}}>
+                    <TooltipIcon
+                        color="#f00"
+                        message="Apagar"
+                        padding="2px"
+                        icon={<DeleteForeverRoundedIcon/>}
+                        clickFunction={(e) => {
+                            e.stopPropagation();
+                            this.state.menu.deleteBox(this.state.type, this.state.box);
+                        }}
+                    />
+
+                    <TooltipIcon
+                        color={this.state.type === "text" ? '#00f' : this.state.type === "image" ? '#08A045' : '#F05E16'}
+                        message="Copiar para as outras páginas"
+                        padding="2px"
+                        icon={<ContentCopyIcon/>}
+                        clickFunction={(e) => this.addBoxToAllPages(e)}
+                    />
+
+                    <DraggableTooltipIcon
+                        color={this.state.type === "text" ? '#00f' : this.state.type === "image" ? '#08A045' : '#F05E16'}
+                        message="Ordenar"
+                        padding="2px"
+                        icon={<SwapVertIcon/>}
+                        clickFunction={(e) => this.orderingClick(e)}
+                        dragStartFunction={(e) => {this.startDrag(e)}}
+                        dragFunction={(e) => {this.reorderBox(e)}}
+                        dragEndFunction={(e) => {this.endReorderBox(e)}}
+                    />
+                    
                 </Box>
             </Box>
         )
@@ -218,6 +278,27 @@ export default class LayoutMenu extends React.Component {
 
             this.setState({contents: contents}, () => {this.generateBoxes(); this.image.current.loadBoxes()});
         });
+    }
+
+    closeAllMenus() {
+        for (var i = 0; i < this.boxRefs.length; i++) {
+            this.boxRefs[i].current.closeMenu();
+        }
+        for (i = 0; i < this.imageRefs.length; i++) {
+            this.imageRefs[i].current.closeMenu();
+        }
+        for (i = 0; i < this.ignoreRefs.length; i++) {
+            this.ignoreRefs[i].current.closeMenu();
+        }
+    }
+
+    addBoxToAllPages(box) {
+        var contents = this.state.contents;
+        for (var i = 0; i < contents.length; i++) {
+            if (this.state.page - 1 === i) continue;
+            contents[i]["boxes"].push(box);
+        }
+        this.setState({contents: contents});
     }
 
     changePage(increment) {

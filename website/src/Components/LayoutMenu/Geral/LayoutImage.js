@@ -75,9 +75,9 @@ class LayoutBox extends React.Component {
 
     componentDidMount() {
         this.setState({
-            mainColor: this.state.type === "text" ? "#00f" : this.state.type === "image" ? '#F28C28' : '#f00',
-            numberColor: this.state.type === "text" ? "#00fa" : this.state.type === "image" ? '#F28C28A6' : '#f00a',
-            backColor: this.state.type === "text" ? "#00f2" : this.state.type === "image" ? '#F28C2826' : '#f002',
+            mainColor: this.state.type === "text" ? "#00f" : this.state.type === "image" ? '#08A045' : '#F05E16',
+            numberColor: this.state.type === "text" ? "#00fa" : this.state.type === "image" ? '#08A045A6' : '#F05E16A6',
+            backColor: this.state.type === "text" ? "#00f2" : this.state.type === "image" ? '#08A04526' : '#F05E1626',
         })
     }
 
