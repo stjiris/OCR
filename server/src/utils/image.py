@@ -5,6 +5,7 @@ import glob
 import logging as log
 import hdbscan
 from export import get_file_basename
+from file import save_file_layouts
 
 ##################################################
 # IMAGE UTILS
@@ -114,6 +115,15 @@ def findCorners(image):
         pos_corners_xy.append([x, y])
     return pos_corners, pos_corners_xy, kp
 
+def merge_boxes(boxes):
+        for key in boxes.keys():
+            box = boxes[key]
+            if len(box) > 0:
+                new_pos = [max(0, min(box[:, 0]-5)), max(0, min(box[:,   
+                1]-5)), max(box[:, 2]+5), max(box[:, 3]+5)]
+                boxes[key] = new_pos
+        return boxes
+
 def parse_image(img_path):
     img = cv2.imread(img_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -192,60 +202,60 @@ def parse_image(img_path):
     n_clusters = len(set(hdb.labels_)) - (1 if -1 in hdb.labels_ else 0 )
     pos_corners = np.array(pos_corners)
     rects = {}
+
     for i in range(n_clusters):
         group = pos_corners[hdb.labels_ == i]
         rects[i] = group
-    def merge_boxes(boxes):
-        for key in boxes.keys():
-            box = boxes[key]
-            if len(box) > 0:
-                new_pos = [max(0, min(box[:, 0]-5)), max(0, min(box[:,   
-                1]-5)), max(box[:, 2]+5), max(box[:, 3]+5)]
-                boxes[key] = new_pos
-        return boxes
+
     mer_boxes = merge_boxes(rects)
-    img = gray.copy()
-    img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-    im2 = img.copy()
-    for box in mer_boxes.values():
-        cv2.rectangle(im2, (int(box[0]), int(box[1])), (int(box[2]),       
-        int(box[3])),(0, 0, 255), 2)
+    return mer_boxes
 
-    # # use morphology erode to blur horizontally
-    # rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 30))
-    # dilation = cv2.dilate(thresh1, rect_kernel, iterations = 1)
-
-    # contours, hierarchy = cv2.findContours(dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    # img = gray.copy()
+    # img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     # im2 = img.copy()
-    # contours = contours[0] if len(contours) == 2 else contours[1]
+    # for box in mer_boxes.values():
+    #     cv2.rectangle(im2, (int(box[0]), int(box[1])), (int(box[2]),       
+    #     int(box[3])),(0, 0, 255), 2)
 
-    # for cnt in contours:
-    #     x, y, w, h = cv2.boundingRect(cnt)    
-    #     cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-    cv2.imshow("shapes", im2)
-    cv2.waitKey(0)
+    # cv2.imshow("shapes", im2)
+    # cv2.waitKey(0)
 
 def parse_images(path):
     pdf_basename = get_file_basename(path)
     filename = f"{path}/{pdf_basename}_0.jpg"
-    print(filename)
 
-    if path == "files/nova/J1_75.pdf/phNzW.jpg":
-        parse_image(path)
+    if os.path.exists(filename):
+        # Grab all the images already in the folder
+        images = glob.glob(f"{path}/{pdf_basename}_*.jpg")
+        sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+
+        all_layouts = []
+
+        for img in sorted_images:
+            mer_boxes = parse_image(img)
+            formatted_boxes = []
+
+            for box in mer_boxes.values():
+                left, top, right, bottom = box
+                formatted_box = {
+                    "top": top,
+                    "left": left,
+                    "bottom": bottom,
+                    "right": right
+                }
+                formatted_boxes.append(formatted_box)
+
+            all_layouts.append({"boxes": formatted_boxes})
+
+        layouts_path = f"{path}/layouts"
+        if not os.path.isdir(layouts_path):
+            os.mkdir(layouts_path)
+
+        save_file_layouts(path, all_layouts)
+
+        return filename
     else:
-        if os.path.exists(filename):
-            # Grab all the images already in the folder
-            images = glob.glob(f"{path}/{pdf_basename}_*.jpg")
-            sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+        log.error(f"Error in parsing images at {path}")
 
-            for img in sorted_images:
-                parse_image(img)
-
-            return filename
-        else:
-            log.error(f"Error in parsing images at {path}")
-
-# parse_images("server/files/nova/J1_75.pdf/phNzW.jpg")
 parse_images("server/files/a/CV.pdf")
 # parse_images("server/files/jornais/J2_75.pdf")
