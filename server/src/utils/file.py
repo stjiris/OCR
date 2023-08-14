@@ -66,7 +66,7 @@ def get_file_parsed(path):
             data.append(
                 {
                     "original_file": file,
-                    "content": json_to_text(hocr),
+                    "content": hocr,
                     "page_url": IMAGE_PREFIX
                     + "/images/"
                     + "/".join(file.split("/")[1:-2])
