@@ -252,7 +252,7 @@ def parse_images(path):
             os.mkdir(layouts_path)
 
         save_file_layouts(path, all_layouts)
-        return all_layouts
+        # return all_layouts
     else:
         log.error(f"Error in parsing images at {path}")
 
