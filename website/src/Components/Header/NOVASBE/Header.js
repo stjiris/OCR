@@ -1,7 +1,6 @@
 import React from 'react';
 
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Button from '@mui/material/Button';
 import HelpIcon from '@mui/icons-material/Help';
@@ -11,6 +10,7 @@ import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRound
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
 import logoNovaSBE from '../../../static/logoNovaSBE.png';
+import loadComponent from '../../../utils/loadComponents';
 
 export default class Header extends React.Component {
     constructor(props) {
@@ -55,6 +55,8 @@ export default class Header extends React.Component {
     }
 
     render() {        
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+
         return (
             <Box sx={{
                 display: 'flex',
@@ -134,9 +136,12 @@ export default class Header extends React.Component {
                                                     <span>
                                                         {privateSession}
                                                     </span>
-                                                    <IconButton onClick={(e) => this.deletePrivateSession(e, privateSession)}>
-                                                        <DeleteForeverIcon sx={{color: '#f00'}} />
-                                                    </IconButton>
+                                                    <TooltipIcon
+                                                        color="#f00"
+                                                        message="Apagar"
+                                                        clickFunction={(e) => this.deletePrivateSession(e, privateSession)}
+                                                        icon={<DeleteForeverIcon/>}
+                                                    />
                                                 </Box>
                                             )
                                         })
