@@ -13,6 +13,7 @@ from flask import send_file
 from src.elastic_search import *
 from src.evaluate import evaluate
 from src.utils.export import export_file
+from src.utils.image import parse_images
 from src.utils.file import delete_structure
 from src.utils.file import fix_ocr
 from src.utils.file import generate_uuid
@@ -574,6 +575,11 @@ def save_layouts():
     save_file_layouts(path, layouts)
 
     return {"success": True}
+
+@app.route("/generate-automatic-layouts", methods=["GET"])
+def generate_automatic_layouts():
+    path = request.values["path"]
+    return {"layouts": parse_images(path)}
 
 #####################################
 # JOB QUEUES
