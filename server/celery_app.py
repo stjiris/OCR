@@ -43,6 +43,9 @@ def make_changes(data_folder, data):
     data["pdf"]["complete"] = True
     data["pdf"]["creation"] = current_date
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
+    data["csv"]["complete"] = True
+    data["csv"]["creation"] = current_date
+    data["csv"]["size"] = get_size(data_folder + "/_index.csv", path_complete=True)
 
     update_data(data_folder + "/_data.json", data)
 
@@ -131,6 +134,9 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
             data["pdf"]["creation"] = creation_date
             data["pdf"]["pages"] = get_page_count(f"{path}/_search.pdf")
+            data["csv"]["complete"] = True
+            data["csv"]["creation"] = creation_date
+            data["csv"]["size"] = get_size(f"{path}/_index.csv", path_complete=True)
 
             data["indexed"] = False
             update_data(data_folder, data)

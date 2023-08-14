@@ -123,6 +123,11 @@ def get_pdf():
     file = export_file(path, "pdf")
     return send_file(file)
 
+@app.route("/get_csv", methods=["GET"])
+def get_csv():
+    path = request.values["path"]
+    return send_file(f"{path}/_index.csv")
+
 @app.route("/get_original", methods=["GET"])
 def get_original():
     path = request.values["path"]
@@ -366,6 +371,8 @@ def perform_ocr():
         data["txt"]["complete"] = False
         data["pdf"] = {}
         data["pdf"]["complete"] = False
+        data["csv"] = {}
+        data["csv"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
         task_file_ocr.delay(f, config, ocr_algorithm)
