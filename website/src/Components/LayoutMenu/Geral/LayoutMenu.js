@@ -294,6 +294,20 @@ export default class LayoutMenu extends React.Component {
         });
     }
 
+    GenerateLayoutAutomatically() {
+        const path = this.state.filesystem.state.current_folder.join("/");
+        fetch(process.env.REACT_APP_API_URL + 'generate-automatic-layouts?path=' + path + "/" + this.state.filename, {
+            method: 'GET'
+        }).then(response => {return response.json()})
+        .then(data => {
+            var contents = data["layouts"].sort((a, b) =>
+                (a["page_url"] > b["page_url"]) ? 1 : -1
+            )
+
+            this.setState({contents: contents}, () => {this.generateBoxes(); this.image.current.loadBoxes()});
+        });
+    }
+
     showWarningNotification(message) {
         this.warningNot.current.setMessage(message);
         this.warningNot.current.open();
@@ -333,16 +347,26 @@ export default class LayoutMenu extends React.Component {
                         Voltar atrás
                     </Button>
 
-                    <Button
-                        disabled={this.state.buttonsDisabled}
-                        variant="contained"
-                        color="success"
-                        startIcon={<SaveIcon />}
-                        sx={{border: '1px solid black'}}
-                        onClick={() => this.saveLayout()}
-                    >
-                        Guardar
-                    </Button>
+                    <Box>
+                        <Button
+                                    disabled={this.state.buttonsDisabled}
+                                    variant="contained"
+                                    onClick={() => this.GenerateLayoutAutomatically()}
+                                    sx={{border: '1px solid black', mr: '1rem'}}
+                                >
+                                    Gerar caixas automaticamente
+                        </Button>
+                        <Button
+                            disabled={this.state.buttonsDisabled}
+                            variant="contained"
+                            color="success"
+                            startIcon={<SaveIcon />}
+                            sx={{border: '1px solid black'}}
+                            onClick={() => this.saveLayout()}
+                        >
+                            Guardar
+                        </Button>
+                    </Box>
                 </Box>
                 <Box ref={this.menu} sx={{
                     display: 'flex',
