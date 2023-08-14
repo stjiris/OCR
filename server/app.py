@@ -579,7 +579,8 @@ def save_layouts():
 @app.route("/generate-automatic-layouts", methods=["GET"])
 def generate_automatic_layouts():
     path = request.values["path"]
-    return {"layouts": parse_images(path)}
+    parse_images(path)
+    return {"layouts": get_file_layouts(path)}
 
 #####################################
 # JOB QUEUES

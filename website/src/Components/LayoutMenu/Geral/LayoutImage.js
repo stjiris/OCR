@@ -482,6 +482,7 @@ export default class LayoutImage extends React.Component {
                         onDragStart={(e) => this.dragStart(e)}
                         onDrag={(e) => this.duringDrag(e)}
                         onDragEnd={(e) => this.dragEnd(e)}
+                        onLoad={() => this.loadBoxes()}
                     />
 
                     {

@@ -276,7 +276,10 @@ export default class LayoutMenu extends React.Component {
                 }
             }
 
-            this.setState({contents: contents}, () => {this.generateBoxes(); this.image.current.loadBoxes()});
+            this.setState({contents: contents}, () => {
+                this.generateBoxes();
+                this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+            });
         });
     }
 
@@ -307,7 +310,11 @@ export default class LayoutMenu extends React.Component {
         contents[this.state.page - 1]["boxes"] = boxes;
 
         var page = this.state.page + increment;
-        this.setState({page: page, contents: contents}, this.generateBoxes);
+        this.setState({page: page, contents: contents}, () => {
+            this.generateBoxes();
+            this.image.current.loadBoxes();
+            // this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+        });
     }
 
     updateBoxes(boxes) {
@@ -552,7 +559,16 @@ export default class LayoutMenu extends React.Component {
                 (a["page_url"] > b["page_url"]) ? 1 : -1
             )
 
-            this.setState({contents: contents}, () => {this.generateBoxes(); this.image.current.loadBoxes()});
+            for (var i = 0; i < contents.length; i++) {
+                if (contents[i]["type"] === null) {
+                    contents[i]["type"] = "text";
+                }
+            }
+
+            this.setState({contents: contents}, () => {
+                this.generateBoxes();
+                this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+            });
         });
     }
 
