@@ -4,8 +4,8 @@ import numpy as np
 import glob
 import logging as log
 import hdbscan
-from export import get_file_basename
-from file import save_file_layouts
+from src.utils.export import get_file_basename
+from src.utils.file import save_file_layouts
 
 ##################################################
 # IMAGE UTILS
@@ -252,10 +252,9 @@ def parse_images(path):
             os.mkdir(layouts_path)
 
         save_file_layouts(path, all_layouts)
-
-        return filename
+        return all_layouts
     else:
         log.error(f"Error in parsing images at {path}")
 
-parse_images("server/files/a/CV.pdf")
+# parse_images("server/files/a/CV.pdf")
 # parse_images("server/files/jornais/J2_75.pdf")
