@@ -251,10 +251,11 @@ def parse_images(path):
         if not os.path.isdir(layouts_path):
             os.mkdir(layouts_path)
 
-        save_file_layouts(path, all_layouts)
-        # return all_layouts
+        sorted_all_layouts = []
+        for layout in all_layouts:
+            # This orders the segments based on typical reading order: top-left to bottom-right.
+            sorted_layout = sorted(layout['boxes'], key=lambda c: (c['top'], c['left']))
+            sorted_all_layouts.append({'boxes': sorted_layout})
+        save_file_layouts(path, sorted_all_layouts)
     else:
         log.error(f"Error in parsing images at {path}")
-
-# parse_images("server/files/a/CV.pdf")
-# parse_images("server/files/jornais/J2_75.pdf")
