@@ -13,7 +13,7 @@ import loadComponent from './utils/loadComponents';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.17.0";
+const VERSION = "0.18.0";
 const UPDATE_TIME = 30;
 
 function App() {

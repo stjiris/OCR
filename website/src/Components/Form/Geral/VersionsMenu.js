@@ -52,6 +52,13 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.18.0 - 16/08/2023</b></p>
+                            <ul>
+                                <li>Capacidade de fazer OCR a Segmentos (automaticamente
+                                    consoante se existem ou não segmentos criados numa página)
+                                </li>
+                                <li>Re-Ordena segmentos quando estes são gerados automaticamente</li>
+                            </ul>
                             <p><b>Versão 0.17.0 - 14/08/2023</b></p>
                             <ul>
                                 <li>Capacidade de gerar layout automaticamente</li>
