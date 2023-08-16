@@ -5,6 +5,7 @@ from flask import Flask
 from flask_cors import CORS
 import logging as log
 from PIL import Image
+import json
 
 from src.algorithms import tesseract
 from src.algorithms import easy_ocr
@@ -99,10 +100,46 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         # Convert the ocr_algorithm to the correct class
         ocr_algorithm = globals()[ocr_algorithm]
 
-        json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
-        save_json_structure(
-            json_d, f"{path}/ocr_results/{get_file_basename(filename)}.json"
-        )
+        layout_path = f"{path}/layouts/{get_file_basename(filename)}.json"
+        segment_ocr_flag = False
+
+        if os.path.exists(layout_path):
+            with open(layout_path, "r") as f:
+                contents = f.read().strip()
+                if contents != "[]":
+                    segment_ocr_flag = True
+
+        if segment_ocr_flag == False:
+            json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
+            save_json_structure(
+                json_d, f"{path}/ocr_results/{get_file_basename(filename)}.json"
+            )
+        else:
+            with open(layout_path, "r") as json_file:
+                parsed_json = json.load(json_file)
+
+            box_coordinates_list = []
+            for item in parsed_json:
+                left = item["left"]
+                top = item["top"]
+                right = item["right"]
+                bottom = item["bottom"]
+                
+                box_coords = (left, top, right, bottom)
+                box_coordinates_list.append(box_coords)
+
+            all_jsons = []
+            for box in box_coordinates_list:                
+                json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config, box)
+                all_jsons.append(json_d)
+
+            page_json = []
+            for sublist in all_jsons:
+                page_json.extend(sublist)
+                
+            save_json_structure(
+                page_json, f"{path}/ocr_results/{get_file_basename(filename)}.json"
+            )
 
         files = os.listdir(f"{path}/ocr_results")
 
