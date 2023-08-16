@@ -253,6 +253,7 @@ def parse_images(path):
 
         sorted_all_layouts = []
         for layout in all_layouts:
+            # This orders the segments based on typical reading order: top-left to bottom-right.
             sorted_layout = sorted(layout['boxes'], key=lambda c: (c['top'], c['left']))
             sorted_all_layouts.append({'boxes': sorted_layout})
         save_file_layouts(path, sorted_all_layouts)
