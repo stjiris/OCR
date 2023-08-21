@@ -4,6 +4,11 @@ import pytesseract
 from lxml import etree
 from lxml import html
 
+def get_segment_hocr(page, config, segment_coordinates):
+    cropped_image = page.crop(segment_coordinates)
+    return pytesseract.image_to_pdf_or_hocr(
+        cropped_image, lang="por", extension="hocr", config="+".join(config)
+    )
 
 def get_hocr(page, config):
     """
@@ -18,8 +23,11 @@ def get_hocr(page, config):
     )
 
 
-def get_structure(page, config):
-    hocr = get_hocr(page, config)
+def get_structure(page, config, box=None):
+    if box:
+        hocr = get_segment_hocr(page, config, box)
+    else:
+        hocr = get_hocr(page, config)
 
     p1 = re.compile(r"bbox((\s+\d+){4})")
     p2 = re.compile(r"baseline((\s+[\d\.\-]+){2})")

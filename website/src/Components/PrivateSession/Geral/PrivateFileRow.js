@@ -43,6 +43,13 @@ export default class PrivateFileRow extends React.Component {
         this.successNot.current.open();
     }
 
+    getCSV(e) {
+        e.stopPropagation();
+        this.state.filesystem.getCSV(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
     getPdf(e) {
         e.stopPropagation();
         this.state.filesystem.getPdf(this.state.name);
@@ -218,6 +225,34 @@ export default class PrivateFileRow extends React.Component {
                         {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
                     </TableRow>
                     : null
+                }
+
+                {   
+                    this.state.info["csv"] !== undefined && this.state.info["csv"]["complete"]
+                    ? <TableRow>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <Button
+                                onClick={(e) => this.getCSV(e)}
+                                style={{
+                                    p: 0,
+                                    textTransform: 'none',
+                                    display: "flex",
+                                    textAlign: "left",
+                                }}
+                            >
+                                {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_ocr.csv"}
+                            </Button>
+                        </TableCell>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                <span>{this.state.info["csv"]["creation"]}</span>
+                                <span>{this.state.info["csv"]["size"]}</span>
+                            </Box>
+                        </TableCell>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
+                    </TableRow>
+                    : null                        
                 }
 
                 {
