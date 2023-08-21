@@ -1,14 +1,12 @@
+import json
 import os
 
-from celery import Celery, shared_task
+from celery import Celery
 from flask import Flask
 from flask_cors import CORS
 import logging as log
 from PIL import Image
 import json
-
-from src.algorithms import tesseract
-from src.algorithms import easy_ocr
 
 from src.utils.file import get_current_time
 from src.utils.file import export_file
@@ -16,7 +14,6 @@ from src.utils.file import get_size
 from src.utils.file import update_data
 from src.utils.file import get_data
 from src.utils.file import prepare_file_ocr
-from src.utils.file import save_json_structure
 from src.utils.file import get_file_basename
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
@@ -136,10 +133,9 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             page_json = []
             for sublist in all_jsons:
                 page_json.extend(sublist)
-                
-            save_json_structure(
-                page_json, f"{path}/ocr_results/{get_file_basename(filename)}.json"
-            )
+            
+            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w") as f:
+                json.dump(page_json, f, indent=2)
 
         files = os.listdir(f"{path}/ocr_results")
 
