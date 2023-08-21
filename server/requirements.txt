@@ -17,6 +17,7 @@ redis==4.5.1
 eventlet==0.33.3
 cryptography==41.0.2
 psutil==5.9.4
+hdbscan==0.8.33
 pytest==7.4.0
 pytest-cov==4.1.0
 coverage==7.3.0

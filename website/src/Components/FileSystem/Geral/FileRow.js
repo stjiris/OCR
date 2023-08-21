@@ -1,7 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
@@ -53,6 +52,13 @@ export default class FileRow extends React.Component {
         this.successNot.current.open();
     }
 
+    getCSV(e) {
+        e.stopPropagation();
+        this.state.filesystem.getCSV(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
     getPdf(e) {
         e.stopPropagation();
         this.state.filesystem.getPdf(this.state.name);
@@ -94,6 +100,7 @@ export default class FileRow extends React.Component {
         const Notification = loadComponent('Notification', 'Notifications');
         const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
         const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
         return (
             <>
@@ -160,15 +167,15 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
-                                    <IconButton
-                                        color="error"
-                                        aria-label="delete"
-                                        onClick={(e) => this.delete(e)}
-                                    >
-                                        <DeleteForeverIcon />
-                                    </IconButton>
+                                    <TooltipIcon
+                                        color="#f00"
+                                        message="Apagar"
+                                        clickFunction={(e) => this.delete(e)}
+                                        icon={<DeleteForeverIcon/>}
+                                    />
                                 </Box>
                             </TableCell>
                         </>
@@ -235,6 +242,26 @@ export default class FileRow extends React.Component {
                                     </>                          
                             }
 
+                            {   
+                                this.state.info["csv"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"] ?
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                    <p>-</p>
+                                </TableCell> :
+                                <>{
+                                    this.state.info["csv"]["complete"] ?
+                                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                        <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                            <span>{this.state.info["csv"]["creation"]}</span>
+                                            <span>{this.state.info["csv"]["size"]}</span>
+                                            <Button sx={{p: 0}} variant="text" onClick={(e) => this.getCSV(e)}>Descarregar</Button>
+                                        </Box>
+                                    </TableCell> :
+                                    <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                        <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
+                                    </TableCell>                        
+                                }</>                          
+                            }
+
                             {
                                 this.state.info["pdf"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]
                                     ? <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
@@ -259,44 +286,40 @@ export default class FileRow extends React.Component {
                             }
 
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                                <Box>
-                                    <IconButton
+                                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                                    <TooltipIcon
+                                        color="#1976d2"
+                                        message="Editar"
                                         disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                        color="primary"
-                                        aria-label="edit"
-                                        onClick={(e) => this.editFile(e)}
-                                    >
-                                        <EditIcon />
-                                    </IconButton>
+                                        clickFunction={(e) => this.editFile(e)}
+                                        icon={<EditIcon/>}
+                                    />
                                     
                                     {
                                         this.state.info["indexed"]
-                                            ? <IconButton
+                                            ? <TooltipIcon
+                                                color="#f00"
+                                                message="Remover da Base de Dados"
                                                 disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                                color="error"
-                                                aria-label="remove-database"
-                                                onClick={(e) => this.removeIndex(e)}
-                                            >
-                                                <IconDatabaseOff />
-                                            </IconButton>
-
-                                            : <IconButton
+                                                clickFunction={(e) => this.removeIndex(e)}
+                                                icon={<IconDatabaseOff/>}
+                                            />
+                                            
+                                            : <TooltipIcon
+                                                color="#1976d2"
+                                                message="Adicionar à Base de Dados"
                                                 disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                                color="primary"
-                                                aria-label="add-database"
-                                                onClick={(e) => this.indexFile(e)}
-                                            >
-                                                <IconDatabaseImport />
-                                            </IconButton>
+                                                clickFunction={(e) => this.indexFile(e)}
+                                                icon={<IconDatabaseImport/>}
+                                            />
                                     }
 
-                                    <IconButton
-                                        color="error"
-                                        aria-label="delete"
-                                        onClick={(e) => this.delete(e)}
-                                    >
-                                        <DeleteForeverIcon />
-                                    </IconButton>
+                                    <TooltipIcon
+                                        color="#f00"
+                                        message="Apagar"
+                                        clickFunction={(e) => this.delete(e)}
+                                        icon={<DeleteForeverIcon/>}
+                                    />
 
                                 </Box>
                             </TableCell>

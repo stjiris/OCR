@@ -6,6 +6,7 @@ from flask import Flask
 from flask_cors import CORS
 import logging as log
 from PIL import Image
+import json
 
 from src.utils.file import get_current_time
 from src.utils.file import export_file
@@ -28,7 +29,7 @@ celery = Celery("celery_app", broker=CELERY_BROKER_URL)
 def make_changes(data_folder, data):
     current_date = get_current_time()
 
-    export_file(data_folder, "txt")
+    export_file(data_folder, "txt", force_recreate=True)
     data["txt"]["complete"] = True
     data["txt"]["creation"] = current_date
     data["txt"]["size"] = get_size(data_folder + "/_text.txt", path_complete=True)
@@ -36,10 +37,13 @@ def make_changes(data_folder, data):
     update_data(data_folder + "/_data.json", data)
 
     os.remove(data_folder + "/_search.pdf")
-    export_file(data_folder, "pdf")
+    export_file(data_folder, "pdf", force_recreate=True)
     data["pdf"]["complete"] = True
     data["pdf"]["creation"] = current_date
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
+    data["csv"]["complete"] = True
+    data["csv"]["creation"] = current_date
+    data["csv"]["size"] = get_size(data_folder + "/_index.csv", path_complete=True)
 
     update_data(data_folder + "/_data.json", data)
 
@@ -93,9 +97,45 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         # Convert the ocr_algorithm to the correct class
         ocr_algorithm = globals()[ocr_algorithm]
 
-        json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
-        with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w") as f:
-            json.dump(json_d, f, indent=2)
+        layout_path = f"{path}/layouts/{get_file_basename(filename)}.json"
+        segment_ocr_flag = False
+
+        if os.path.exists(layout_path):
+            with open(layout_path, "r") as f:
+                contents = f.read().strip()
+                if contents != "[]":
+                    segment_ocr_flag = True
+
+        if segment_ocr_flag == False:
+            json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
+            save_json_structure(
+                json_d, f"{path}/ocr_results/{get_file_basename(filename)}.json"
+            )
+        else:
+            with open(layout_path, "r") as json_file:
+                parsed_json = json.load(json_file)
+
+            box_coordinates_list = []
+            for item in parsed_json:
+                left = item["left"]
+                top = item["top"]
+                right = item["right"]
+                bottom = item["bottom"]
+                
+                box_coords = (left, top, right, bottom)
+                box_coordinates_list.append(box_coords)
+
+            all_jsons = []
+            for box in box_coordinates_list:                
+                json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config, box)
+                all_jsons.append(json_d)
+
+            page_json = []
+            for sublist in all_jsons:
+                page_json.extend(sublist)
+            
+            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w") as f:
+                json.dump(page_json, f, indent=2)
 
         files = os.listdir(f"{path}/ocr_results")
 
@@ -127,6 +167,9 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
             data["pdf"]["creation"] = creation_date
             data["pdf"]["pages"] = get_page_count(f"{path}/_search.pdf")
+            data["csv"]["complete"] = True
+            data["csv"]["creation"] = creation_date
+            data["csv"]["size"] = get_size(f"{path}/_index.csv", path_complete=True)
 
             data["indexed"] = False
             update_data(data_folder, data)
