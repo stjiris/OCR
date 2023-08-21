@@ -11,7 +11,6 @@ from flask import request
 from flask import send_file
 
 from src.elastic_search import *
-from src.evaluate import evaluate
 from src.utils.export import export_file
 from src.utils.file import delete_structure
 from src.utils.file import fix_ocr
@@ -23,7 +22,6 @@ from src.utils.file import get_file_extension
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
 from src.utils.file import get_page_count
-from src.utils.file import get_size
 from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
