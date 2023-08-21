@@ -45,7 +45,7 @@ def get_file_basename(filename):
 ####################################################
 # GENERAL FUNCTION
 ####################################################
-def export_file(path, filetype, delimiter=None):
+def export_file(path, filetype, delimiter=None, force_recreate = False):
     """
     Direct to the correct function based on the filetype
 
@@ -56,15 +56,15 @@ def export_file(path, filetype, delimiter=None):
 
     func = globals()[f"export_{filetype}"]
     if delimiter is None:
-        return func(path)
+        return func(path, force_recreate)
 
-    return func(path, delimiter)
+    return func(path, delimiter, force_recreate)
 
 
 ####################################################
 # EXPORT TXT FUNCTIONS
 ####################################################
-def export_txt(path, delimiter=None):
+def export_txt(path, delimiter=None, force_recreate = False):
     """
     Export the file as a .txt file
 
@@ -110,15 +110,16 @@ def export_csv(filename_csv, index_data):
 ####################################################
 # EXPORT PDF FUNCTIONS
 ####################################################
-def export_pdf(path):
+def export_pdf(path, force_recreate = False):
     """
     Export the file as a .pdf file
     """
     filename = f"{path}/_search.pdf"
     filename_csv = f"{path}/_index.csv"
-
-    if os.path.exists(filename) and os.path.exists(filename_csv):
-        return filename      
+    
+    if os.path.exists(filename) and os.path.exists(filename_csv) and not force_recreate:
+        return filename    
+      
     else:
         pdf_basename = get_file_basename(path)
         pages = convert_from_path(

@@ -494,28 +494,12 @@ def submit_text():
         text = t["content"]
         filename = t["original_file"]
 
-        with open(filename, encoding="utf-8") as f:
-            hocr = json.load(f)
-            words = [[x["text"] for x in l] for l in hocr]
-
-        try:
-            new_hocr = fix_ocr(words, text)
-        except:  # noqa: E722
-            return {
-                "success": False,
-                "error": "Ocorreu um erro inesperado enquanto corrigiamos o texto, por favor informem-nos",
-            }
-
-        for l_id, l in enumerate(new_hocr):
-            for w_id, w in enumerate(l):
-                hocr[l_id][w_id]["text"] = w
-
         with open(filename, "w", encoding="utf-8") as f:
-            json.dump(hocr, f, indent=2)
+            json.dump(text, f, indent=2)
 
-        if data["indexed"]:
-            id = generate_uuid(filename)
-            es.update_document(id, text)
+        # if data["indexed"]:
+        #     id = generate_uuid(filename)
+        #     es.update_document(id, text)
 
     update_data(
         data_folder + "/_data.json",
