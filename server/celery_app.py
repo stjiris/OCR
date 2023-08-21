@@ -31,7 +31,7 @@ celery = Celery("celery_app", broker=CELERY_BROKER_URL)
 def make_changes(data_folder, data):
     current_date = get_current_time()
 
-    export_file(data_folder, "txt")
+    export_file(data_folder, "txt", force_recreate=True)
     data["txt"]["complete"] = True
     data["txt"]["creation"] = current_date
     data["txt"]["size"] = get_size(data_folder + "/_text.txt", path_complete=True)
@@ -39,7 +39,7 @@ def make_changes(data_folder, data):
     update_data(data_folder + "/_data.json", data)
 
     os.remove(data_folder + "/_search.pdf")
-    export_file(data_folder, "pdf")
+    export_file(data_folder, "pdf", force_recreate=True)
     data["pdf"]["complete"] = True
     data["pdf"]["creation"] = current_date
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)

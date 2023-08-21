@@ -486,19 +486,8 @@ def submit_text():
         text = t["content"]
         filename = t["original_file"]
 
-        # with open(filename, encoding="utf-8") as f:
-        #     hocr = json.load(f)
-        #     words = [[x["text"] for x in l] for l in hocr]
-
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(text, f, indent=2)
-
-        # for l_id, l in enumerate(new_hocr):
-        #     for w_id, w in enumerate(l):
-        #         hocr[l_id][w_id]["text"] = w
-
-        # with open(filename, "w", encoding="utf-8") as f:
-        #     json.dump(hocr, f, indent=2)
 
         # if data["indexed"]:
         #     id = generate_uuid(filename)
