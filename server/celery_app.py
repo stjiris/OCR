@@ -8,6 +8,9 @@ import logging as log
 from PIL import Image
 import json
 
+from src.algorithms import tesseract
+from src.algorithms import easy_ocr
+
 from src.utils.file import get_current_time
 from src.utils.file import export_file
 from src.utils.file import get_size
@@ -50,7 +53,7 @@ def make_changes(data_folder, data):
     return {"status": "success"}
 
 @celery.task(name="file_ocr")
-def task_file_ocr(path, config, ocr_algorithm):
+def task_file_ocr(path, config, ocr_algorithm, testing=False):
     """
     Prepare the OCR of a file
     @param path: path to the file
@@ -63,14 +66,21 @@ def task_file_ocr(path, config, ocr_algorithm):
         prepare_file_ocr(path)
         images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
 
+        if not os.path.exists(f"{path}/ocr_results"):
+            os.mkdir(f"{path}/ocr_results")
+
         log.info("{path}: A começar OCR")
 
         for image in images:
-            task_page_ocr.delay(path, image, config, ocr_algorithm)
+            if testing:
+                task_page_ocr(path, image, config, ocr_algorithm)
+            else:
+                task_page_ocr.delay(path, image, config, ocr_algorithm)
 
         return {"status": "success"}
 
     except Exception as e:
+        print(e)
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"]["exceptions"] = str(e)
@@ -108,9 +118,8 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
         if segment_ocr_flag == False:
             json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
-            save_json_structure(
-                json_d, f"{path}/ocr_results/{get_file_basename(filename)}.json"
-            )
+            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w") as f:
+                json.dump(json_d, f, indent=2)
         else:
             with open(layout_path, "r") as json_file:
                 parsed_json = json.load(json_file)
@@ -140,6 +149,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         files = os.listdir(f"{path}/ocr_results")
 
         data = get_data(data_folder)
+        data["ocr"] = data.get("ocr", {})
         data["ocr"]["progress"] = len(files)
         update_data(data_folder, data)
 
@@ -177,6 +187,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         return {"status": "success"}
 
     except Exception as e:
+        print(e)
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"]["exceptions"] = str(e)
