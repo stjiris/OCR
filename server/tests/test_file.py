@@ -10,14 +10,14 @@ from celery_app import task_page_ocr
 
 @pytest.fixture
 def fs(tmp_path):
-    """ Create a fake filesystem """
-    (tmp_path / "files").mkdir()
+    """ Create a fake test_filesystem """
+    (tmp_path / "test_files").mkdir()
 
-    for (root, dirs, files) in os.walk("./tests/files"):
+    for (root, dirs, test_files) in os.walk("./tests/test_files"):
         for dir in dirs:
             (tmp_path / root.replace("./tests/", "") / dir).mkdir()
 
-        for file in files:
+        for file in test_files:
             original_f = root + "/" + file
             f = tmp_path / root.replace("./tests/", "") / file
             if original_f.endswith(".json"):
@@ -49,10 +49,10 @@ class TestCurrentTime:
 
 #     def test_file_parsed(self, fs):
 #         """ Test if the file_parsed function returns the correct value """
-#         prepare_file_ocr(str(fs / "files/folder/sample.pdf"))
-#         task_file_ocr(str(fs / "files/folder/sample.pdf"), ["por"], "tesseract", testing = True)
+#         prepare_file_ocr(str(fs / "test_files/folder/sample.pdf"))
+#         task_file_ocr(str(fs / "test_files/folder/sample.pdf"), ["por"], "tesseract", testing = True)
 
-#         data = get_data(fs / "files/folder/sample.pdf/_data.json")
+#         data = get_data(fs / "test_files/folder/sample.pdf/_data.json")
 #         assert "exceptions" not in data.get("ocr", {})
 
 class TestPageCount:
@@ -62,11 +62,11 @@ class TestPageCount:
 
     def test_page_count_pdf(self):
         """ Test if the page count of a pdf is returned correctly """
-        assert get_page_count("tests/files/folder/sample.pdf/sample.pdf") == 2
+        assert get_page_count("tests/test_files/folder/sample.pdf/sample.pdf") == 2
 
     def test_page_count_jpg(self):
         """ Test if the page count of a jpg is returned correctly """
-        assert get_page_count("tests/files/folder/sample.jpg/sample.jpg") == 1
+        assert get_page_count("tests/test_files/folder/sample.jpg/sample.jpg") == 1
 
 class TestFileBasename:
     """
@@ -130,15 +130,15 @@ class TestGetData:
     
     def test_get_data(self, fs):
         """ Test if the data is returned correctly """
-        data = get_data(fs / "files/folder/sample.pdf/_data.json")
+        data = get_data(fs / "test_files/folder/sample.pdf/_data.json")
         assert type(data) == dict
         assert data["type"] == "file"
         assert data["pages"] == 2
 
     def test_get_data_empty_file(self, fs):
-        (fs / "files/folder/sample.test").mkdir()
-        (fs / "files/folder/sample.test/_data.json").touch()
-        data = get_data(fs / "files/folder/sample.test/_data.json")
+        (fs / "test_files/folder/sample.test").mkdir()
+        (fs / "test_files/folder/sample.test/_data.json").touch()
+        data = get_data(fs / "test_files/folder/sample.test/_data.json")
         assert type(data) == dict
         assert data == {}
 
@@ -149,8 +149,8 @@ class TestUpdateData:
 
     def test_update_data(self, fs):
         """ Test if the data is updated correctly """
-        update_data(fs / "files/folder/sample.pdf/_data.json", {"test": "test"})
-        data = get_data(fs / "files/folder/sample.pdf/_data.json")
+        update_data(fs / "test_files/folder/sample.pdf/_data.json", {"test": "test"})
+        data = get_data(fs / "test_files/folder/sample.pdf/_data.json")
         assert data["test"] == "test"
 
 class TestPrepareFileOCR:
@@ -159,18 +159,18 @@ class TestPrepareFileOCR:
     """
 
     def test_prepare_file_ocr_pdf(self, fs):
-        """ Test if the correct filesystem is created """
-        prepare_file_ocr(str(fs / "files/folder/sample.pdf"))
-        assert os.path.exists(str(fs / "files/folder/sample.pdf/sample_0.jpg"))
-        assert os.path.exists(str(fs / "files/folder/sample.pdf/sample_1.jpg"))
+        """ Test if the correct test_filesystem is created """
+        prepare_file_ocr(str(fs / "test_files/folder/sample.pdf"))
+        assert os.path.exists(str(fs / "test_files/folder/sample.pdf/sample_0.jpg"))
+        assert os.path.exists(str(fs / "test_files/folder/sample.pdf/sample_1.jpg"))
 
     def test_prepare_file_ocr_jpg(self, fs):
-        """ Test if the correct filesystem is created """
-        prepare_file_ocr(str(fs / "files/folder/sample.jpg"))
-        assert os.path.exists(str(fs / "files/folder/sample.jpg/sample.jpg"))
+        """ Test if the correct test_filesystem is created """
+        prepare_file_ocr(str(fs / "test_files/folder/sample.jpg"))
+        assert os.path.exists(str(fs / "test_files/folder/sample.jpg/sample.jpg"))
 
     def test_prepare_file_ocr_no_duplicates(self, fs):
-        prepare_file_ocr(str(fs / "files/folder/sample.pdf"))
-        prepare_file_ocr(str(fs / "files/folder/sample.pdf"))
-        assert os.path.exists(str(fs / "files/folder/sample.pdf/sample_0.jpg"))
-        assert os.path.exists(str(fs / "files/folder/sample.pdf/sample_1.jpg"))
+        prepare_file_ocr(str(fs / "test_files/folder/sample.pdf"))
+        prepare_file_ocr(str(fs / "test_files/folder/sample.pdf"))
+        assert os.path.exists(str(fs / "test_files/folder/sample.pdf/sample_0.jpg"))
+        assert os.path.exists(str(fs / "test_files/folder/sample.pdf/sample_1.jpg"))
