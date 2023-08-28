@@ -171,6 +171,7 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
                                     <TooltipIcon
+                                        key="delete"
                                         color="#f00"
                                         message="Apagar"
                                         clickFunction={(e) => this.delete(e)}
@@ -288,6 +289,7 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
                                     <TooltipIcon
+                                        key="edit"
                                         color="#1976d2"
                                         message="Editar"
                                         disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
@@ -298,6 +300,7 @@ export default class FileRow extends React.Component {
                                     {
                                         this.state.info["indexed"]
                                             ? <TooltipIcon
+                                                key="remove"
                                                 color="#f00"
                                                 message="Remover da Base de Dados"
                                                 disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
@@ -306,6 +309,7 @@ export default class FileRow extends React.Component {
                                             />
                                             
                                             : <TooltipIcon
+                                                key="add"
                                                 color="#1976d2"
                                                 message="Adicionar à Base de Dados"
                                                 disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
@@ -315,6 +319,7 @@ export default class FileRow extends React.Component {
                                     }
 
                                     <TooltipIcon
+                                        key="delete"
                                         color="#f00"
                                         message="Apagar"
                                         clickFunction={(e) => this.delete(e)}

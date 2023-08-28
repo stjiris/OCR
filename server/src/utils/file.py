@@ -160,36 +160,6 @@ def get_filesystem(path):
     return {**files, "info": info}
 
 # TODO
-def get_creation_time(path):
-    """
-    Get the creation time of the file/folder
-
-    :param path: path to the file/folder
-    :return: creation time
-    """
-
-    ti_c = os.path.getctime(path)
-    c_ti = time.ctime(ti_c)
-    t_obj = time.strptime(c_ti)
-    c_time = time.strftime("%Y-%m-%d %H:%M:%S", t_obj)
-    return c_time
-
-# TODO
-def get_modification_time(path):
-    """
-    Get the modification time of the file/folder
-
-    :param path: path to the file/folder
-    :return: modification time
-    """
-
-    ti_m = os.path.getmtime(path)
-    m_ti = time.ctime(ti_m)
-    t_obj = time.strptime(m_ti)
-    m_time = time.strftime("%Y-%m-%d %H:%M:%S", t_obj)
-    return m_time
-
-# TODO
 def get_ocr_size(path):
     """
     Get the size of the hocr files
@@ -336,7 +306,7 @@ def get_file_basename(filename):
     :param file: file name
     :return: basename of the file
     """
-    return ".".join(filename.split("/")[-1].split(".")[:-1])
+    return ".".join(filename.replace("\\", "/").split("/")[-1].split(".")[:-1])
 
 # DONE
 def get_file_extension(filename):
@@ -351,7 +321,7 @@ def get_file_extension(filename):
 ##################################################
 # OCR UTILS
 ##################################################
-# TODO
+# DONE
 def get_data(file):
     if not os.path.exists(file): return {}
     with open(file, encoding="utf-8") as f:
@@ -360,7 +330,7 @@ def get_data(file):
             return {}
         return json.loads(text)
 
-# TODO
+# DONE
 def update_data(file, data):
     """
     Update the data file
@@ -373,7 +343,7 @@ def update_data(file, data):
         previous_data.update(data)
         json.dump(previous_data, f)
 
-# TODO
+# DONE
 def prepare_file_ocr(path):
     """
     Prepare the OCR of a file
@@ -405,65 +375,10 @@ def prepare_file_ocr(path):
             img = Image.open(f"{path}/{basename}.{extension}")
             img.save(f"{path}/{basename}.jpg", "JPEG")
     except Exception as e:
+        print(e)
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
+        data["ocr"] = data.get("ocr", {})
         data["ocr"]["exceptions"] = str(e)
         update_data(data_folder, data)
         log.error(f"Error in preparing OCR for file at {path}: {e}")
-
-# TODO
-def similarity_score(text1, text2):
-    """
-    Compute the similarity score between two texts
-
-    :param text1: first text
-    :param text2: second text
-    :return: similarity score
-    """
-    return SequenceMatcher(None, text1, text2).ratio()
-
-# TODO
-def fix_ocr(previous_words, current_text):
-    """
-    Update the hOCR results with the current submitted text
-
-    :param previous_words: previous words removed from the hOCR results - [["Tnis", ...], ...]
-    :param current_text: current text - "This ..."
-    :return: updated hOCR results
-    """
-
-    current_words = [[w for w in l.split()] for l in current_text.split("\n")]
-
-    for line_id, previous_line in enumerate(previous_words):
-        current_line = current_words[line_id]
-
-        # I'm not expecting tesseract to insert spaces where there is none
-        # But could be wrong
-        if len(current_line) < len(previous_line):
-            raise ValueError(
-                "The current text is shorter than the previous one, not expecting that"
-            )
-
-        pp, pc = 0, 0  # previous and current position
-        while pc < len(current_line) and pp < len(previous_line):
-            current_diff = pp - pc
-
-            if current_diff == len(previous_line) - len(current_line):
-                # We can't attemp to join any words. Every current word should match the previous one
-                same_score, adding_score = 1, 0
-            else:
-                same_score = similarity_score(current_line[pc], previous_line[pp])
-                adding_score = similarity_score(
-                    "".join(current_line[pc : pc + 2]), previous_line[pp]
-                )
-
-            if same_score >= adding_score:
-                previous_line[pp] = current_line[pc]
-                pc += 1
-                pp += 1
-            else:
-                previous_line[pp] = " ".join(current_line[pc : pc + 2])
-                pp += 1
-                pc += 2
-
-    return previous_words

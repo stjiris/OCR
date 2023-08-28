@@ -14,7 +14,6 @@ from src.elastic_search import *
 from src.utils.export import export_file
 from src.utils.image import parse_images
 from src.utils.file import delete_structure
-from src.utils.file import fix_ocr
 from src.utils.file import generate_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data

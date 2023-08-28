@@ -162,6 +162,7 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
                                     <TooltipIcon
+                                        key="delete"
                                         color="#f00"
                                         message="Apagar"
                                         clickFunction={(e) => this.delete(e)}
@@ -278,6 +279,7 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
                                     <TooltipIcon
+                                        key="delete"
                                         color="#f00"
                                         message="Apagar"
                                         clickFunction={(e) => this.delete(e)}
