@@ -88,6 +88,8 @@ export default class PageItem extends React.Component {
             index: props.index,
             contents: props.contents,
 
+            editorMode: true,
+
             components: [],
             refs: [],
         }
@@ -99,8 +101,6 @@ export default class PageItem extends React.Component {
 
     collapseLine(line) {
         // Join the components from the index line + 1 to the ones in line
-        console.log(line);
-
         var contents = this.state.contents;
         contents[line] = contents[line].concat(contents[line + 1]);
         contents.splice(line+1, 1);
@@ -157,19 +157,39 @@ export default class PageItem extends React.Component {
                     <p>{'Page ' + (this.state.index + 1)}</p>
                 </Box>
 
-                <Box sx={{display: 'flex', flexDirection: 'column', width: '100%', mt: '2.5rem'}}>
+                <Box sx={{marginTop: "1rem", display: "flex", flexDirection: "column", width: '100%'}}>
+                    <Box sx={{display: "flex", flexDirection: "row"}}>
+                        <Box className="editorSelector" sx={{
+                            backgroundColor: this.state.editorMode ? "#1976d248" : "transparent",
+                        }} onClick={() => this.setState({editorMode: true})}>
+                            <span style={{margin: "5px 10px"}}>Editor</span>
+                        </Box>
+                        <Box className="editorSelector" sx={{
+                            backgroundColor: !this.state.editorMode ? "#1976d248" : "transparent",
+                        }} onClick={() => this.setState({editorMode: false})}>
+                            <span style={{margin: "5px 10px"}}>Pré-Visualização</span>
+                        </Box>
+                    </Box>
+
                     {
-                        this.state.components.map((row, index) => {
-                            return (
-                                <Box key={index} sx={{display: 'flex', flexDirection: 'row', flexWrap: "wrap", mb: '5px'}}>
-                                    {
-                                        row.map((component) => {
-                                            return component;
-                                        })
-                                    }
-                                </Box>
-                            )
-                        })
+                        this.state.editorMode
+                        ? <Box sx={{display: 'flex', flexDirection: 'column', width: '100%', border: "1px solid black"}}>
+                            {
+                                this.state.components.map((row, index) => {
+                                    return (
+                                        <Box key={index} sx={{display: 'flex', flexDirection: 'row', flexWrap: "wrap", mb: '5px'}}>
+                                            {
+                                                row.map((component) => {
+                                                    return component;
+                                                })
+                                            }
+                                        </Box>
+                                    )
+                                })
+                            }
+                        </Box>
+                        : <p>Pre-visualização</p>
+
                     }
                 </Box>
             </Box>
