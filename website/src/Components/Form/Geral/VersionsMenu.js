@@ -52,6 +52,10 @@ class VersionsMenu extends React.Component {
                         </Typography>
 
                         <Paper style={{ maxHeight: '50vh', overflow: 'auto' }}>
+                            <p><b>Versão 0.18.1 - 29/08/2023</b></p>
+                            <ul>
+                                <li>Remove tamanho de ficheiro OCR da tabela</li>
+                            </ul>
                             <p><b>Versão 0.18.0 - 16/08/2023</b></p>
                             <ul>
                                 <li>Capacidade de fazer OCR a Segmentos (automaticamente
