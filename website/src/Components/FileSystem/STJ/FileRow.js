@@ -190,7 +190,6 @@ export default class FileRow extends React.Component {
                                         : 
                                         <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                             <span>{this.state.info["ocr"]["creation"]}</span>
-                                            <span>{this.state.info["ocr"]["size"]}</span>
                                             <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                         </Box>
                                     } 
