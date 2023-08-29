@@ -69,7 +69,7 @@ export default class Header extends React.Component {
             }}>
                 <Box sx={{display: 'flex', flexDirection: 'row'}}>
                     <>
-                        <img src={logoSTJ} alt="logoSTJ" style={{paddingTop:'0.5rem', height: '4.5rem', width: 'auto'}}/>
+                        <img src={logoSTJ} alt="logoSTJ" style={{marginRight:'2rem', height: '64px', width: 'auto'}}/>
                         <Button
                             className="link"
                             sx={{

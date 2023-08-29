@@ -157,7 +157,6 @@ export default class PrivateFileRow extends React.Component {
                                     <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>{this.state.info["ocr"]["creation"]}</span>
                                         <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
-                                        <span>{this.state.info["ocr"]["size"]}</span>
                                     </Box>
                                 } 
                                 </TableCell>
