@@ -69,7 +69,7 @@ export default class Header extends React.Component {
                 zIndex: '100'
             }}>
                 <Box sx={{display:'flex', flexDirection: 'row', alignItems: 'center'}}>  
-                    <img src={logoNovaSBE} alt="logoNovaSBE" style={{paddingTop:'0.rem', paddingBottom: '0.5rem', marginRight:'2rem', height: '5rem', width: 'auto'}}/>
+                    <img src={logoNovaSBE} alt="logoNovaSBE" style={{marginRight:'2rem', height: '64px', width: 'auto'}}/>
                     <Link
                         className="link"
                         sx={{
