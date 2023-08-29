@@ -68,7 +68,17 @@ class LayoutBox extends React.Component {
             left: props.left,
             bottom: props.bottom,
             right: props.right,
+
+            type: props.type || "text"
         }
+    }
+
+    componentDidMount() {
+        this.setState({
+            mainColor: this.state.type === "text" ? "#00f" : this.state.type === "image" ? '#08A045' : '#F05E16',
+            numberColor: this.state.type === "text" ? "#00fa" : this.state.type === "image" ? '#08A045A6' : '#F05E16A6',
+            backColor: this.state.type === "text" ? "#00f2" : this.state.type === "image" ? '#08A04526' : '#F05E1626',
+        })
     }
 
     imageToScreenCoordinates(x, y) {
@@ -101,12 +111,13 @@ class LayoutBox extends React.Component {
         return {x: imgX, y: imgY};
     }
 
-    getBoxCoordinates() {
+    getBoxDetails() {
         return {
             top: this.state.top,
             left: this.state.left,
             bottom: this.state.bottom,
-            right: this.state.right
+            right: this.state.right,
+            type: this.state.type
         }
     }
 
@@ -144,8 +155,8 @@ class LayoutBox extends React.Component {
             <Box
                 sx={{
                     position: 'absolute',
-                    border: '2px solid #00f',
-                    backgroundColor: '#00f2',
+                    border: `2px solid ${this.state.mainColor}`,
+                    backgroundColor: `${this.state.backColor}`,
                     top: `${initialCoords.y}px`,
                     left: `${initialCoords.x}px`,
                     width: `${finalCoords.x - initialCoords.x}px`,
@@ -156,7 +167,7 @@ class LayoutBox extends React.Component {
                     <Box
                         sx={{
                             position: "absolute",
-                            backgroundColor: "#00fa",
+                            backgroundColor: `${this.state.numberColor}`,
                             width: "30px",
                             height: "30px",
                             borderRadius: "50%",
@@ -174,7 +185,7 @@ class LayoutBox extends React.Component {
                     <Box draggable
                         sx={{
                             position: "absolute", top: "-5px", left: "-5px",
-                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#00f",
+                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${this.state.mainColor}`,
                             cursor: "move",
                             zIndex: 100
                         }}
@@ -186,7 +197,7 @@ class LayoutBox extends React.Component {
                     <Box draggable
                         sx={{
                             position: "absolute", top: "-5px", right: "-5px",
-                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#00f",
+                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${this.state.mainColor}`,
                             cursor: "move",
                             zIndex: 100
                         }}
@@ -197,7 +208,7 @@ class LayoutBox extends React.Component {
                     <Box draggable
                         sx={{
                             position: "absolute", bottom: `-${finalCoords.y - initialCoords.y + 5}px`, left: "-5px",
-                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#00f",
+                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${this.state.mainColor}`,
                             cursor: "move",
                             zIndex: 100
                         }}
@@ -208,7 +219,7 @@ class LayoutBox extends React.Component {
                     <Box draggable
                         sx={{
                             position: "absolute", bottom: `-${finalCoords.y - initialCoords.y + 5}px`, right: "-5px",
-                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#00f",
+                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${this.state.mainColor}`,
                             cursor: "move",
                             zIndex: 100
                         }}
@@ -221,7 +232,6 @@ class LayoutBox extends React.Component {
         )
     }
 }
-
 
 export default class LayoutImage extends React.Component {
     constructor(props) {
@@ -237,7 +247,12 @@ export default class LayoutImage extends React.Component {
             
             boxesCoords: props.boxesCoords,
             boxes: [],
-            boxRefs: []
+            imageBoxes: [],
+            ignoreBoxes: [],
+
+            boxRefs: [],
+            imageRefs: [],
+            ignoreRefs: [],
         }
 
         this.image = React.createRef();
@@ -252,30 +267,54 @@ export default class LayoutImage extends React.Component {
         }, this.loadBoxes);
     }
 
+    createLayoutBox(ref, index, box, type) {
+        return <LayoutBox
+            ref={ref}
+            key={index + " " + box.top + " " + box.left + " " + box.bottom + " " + box.right}
+            index={index}
+            layoutImage={this}
+            view={this.view}
+            image={this.image}
+            top={box.top}
+            left={box.left}
+            bottom={box.bottom}
+            right={box.right}
+            type={type}
+        />
+    }
+
     loadBoxes() {
         var boxes = [];
-        var refs = [];
+        var imageBoxes = [];
+        var ignoreBoxes = [];
 
-        this.state.boxesCoords.forEach((box, index) => {
+        var refs = [];
+        var imageRefs = [];
+        var ignoreRefs = [];
+
+        this.state.boxesCoords.forEach((box) => {
             var ref = React.createRef();
-            boxes.push(
-                <LayoutBox
-                    ref={ref}
-                    key={index + " " + box.top + " " + box.left + " " + box.bottom + " " + box.right}
-                    index={boxes.length + 1}
-                    layoutImage={this}
-                    view={this.view}
-                    image={this.image}
-                    top={box.top}
-                    left={box.left}
-                    bottom={box.bottom}
-                    right={box.right}
-                />
-            );
-            refs.push(ref);
+            var type = box.type || "text";
+
+            var boxList;
+            var refList;
+
+            if (type === "text") {
+                boxList = boxes;
+                refList = refs;
+            } else if (type === "image") {
+                boxList = imageBoxes;
+                refList = imageRefs;
+            } else if (type === "ignore") {
+                boxList = ignoreBoxes;
+                refList = ignoreRefs;
+            }
+
+            boxList.push(this.createLayoutBox(ref, boxList.length + 1, box, type));
+            refList.push(ref);
         })
 
-        this.setState({boxes: boxes, boxRefs: refs});
+        this.setState({boxes: boxes, boxRefs: refs, imageBoxes: imageBoxes, imageRefs: imageRefs, ignoreBoxes: ignoreBoxes, ignoreRefs: ignoreRefs});
     }
 
     updateBoxes(boxes) {
@@ -285,7 +324,13 @@ export default class LayoutImage extends React.Component {
     getAllBoxes() {
         var coords = [];
         this.state.boxRefs.forEach((ref) => {
-            coords.push(ref.current.getBoxCoordinates());
+            coords.push(ref.current.getBoxDetails());
+        })
+        this.state.imageRefs.forEach((ref) => {
+            coords.push(ref.current.getBoxDetails());
+        })
+        this.state.ignoreRefs.forEach((ref) => {
+            coords.push(ref.current.getBoxDetails());
         })
         return coords;
     }
@@ -299,25 +344,29 @@ export default class LayoutImage extends React.Component {
 
     recreateBoxes() {
         var boxes = [];
+        var imageBoxes = [];
+        var ignoreBoxes = [];
+
         var refs = [...this.state.boxRefs];
+        var imageRefs = [...this.state.imageRefs];
+        var ignoreRefs = [...this.state.ignoreRefs];
+
         refs.forEach((ref, index) => {
-            var coords = ref.current.getBoxCoordinates();
-            boxes.push(
-                <LayoutBox
-                    ref={ref}
-                    key={index + " " + coords.top + " " + coords.left + " " + coords.bottom + " " + coords.right}
-                    index={boxes.length + 1}
-                    layoutImage={this}
-                    view={this.view}
-                    image={this.image}
-                    top={coords.top}
-                    left={coords.left}
-                    bottom={coords.bottom}
-                    right={coords.right}
-                />
-            );
+            var coords = ref.current.getBoxDetails();
+            boxes.push(this.createLayoutBox(ref, index + 1, coords, "text"));
         })
-        this.setState({boxes: boxes});
+
+        imageRefs.forEach((ref, index) => {
+            var coords = ref.current.getBoxDetails();
+            imageBoxes.push(this.createLayoutBox(ref, index + 1, coords, "image"));
+        })
+
+        ignoreRefs.forEach((ref, index) => {
+            var coords = ref.current.getBoxDetails();
+            ignoreBoxes.push(this.createLayoutBox(ref, index + 1, coords, "ignore"));
+        })
+
+        this.setState({boxes: boxes, imageBoxes: imageBoxes, ignoreBoxes: ignoreBoxes});
     }
 
     zoomIn() {
@@ -388,20 +437,8 @@ export default class LayoutImage extends React.Component {
         var boxes = [...this.state.boxes];
         var refs = [...this.state.boxRefs];
         var ref = React.createRef();
-        boxes.push(
-            <LayoutBox
-                ref={ref}
-                key={(this.state.boxes.length + 1) + " " + initialCoords.x + " " + initialCoords.y + " " + finalCoords.x + " " + finalCoords.y}
-                index={this.state.boxes.length + 1}
-                layoutImage={this}
-                view={this.view}
-                image={this.image}
-                top={initialCoords.y}
-                left={initialCoords.x}
-                bottom={finalCoords.y}
-                right={finalCoords.x}
-            />
-        );
+        var coords = {top: initialCoords.y, left: initialCoords.x, bottom: finalCoords.y, right: finalCoords.x};
+        boxes.push(this.createLayoutBox(ref, boxes.length + 1, coords, "text"));
         refs.push(ref);
 
         this.preview.current.toggleVisibility();
@@ -445,10 +482,23 @@ export default class LayoutImage extends React.Component {
                         onDragStart={(e) => this.dragStart(e)}
                         onDrag={(e) => this.duringDrag(e)}
                         onDragEnd={(e) => this.dragEnd(e)}
+                        onLoad={() => this.loadBoxes()}
                     />
 
                     {
                         this.state.boxes.map((box) => {
+                            return box;
+                        })
+                    }
+
+                    {
+                        this.state.imageBoxes.map((box) => {
+                            return box;
+                        })
+                    }
+
+                    {
+                        this.state.ignoreBoxes.map((box) => {
                             return box;
                         })
                     }

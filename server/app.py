@@ -11,10 +11,9 @@ from flask import request
 from flask import send_file
 
 from src.elastic_search import *
-from src.evaluate import evaluate
 from src.utils.export import export_file
+from src.utils.image import parse_images
 from src.utils.file import delete_structure
-from src.utils.file import fix_ocr
 from src.utils.file import generate_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -23,7 +22,6 @@ from src.utils.file import get_file_extension
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
 from src.utils.file import get_page_count
-from src.utils.file import get_size
 from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
@@ -122,6 +120,11 @@ def get_pdf():
     path = request.values["path"]
     file = export_file(path, "pdf")
     return send_file(file)
+
+@app.route("/get_csv", methods=["GET"])
+def get_csv():
+    path = request.values["path"]
+    return send_file(f"{path}/_index.csv")
 
 @app.route("/get_original", methods=["GET"])
 def get_original():
@@ -366,6 +369,8 @@ def perform_ocr():
         data["txt"]["complete"] = False
         data["pdf"] = {}
         data["pdf"]["complete"] = False
+        data["csv"] = {}
+        data["csv"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
         task_file_ocr.delay(f, config, ocr_algorithm)
@@ -551,6 +556,12 @@ def save_layouts():
     save_file_layouts(path, layouts)
 
     return {"success": True}
+
+@app.route("/generate-automatic-layouts", methods=["GET"])
+def generate_automatic_layouts():
+    path = request.values["path"]
+    parse_images(path)
+    return {"layouts": get_file_layouts(path)}
 
 #####################################
 # JOB QUEUES

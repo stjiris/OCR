@@ -1,7 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
@@ -51,6 +50,13 @@ export default class FileRow extends React.Component {
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
+    
+    getCSV(file) {
+        /**
+         * Export the .csv file
+         */
+         this.getDocument("csv", file);
+    }
 
     getPdf(e) {
         e.stopPropagation();
@@ -86,6 +92,7 @@ export default class FileRow extends React.Component {
 
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
         return (
             <>
@@ -153,14 +160,14 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                                <Box>
-                                    <IconButton
-                                        color="error"
-                                        aria-label="delete"
-                                        onClick={(e) => this.delete(e)}
-                                    >
-                                        <DeleteForeverIcon />
-                                    </IconButton>
+                                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                                    <TooltipIcon
+                                        key="delete"
+                                        color="#f00"
+                                        message="Apagar"
+                                        clickFunction={(e) => this.delete(e)}
+                                        icon={<DeleteForeverIcon/>}
+                                    />
                                 </Box>
                             </TableCell>
                         </>
@@ -183,7 +190,6 @@ export default class FileRow extends React.Component {
                                         : 
                                         <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                             <span>{this.state.info["ocr"]["creation"]}</span>
-                                            <span>{this.state.info["ocr"]["size"]}</span>
                                             <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                         </Box>
                                     } 
@@ -226,6 +232,26 @@ export default class FileRow extends React.Component {
                                     </>                          
                             }
 
+                            {   
+                                this.state.info["csv"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"] ?
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                    <p>-</p>
+                                </TableCell> :
+                                <>{
+                                    this.state.info["csv"]["complete"] ?
+                                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                        <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                            <span>{this.state.info["csv"]["creation"]}</span>
+                                            <span>{this.state.info["csv"]["size"]}</span>
+                                            <Button sx={{p: 0}} variant="text" onClick={(e) => this.getCSV(e)}>Descarregar</Button>
+                                        </Box>
+                                    </TableCell> :
+                                    <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                        <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
+                                    </TableCell>                        
+                                }</>                          
+                            }
+
                             {
                                 this.state.info["pdf"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]
                                     ? <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
@@ -251,14 +277,13 @@ export default class FileRow extends React.Component {
 
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
-
-                                    <IconButton
-                                        color="error"
-                                        aria-label="delete"
-                                        onClick={(e) => this.delete(e)}
-                                    >
-                                        <DeleteForeverIcon />
-                                    </IconButton>
+                                    <TooltipIcon
+                                        key="delete"
+                                        color="#f00"
+                                        message="Apagar"
+                                        clickFunction={(e) => this.delete(e)}
+                                        icon={<DeleteForeverIcon/>}
+                                    />
 
                                 </Box>
                             </TableCell>

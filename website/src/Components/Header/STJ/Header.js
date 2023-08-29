@@ -1,7 +1,6 @@
 import React from 'react';
 
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import HelpIcon from '@mui/icons-material/Help';
 import AssignmentRoundedIcon from '@mui/icons-material/AssignmentRounded';
@@ -10,6 +9,7 @@ import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRound
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
 import logoSTJ from '../../../static/logoSTJ.png';
+import loadComponent from '../../../utils/loadComponents';
 
 export default class Header extends React.Component {
     constructor(props) {
@@ -54,6 +54,8 @@ export default class Header extends React.Component {
     }
 
     render() {        
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+
         return (
             <Box sx={{
                 display: 'flex',
@@ -67,7 +69,7 @@ export default class Header extends React.Component {
             }}>
                 <Box sx={{display: 'flex', flexDirection: 'row'}}>
                     <>
-                        <img src={logoSTJ} alt="logoSTJ" style={{paddingTop:'0.5rem', height: '4.5rem', width: 'auto'}}/>
+                        <img src={logoSTJ} alt="logoSTJ" style={{marginRight:'2rem', height: '64px', width: 'auto'}}/>
                         <Button
                             className="link"
                             sx={{
@@ -119,9 +121,12 @@ export default class Header extends React.Component {
                                                     <span>
                                                         {privateSession}
                                                     </span>
-                                                    <IconButton onClick={(e) => this.deletePrivateSession(e, privateSession)}>
-                                                        <DeleteForeverIcon sx={{color: '#f00'}} />
-                                                    </IconButton>
+                                                    <TooltipIcon
+                                                        color="#f00"
+                                                        message="Apagar"
+                                                        clickFunction={(e) => this.deletePrivateSession(e, privateSession)}
+                                                        icon={<DeleteForeverIcon/>}
+                                                    />
                                                 </Box>
                                             )
                                         })

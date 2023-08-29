@@ -8,6 +8,7 @@
 """
 import base64
 import contextlib
+import csv
 import io
 import json
 import os
@@ -93,6 +94,18 @@ def export_txt(path, delimiter=None, force_recreate = False):
 
     return filename
 
+####################################################
+# EXPORT CSV FUNCTIONS
+####################################################
+
+def export_csv(filename_csv, index_data):
+    with open(filename_csv, mode='w', encoding='utf-8') as csvfile:
+        csv_out = csv.writer(csvfile)
+        csv_out.writerow(['Word', 'Count'])
+        csv_out.writerow([' '])
+        csv_out.writerows(index_data)
+        
+    return filename_csv
 
 ####################################################
 # EXPORT PDF FUNCTIONS
@@ -102,9 +115,11 @@ def export_pdf(path, force_recreate = False):
     Export the file as a .pdf file
     """
     filename = f"{path}/_search.pdf"
-
-    if os.path.exists(filename) and not force_recreate:
-        return filename
+    filename_csv = f"{path}/_index.csv"
+    
+    if os.path.exists(filename) and os.path.exists(filename_csv) and not force_recreate:
+        return filename    
+      
     else:
         pdf_basename = get_file_basename(path)
         pages = convert_from_path(
@@ -154,6 +169,7 @@ def export_pdf(path, force_recreate = False):
 
         # Sort the `words` dict by key
         words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
+        export_csv(filename_csv, words)
 
         rows = 100
         cols = 3
@@ -205,12 +221,50 @@ def export_pdf(path, force_recreate = False):
 
         return filename
 
+def find_index_words(hocr_path):
+    index_words = {}
+    remove_chars = "«»“”.,;:!?()[]{}\"'"
+    with open(hocr_path) as f:
+        hocrfile = json.load(f)
+
+    hyphenated_last_word = False
+
+    for line_index, line in enumerate(hocrfile):
+        if hyphenated_last_word:
+            previous_word = hocrfile[line_index - 1][-1]["text"]
+            current_word = line[0]["text"]
+            joined_word = previous_word.rstrip("-") + current_word
+            line[0]["text"] = joined_word
+            hyphenated_last_word = False
+
+            # Remove subwords of the joined word from the index
+            if index_words.get(previous_word, 0) != 0:
+                index_words[previous_word] = index_words.get(previous_word, 0) - 1
+                if index_words[previous_word] == 0:
+                    del index_words[previous_word]
+
+        for i, word in enumerate(line):
+            rawtext = word["text"]
+
+            if (i == len(line) - 1) and rawtext.endswith("-"):
+                hyphenated_last_word = True
+
+            for w in rawtext.split():
+                w = w.strip()
+                for c in remove_chars:
+                    w = w.replace(c, "")
+
+                w = w.lower()
+
+                index_words[w] = index_words.get(w, 0) + 1
+
+    return index_words
+
 
 def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
     """Draw an invisible text layer for OCR data"""
-
-    words = {}
-    remove_chars = ".,;:!?()[]{}\"'"
+   
+    index_words = find_index_words(hocr_path)
 
     with open(hocr_path) as f:
         hocrfile = json.load(f)
@@ -220,12 +274,6 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
             rawtext = word["text"]
             box = word["box"]
             b = word["b"]
-
-            for w in rawtext.split():
-                w = w.strip()
-                for c in remove_chars:
-                    w = w.replace(c, "")
-                words[w] = words.get(w, 0) + 1
 
             font_width = pdf.stringWidth(rawtext, "invisible", 8)
             if font_width <= 0:
@@ -243,7 +291,7 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
             text.textLine(rawtext)
             pdf.drawText(text)
 
-    return words
+    return index_words
 
 def polyval(poly, x):
     return x * poly[0] + poly[1]

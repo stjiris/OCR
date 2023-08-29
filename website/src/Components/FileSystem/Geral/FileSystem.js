@@ -355,6 +355,13 @@ class FileExplorer extends React.Component {
         this.getDocument("txt", file);
     }
 
+    getCSV(file) {
+        /**
+         * Export the .csv file
+         */
+         this.getDocument("csv", file);
+    }
+
     getPdf(file) {
         /**
          * Export the .pdf file
@@ -556,6 +563,7 @@ class FileExplorer extends React.Component {
                             {<TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>}
                             {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>OCR</b></TableCell>}
                             {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Texto</b></TableCell>}
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Índice de palavras</b></TableCell>}
                             {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF (com texto)</b></TableCell>}
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell>
                         </TableRow>
