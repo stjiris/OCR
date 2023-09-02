@@ -1,24 +1,19 @@
 import json
+import logging
 import os
-import re
 import random
 import shutil
 import string
-from datetime import datetime
+
 from threading import Lock, Thread
 
-from flask import Flask
 from flask import request
 from flask import send_file
-from flask_cors import CORS  # permitir requests de outros ips alem do servidor
-from src.algorithms import tesseract
-from src.algorithms import easy_ocr
+
 from src.elastic_search import *
-from src.evaluate import evaluate
-from src.thread_pool import ThreadPool
 from src.utils.export import export_file
+from src.utils.image import parse_images
 from src.utils.file import delete_structure
-from src.utils.file import fix_ocr
 from src.utils.file import generate_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -27,46 +22,31 @@ from src.utils.file import get_file_extension
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
 from src.utils.file import get_page_count
-from src.utils.file import get_size
 from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
-from src.utils.file import perform_file_ocr
-from src.utils.file import perform_page_ocr
 from src.utils.file import update_data
+from src.utils.file import get_file_layouts
+from src.utils.file import save_file_layouts
+
+from src.utils.system import get_free_space
+from src.utils.system import get_logs
+from src.utils.system import get_private_sessions
+
+from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
-app = Flask(__name__)   # Aplicação em si
 log = app.logger
-CORS(app)
 
 lock_system = dict()
 private_sessions = dict()
 
-def make_changes(data_folder, data, pool: ThreadPool):
-    current_date = get_current_time()
-
-    export_file(data_folder, "txt")
-    data["txt"]["complete"] = True
-    data["txt"]["creation"] = current_date
-    data["txt"]["size"] = get_size(data_folder + "/_text.txt", path_complete=True)
-
-    update_data(data_folder + "/_data.json", data)
-
-    os.remove(data_folder + "/_search.pdf")
-    export_file(data_folder, "pdf")
-    data["pdf"]["complete"] = True
-    data["pdf"]["creation"] = current_date
-    data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
-
-    update_data(data_folder + "/_data.json", data)
-    pool.update(finished=data_folder)
-
-
 #####################################
 # FILE SYSTEM ROUTES
 #####################################
+
 @app.route("/files", methods=["GET"])
 def get_file_system():
     if "path" not in request.values:
@@ -74,6 +54,7 @@ def get_file_system():
     
     path = request.values["path"].split("/")[0]
     print(path)
+
     return get_filesystem(path)
 
 
@@ -84,6 +65,17 @@ def get_info():
     
     path = request.values["path"].split("/")[0]
     return {"info": get_structure_info(path)}
+
+
+@app.route("/system-info", methods=["GET"])
+def get_system_info():
+    free_space, free_space_percentage = get_free_space()
+    return {
+        "free_space": free_space,
+        "free_space_percentage": free_space_percentage,
+        "logs": get_logs(),
+        "private_sessions": get_private_sessions(),
+    }
 
 
 @app.route("/create-folder", methods=["POST"])
@@ -129,6 +121,11 @@ def get_pdf():
     file = export_file(path, "pdf")
     return send_file(file)
 
+@app.route("/get_csv", methods=["GET"])
+def get_csv():
+    path = request.values["path"]
+    return send_file(f"{path}/_index.csv")
+
 @app.route("/get_original", methods=["GET"])
 def get_original():
     path = request.values["path"]
@@ -149,6 +146,21 @@ def delete_path():
         "success": True,
         "message": "Apagado com sucesso",
         "files": get_filesystem(session),
+    }
+
+@app.route("/delete-private-session", methods=["POST"])
+def delete_private_session():
+    data = request.json
+    session_id = data["sessionId"]
+
+    shutil.rmtree(session_id)
+    if session_id in private_sessions:
+        del private_sessions[session_id]
+
+    return {
+        "success": True,
+        "message": "Apagado com sucesso",
+        "private_sessions": get_private_sessions(),
     }
 
 @app.route("/set-upload-stuck", methods=["POST"])
@@ -330,7 +342,7 @@ def perform_ocr():
 
     session = path.split("/")[0]
 
-    ocr_algorithm = tesseract
+    ocr_algorithm = "tesseract"
 
     if multiple:
         files = [
@@ -357,9 +369,11 @@ def perform_ocr():
         data["txt"]["complete"] = False
         data["pdf"] = {}
         data["pdf"]["complete"] = False
+        data["csv"] = {}
+        data["csv"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        docs_pool.add_to_queue((f, config, ocr_algorithm, pages_pool))
+        task_file_ocr.delay(f, config, ocr_algorithm)
 
     return {
         "success": True,
@@ -477,35 +491,19 @@ def submit_text():
         text = t["content"]
         filename = t["original_file"]
 
-        with open(filename, encoding="utf-8") as f:
-            hocr = json.load(f)
-            words = [[x["text"] for x in l] for l in hocr]
-
-        try:
-            new_hocr = fix_ocr(words, text)
-        except:  # noqa: E722
-            return {
-                "success": False,
-                "error": "Ocorreu um erro inesperado enquanto corrigiamos o texto, por favor informem-nos",
-            }
-
-        for l_id, l in enumerate(new_hocr):
-            for w_id, w in enumerate(l):
-                hocr[l_id][w_id]["text"] = w
-
         with open(filename, "w", encoding="utf-8") as f:
-            json.dump(hocr, f, indent=2)
+            json.dump(text, f, indent=2)
 
-        if data["indexed"]:
-            id = generate_uuid(filename)
-            es.update_document(id, text)
+        # if data["indexed"]:
+        #     id = generate_uuid(filename)
+        #     es.update_document(id, text)
 
     update_data(
         data_folder + "/_data.json",
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    changes_pool.add_to_queue((data_folder, data))
+    make_changes.delay(data_folder, data)
 
     return {"success": True, "files": get_filesystem(session)}
 
@@ -542,6 +540,30 @@ def validate_private_session():
     return response
 
 #####################################
+# LAYOUTS
+#####################################
+@app.route("/get-layouts", methods=["GET"])
+def get_layouts():
+    path = request.values["path"]
+    return {"layouts": get_file_layouts(path)}
+
+@app.route("/save-layouts", methods=["POST"])
+def save_layouts():
+    data = request.json
+    path = data["path"]
+    layouts = data["layouts"]
+
+    save_file_layouts(path, layouts)
+
+    return {"success": True}
+
+@app.route("/generate-automatic-layouts", methods=["GET"])
+def generate_automatic_layouts():
+    path = request.values["path"]
+    parse_images(path)
+    return {"layouts": get_file_layouts(path)}
+
+#####################################
 # JOB QUEUES
 #####################################
 if not os.path.exists("./files/"):
@@ -549,10 +571,6 @@ if not os.path.exists("./files/"):
 
 if not os.path.exists("./pending-files/"):
     os.mkdir("./pending-files/")
-
-docs_pool = ThreadPool(perform_file_ocr, 6)
-changes_pool = ThreadPool(make_changes, 1)
-pages_pool = ThreadPool(perform_page_ocr, 6)
 
 # app.config['DEBUG'] = os.environ.get('DEBUG', False)
 # app.run(port=5001, threaded=True)

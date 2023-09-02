@@ -1,19 +1,9 @@
 import './App.css';
 import React from 'react';
 
-import { Button, Box, Link, IconButton } from '@mui/material';
-import Notification from './Components/Notification/Notifications';
-import VersionsMenu from './Components/Form/VersionsMenu';
-import { FileExplorer } from './Components/FileSystem/FileSystem.js';
-import ESPage from './Components/ElasticSearchPage/ESPage';
-import EditPage from './Components/EditPage/EditPage';
-import { PrivateFileExplorer } from './Components/PrivateSession/PrivateFileSystem';
+import Box from '@mui/material/Box';
 
-import logoSTJ from './static/logoSTJ.png';
-import logoNovaSBE from './static/logoNovaSBE.png';
-
-// import InfoIcon from '@mui/icons-material/Info';
-import HelpIcon from '@mui/icons-material/Help';
+import loadComponent from './utils/loadComponents';
 
 /**
  * About Versioning:
@@ -23,7 +13,8 @@ import HelpIcon from '@mui/icons-material/Help';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.13.0";
+const VERSION = "0.18.1";
+const UPDATE_TIME = 30;
 
 function App() {
     class Form extends React.Component {
@@ -48,11 +39,13 @@ function App() {
             this.saveButton = React.createRef();
             this.textEditor = React.createRef();
             this.pageDisplayer = React.createRef();
+            this.header = React.createRef();
 
             this.successNot = React.createRef();
             this.errorNot = React.createRef();
 
             this.versionsMenu = React.createRef();
+            this.logsMenu = React.createRef();
 
             this.fileSystem = React.createRef();
             this.editPage = React.createRef();
@@ -60,8 +53,38 @@ function App() {
             this.sendChanges = this.sendChanges.bind(this);
         }
 
+        componentDidMount() {
+            if (window.location.href.includes(process.env.REACT_APP_ADMIN)) {
+                fetch(process.env.REACT_APP_API_URL + 'system-info', {
+                    method: 'GET'
+                })
+                .then(response => {return response.json()})
+                .then(data => {
+                    if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
+                    if (this.header.current !== null) {
+                        this.header.current.setFreeSpace(data["free_space"], data["free_space_percentage"]);
+                        this.header.current.setPrivateSessions(data["private_sessions"]);
+                    }
+                });
+
+                this.interval = setInterval(() => {
+                    fetch(process.env.REACT_APP_API_URL + 'system-info', {
+                        method: 'GET'
+                    })
+                    .then(response => {return response.json()})
+                    .then(data => {
+                        if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
+                        if (this.header.current !== null) {
+                            this.header.current.setFreeSpace(data["free_space"], data["free_space_percentage"]);
+                            this.header.current.setPrivateSessions(data["private_sessions"]);
+                        }
+                    });
+                }, 1000 * UPDATE_TIME);
+            }
+        }
+
         getPrivateSession() {
-            if (["", "ocr", "ocr-dev"].includes(this.state.sessionId)) return null;
+            if (["", "ocr", "ocr-dev", process.env.REACT_APP_ADMIN].includes(this.state.sessionId)) return null;
             return this.state.sessionId;
         }
 
@@ -109,17 +132,13 @@ function App() {
 
             // Check if the current URL is deployed
             if (currentURL.includes('iris.sysresearch.org')) {
-                if (currentURL.includes('ocr-dev')) {
-                    window.location.href = 'https://iris.sysresearch.org/ocr-dev/';
-                } else if (currentURL.includes('ocr-prod')) {
-                    window.location.href = 'https://iris.sysresearch.org/ocr-prod/';
-                } else {
-                    window.location.href = 'https://iris.sysresearch.org/ocr/';
-                }
+                var deployedURL = currentURL.split("/")[3] + (currentURL.includes(process.env.REACT_APP_ADMIN) ? process.env.REACT_APP_ADMIN : "");
+                window.location.href = 'https://iris.sysresearch.org/' + deployedURL + '/';
             }
             // Check if the current URL is in the local environment
             else if (currentURL.includes('localhost')) {
-                window.location.href = 'http://localhost:3001/';
+                var port = currentURL.split(":")[2].split("/")[0] + (currentURL.includes(process.env.REACT_APP_ADMIN) ? process.env.REACT_APP_ADMIN : "");
+                window.location.href = 'http://localhost:' + port + '/';
             }
         }
 
@@ -128,6 +147,13 @@ function App() {
              * Open the versions menu
              */
             this.versionsMenu.current.toggleOpen();
+        }
+
+        openLogsMenu() {
+            /**
+             * Open the logs menu
+             */
+            this.logsMenu.current.toggleOpen();
         }
 
         sendChanges() {
@@ -160,149 +186,40 @@ function App() {
         }
 
         render() {
+            const Notification = loadComponent('Notification', 'Notifications');
+            const Header = loadComponent('Header', 'Header');
+            const VersionsMenu = loadComponent('Form', 'VersionsMenu');
+            const LogsMenu = loadComponent('Form', 'LogsMenu');
+            const FileExplorer = loadComponent('FileSystem', 'FileSystem');
+            const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
+            // const EditPage = loadComponent('EditPage', 'EditPage');
+            const EditPage2 = loadComponent('EditPage2', 'EditPage');
+            const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
+
             return (
                 <Box className="App" sx={{height: '100vh'}}>
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        ml: '1.5rem',
-                        mr: '1.5rem',
-                        mb: '1rem',
-                        mt: '1rem',
-                        zIndex: '100'
-                    }}>
-                        <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                            {process.env.REACT_APP_HEADER_STYLE !== 'NOVASBE' && process.env.REACT_APP_HEADER_STYLE !== 'STJ' && 
-                                <>
-                                    {this.getPrivateSession() !== null && <h1 style={{marginRight: '2rem', marginTop: '1.25rem', fontSize: '1.5rem'}}>Sessão Privada</h1>}
-                                    <Link
-                                        className="link"
-                                        sx={{
-                                            color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
-                                            mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
-                                        }}
-                                        style={{textDecoration: 'none'}}
-                                        onClick={() => {
-                                                this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})
-                                                this.redirectHome();                                                
-                                            }
-                                        }
-                                        underline="hover"
-                                    >
-                                        <h1>Início</h1>
-                                    </Link>
-                                    {
-                                        this.getPrivateSession() == null
-                                        ? <Link
-                                            className="link"
-                                            sx={{
-                                                color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
-                                                mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
-                                            }}
-                                            style={{textDecoration: 'none'}}
-                                            onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
-                                            underline="hover"
-                                        >
-                                            <h1>Pesquisar</h1>
-                                        </Link>
-                                        : null
-                                    }
-                                </>
-                            }
-                            {process.env.REACT_APP_HEADER_STYLE === 'NOVASBE' &&
-                                <Box sx={{display:'flex', flexDirection: 'row', alignItems: 'center'}}>  
-                                    <img src={logoNovaSBE} alt="logoNovaSBE" style={{paddingTop:'0.rem', paddingBottom: '0.5rem', marginRight:'2rem', height: '5rem', width: 'auto'}}/>
-                                    <Link
-                                        className="link"
-                                        sx={{
-                                            color: '#000000',
-                                            mr: '2rem', mt: '0.25rem', fontSize: '0.75rem'
-                                        }}
-                                        style={{textDecoration: 'none'}}
-                                        onClick={() => {
-                                                this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})
-                                                this.redirectHome();                                                
-                                            }
-                                        }
-                                        underline="hover"
-                                    >
-                                        <h1>Início</h1>
-                                    </Link>
-                                    {
-                                        this.getPrivateSession() == null
-                                        ? <Link
-                                            className="link"
-                                            sx={{
-                                                color: '#000000',
-                                                mr: '0.05rem', mt: '0.25rem', fontSize: '0.75em'
-                                            }}
-                                            style={{textDecoration: 'none'}}
-                                            onClick={() => this.setState({fileSystemMode: false, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})}
-                                            underline="hover"
-                                        >
-                                            <h1>Pesquisar</h1>
-                                        </Link>
-                                        : null
-                                    }
-                                </Box>
-                            }
-                            {process.env.REACT_APP_HEADER_STYLE === 'STJ' && 
-                                <>
-                                    <img src={logoSTJ} alt="logoSTJ" style={{paddingTop:'0.5rem', height: '4.5rem', width: 'auto'}}/>
-                                    <Button
-                                        className="link"
-                                        sx={{
-                                            color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514':'#1976d2',
-                                            ml: '2rem', mr: '2rem',  fontSize: '0.75rem'
-                                        }}
-                                        style={{textDecoration: 'none'}}
-                                        onClick={() => {
-                                                this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []});
-                                                this.redirectHome();
-                                            }
-                                        }
-                                        underline="hover"
-                                    >
-                                        <h1 className='fancy-font'>OCR</h1>
-                                    </Button>                                
-                                </>
-                            }
-                            <Notification message={""} severity={"success"} ref={this.successNot}/>
-                            <Notification message={""} severity={"error"} ref={this.errorNot}/>
-                        </Box>
+                    <Notification message={""} severity={"success"} ref={this.successNot}/>
+                    <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                        <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
-                            <p>{`Versão: ${VERSION}`}</p>
-                            {/* <IconButton onClick={() => this.openVersionsMenu()}>
-                                <InfoIcon />
-                            </IconButton> */}
-                            <Button sx={{ml: '1.5rem', padding: '0rem', color: process.env.REACT_APP_HEADER_STYLE === 'STJ' ? '#BA1514' :
-                                                                               process.env.REACT_APP_HEADER_STYLE === 'NOVASBE' ? '#000000' : '#1976d2'}} 
-                                    onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
-                            >
-                                <HelpIcon sx={{mr: '0.3rem'}}>
-                                </HelpIcon>
-                                Ajuda
-                            </Button>
-                        </Box>
-                    </Box>
+                    <Header ref={this.header} app={this} privateSession={this.getPrivateSession()} version={VERSION}/>
 
                     <VersionsMenu ref={this.versionsMenu}/>
+                    <LogsMenu ref={this.logsMenu}/>
 
-                    <Box sx={{}}>
+                    <Box>
                         {
                             this.state.fileSystemMode
-                            
-                            ?  this.getPrivateSession() == null
+
+                            ? this.getPrivateSession() == null
                                 ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
                                 : <PrivateFileExplorer ref={this.fileSystem} current_folder={this.state.sessionId} files={{"files": []}} app={this}/>
 
                             : this.state.editFileMode
-                                ? <EditPage ref={this.editPage} app={this}/>
+                                ? <EditPage2 ref={this.editPage} app={this}/>
                                 : <ESPage app={this}/>
                         }
                     </Box>
+
                 </Box>
             )
         }

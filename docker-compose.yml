@@ -10,7 +10,7 @@ services:
       context: .
       dockerfile: ./compose/nginx/Dockerfile
     ports:
-      - "8888:80"
+      - "80:80"
     depends_on:
       - server
     volumes:
@@ -30,9 +30,11 @@ services:
       FLASK_DEBUG: 1
       ES_URL: http://elasticsearch:9200
     ports:
-      - "5001"
+      - "5001:5001"
     depends_on:
       elasticsearch:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - files_data:/app/files
@@ -43,7 +45,7 @@ services:
       context: ./compose/elasticsearch
       dockerfile: Dockerfile
     ports:
-     - "9200"
+     - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
@@ -55,4 +57,31 @@ services:
       timeout: 30s
       retries: 15
       start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 15
+      start_period: 10s
+    volumes:
+      - files_data:/app/files
+    restart: unless-stopped
+
+  celery_worker:
+    build:
+      context: ./server
+      dockerfile: ../compose/celery/Dockerfile
+    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
+    volumes:
+      - files_data:/app/files
+    links:
+      - redis
+    depends_on:
+      - redis
     restart: unless-stopped
