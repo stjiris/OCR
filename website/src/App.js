@@ -198,7 +198,7 @@ function App() {
             const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
             return (
-                <Box className="App" sx={{minHeight: '100vh'}}>
+                <Box className="App" sx={{height: '100vh'}}>
                     <Notification message={""} severity={"success"} ref={this.successNot}/>
                     <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
