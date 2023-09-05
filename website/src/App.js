@@ -4,6 +4,7 @@ import React from 'react';
 import Box from '@mui/material/Box';
 
 import loadComponent from './utils/loadComponents';
+import footerBanner from './static/footerBanner.png';
 
 /**
  * About Versioning:
@@ -197,7 +198,7 @@ function App() {
             const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
             return (
-                <Box className="App" sx={{height: '100vh'}}>
+                <Box className="App" sx={{minHeight: '100vh'}}>
                     <Notification message={""} severity={"success"} ref={this.successNot}/>
                     <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
@@ -219,7 +220,9 @@ function App() {
                                 : <ESPage app={this}/>
                         }
                     </Box>
-
+                    <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
+                        <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '6rem', width: 'auto'}}/>
+                    </Box>
                 </Box>
             )
         }
