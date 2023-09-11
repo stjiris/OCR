@@ -4,6 +4,7 @@ import React from 'react';
 import Box from '@mui/material/Box';
 
 import loadComponent from './utils/loadComponents';
+import footerBanner from './static/footerBanner.png';
 
 /**
  * About Versioning:
@@ -13,7 +14,7 @@ import loadComponent from './utils/loadComponents';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.18.1";
+const VERSION = "0.18.2";
 const UPDATE_TIME = 30;
 
 function App() {
@@ -219,7 +220,9 @@ function App() {
                                 : <ESPage app={this}/>
                         }
                     </Box>
-
+                    <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
+                        <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '6rem', width: 'auto'}}/>
+                    </Box>
                 </Box>
             )
         }
