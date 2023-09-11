@@ -1,6 +1,5 @@
 import React from 'react';
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
 
 import addLine from "../../../static/addLine.svg"
 import removeLine from "../../../static/removeLine.svg"
