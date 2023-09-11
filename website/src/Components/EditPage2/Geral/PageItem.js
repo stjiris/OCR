@@ -120,6 +120,8 @@ export default class PageItem extends React.Component {
     }
 
     buildComponents() {
+        var TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+
         var components = [];
         var refs = [];
 
@@ -143,22 +145,27 @@ export default class PageItem extends React.Component {
 
                 if (s + 1 !== this.state.contents.length || l + 1 !== section.length) {
                     row.push(
-                        <IconButton
-                            sx={{ml: "0.5rem", p: 0, "&:hover": {backgroundColor: "#1976d248"}}}
-                            onClick={
+                        <TooltipIcon
+                            key={s + " " + l + " " + (l + 1 === section.length)}
+                            padding={0}
+                            icon={
+                                <img 
+                                    style={{width: '1.2rem'}} src={l + 1 === section.length ? removeLine : addLine} alt="New Line"
+                                />
+                            }
+                            message={
+                                l + 1 === section.length ? "Remover parágrafo" : "Adicionar parágrafo"
+                            }
+                            clickFunction={
                                 () => {
                                     if (l + 1 === section.length) {
                                         this.joinSections(s);
                                     } else {
-                                        this.separateSections(s, l)
+                                        this.separateSections(s, l);
                                     }
                                 }
                             }
-                        >
-                            <img 
-                                style={{width: '1.2rem'}} src={l + 1 === section.length ? removeLine : addLine} alt="New Line"
-                            />
-                        </IconButton>
+                        />
                     )
                 }
 
