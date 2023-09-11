@@ -50,3 +50,11 @@ img:hover {
   font-weight: 500;
   margin: 0px;
 }
+
+.editorSelector {
+  border: 1px solid black;
+  border-bottom: none;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  cursor: pointer;
+}

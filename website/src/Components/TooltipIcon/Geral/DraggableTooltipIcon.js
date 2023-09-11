@@ -40,7 +40,7 @@ export default class DraggableTooltipIcon extends React.Component {
                             padding: "2px 2px",
 
                         }}>
-                            <span style={{fontSize: "8px"}}>{this.state.message}</span>
+                            <span style={{fontSize: "9px"}}>{this.state.message}</span>
                         </Box>
                         <Box sx={{
                             position: 'absolute',

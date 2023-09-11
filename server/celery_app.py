@@ -118,6 +118,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
         if segment_ocr_flag == False:
             json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
+            json_d = [[x] for x in json_d]
             with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w") as f:
                 json.dump(json_d, f, indent=2)
         else:
@@ -141,7 +142,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
             page_json = []
             for sublist in all_jsons:
-                page_json.extend(sublist)
+                page_json.append(sublist)
             
             with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w") as f:
                 json.dump(page_json, f, indent=2)
@@ -154,7 +155,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         update_data(data_folder, data)
 
         if data["pages"] == len(files):
-            log.info("{path}: Acabei OCR")
+            log.info(f"{path}: Acabei OCR")
 
             creation_date = get_current_time()
 
@@ -164,14 +165,18 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
             update_data(data_folder, data)
 
+            log.info("Txt")
+
             export_file(path, "txt")
-            export_file(path, "pdf")
-
             creation_date = get_current_time()
-
             data["txt"]["complete"] = True
             data["txt"]["size"] = get_size(f"{path}/_text.txt", path_complete=True)
             data["txt"]["creation"] = creation_date
+
+            log.info("Txt finished")
+
+            export_file(path, "pdf")
+            creation_date = get_current_time()
 
             data["pdf"]["complete"] = True
             data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)

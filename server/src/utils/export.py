@@ -29,7 +29,11 @@ def json_to_text(json_d):
     :param json_d: json with the hOCR data
     :return: text
     """
-    return "\n".join([" ".join([w["text"] for w in l]) for l in json_d]).strip()
+    lines = []
+    for section in json_d:
+        l = [w["text"] for l in section for w in l]
+        lines.append(" ".join(l))
+    return "\n".join(lines).strip()
 
 
 def get_file_basename(filename):
@@ -59,7 +63,6 @@ def export_file(path, filetype, delimiter=None, force_recreate = False):
         return func(path, force_recreate)
 
     return func(path, delimiter, force_recreate)
-
 
 ####################################################
 # EXPORT TXT FUNCTIONS
@@ -229,34 +232,35 @@ def find_index_words(hocr_path):
 
     hyphenated_last_word = False
 
-    for line_index, line in enumerate(hocrfile):
-        if hyphenated_last_word:
-            previous_word = hocrfile[line_index - 1][-1]["text"]
-            current_word = line[0]["text"]
-            joined_word = previous_word.rstrip("-") + current_word
-            line[0]["text"] = joined_word
-            hyphenated_last_word = False
+    for section in hocrfile:
+        for line_index, line in enumerate(section):
+            if hyphenated_last_word:
+                previous_word = section[line_index - 1][-1]["text"]
+                current_word = line[0]["text"]
+                joined_word = previous_word.rstrip("-") + current_word
+                line[0]["text"] = joined_word
+                hyphenated_last_word = False
 
-            # Remove subwords of the joined word from the index
-            if index_words.get(previous_word, 0) != 0:
-                index_words[previous_word] = index_words.get(previous_word, 0) - 1
-                if index_words[previous_word] == 0:
-                    del index_words[previous_word]
+                # Remove subwords of the joined word from the index
+                if index_words.get(previous_word, 0) != 0:
+                    index_words[previous_word] = index_words.get(previous_word, 0) - 1
+                    if index_words[previous_word] == 0:
+                        del index_words[previous_word]
 
-        for i, word in enumerate(line):
-            rawtext = word["text"]
+            for i, word in enumerate(line):
+                rawtext = word["text"]
 
-            if (i == len(line) - 1) and rawtext.endswith("-"):
-                hyphenated_last_word = True
+                if (i == len(line) - 1) and rawtext.endswith("-"):
+                    hyphenated_last_word = True
 
-            for w in rawtext.split():
-                w = w.strip()
-                for c in remove_chars:
-                    w = w.replace(c, "")
+                for w in rawtext.split():
+                    w = w.strip()
+                    for c in remove_chars:
+                        w = w.replace(c, "")
 
-                w = w.lower()
+                    w = w.lower()
 
-                index_words[w] = index_words.get(w, 0) + 1
+                    index_words[w] = index_words.get(w, 0) + 1
 
     return index_words
 
@@ -269,27 +273,28 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
     with open(hocr_path) as f:
         hocrfile = json.load(f)
 
-    for line in hocrfile:
-        for word in line:
-            rawtext = word["text"]
-            box = word["box"]
-            b = word["b"]
+    for section in hocrfile:
+        for line in section:
+            for word in line:
+                rawtext = word["text"]
+                box = word["box"]
+                b = word["b"]
 
-            font_width = pdf.stringWidth(rawtext, "invisible", 8)
-            if font_width <= 0:
-                continue
+                font_width = pdf.stringWidth(rawtext, "invisible", 8)
+                if font_width <= 0:
+                    continue
 
-            text = pdf.beginText()
-            text.setTextRenderMode(3)  # double invisible
-            text.setFont("invisible", 8)
-            x_offset = box[0] * dpi_compressed / dpi_original  # Adjust X offset
-            y_offset = height - b * dpi_compressed / dpi_original  # Adjust Y offset
-            text.setTextOrigin(x_offset, y_offset)
-            box_width = (box[2] - box[0]) * dpi_compressed / dpi_original
-            width_scale = 100.0 * box_width / font_width  # Adjust width scaling
-            text.setHorizScale(width_scale)
-            text.textLine(rawtext)
-            pdf.drawText(text)
+                text = pdf.beginText()
+                text.setTextRenderMode(3)  # double invisible
+                text.setFont("invisible", 8)
+                x_offset = box[0] * dpi_compressed / dpi_original  # Adjust X offset
+                y_offset = height - b * dpi_compressed / dpi_original  # Adjust Y offset
+                text.setTextOrigin(x_offset, y_offset)
+                box_width = (box[2] - box[0]) * dpi_compressed / dpi_original
+                width_scale = 100.0 * box_width / font_width  # Adjust width scaling
+                text.setHorizScale(width_scale)
+                text.textLine(rawtext)
+                pdf.drawText(text)
 
     return index_words
 
