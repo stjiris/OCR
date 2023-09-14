@@ -9,6 +9,7 @@ class WordItem extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            selected: props.selected || false,
             item: props.item,
             section: props.section,
             line: props.line,
@@ -41,7 +42,7 @@ class WordItem extends React.Component {
             <Box
                 sx={{
                     display: "inline-block",
-                    backgroundColor: this.state.hovered ? "#1976d248" : "transparent",
+                    backgroundColor: this.state.hovered ? "#1976d248" : (this.state.selected ? "#1976d248" : "transparent"),
                     borderRadius: "7px",
                     cursor: "pointer"
                 }}
@@ -84,6 +85,7 @@ export default class PageItem extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            selectedWord: props.selectedWord,
             page: props.page,
             image: props.image,
             index: props.index,
@@ -138,7 +140,11 @@ export default class PageItem extends React.Component {
                 for (var w = 0; w < content.length; w++) {
                     var word = content[w];
                     var ref = React.createRef();
-                    row.push(<WordItem key={word["text"] + s + l + w} section={s} line={l} order={w} item={this} text={word["text"]} box={word["box"]} b={word["b"]} />);
+                    let text = word["text"].toLowerCase();
+                    Array.from('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~').forEach(element => {
+                        text = text.replaceAll(element, "");
+                    });
+                    row.push(<WordItem key={word["text"] + s + l + w} section={s} line={l} order={w} item={this} text={word["text"]} selected={(text === "") ? false : text.split(" ").includes(this.state.selectedWord)} box={word["box"]} b={word["b"]} />);
                     rowRefs.push(ref);
                 }
 
@@ -178,8 +184,11 @@ export default class PageItem extends React.Component {
 
     updateContents(section, line, order, contents) {
         var pageContents = [...this.state.contents];
+
+        var previousStructure = pageContents[section][line][order];
+
         pageContents[section][line][order] = contents;
-        this.state.page.updateContents(this.state.index, pageContents);
+        this.state.page.updateContents(this.state.index, pageContents, previousStructure, contents);
     }
 
     render() {

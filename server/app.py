@@ -105,8 +105,8 @@ def create_folder():
 @app.route("/get-file", methods=["GET"])
 def get_file():
     path = request.values["path"]
-    doc = get_file_parsed(path)
-    return {"doc": doc}
+    doc, words = get_file_parsed(path)
+    return {"doc": doc, "words": words}
 
 
 @app.route("/get_txt", methods=["GET"])
