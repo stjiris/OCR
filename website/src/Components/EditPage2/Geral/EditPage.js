@@ -67,7 +67,7 @@ export default class EditPage extends React.Component {
             else
                 words[text] = wordsList;
 
-            if (word === this.state.selectedWord) {
+            if (text === this.state.selectedWord) {
                 this.setState({selectedWord: ""});
             }
         });
