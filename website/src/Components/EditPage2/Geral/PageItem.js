@@ -42,7 +42,7 @@ class WordItem extends React.Component {
             <Box
                 sx={{
                     display: "inline-block",
-                    backgroundColor: this.state.hovered ? "#1976d248" : (this.state.selected ? "#1976d248" : "transparent"),
+                    backgroundColor: this.state.hovered ? "#1976d248" : (this.state.selected ? "#fee135" : "transparent"),
                     borderRadius: "7px",
                     cursor: "pointer"
                 }}
