@@ -27,6 +27,8 @@ export default class EditPage extends React.Component {
 
         this.multiplePage = React.createRef();
         this.editText = React.createRef();
+
+        this.dictMenu = React.createRef();
     }
 
     preventExit(event) {
@@ -60,9 +62,9 @@ export default class EditPage extends React.Component {
             });
 
             var wordsList = words[text] || [];
-            wordsList.splice(wordsList.indexOf(index), 1);
+            wordsList["pages"].splice(wordsList["pages"].indexOf(index), 1);
 
-            if (wordsList.length === 0)
+            if (wordsList["pages"].length === 0)
                 delete words[text];
             else
                 words[text] = wordsList;
@@ -79,9 +81,9 @@ export default class EditPage extends React.Component {
                 text = text.replaceAll(element, "");
             });
 
-            var wordsList = words[text] || [];
-            wordsList.push(index);
-            wordsList.sort((a, b) => (a > b) ? 1 : -1);
+            var wordsList = words[text] || {"pages": [], "sintax": true};
+            wordsList["pages"].push(index);
+            wordsList["pages"].sort((a, b) => (a > b) ? 1 : -1);
             words[text] = wordsList;
         });
 
@@ -113,7 +115,10 @@ export default class EditPage extends React.Component {
         });
 
         items.sort(function(first, second) {
-            return first[1].length - second[1].length;
+            if (first[1]["pages"].length === second[1]["pages"].length) {
+                return (first[0] > second[0]) ? 1 : -1;
+            }
+            return first[1]["pages"].length - second[1]["pages"].length;
         });
 
         var sortedWords = {}
@@ -163,15 +168,33 @@ export default class EditPage extends React.Component {
         });
     }
 
+    requestSintax() {
+        this.dictMenu.current.updateWords(this.state.words_list);
+        this.dictMenu.current.toggleOpen();
+    }
+
+    updateSintax(words) {
+        var words_list = this.state.words_list;
+        Object.entries(words).forEach(([key, value]) => {
+            words_list[key]["sintax"] = value;
+        });
+
+        this.setState({words_list: words_list});
+    }
+
+
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
         const ConfirmLeave = loadComponent('EditPage2', 'ConfirmLeave');
         const PageItem = loadComponent('EditPage2', 'PageItem');
+        const DictionaryMenu = loadComponent('Form', 'DictionaryMenu');
 
         return (
             <Box sx={{height: '100%'}}>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <Notification message={""} severity={"error"} ref={this.errorNot}/>
+
+                <DictionaryMenu ref={this.dictMenu} page={this} />
 
                 <ConfirmLeave ref={this.confirmLeave} page={this} />
 
@@ -234,10 +257,20 @@ export default class EditPage extends React.Component {
                         width: '20vw',
                         backgroundColor: '#eee'
                     }}>
-                        <span style={{fontSize: '20px', fontWeight: 'bold'}}>List of Words</span>
+                        <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', paddingRight: '0.5rem', alignItems: "center"}}>
+                            <span style={{fontSize: '18px', fontWeight: 'bold'}}>Palavras</span>
+                            <Button
+                                variant="text"
+                                color="success"
+                                sx={{padding: 0, textTransform: "none", color: 'blue'}}
+                                onClick={() => this.requestSintax()}
+                            >
+                                Verificar sintaxe
+                            </Button>
+                        </Box>
                         {
                             this.state.loading
-                            ? <><br/><span>Loading...</span></>
+                            ? <><span>Loading...</span></>
                             : <Box>
                                 {
                                     Object.entries(this.state.words_list).map(([key, value]) => {
@@ -255,11 +288,21 @@ export default class EditPage extends React.Component {
                                                     this.setState({selectedWord: key})
                                             }}
                                         >
-                                            {
-                                                (key === this.state.selectedWord)
-                                                ? <span style={{fontWeight: 'bold'}}>{key} ({value.length})</span>
-                                                : <span>{key} ({value.length})</span>
-                                            }
+                                            <span
+                                                key={key + " " + value["pages"].length + " " + value["sintax"]}
+                                                style={{
+                                                    fontWeight: (key === this.state.selectedWord) ? 'bold' : 'normal'
+                                                }}
+                                            >
+                                                {key} ({value["pages"].length})
+                                                    <span style={{marginLeft: '5px'}}>
+                                                        {
+                                                            !value["sintax"]
+                                                            ? "⚠️"
+                                                            : ""
+                                                        }
+                                                    </span>
+                                            </span>
                                         </Box>
                                     })
                                 }

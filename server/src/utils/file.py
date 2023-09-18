@@ -78,7 +78,13 @@ def get_file_parsed(path):
                         if t == "" or t.isdigit():
                             continue
 
-                        words[t] = words.get(t, []) + [id]
+                        if t in words:
+                            words[t]["pages"].append(id)
+                        else:
+                            words[t] = {
+                                "pages": [id],
+                                "sintax": True
+                            }
 
             data.append(
                 {
