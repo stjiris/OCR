@@ -265,7 +265,7 @@ export default class EditPage extends React.Component {
                                 sx={{padding: 0, textTransform: "none", color: 'blue'}}
                                 onClick={() => this.requestSintax()}
                             >
-                                Verificar sintaxe
+                                Verificar ortografia
                             </Button>
                         </Box>
                         {

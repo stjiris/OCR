@@ -150,7 +150,7 @@ class DictionaryMenu extends React.Component {
                                     sx={{border: '1px solid black', mt: '0.5rem'}}
                                     onClick={() => this.checkSintax()}
                                 >
-                                    Verificar sintaxe
+                                    Verificar ortografia
                                 </Button>
                             }
                         </Box>
