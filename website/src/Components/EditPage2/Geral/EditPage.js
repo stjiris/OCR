@@ -215,7 +215,6 @@ export default class EditPage extends React.Component {
         const Notification = loadComponent('Notification', 'Notifications');
         const ConfirmLeave = loadComponent('EditPage2', 'ConfirmLeave');
         const PageItem = loadComponent('EditPage2', 'PageItem');
-        const DictionaryMenu = loadComponent('Form', 'DictionaryMenu');
         const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 
         return (
@@ -223,7 +222,6 @@ export default class EditPage extends React.Component {
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                <DictionaryMenu ref={this.dictMenu} page={this} />
 
                 <ConfirmLeave ref={this.confirmLeave} page={this} />
 
