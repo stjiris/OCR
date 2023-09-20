@@ -17,6 +17,7 @@ from PIL import Image
 from pypdf import PdfReader
 from src.utils.export import export_file
 from src.utils.export import json_to_text
+from string import punctuation
 
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
@@ -61,10 +62,29 @@ def get_file_parsed(path):
     ]
 
     data = []
-    for file in files:
+    words = {}
+    for id, file in enumerate(files):
         basename = get_file_basename(file)
         with open(file, encoding="utf-8") as f:
             hocr = json.load(f)
+
+            for s in hocr:
+                for l in s:
+                    for w in l:
+                        t = w["text"].lower().strip()
+                        for p in punctuation:
+                            t = t.replace(p, "")
+
+                        if t == "" or t.isdigit():
+                            continue
+
+                        if t in words:
+                            words[t]["pages"].append(id)
+                        else:
+                            words[t] = {
+                                "pages": [id],
+                                "sintax": True
+                            }
 
             data.append(
                 {
@@ -78,7 +98,7 @@ def get_file_parsed(path):
                     + ".jpg",
                 }
             )
-    return data
+    return data, words
 
 # TODO
 def get_file_layouts(path):

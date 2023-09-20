@@ -33,6 +33,8 @@ from src.utils.system import get_free_space
 from src.utils.system import get_logs
 from src.utils.system import get_private_sessions
 
+from src.utils.text import compare_dicts_words
+
 from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
@@ -105,8 +107,8 @@ def create_folder():
 @app.route("/get-file", methods=["GET"])
 def get_file():
     path = request.values["path"]
-    doc = get_file_parsed(path)
-    return {"doc": doc}
+    doc, words = get_file_parsed(path)
+    return {"doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
 
 @app.route("/get_txt", methods=["GET"])
@@ -507,6 +509,13 @@ def submit_text():
 
     return {"success": True, "files": get_filesystem(session)}
 
+@app.route("/check-sintax", methods=["POST"])
+def check_sintax():
+    words = request.json["words"].keys()
+    languages = request.json["languages"]
+
+    result = compare_dicts_words(words, languages)
+    return {"success": True, "result": result}
 
 #####################################
 # ELASTICSEARCH
