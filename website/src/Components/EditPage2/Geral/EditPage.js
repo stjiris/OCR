@@ -5,6 +5,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 
 import loadComponent from '../../../utils/loadComponents';
+import { CircularProgress } from '@mui/material';
 
 export default class EditPage extends React.Component {
     constructor(props) {
@@ -18,7 +19,11 @@ export default class EditPage extends React.Component {
 
             selectedWord: "",
 
-            loading: true
+            loading: true,
+
+            corpusOptions: [],
+            corpusChoice: [{"name": "Português", "code": "Português"}],
+            loadingSintax: false,
         }
 
         this.successNot = React.createRef();
@@ -29,6 +34,7 @@ export default class EditPage extends React.Component {
         this.editText = React.createRef();
 
         this.dictMenu = React.createRef();
+        this.corpusSelect = React.createRef();
     }
 
     preventExit(event) {
@@ -105,7 +111,13 @@ export default class EditPage extends React.Component {
             
             var sortedWords = this.orderWords(data["words"]);
 
-            this.setState({loading: false, contents: contents, words_list: sortedWords});
+            var newCorpusList = [];
+            data["corpus"].forEach((item) => {
+                newCorpusList.push({"name": item, "code": item});
+            });
+
+
+            this.setState({loading: false, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
         });
     }
 
@@ -169,8 +181,24 @@ export default class EditPage extends React.Component {
     }
 
     requestSintax() {
-        this.dictMenu.current.updateWords(this.state.words_list);
-        this.dictMenu.current.toggleOpen();
+        this.setState({ loadingSintax: true });
+        fetch(process.env.REACT_APP_API_URL + 'check-sintax', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "languages": this.corpusSelect.current.getChoiceList(),
+                "words": this.state.words_list,
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.updateSintax(data.result);
+                this.setState({ loadingSintax: false });
+            }
+        });
     }
 
     updateSintax(words) {
@@ -188,6 +216,7 @@ export default class EditPage extends React.Component {
         const ConfirmLeave = loadComponent('EditPage2', 'ConfirmLeave');
         const PageItem = loadComponent('EditPage2', 'PageItem');
         const DictionaryMenu = loadComponent('Form', 'DictionaryMenu');
+        const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 
         return (
             <Box sx={{height: '100%'}}>
@@ -254,24 +283,42 @@ export default class EditPage extends React.Component {
                         ml: '0.5rem',
                         paddingLeft: '0.5rem',
                         paddingTop: '0.5rem',
+                        paddingRight: '0.5rem',
                         width: '20vw',
                         backgroundColor: '#eee'
                     }}>
-                        <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', paddingRight: '0.5rem', alignItems: "center"}}>
+                        <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: "center"}}>
                             <span style={{fontSize: '18px', fontWeight: 'bold'}}>Palavras</span>
-                            <Button
-                                variant="text"
-                                color="success"
-                                sx={{padding: 0, textTransform: "none", color: 'blue'}}
-                                onClick={() => this.requestSintax()}
-                            >
-                                Verificar ortografia
-                            </Button>
                         </Box>
                         {
                             this.state.loading
                             ? <><span>Loading...</span></>
                             : <Box>
+                                <Box sx={{display: "flex", flexDirection: "column"}}>
+                                    <CorpusDropdown 
+                                        ref={this.corpusSelect} 
+                                        options={this.state.corpusOptions} 
+                                        choice={this.state.corpusChoice} 
+                                    />
+
+                                    <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
+                                        <Button
+                                            variant="text"
+                                            color="success"
+                                            sx={{padding: 0, textTransform: "none", color: 'blue'}}
+                                            onClick={() => this.requestSintax()}
+                                        >
+                                            Verificar ortografia
+                                        </Button>
+
+                                        {
+                                            this.state.loadingSintax
+                                            ? <CircularProgress sx={{ml: "1rem"}} color="success" size="1rem" />
+                                            : null
+                                        }
+
+                                    </Box>
+                                </Box>
                                 {
                                     Object.entries(this.state.words_list).map(([key, value]) => {
                                         return <Box

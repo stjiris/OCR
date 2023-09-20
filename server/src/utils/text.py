@@ -1,5 +1,3 @@
-from PyMultiDictionary import MultiDictionary, DICT_EDUCALINGO
-
 ##################################################
 # TEXT UTILS
 ##################################################
@@ -19,7 +17,7 @@ def clear_text(text):
 
     return text
 
-def compare_dicts_words(words, languages):
+def compare_dicts_words(words, corpus):
     """
     Function used to compare the words of a dictionary with the words of the OCR
 
@@ -28,18 +26,17 @@ def compare_dicts_words(words, languages):
     :return: the words of the OCR that are in the dictionary
     """
 
+    dict_words = set()
+    for c in corpus:
+        with open(f"./corpus/{c}.txt", "r") as f:
+            for line in f:
+                dict_words.add(line.strip())
+
     # Get the words of the OCR
     result = {word: False for word in words}
-    dictionary = MultiDictionary(*words)
 
-    for language in languages:
-        dictionary.set_words_lang(language)
-
-        r = dictionary.get_meanings(dictionary=DICT_EDUCALINGO)
-        for id, w in enumerate(r):
-            if any(w): 
-                result[words[id]] = True
-            else:
-                print(words[id], w)
+    for word in words:
+        if word in dict_words:
+            result[word] = True
 
     return result
