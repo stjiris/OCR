@@ -209,19 +209,6 @@ export default class EditPage extends React.Component {
         this.setState({words_list: words_list});
     }
 
-    _profilerCallback(id, phase, actualDuration, baseDuration, startTime, commitTime, interactions) {
-        fetch("https://starter-snake-python-1.andreoliveira10.repl.co", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                "time": actualDuration,
-            })
-        });
-    }
-
-
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
         const ConfirmLeave = loadComponent('EditPage2', 'ConfirmLeave');
@@ -279,15 +266,13 @@ export default class EditPage extends React.Component {
                         {
                             this.state.loading
                             ? <p>Loading...</p>
-                            : <React.Profiler id="Pages" onRender={this._profilerCallback}>
-                                <Box>
-                                    {
-                                        this.state.contents.map((page, index) =>
-                                            <PageItem key={index + this.state.selectedWord} selectedWord={this.state.selectedWord} page={this} contents={page["content"]} image={page["page_url"]} index={index} />
-                                        )
-                                    }
-                                </Box>
-                            </React.Profiler>
+                            : <Box>
+                                {
+                                    this.state.contents.map((page, index) =>
+                                        <PageItem key={index + this.state.selectedWord} selectedWord={this.state.selectedWord} page={this} contents={page["content"]} image={page["page_url"]} index={index} />
+                                    )
+                                }
+                            </Box>
                         }
                     </Box>
                     <Box sx={{
