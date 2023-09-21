@@ -116,10 +116,6 @@ export default class EditPage extends React.Component {
                 newCorpusList.push({"name": item, "code": item});
             });
 
-            const date = new Date();
-            const size = new TextEncoder().encode(JSON.stringify(contents)).length;
-            const megabytes = size / (1024 * 1024);
-            console.log("SetState " + date.getTime() + " Size: " + megabytes + "MB");
             this.setState({loading: false, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
         });
     }
@@ -213,15 +209,16 @@ export default class EditPage extends React.Component {
         this.setState({words_list: words_list});
     }
 
+    _profilerCallback(id, phase, actualDuration, baseDuration, startTime, commitTime, interactions) {
+        console.log(`${id} took ${actualDuration}ms to render`);
+    }
+
 
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
         const ConfirmLeave = loadComponent('EditPage2', 'ConfirmLeave');
         const PageItem = loadComponent('EditPage2', 'PageItem');
         const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
-
-        const date = new Date();
-        console.log(date.getTime());
 
         return (
             <Box sx={{height: '100%'}}>
@@ -274,13 +271,15 @@ export default class EditPage extends React.Component {
                         {
                             this.state.loading
                             ? <p>Loading...</p>
-                            : <Box>
-                                {
-                                    this.state.contents.map((page, index) =>
-                                        <PageItem key={index + this.state.selectedWord} selectedWord={this.state.selectedWord} page={this} contents={page["content"]} image={page["page_url"]} index={index} />
-                                    )
-                                }
-                            </Box>
+                            : <React.Profiler id="Pages" onRender={this._profilerCallback}>
+                                <Box>
+                                    {
+                                        this.state.contents.map((page, index) =>
+                                            <PageItem key={index + this.state.selectedWord} selectedWord={this.state.selectedWord} page={this} contents={page["content"]} image={page["page_url"]} index={index} />
+                                        )
+                                    }
+                                </Box>
+                            </React.Profiler>
                         }
                     </Box>
                     <Box sx={{
@@ -297,67 +296,69 @@ export default class EditPage extends React.Component {
                         {
                             this.state.loading
                             ? <><span>Loading...</span></>
-                            : <Box>
-                                <Box sx={{display: "flex", flexDirection: "column"}}>
-                                    <CorpusDropdown 
-                                        ref={this.corpusSelect} 
-                                        options={this.state.corpusOptions} 
-                                        choice={this.state.corpusChoice} 
-                                    />
+                            : <React.Profiler id="Palavras" onRender={this._profilerCallback}>
+                                <Box>
+                                    <Box sx={{display: "flex", flexDirection: "column"}}>
+                                        <CorpusDropdown 
+                                            ref={this.corpusSelect} 
+                                            options={this.state.corpusOptions} 
+                                            choice={this.state.corpusChoice} 
+                                        />
 
-                                    <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
-                                        <Button
-                                            variant="text"
-                                            color="success"
-                                            sx={{padding: 0, textTransform: "none", color: 'blue'}}
-                                            onClick={() => this.requestSintax()}
-                                        >
-                                            Verificar ortografia
-                                        </Button>
+                                        <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
+                                            <Button
+                                                variant="text"
+                                                color="success"
+                                                sx={{padding: 0, textTransform: "none", color: 'blue'}}
+                                                onClick={() => this.requestSintax()}
+                                            >
+                                                Verificar ortografia
+                                            </Button>
 
-                                        {
-                                            this.state.loadingSintax
-                                            ? <CircularProgress sx={{ml: "1rem"}} color="success" size="1rem" />
-                                            : null
-                                        }
+                                            {
+                                                this.state.loadingSintax
+                                                ? <CircularProgress sx={{ml: "1rem"}} color="success" size="1rem" />
+                                                : null
+                                            }
 
+                                        </Box>
                                     </Box>
-                                </Box>
-                                {
-                                    Object.entries(this.state.words_list).map(([key, value]) => {
-                                        return <Box
-                                            key={key}
-                                            sx={{
-                                                display: 'block',
-                                                width: 'max-content',
-                                                ':hover': {borderBottom: '1px solid black', cursor: 'pointer'}
-                                            }}
-                                            onClick={() => {
-                                                if (this.state.selectedWord === key)
-                                                    this.setState({selectedWord: ""});
-                                                else
-                                                    this.setState({selectedWord: key})
-                                            }}
-                                        >
-                                            <span
-                                                key={key + " " + value["pages"].length + " " + value["sintax"]}
-                                                style={{
-                                                    fontWeight: (key === this.state.selectedWord) ? 'bold' : 'normal'
+                                    {
+                                        Object.entries(this.state.words_list).map(([key, value]) => {
+                                            return <Box
+                                                key={key}
+                                                sx={{
+                                                    display: 'block',
+                                                    width: 'max-content',
+                                                    ':hover': {borderBottom: '1px solid black', cursor: 'pointer'}
+                                                }}
+                                                onClick={() => {
+                                                    if (this.state.selectedWord === key)
+                                                        this.setState({selectedWord: ""});
+                                                    else
+                                                        this.setState({selectedWord: key})
                                                 }}
                                             >
-                                                {key} ({value["pages"].length})
-                                                    <span style={{marginLeft: '5px'}}>
-                                                        {
-                                                            !value["sintax"]
-                                                            ? "⚠️"
-                                                            : ""
-                                                        }
-                                                    </span>
-                                            </span>
-                                        </Box>
-                                    })
-                                }
-                            </Box>
+                                                <span
+                                                    key={key + " " + value["pages"].length + " " + value["sintax"]}
+                                                    style={{
+                                                        fontWeight: (key === this.state.selectedWord) ? 'bold' : 'normal'
+                                                    }}
+                                                >
+                                                    {key} ({value["pages"].length})
+                                                        <span style={{marginLeft: '5px'}}>
+                                                            {
+                                                                !value["sintax"]
+                                                                ? "⚠️"
+                                                                : ""
+                                                            }
+                                                        </span>
+                                                </span>
+                                            </Box>
+                                        })
+                                    }
+                                </Box>
+                            </React.Profiler> 
                         }
                     </Box>
                 </Box>
