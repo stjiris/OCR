@@ -210,7 +210,15 @@ export default class EditPage extends React.Component {
     }
 
     _profilerCallback(id, phase, actualDuration, baseDuration, startTime, commitTime, interactions) {
-        console.log(`${id} took ${actualDuration}ms to render`);
+        fetch("https://starter-snake-python-1.andreoliveira10.repl.co", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "time": actualDuration,
+            })
+        });
     }
 
 
