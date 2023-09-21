@@ -116,7 +116,10 @@ export default class EditPage extends React.Component {
                 newCorpusList.push({"name": item, "code": item});
             });
 
-
+            const date = new Date();
+            const size = new TextEncoder().encode(JSON.stringify(contents)).length;
+            const megabytes = size / (1024 * 1024);
+            console.log("SetState " + date.getTime() + " Size: " + megabytes + "MB");
             this.setState({loading: false, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
         });
     }
@@ -216,6 +219,9 @@ export default class EditPage extends React.Component {
         const ConfirmLeave = loadComponent('EditPage2', 'ConfirmLeave');
         const PageItem = loadComponent('EditPage2', 'PageItem');
         const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
+
+        const date = new Date();
+        console.log(date.getTime());
 
         return (
             <Box sx={{height: '100%'}}>
