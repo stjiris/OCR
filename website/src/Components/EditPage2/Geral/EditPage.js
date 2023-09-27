@@ -209,10 +209,6 @@ export default class EditPage extends React.Component {
         this.setState({words_list: words_list});
     }
 
-    _profilerCallback(id, phase, actualDuration, baseDuration, startTime, commitTime, interactions) {
-        console.log(`${id} took ${actualDuration}ms to render`);
-    }
-
 
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
@@ -296,69 +292,67 @@ export default class EditPage extends React.Component {
                         {
                             this.state.loading
                             ? <><span>Loading...</span></>
-                            : <React.Profiler id="Palavras" onRender={this._profilerCallback}>
-                                <Box>
-                                    <Box sx={{display: "flex", flexDirection: "column"}}>
-                                        <CorpusDropdown 
-                                            ref={this.corpusSelect} 
-                                            options={this.state.corpusOptions} 
-                                            choice={this.state.corpusChoice} 
-                                        />
+                            : <Box>
+                                <Box sx={{display: "flex", flexDirection: "column"}}>
+                                    <CorpusDropdown 
+                                        ref={this.corpusSelect} 
+                                        options={this.state.corpusOptions} 
+                                        choice={this.state.corpusChoice} 
+                                    />
 
-                                        <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
-                                            <Button
-                                                variant="text"
-                                                color="success"
-                                                sx={{padding: 0, textTransform: "none", color: 'blue'}}
-                                                onClick={() => this.requestSintax()}
-                                            >
-                                                Verificar ortografia
-                                            </Button>
+                                    <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
+                                        <Button
+                                            variant="text"
+                                            color="success"
+                                            sx={{padding: 0, textTransform: "none", color: 'blue'}}
+                                            onClick={() => this.requestSintax()}
+                                        >
+                                            Verificar ortografia
+                                        </Button>
 
-                                            {
-                                                this.state.loadingSintax
-                                                ? <CircularProgress sx={{ml: "1rem"}} color="success" size="1rem" />
-                                                : null
-                                            }
+                                        {
+                                            this.state.loadingSintax
+                                            ? <CircularProgress sx={{ml: "1rem"}} color="success" size="1rem" />
+                                            : null
+                                        }
 
-                                        </Box>
                                     </Box>
-                                    {
-                                        Object.entries(this.state.words_list).map(([key, value]) => {
-                                            return <Box
-                                                key={key}
-                                                sx={{
-                                                    display: 'block',
-                                                    width: 'max-content',
-                                                    ':hover': {borderBottom: '1px solid black', cursor: 'pointer'}
-                                                }}
-                                                onClick={() => {
-                                                    if (this.state.selectedWord === key)
-                                                        this.setState({selectedWord: ""});
-                                                    else
-                                                        this.setState({selectedWord: key})
+                                </Box>
+                                {
+                                    Object.entries(this.state.words_list).map(([key, value]) => {
+                                        return <Box
+                                            key={key}
+                                            sx={{
+                                                display: 'block',
+                                                width: 'max-content',
+                                                ':hover': {borderBottom: '1px solid black', cursor: 'pointer'}
+                                            }}
+                                            onClick={() => {
+                                                if (this.state.selectedWord === key)
+                                                    this.setState({selectedWord: ""});
+                                                else
+                                                    this.setState({selectedWord: key})
+                                            }}
+                                        >
+                                            <span
+                                                key={key + " " + value["pages"].length + " " + value["sintax"]}
+                                                style={{
+                                                    fontWeight: (key === this.state.selectedWord) ? 'bold' : 'normal'
                                                 }}
                                             >
-                                                <span
-                                                    key={key + " " + value["pages"].length + " " + value["sintax"]}
-                                                    style={{
-                                                        fontWeight: (key === this.state.selectedWord) ? 'bold' : 'normal'
-                                                    }}
-                                                >
-                                                    {key} ({value["pages"].length})
-                                                        <span style={{marginLeft: '5px'}}>
-                                                            {
-                                                                !value["sintax"]
-                                                                ? "⚠️"
-                                                                : ""
-                                                            }
-                                                        </span>
-                                                </span>
-                                            </Box>
-                                        })
-                                    }
-                                </Box>
-                            </React.Profiler> 
+                                                {key} ({value["pages"].length})
+                                                    <span style={{marginLeft: '5px'}}>
+                                                        {
+                                                            !value["sintax"]
+                                                            ? "⚠️"
+                                                            : ""
+                                                        }
+                                                    </span>
+                                            </span>
+                                        </Box>
+                                    })
+                                }
+                            </Box>
                         }
                     </Box>
                 </Box>
