@@ -23,9 +23,9 @@ def get_hocr(page, config):
     )
 
 
-def get_structure(page, config, box=None):
-    if box:
-        hocr = get_segment_hocr(page, config, box)
+def get_structure(page, config, segment_box=None):
+    if segment_box:
+        hocr = get_segment_hocr(page, config, segment_box)
     else:
         hocr = get_hocr(page, config)
 
@@ -59,7 +59,11 @@ def get_structure(page, config, box=None):
                 continue
 
             box = p1.search(word.attrib["title"]).group(1).split()
-            box = [float(i) for i in box]
+
+            if segment_box:
+                box = [float(i) + segment_box[id%2] for id, i in enumerate(box)]
+            else:
+                box = [float(i) for i in box]
             b = polyval(baseline, (box[0] + box[2]) / 2 - linebox[0]) + linebox[3]
 
             words.append({"text": rawtext, "box": box, "b": b})

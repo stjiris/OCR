@@ -50,6 +50,7 @@ function App() {
 
             this.fileSystem = React.createRef();
             this.editPage = React.createRef();
+            this.textEditor = React.createRef();
 
             this.sendChanges = this.sendChanges.bind(this);
         }
@@ -96,7 +97,9 @@ function App() {
              * @param {string} path - The path of the file
              * @param {string} file - The name of the file
              */
-            this.setState({path: path, fileOpened: file, fileSystemMode: false, editFileMode: true});
+            // this.setState({path: path, fileOpened: file, fileSystemMode: false, editFileMode: true});
+            this.textEditor.current.setFile(path, file);
+            this.textEditor.current.toggleOpen();
         }
 
         viewFile(file, algorithm, config) {
@@ -194,7 +197,9 @@ function App() {
             const FileExplorer = loadComponent('FileSystem', 'FileSystem');
             const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
             // const EditPage = loadComponent('EditPage', 'EditPage');
-            const EditPage2 = loadComponent('EditPage2', 'EditPage');
+            // const EditPage2 = loadComponent('EditPage2', 'EditPage');
+            const EditPage = loadComponent('EditPage3', 'EditPage');
+            const EditPagePopUp = loadComponent('EditPage3', 'EditPagePopUp');
             const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
             return (
@@ -207,6 +212,9 @@ function App() {
                     <VersionsMenu ref={this.versionsMenu}/>
                     <LogsMenu ref={this.logsMenu}/>
 
+                    <EditPagePopUp ref={this.textEditor} app={this}/>
+
+
                     <Box>
                         {
                             this.state.fileSystemMode
@@ -216,7 +224,7 @@ function App() {
                                 : <PrivateFileExplorer ref={this.fileSystem} current_folder={this.state.sessionId} files={{"files": []}} app={this}/>
 
                             : this.state.editFileMode
-                                ? <EditPage2 ref={this.editPage} app={this}/>
+                                ? <EditPage ref={this.editPage} app={this}/>
                                 : <ESPage app={this}/>
                         }
                     </Box>

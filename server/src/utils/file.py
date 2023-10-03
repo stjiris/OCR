@@ -83,7 +83,7 @@ def get_file_parsed(path):
                         else:
                             words[t] = {
                                 "pages": [id],
-                                "sintax": True
+                                "syntax": True
                             }
 
             data.append(

@@ -107,8 +107,11 @@ def create_folder():
 @app.route("/get-file", methods=["GET"])
 def get_file():
     path = request.values["path"]
+    totalPages = len(os.listdir(path + "/ocr_results"))
+
     doc, words = get_file_parsed(path)
-    return {"doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
+    
+    return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
 
 @app.route("/get_txt", methods=["GET"])
