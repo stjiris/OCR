@@ -13,6 +13,8 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 
 import { Button } from '@mui/material';
 
@@ -67,8 +69,8 @@ class EditPagePopUp extends React.Component {
 
     componentDidMount() {
         this.setState({
-            imageHeight: window.innerHeight * 0.9 - 45,
-            baseImageHeight: window.innerHeight * 0.9 - 45,
+            imageHeight: window.innerHeight * 0.9 - 30,
+            baseImageHeight: window.innerHeight * 0.9 - 30,
         });
     }
 
@@ -121,18 +123,21 @@ class EditPagePopUp extends React.Component {
     }
 
     toggleOpen() {
-        this.setState({ open: !this.state.open, currentPage: 1, selectedWordBox: null });
+        this.setState({ open: !this.state.open, currentPage: 1, selectedWordBox: null, parentNode: null, coordinates: null, editingText: "", imageHeight: this.state.baseImageHeight });
     }
 
     changePage(diff) {
+        this.updateContents();
         this.setState({currentPage: this.state.currentPage + diff, selectedWordBox: null});
     }
 
     firstPage() {
+        this.updateContents();
         this.setState({currentPage: 1, selectedWordBox: null});
     }
 
     lastPage() {
+        this.updateContents();
         this.setState({currentPage: this.state.totalPages, selectedWordBox: null});
     }
 
@@ -145,39 +150,6 @@ class EditPagePopUp extends React.Component {
         }
 
         this.setState({imageHeight: newImageHeight});
-    }
-
-    buildText(contents) {
-        var components = [];
-        for (var i = 0; i < contents.length; i++) {
-            var section = contents[i];
-            
-            for (var j = 0; j < section.length; j++) {
-                var line = section[j];
-                
-                var lineComponents = [];
-                for (var k = 0; k < line.length; k++) {
-                    let word = line[k];
-
-                    lineComponents.push(
-                        <span
-                            style={{marginLeft: "2px", marginRight: "2px"}}
-                            id={word["box"][0] + " " + word["box"][1] + " " + word["box"][2] + " " + word["box"][3]}
-                            onMouseEnter={(e) => this.showImageHighlight(e, word["box"])}
-                            onMouseLeave={(e) => this.setState({selectedWordBox: null})}
-                        >
-                            {word["text"]}
-                        </span>
-                    )
-                }
-
-                components.push(
-                    lineComponents
-                );
-            }
-        }
-
-        return components;
     }
 
     imageToScreenCoordinates(x, y) {
@@ -207,6 +179,16 @@ class EditPagePopUp extends React.Component {
                 bottomCorner[1] - topCorner[1]
             ]
         });
+    }
+
+    zoom(delta) {
+        var newHeight = this.state.imageHeight * (1 + delta * 0.4);
+
+        if (newHeight < this.state.baseImageHeight) {
+            newHeight = this.state.baseImageHeight;
+        }
+
+        this.setState({imageHeight: newHeight});
     }
 
     updateText() {
@@ -254,6 +236,23 @@ class EditPagePopUp extends React.Component {
         parentNode.replaceChildren(...newChildren);
     }
 
+    updateInputSize() {
+        var text = this.state.editingText;
+        var parentNode = this.state.parentNode;
+        var children = parentNode.children;
+
+        // Find the input element
+        for (var i = 0; i < children.length; i++) {
+            if (children[i].tagName === "INPUT") {
+                children[i].style.width = `${text.length * 1.5}ch`;
+                break;
+            }
+        }
+
+        // Replace the parent node children with the new children
+        parentNode.replaceChildren(...children);
+    }
+
     getSelectedText() {
         if (typeof window.getSelection !== "undefined") {
             if (window.getSelection().toString().length === 0) return null;
@@ -289,10 +288,12 @@ class EditPagePopUp extends React.Component {
             }
             var text = words.join(" ");
             textField.value = text;
-            textField.style.width = `${text.length}ch`;
+            textField.style.width = `${text.length * 1.5}ch`;
+            textField.onchange = (e) => {
+                this.setState({editingText: e.target.value}, this.updateInputSize);
+            }
             textField.onkeydown = (e) => {
                 if (e.key === "Enter") {
-                    e.preventDefault();
                     this.setState({editingText: e.target.value}, this.updateText);
                 }
             }
@@ -311,8 +312,66 @@ class EditPagePopUp extends React.Component {
                 editingText: text,
             });
         }
+    }
+
+    updateContents() {
+        var sections = document.getElementsByClassName("section");
+        var contents = this.state.contents;
+        var newPageContents = [];
         
-        return null;
+        for (var i = 0; i < sections.length; i++) {
+            var section = sections[i];
+            var sectionContents = [];
+
+            for (var j = 0; j < section.children.length; j++) {
+                var line = section.children[j];
+                var lineContents = [];
+
+                for (var k = 0; k < line.children.length; k++) {
+                    var word = line.children[k];
+                    var wordId = word.id.split(" ");
+                    var wordText = word.innerText;
+                    var wordBox = [wordId[0], wordId[1], wordId[2], wordId[3]].map((item) => parseFloat(item));
+
+                    lineContents.push({
+                        "text": wordText,
+                        "box": wordBox,
+                        "b": 0,
+                    });
+                }
+                sectionContents.push(lineContents);
+            }
+            newPageContents.push(sectionContents);
+        }
+
+        contents[this.state.currentPage - 1]["content"] = newPageContents;
+        this.setState({contents: contents});
+    }
+
+    saveChanges() {
+        this.updateContents();
+        fetch(process.env.REACT_APP_API_URL + 'submit-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "text": this.state.contents
+            })
+        })
+        .then(response => {return response.json()})
+        .then(data => {
+            if (data.success) {
+                // this.successNot.current.setMessage("Texto submetido com sucesso");
+                // this.successNot.current.open();
+                // this.setState({uncommittedChanges: false});
+                // window.removeEventListener('beforeunload', this.preventExit);
+                this.toggleOpen();
+            } else {
+                // this.errorNot.current.setMessage(data.error);
+                // this.errorNot.current.open();
+            }
+        });
     }
 
     render() {
@@ -378,43 +437,72 @@ class EditPagePopUp extends React.Component {
                                         </Box>
                                     </Box>
 
-                                    <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
-                                        <IconButton
-                                            disabled={this.state.currentPage === 1}
-                                            sx={{marginRight: "10px", p: 0}}
-                                            onClick={() => this.firstPage()}
-                                        >
-                                            <FirstPageIcon />
-                                        </IconButton>
+                                    <Box sx={{display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", mt: "5px"}}>
+                                        <Box>
+                                            <IconButton
+                                                sx={{marginRight: "10px", p: 0}}
+                                                onClick={() => this.zoom(1)}
+                                            >
+                                                <ZoomInIcon />
+                                            </IconButton>
+                                            <IconButton
+                                                sx={{marginRight: "10px", p: 0}}
+                                                onClick={() => this.zoom(-1)}
+                                            >
+                                                <ZoomOutIcon />
+                                            </IconButton>
+                                        </Box>
+                                        <Box>
+                                            <IconButton
+                                                disabled={this.state.currentPage === 1}
+                                                sx={{marginRight: "10px", p: 0}}
+                                                onClick={() => this.firstPage()}
+                                            >
+                                                <FirstPageIcon />
+                                            </IconButton>
 
-                                        <IconButton
-                                            disabled={this.state.currentPage === 1}
-                                            sx={{marginRight: "10px", p: 0}}
-                                            onClick={() => this.changePage(-1)}
-                                        >
-                                            <KeyboardArrowLeftIcon />
-                                        </IconButton>
+                                            <IconButton
+                                                disabled={this.state.currentPage === 1}
+                                                sx={{marginRight: "10px", p: 0}}
+                                                onClick={() => this.changePage(-1)}
+                                            >
+                                                <KeyboardArrowLeftIcon />
+                                            </IconButton>
 
-                                        <span style={{margin: "0px 10px"}}>
-                                            Página {this.state.currentPage} / {this.state.totalPages}
-                                        </span>
-                                        
-                                        <IconButton
-                                            disabled={this.state.currentPage === this.state.totalPages}
-                                            sx={{marginLeft: "10px", p: 0}}
-                                            onClick={() => this.changePage(1)}
-                                        >
-                                            <KeyboardArrowRightIcon />
-                                        </IconButton>
+                                            <span style={{margin: "0px 10px"}}>
+                                                Página {this.state.currentPage} / {this.state.totalPages}
+                                            </span>
+                                            
+                                            <IconButton
+                                                disabled={this.state.currentPage === this.state.totalPages}
+                                                sx={{marginLeft: "10px", p: 0}}
+                                                onClick={() => this.changePage(1)}
+                                            >
+                                                <KeyboardArrowRightIcon />
+                                            </IconButton>
 
-                                        <IconButton
-                                            disabled={this.state.currentPage === this.state.totalPages}
-                                            sx={{marginLeft: "10px", p: 0}}
-                                            onClick={() => this.lastPage()}
-                                        >
-                                            <LastPageIcon />
-                                        </IconButton>
-                                        
+                                            <IconButton
+                                                disabled={this.state.currentPage === this.state.totalPages}
+                                                sx={{marginLeft: "10px", p: 0}}
+                                                onClick={() => this.lastPage()}
+                                            >
+                                                <LastPageIcon />
+                                            </IconButton>
+                                        </Box>
+                                        <Box>
+                                            <IconButton
+                                                disabled
+                                                sx={{marginRight: "10px", p: 0}}
+                                            >
+                                                <ZoomInIcon sx={{color: "white"}} />
+                                            </IconButton>
+                                            <IconButton
+                                                disabled
+                                                sx={{marginRight: "10px", p: 0}}
+                                            >
+                                                <ZoomOutIcon sx={{color: "white"}} />
+                                            </IconButton>
+                                        </Box>
                                     </Box>
                                 </Box>
 
@@ -425,7 +513,7 @@ class EditPagePopUp extends React.Component {
                                             position: 'relative',
                                             marginLeft: "10px",
                                             width: `${window.innerWidth * 0.9 * 0.55}px`,
-                                            height: `${window.innerHeight * 0.9 - 26}px`,
+                                            height: `${this.state.baseImageHeight}px`,
                                             overflow: 'scroll', 
                                             border: '1px solid grey',
                                             paddingLeft: "10px"
@@ -433,14 +521,35 @@ class EditPagePopUp extends React.Component {
                                         onMouseUp={() => this.getSelectedText()}
                                     >
                                         {
-                                            this.buildText(this.state.contents[this.state.currentPage - 1]["content"]).map((line) => {
-                                                return <p style={{marginBottom: "0px", marginTop: "5px"}}>{line}</p>;
+                                            this.state.contents[this.state.currentPage - 1]["content"].map((section) => {
+                                                return <Box className="section">
+                                                    {
+                                                        section.map((line) => {
+                                                            return <p style={{marginBottom: "0px", marginTop: "5px"}}>
+                                                                {
+                                                                    line.map((word) => {
+                                                                        return <span
+                                                                            style={{marginLeft: "2px", marginRight: "2px"}}
+                                                                            id={word["box"][0] + " " + word["box"][1] + " " + word["box"][2] + " " + word["box"][3]}
+                                                                            onMouseEnter={(e) => this.showImageHighlight(e, word["box"])}
+                                                                            onMouseLeave={(e) => this.setState({selectedWordBox: null})}
+                                                                        >
+                                                                            {word["text"]}
+                                                                        </span>
+                                                                    })
+                                                                }
+                                                            </p>
+                                                        })
+                                                    }
+                                                </Box>;
                                             })
+                                            
                                         }
                                     </Box>
 
-                                    <Box sx={{display: "flex", flexDirection: "row", justifyContent: "flex-end"}}>
+                                    <Box sx={{display: "flex", flexDirection: "row", justifyContent: "flex-end", mt: "5px"}}>
                                         <Button
+                                            disabled
                                             style={{
                                                 border: '1px solid black', 
                                                 height: "25px", 
@@ -467,7 +576,7 @@ class EditPagePopUp extends React.Component {
                                             
                                             variant="contained" 
                                             color="success" 
-                                            onClick={() => this.toggleOpen()} 
+                                            onClick={() => this.saveChanges()} 
                                             startIcon={<SaveIcon />
                                         }>
                                             Guardar

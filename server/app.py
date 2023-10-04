@@ -508,7 +508,8 @@ def submit_text():
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    make_changes.delay(data_folder, data)
+    # make_changes.delay(data_folder, data)
+    make_changes(data_folder, data)
 
     return {"success": True, "files": get_filesystem(session)}
 
