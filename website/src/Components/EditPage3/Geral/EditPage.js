@@ -25,7 +25,7 @@ export default class EditPage extends React.Component {
             corpusChoice: [{"name": "Português", "code": "Português"}],
             loadingSintax: false,
 
-            pageDisplayed: 1,
+            pageDisplayed: 0,
         }
 
         this.successNot = React.createRef();
@@ -213,8 +213,8 @@ export default class EditPage extends React.Component {
 
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
-        const ConfirmLeave = loadComponent('EditPage2', 'ConfirmLeave');
-        const PageItem = loadComponent('EditPage2', 'PageItem');
+        const ConfirmLeave = loadComponent('EditPage3', 'ConfirmLeave');
+        const PageItem = loadComponent('EditPage3', 'PageItem');
         const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 
         return (
@@ -268,11 +268,10 @@ export default class EditPage extends React.Component {
                         {
                             this.state.loading
                             ? <p>Loading...</p>
-                            : <Box>
+                            : <Box sx={{display: "flex", flexDirection: "row"}}>
                                 {
-                                    this.state.contents.map((page, index) =>
-                                        <PageItem key={index + this.state.selectedWord} selectedWord={this.state.selectedWord} page={this} contents={page["content"]} image={page["page_url"]} index={index} />
-                                    )
+                                    this.state.contents.map((item, index) => {
+                                    })  
                                 }
                             </Box>
                         }
