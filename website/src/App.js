@@ -14,7 +14,7 @@ import footerBanner from './static/footerBanner.png';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.18.2";
+const VERSION = "0.19.0";
 const UPDATE_TIME = 30;
 
 function App() {
