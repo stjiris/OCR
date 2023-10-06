@@ -16,6 +16,9 @@ import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 
+import AddLineIcon from '../../../static/addLine.svg';
+import RemoveLineIcon from '../../../static/removeLine.svg';
+
 import { Button } from '@mui/material';
 
 const style = {
@@ -62,6 +65,9 @@ class EditPagePopUp extends React.Component {
             parentNode: null,
             coordinates: null,
             editingText: "",
+
+            addLineMode: false,
+            removeLineMode: false,
         }
 
         this.image = React.createRef();
@@ -128,17 +134,32 @@ class EditPagePopUp extends React.Component {
 
     changePage(diff) {
         this.updateContents();
-        this.setState({currentPage: this.state.currentPage + diff, selectedWordBox: null});
+        this.setState({
+            currentPage: this.state.currentPage + diff, 
+            selectedWordBox: null,
+            addLineMode: false,
+            removeLineMode: false
+        });
     }
 
     firstPage() {
         this.updateContents();
-        this.setState({currentPage: 1, selectedWordBox: null});
+        this.setState({
+            currentPage: 1,
+            selectedWordBox: null,
+            addLineMode: false,
+            removeLineMode: false
+        });
     }
 
     lastPage() {
         this.updateContents();
-        this.setState({currentPage: this.state.totalPages, selectedWordBox: null});
+        this.setState({
+            currentPage: this.state.totalPages, 
+            selectedWordBox: null,
+            addLineMode: false,
+            removeLineMode: false
+        });
     }
 
     zoomImage(e) {
@@ -374,6 +395,57 @@ class EditPagePopUp extends React.Component {
         });
     }
 
+    removeLine(sectionIndex, lineIndex) {
+        var contents = this.state.contents;
+        var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
+
+        var firstLine, secondLine, newLine;
+
+        if (section.length -1 === lineIndex) {
+            // Join sections
+            var firstSection = section;
+            var secondSection = contents[this.state.currentPage - 1]["content"][sectionIndex + 1];
+
+            section = [...firstSection, ...secondSection];
+            firstLine = section[lineIndex];
+            secondLine = section[lineIndex + 1];
+
+            newLine = [...firstLine, ...secondLine];
+
+            section.splice(lineIndex, 2, newLine);
+            contents[this.state.currentPage - 1]["content"].splice(sectionIndex, 2, section);
+
+            this.setState({contents: contents});
+
+        } else {
+            // Just join lines
+            firstLine = section[lineIndex];
+            secondLine = section[lineIndex + 1];
+
+            newLine = [...firstLine, ...secondLine];
+
+            section.splice(lineIndex, 2, newLine);
+
+            contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
+            console.log(contents);
+            this.setState({contents: contents});
+        }
+    }
+
+    addLine(sectionIndex, lineIndex, wordIndex) {
+        var contents = this.state.contents;
+        var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
+        var line = section[lineIndex];
+
+        var secondPart = line.splice(wordIndex);
+        var firstPart = line;
+
+        section.splice(lineIndex, 1, firstPart, secondPart);
+        contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
+
+        this.setState({contents: contents});
+    }
+
     render() {
         var incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
 
@@ -514,28 +586,60 @@ class EditPagePopUp extends React.Component {
                                             marginLeft: "10px",
                                             width: `${window.innerWidth * 0.9 * 0.55}px`,
                                             height: `${this.state.baseImageHeight}px`,
-                                            overflow: 'scroll', 
+                                            overflowY: 'scroll', 
+                                            overflowX: 'wrap',
                                             border: '1px solid grey',
                                             paddingLeft: "10px"
                                         }}
                                         onMouseUp={() => this.getSelectedText()}
                                     >
                                         {
-                                            this.state.contents[this.state.currentPage - 1]["content"].map((section) => {
+                                            this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
                                                 return <Box className="section">
                                                     {
-                                                        section.map((line) => {
+                                                        section.map((line, lineIndex) => {
                                                             return <p style={{marginBottom: "0px", marginTop: "5px"}}>
                                                                 {
-                                                                    line.map((word) => {
-                                                                        return <span
-                                                                            style={{marginLeft: "2px", marginRight: "2px"}}
-                                                                            id={word["box"][0] + " " + word["box"][1] + " " + word["box"][2] + " " + word["box"][3]}
-                                                                            onMouseEnter={(e) => this.showImageHighlight(e, word["box"])}
-                                                                            onMouseLeave={(e) => this.setState({selectedWordBox: null})}
-                                                                        >
-                                                                            {word["text"]}
-                                                                        </span>
+                                                                    line.map((word, wordIndex) => {
+                                                                        let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]}`;
+                                                                        return <>
+                                                                            {
+                                                                                this.state.addLineMode && wordIndex !== 0 && this.state.hoveredId === id
+                                                                                ? <IconButton 
+                                                                                    sx={{p: 0.1, m: 0, backgroundColor: "#0000ff88", ml: 1, "&:hover": {backgroundColor: "#0000ffdd"}}}
+                                                                                    onClick={() => this.addLine(sectionIndex, lineIndex, wordIndex)}
+                                                                                >
+                                                                                    <img style={{width: '1rem', color: "white"}} alt="addLine" src={AddLineIcon} />
+                                                                                </IconButton>
+                                                                                : null
+                                                                            }
+
+                                                                            <span
+                                                                                style={{marginLeft: "2px", marginRight: "2px"}}
+                                                                                id={id}
+                                                                                onMouseEnter={(e) => {
+                                                                                    this.setState({hoveredId: id});
+                                                                                    this.showImageHighlight(e, word["box"]);
+                                                                                }}
+                                                                                onMouseLeave={(e) => {
+                                                                                    this.setState({selectedWordBox: null})
+                                                                                }}
+                                                                            >
+                                                                                {word["text"]}
+                                                                            </span>
+
+                                                                            {
+                                                                                this.state.removeLineMode && wordIndex === line.length - 1 && (lineIndex !== section.length - 1 || sectionIndex !== this.state.contents[this.state.currentPage - 1]["content"].length - 1)
+                                                                                ? <IconButton 
+                                                                                    sx={{p: 0.1, m: 0, backgroundColor: "#ff000088", ml: 1, "&:hover": {backgroundColor: "#ff0000dd"}}}
+                                                                                    onClick={() => this.removeLine(sectionIndex, lineIndex)}
+                                                                                >
+                                                                                    <img style={{width: '1rem', color: "white"}} alt="deleteLine" src={RemoveLineIcon} />
+                                                                                </IconButton>
+                                                                                : null
+                                                                            }
+                                                                        </>
+
                                                                     })
                                                                 }
                                                             </p>
@@ -548,12 +652,57 @@ class EditPagePopUp extends React.Component {
                                     </Box>
 
                                     <Box sx={{display: "flex", flexDirection: "row", justifyContent: "flex-end", mt: "5px"}}>
+                                        {
+                                            this.state.addLineMode
+                                            ? <Button
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
+                                                color="error"
+                                                variant="contained"
+                                                onClick={() => {this.setState({addLineMode: false, hoveredId: null})}}
+                                                startIcon={<CloseRoundedIcon />}
+                                            >
+                                                Cancelar
+                                            </Button>
+
+                                            : <Button
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
+                                                variant="contained"
+                                                onClick={() => {this.setState({addLineMode: true, removeLineMode: false})}}
+                                                startIcon={<img style={{width: '1.2rem'}} alt="newLine" src={AddLineIcon} />}
+                                            >
+                                                Adicionar Linhas
+                                            </Button>
+                                        }
+
+
+                                        {
+                                            this.state.removeLineMode
+                                            ? <Button
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
+                                                color="error"
+                                                variant="contained"
+                                                onClick={() => {this.setState({removeLineMode: false})}}
+                                                startIcon={<CloseRoundedIcon />}
+                                            >
+                                                Cancelar
+                                            </Button>
+
+                                            : <Button
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
+                                                variant="contained"
+                                                onClick={() => {this.setState({removeLineMode: true, addLineMode: false})}}
+                                                startIcon={<img style={{width: '1.2rem'}} alt="deleteLine" src={RemoveLineIcon} />}
+                                            >
+                                                Remover Linhas
+                                            </Button>
+                                        }
+
                                         <Button
                                             disabled
                                             style={{
                                                 border: '1px solid black', 
                                                 height: "25px", 
-                                                width: incorrectSyntax.length === 0 ? "240px" : "310px"
+                                                marginLeft: "10px"
                                             }}
                                             
                                             variant="contained" 
@@ -572,7 +721,7 @@ class EditPagePopUp extends React.Component {
                                         </Button>
 
                                         <Button
-                                            style={{border: '1px solid black', height: "25px", width: "110px", marginLeft: "10px"}}
+                                            style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
                                             
                                             variant="contained" 
                                             color="success" 
