@@ -402,9 +402,13 @@ class EditPagePopUp extends React.Component {
         var firstLine, secondLine, newLine;
 
         if (section.length -1 === lineIndex) {
+            console.log("Joining sections")
             // Join sections
             var firstSection = section;
             var secondSection = contents[this.state.currentPage - 1]["content"][sectionIndex + 1];
+
+            console.log(firstSection);
+            console.log(secondSection);
 
             section = [...firstSection, ...secondSection];
             firstLine = section[lineIndex];
@@ -595,7 +599,7 @@ class EditPagePopUp extends React.Component {
                                     >
                                         {
                                             this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
-                                                return <Box className="section">
+                                                return <Box className="section" sx={{display: "flex", flexDirection: "column", flexWrap: "wrap"}}>
                                                     {
                                                         section.map((line, lineIndex) => {
                                                             return <p style={{marginBottom: "0px", marginTop: "5px"}}>
@@ -709,7 +713,7 @@ class EditPagePopUp extends React.Component {
                                             onClick={() => this.toggleOpen()} 
                                             startIcon={<SpellcheckIcon />
                                         }>
-                                            Verificar Ortografia
+                                            Ortografia
                                             {
                                                 incorrectSyntax.length > 0
                                                 ? <span style={{marginLeft: "15px"}}>

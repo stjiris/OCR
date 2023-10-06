@@ -138,7 +138,8 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             all_jsons = []
             for box in box_coordinates_list:                
                 json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config, box)
-                all_jsons.append(json_d)
+                if json_d:
+                    all_jsons.append(json_d)
 
             page_json = []
             for sublist in all_jsons:
