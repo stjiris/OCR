@@ -81,5 +81,3 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 COPY --from=builder /app/ /app/
 RUN sed -i 's/\r$//g' /app/start
 RUN chmod +x /app/start
-
-ENTRYPOINT [ "/app/start" ]
