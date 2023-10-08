@@ -584,6 +584,8 @@ if not os.path.exists("./files/"):
 if not os.path.exists("./pending-files/"):
     os.mkdir("./pending-files/")
 
-# app.config['DEBUG'] = os.environ.get('DEBUG', False)
-# app.run(port=5001, threaded=True)
-app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
+
+if __name__ == "__main__":
+    # app.config['DEBUG'] = os.environ.get('DEBUG', False)
+    # app.run(port=5001, threaded=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
