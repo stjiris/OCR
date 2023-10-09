@@ -36,6 +36,9 @@ FROM base as builder
 
 # populate variable for later
 ARG TARGETARCH
+RUN arch=$TARGETARCH \
+    && if [ "$TARGETARCH" = "amd64" ]; then arch="x64"; fi \
+    && echo $arch > /tmp/arch
 
 # Note we need leptonica here to build jbig2
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -82,7 +85,7 @@ ENV PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
 
 RUN \
   mkdir pdfium \
-  && curl -L $PDFIUM_URL/$PDFIUM_VERSION/pdfium-linux-$TARGETARCH.tgz | \
+  && curl -L $PDFIUM_URL/$PDFIUM_VERSION/pdfium-linux-$(cat /tmp/arch).tgz | \
   tar xz -C pdfium \
   && cd pdfium \
   && cp lib/* $PREFIX/lib \
