@@ -14,7 +14,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   zlib1g \
   liblept5
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	glib-2.0-dev \
+	libexpat1-dev \
+	libpango1.0-dev \
+	librsvg2-dev \
+	libpng-dev \
+	libwebp-dev \
+	libjpeg-turbo8-dev \
+	libtiff5-dev \
+	libexif-dev \
+	liblcms2-dev \
+	libgsf-1-dev \
+	liborc-0.4-dev \
+	libimagequant-dev \
+	libcgif-dev \
+	libheif-dev \
+	libfftw3-dev
+
 FROM base as builder
+
+# populate variable for later
+ARG TARGETARCH
 
 # Note we need leptonica here to build jbig2
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -26,11 +47,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libffi-dev \
   ca-certificates \
   curl \
-  git
+  git \
+  ninja-build \
+  pkg-config \
+  wget
 
 # Get the latest pip (Ubuntu version doesn't support manylinux2010)
 RUN \
   curl https://bootstrap.pypa.io/get-pip.py | python3
+
+WORKDIR /usr/local/src
 
 # Compile and install jbig2
 # Needs libleptonica-dev, zlib1g-dev
@@ -42,6 +68,65 @@ RUN \
   && ./autogen.sh && ./configure && make && make install \
   && cd .. \
   && rm -rf jbig2
+
+ARG PYPDFIUM2_VERSION=4.21.0b1
+RUN pip3 install --no-cache-dir pypdfium2==$PYPDFIUM2_VERSION
+
+# synced with libpdfium version bundled by pypdfium above
+ARG PDFIUM_VERSION=6002
+ARG PDFIUM_URL=https://github.com/bblanchon/pdfium-binaries/releases/download/chromium
+
+# build to this prefix 
+ARG PREFIX=/usr/local
+ENV PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+
+RUN \
+  mkdir pdfium \
+  && curl -L $PDFIUM_URL/$PDFIUM_VERSION/pdfium-linux-$TARGETARCH.tgz | \
+  tar xz -C pdfium \
+  && cd pdfium \
+  && cp lib/* $PREFIX/lib \
+  && cp -r include/* $PREFIX/include \
+  && cd .. \
+  && rm -rf pdfium
+
+# make a pdfium.pc file libvips can use
+RUN mkdir -p $PREFIX/lib/pkgconfig \
+  && cd $PREFIX/lib/pkgconfig \
+  && echo "prefix=$PREFIX" >> pdfium.pc \
+  && echo "exec_prefix=\${prefix}" >> pdfium.pc \
+  && echo "libdir=\${exec_prefix}/lib" >> pdfium.pc \
+  && echo "includedir=\${prefix}/include" >> pdfium.pc \
+  && echo "Name: pdfium" >> pdfium.pc \
+  && echo "Description: pdfium" >> pdfium.pc \
+  && echo "Version: $PDFIUM_VERSION" >> pdfium.pc \
+  && echo "Requires: " >> pdfium.pc \
+  && echo "Libs: -L\${libdir} -lpdfium" >> pdfium.pc \
+  && echo "Cflags: -I\${includedir}" >> pdfium.pc
+
+RUN pip3 install --no-cache-dir meson
+
+ARG VIPS_VERSION=8.14.5
+ARG VIPS_URL=https://github.com/libvips/libvips/releases/download
+
+RUN wget ${VIPS_URL}/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz \
+	&& tar xf vips-${VIPS_VERSION}.tar.xz \
+	&& cd vips-${VIPS_VERSION} \
+	&& meson setup build \
+		--prefix=$PREFIX \
+    --libdir=lib \
+		--buildtype=release \
+		-Dradiance=false \
+		-Danalyze=false \
+		-Dintrospection=false \
+	&& cd build \
+	&& meson compile \
+	&& meson install \
+  && cd .. \
+  && rm -rf vips-${VIPS_VERSION}
+
+ARG PYVIPS_VERSION=2.2.1
+RUN pip3 install --no-cache-dir pyvips==$PYVIPS_VERSION
 
 COPY . /app
 
@@ -70,6 +155,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-por \
   tesseract-ocr-spa \
   unpaper \
+  file \
   poppler-utils \
   && rm -rf /var/lib/apt/lists/*
 
@@ -77,6 +163,10 @@ WORKDIR /app
 
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
+
+# For vips
+RUN ldconfig
+RUN vips --vips-config
 
 COPY --from=builder /app/ /app/
 RUN sed -i 's/\r$//g' /app/start
