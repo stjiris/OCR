@@ -51,8 +51,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
   git \
-  ninja-build \
+  libcairo2-dev \
   pkg-config \
+  ninja-build \
   wget
 
 # Get the latest pip (Ubuntu version doesn't support manylinux2010)
@@ -146,6 +147,7 @@ RUN add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
+  fonts-droid-fallback \
   jbig2dec \
   img2pdf \
   libsm6 libxext6 libxrender-dev \
