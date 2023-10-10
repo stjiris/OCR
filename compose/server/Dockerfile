@@ -53,8 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   git \
   libcairo2-dev \
   pkg-config \
-  ninja-build \
-  wget
+  ninja-build
 
 # Get the latest pip (Ubuntu version doesn't support manylinux2010)
 RUN \
@@ -113,9 +112,11 @@ RUN pip3 install --no-cache-dir meson
 ARG VIPS_VERSION=8.14.5
 ARG VIPS_URL=https://github.com/libvips/libvips/releases/download
 
-RUN wget ${VIPS_URL}/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz \
-	&& tar xf vips-${VIPS_VERSION}.tar.xz \
-	&& cd vips-${VIPS_VERSION} \
+RUN \
+  mkdir vips \
+  && curl -L ${VIPS_URL}/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz | \
+	tar xJ -C vips --strip-components=1 \
+	&& cd vips \
 	&& meson setup build \
 		--prefix=$PREFIX \
     --libdir=lib \
@@ -127,7 +128,7 @@ RUN wget ${VIPS_URL}/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz \
 	&& meson compile \
 	&& meson install \
   && cd .. \
-  && rm -rf vips-${VIPS_VERSION}
+  && rm -rf vips
 
 ARG PYVIPS_VERSION=2.2.1
 RUN pip3 install --no-cache-dir pyvips==$PYVIPS_VERSION
