@@ -1,6 +1,7 @@
 Pillow==10.0.1
 pytz==2023.3.post1
-Flask==2.2.2
+Flask==2.3.*
+Werkzeug[watchdog]==2.3.*
 Flask-Cors==4.0.0
 celery==5.3.4
 eventlet==0.33.3
