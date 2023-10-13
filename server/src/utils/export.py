@@ -15,7 +15,7 @@ import os
 import re
 import zlib
 
-import pypdfium2 as pypdfium
+import pypdfium2 as pdfium
 
 from pathlib import Path
 from PIL import Image
@@ -127,7 +127,7 @@ def export_pdf(path, force_recreate = False):
     else:
         pdf_basename = get_file_basename(path)
 
-        pdf = pypdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
+        pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
         for i in range(len(pdf)):
             page = pdf[i]
             bitmap = page.render(150 / 72)
