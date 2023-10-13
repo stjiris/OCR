@@ -380,7 +380,7 @@ def prepare_file_ocr(path):
             pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
             for i in range(len(pdf)):
                 page = pdf[i]
-                bitmap = page.render(200 / 72)
+                bitmap = page.render(300 / 72)
                 pil_image = bitmap.to_pil()
                 pil_image.save(f"{path}/{basename}_{i}.jpg")
 
