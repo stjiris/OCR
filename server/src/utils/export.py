@@ -134,6 +134,8 @@ def export_pdf(path, force_recreate = False):
             pil_image = bitmap.to_pil()
             pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
 
+        pdf.close()
+
         # pages = convert_from_path(
         #     f"{path}/{pdf_basename}.pdf",
         #     paths_only=True,
