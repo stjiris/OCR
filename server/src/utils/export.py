@@ -19,7 +19,6 @@ import pypdfium2 as pypdfium
 
 from pathlib import Path
 from PIL import Image
-from pdf2image import convert_from_path
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
