@@ -378,19 +378,26 @@ def prepare_file_ocr(path):
         log.info("{path}: A preparar páginas")
 
         if extension == "pdf":
-            pages = convert_from_path(
-                f"{path}/{basename}.pdf",
-                paths_only=True,
-                output_folder=path,
-                fmt="jpg",
-                thread_count=2,
-            )
-            log.info("{path}: A trocar os nomes das páginas")
-            for i, page in enumerate(pages):
-                if os.path.exists(f"{path}/{basename}_{i}.jpg"):
-                    os.remove(page)
-                else:
-                    Path(page).rename(f"{path}/{basename}_{i}.jpg")
+            pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
+            for i in range(len(pdf)):
+                page = pdf[i]
+                bitmap = page.render(200 / 72)
+                pil_image = bitmap.to_pil()
+                pil_image.save(f"{path}/{basename}_{i}.jpg")
+
+            # pages = convert_from_path(
+            #     f"{path}/{basename}.pdf",
+            #     paths_only=True,
+            #     output_folder=path,
+            #     fmt="jpg",
+            #     thread_count=2,
+            # )
+            # log.info("{path}: A trocar os nomes das páginas")
+            # for i, page in enumerate(pages):
+            #     if os.path.exists(f"{path}/{basename}_{i}.jpg"):
+            #         os.remove(page)
+            #     else:
+            #         Path(page).rename(f"{path}/{basename}_{i}.jpg")
 
         elif extension in ["jpeg", "jpg"]:
             img = Image.open(f"{path}/{basename}.{extension}")

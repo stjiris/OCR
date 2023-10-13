@@ -15,6 +15,8 @@ import os
 import re
 import zlib
 
+import pypdfium2 as pypdfium
+
 from pathlib import Path
 from PIL import Image
 from pdf2image import convert_from_path
@@ -125,20 +127,28 @@ def export_pdf(path, force_recreate = False):
       
     else:
         pdf_basename = get_file_basename(path)
-        pages = convert_from_path(
-            f"{path}/{pdf_basename}.pdf",
-            paths_only=True,
-            output_folder=path,
-            fmt="jpg",
-            thread_count=2,
-            dpi=150
-        )
 
-        for i, page in enumerate(pages):
-            if os.path.exists(f"{path}/{pdf_basename}_{i}$.jpg"):
-                os.remove(page)
-            else:
-                Path(page).rename(f"{path}/{pdf_basename}_{i}$.jpg")
+        pdf = pypdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
+        for i in range(len(pdf)):
+            page = pdf[i]
+            bitmap = page.render(150 / 72)
+            pil_image = bitmap.to_pil()
+            pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
+
+        # pages = convert_from_path(
+        #     f"{path}/{pdf_basename}.pdf",
+        #     paths_only=True,
+        #     output_folder=path,
+        #     fmt="jpg",
+        #     thread_count=2,
+        #     dpi=150
+        # )
+
+        # for i, page in enumerate(pages):
+        #     if os.path.exists(f"{path}/{pdf_basename}_{i}$.jpg"):
+        #         os.remove(page)
+        #     else:
+        #         Path(page).rename(f"{path}/{pdf_basename}_{i}$.jpg")
 
         words = {}
 
