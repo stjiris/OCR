@@ -21,10 +21,10 @@ def fs(tmp_path):
             original_f = root + "/" + file
             f = tmp_path / root.replace("./tests/", "") / file
             if original_f.endswith(".json"):
-                with open(original_f, "r") as _f:
+                with open(original_f, "r", encoding="utf-8") as _f:
                     data = json.load(_f)
-                with open(f, "w") as _f:
-                    json.dump(data, _f, indent=2)
+                with open(f, "w", encoding="utf-8") as _f:
+                    json.dump(data, _f, indent=2, ensure_ascii=False)
             else:
                 with open(original_f, "rb") as _f:
                     data = _f.read()

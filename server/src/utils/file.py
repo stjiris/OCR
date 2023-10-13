@@ -135,7 +135,7 @@ def save_file_layouts(path, layouts):
         filename = f"{path}/layouts/{basename}_{id}.json"
 
         with open(filename, "w", encoding="utf-8") as f:
-            json.dump(layouts, f, indent=2)
+            json.dump(layouts, f, indent=2, ensure_ascii=False)
   
 # DONE
 def generate_uuid(path):
@@ -362,7 +362,7 @@ def update_data(file, data):
     previous_data = get_data(file)
     with open(file, "w", encoding="utf-8") as f:
         previous_data.update(data)
-        json.dump(previous_data, f)
+        json.dump(previous_data, f, ensure_ascii=False, indent=2)
 
 # DONE
 def prepare_file_ocr(path):

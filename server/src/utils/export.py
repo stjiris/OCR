@@ -227,7 +227,7 @@ def export_pdf(path, force_recreate = False):
 def find_index_words(hocr_path):
     index_words = {}
     remove_chars = "«»“”.,;:!?()[]{}\"'"
-    with open(hocr_path) as f:
+    with open(hocr_path, encoding="utf-8") as f:
         hocrfile = json.load(f)
 
     hyphenated_last_word = False
@@ -270,7 +270,7 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
    
     index_words = find_index_words(hocr_path)
 
-    with open(hocr_path) as f:
+    with open(hocr_path, encoding="utf-8") as f:
         hocrfile = json.load(f)
 
     for section in hocrfile:
