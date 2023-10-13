@@ -119,10 +119,10 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         if segment_ocr_flag == False:
             json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
             json_d = [[x] for x in json_d]
-            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w") as f:
-                json.dump(json_d, f, indent=2)
+            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
+                json.dump(json_d, f, indent=2, ensure_ascii=False)
         else:
-            with open(layout_path, "r") as json_file:
+            with open(layout_path, "r", encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
             box_coordinates_list = []
@@ -145,8 +145,8 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             for sublist in all_jsons:
                 page_json.append(sublist)
             
-            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w") as f:
-                json.dump(page_json, f, indent=2)
+            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
+                json.dump(page_json, f, indent=2, ensure_ascii=False)
 
         files = os.listdir(f"{path}/ocr_results")
 

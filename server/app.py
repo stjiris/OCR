@@ -92,13 +92,15 @@ def create_folder():
 
     os.mkdir(path + "/" + folder)
 
-    with open(f"{path}/{folder}/_data.json", "w") as f:
+    with open(f"{path}/{folder}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "folder",
                 "creation": get_current_time(),
             },
             f,
+            indent=2,
+            ensure_ascii=False,
         )
 
     return {"success": True, "files": get_filesystem("files")}
@@ -242,7 +244,7 @@ def prepare_upload():
         filename = find_valid_filename(path, basename, extension)
 
     os.mkdir(f"{path}/{filename}")
-    with open(f"{path}/{filename}/_data.json", "w") as f:
+    with open(f"{path}/{filename}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "file",
@@ -250,6 +252,8 @@ def prepare_upload():
                 "creation": get_current_time(),
             },
             f,
+            indent=2,
+            ensure_ascii=False,
         )
     return {"success": True, "filesystem": get_filesystem(session), "filename": filename}
 
@@ -259,6 +263,8 @@ def join_chunks(path, filename, total_count, complete_filename):
         for i in range(total_count):
             with open(f"pending-files/{complete_filename}/{i+1}", "rb") as chunk:
                 f.write(chunk.read())
+
+    prepare_file_ocr(f"{path}/{filename}")
 
     update_data(f"{path}/{filename}/_data.json", {
         "pages": get_page_count(f"{path}/{filename}/{filename}"),
@@ -283,12 +289,14 @@ def upload_file():
     if total_count == 1:
         file.save(f"{path}/{filename}/{filename}")
 
-        with open(f"{path}/{filename}/_data.json", "w") as f:
+        prepare_file_ocr(f"{path}/{filename}")
+
+        with open(f"{path}/{filename}/_data.json", "w", encoding="utf-8") as f:
             json.dump({
                 "type": "file",
                 "pages": get_page_count(f"{path}/{filename}/{filename}"),
                 "creation": get_current_time()
-            }, f)
+            }, f, indent=2, ensure_ascii=False)
 
         return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}
 
@@ -379,6 +387,7 @@ def perform_ocr():
         update_data(f"{f}/_data.json", data)
 
         task_file_ocr.delay(f, config, ocr_algorithm)
+        # task_file_ocr(f, config, ocr_algorithm, testing=True)
 
     return {
         "success": True,
@@ -412,7 +421,7 @@ def index_doc():
         for id, file in enumerate(files):
             file_path = f"{hOCR_path}/{file}"
 
-            with open(file_path) as f:
+            with open(file_path, encoding="utf-8") as f:
                 hocr = json.load(f)
                 text = json_to_text(hocr)
 
@@ -497,7 +506,7 @@ def submit_text():
         filename = t["original_file"]
 
         with open(filename, "w", encoding="utf-8") as f:
-            json.dump(text, f, indent=2)
+            json.dump(text, f, indent=2, ensure_ascii=False)
 
         # if data["indexed"]:
         #     id = generate_uuid(filename)
@@ -509,6 +518,7 @@ def submit_text():
     )
 
     make_changes.delay(data_folder, data)
+    # make_changes(data_folder, data)
 
     return {"success": True, "files": get_filesystem(session)}
 
@@ -588,4 +598,4 @@ if not os.path.exists("./pending-files/"):
 if __name__ == "__main__":
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
     # app.run(port=5001, threaded=True)
-    app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True)

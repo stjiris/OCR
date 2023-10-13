@@ -129,7 +129,7 @@ class EditPagePopUp extends React.Component {
     }
 
     toggleOpen() {
-        this.setState({ open: !this.state.open, currentPage: 1, selectedWordBox: null, parentNode: null, coordinates: null, editingText: "", imageHeight: this.state.baseImageHeight });
+        this.setState({ open: !this.state.open, currentPage: 1, selectedWordBox: null, parentNode: null, coordinates: null, editingText: "", imageHeight: this.state.baseImageHeight, addLineMode: false, removeLineMode: false });
     }
 
     changePage(diff) {
@@ -407,9 +407,6 @@ class EditPagePopUp extends React.Component {
             var firstSection = section;
             var secondSection = contents[this.state.currentPage - 1]["content"][sectionIndex + 1];
 
-            console.log(firstSection);
-            console.log(secondSection);
-
             section = [...firstSection, ...secondSection];
             firstLine = section[lineIndex];
             secondLine = section[lineIndex + 1];
@@ -599,13 +596,16 @@ class EditPagePopUp extends React.Component {
                                     >
                                         {
                                             this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
-                                                return <Box className="section" sx={{display: "flex", flexDirection: "column", flexWrap: "wrap"}}>
+                                                return <Box className="section" sx={{display: "flex", flexDirection: "column"}}>
                                                     {
                                                         section.map((line, lineIndex) => {
-                                                            return <p style={{marginBottom: "0px", marginTop: "5px"}}>
+                                                            return <Box style={{marginBottom: "0px", marginTop: "10px"}}>
                                                                 {
                                                                     line.map((word, wordIndex) => {
+                                                                        if (word["text"] === "") return null;
+
                                                                         let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]}`;
+
                                                                         return <>
                                                                             {
                                                                                 this.state.addLineMode && wordIndex !== 0 && this.state.hoveredId === id
@@ -618,8 +618,8 @@ class EditPagePopUp extends React.Component {
                                                                                 : null
                                                                             }
 
-                                                                            <span
-                                                                                style={{marginLeft: "2px", marginRight: "2px"}}
+                                                                            <p
+                                                                                style={{margin: "0px 2px", display: "inline-block", fontSize: "14px"}}
                                                                                 id={id}
                                                                                 onMouseEnter={(e) => {
                                                                                     this.setState({hoveredId: id});
@@ -630,12 +630,12 @@ class EditPagePopUp extends React.Component {
                                                                                 }}
                                                                             >
                                                                                 {word["text"]}
-                                                                            </span>
+                                                                            </p>
 
                                                                             {
                                                                                 this.state.removeLineMode && wordIndex === line.length - 1 && (lineIndex !== section.length - 1 || sectionIndex !== this.state.contents[this.state.currentPage - 1]["content"].length - 1)
                                                                                 ? <IconButton 
-                                                                                    sx={{p: 0.1, m: 0, backgroundColor: "#ff000088", ml: 1, "&:hover": {backgroundColor: "#ff0000dd"}}}
+                                                                                    sx={{p: 0.1, m: 0, ml: 1, backgroundColor: "#ff000088", "&:hover": {backgroundColor: "#ff0000dd"}}}
                                                                                     onClick={() => this.removeLine(sectionIndex, lineIndex)}
                                                                                 >
                                                                                     <img style={{width: '1rem', color: "white"}} alt="deleteLine" src={RemoveLineIcon} />
@@ -646,7 +646,7 @@ class EditPagePopUp extends React.Component {
 
                                                                     })
                                                                 }
-                                                            </p>
+                                                            </Box>
                                                         })
                                                     }
                                                 </Box>;

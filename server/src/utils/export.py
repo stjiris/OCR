@@ -15,9 +15,10 @@ import os
 import re
 import zlib
 
+import pypdfium2 as pypdfium
+
 from pathlib import Path
 from PIL import Image
-from pdf2image import convert_from_path
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
@@ -125,20 +126,28 @@ def export_pdf(path, force_recreate = False):
       
     else:
         pdf_basename = get_file_basename(path)
-        pages = convert_from_path(
-            f"{path}/{pdf_basename}.pdf",
-            paths_only=True,
-            output_folder=path,
-            fmt="jpg",
-            thread_count=2,
-            dpi=150
-        )
 
-        for i, page in enumerate(pages):
-            if os.path.exists(f"{path}/{pdf_basename}_{i}$.jpg"):
-                os.remove(page)
-            else:
-                Path(page).rename(f"{path}/{pdf_basename}_{i}$.jpg")
+        pdf = pypdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
+        for i in range(len(pdf)):
+            page = pdf[i]
+            bitmap = page.render(150 / 72)
+            pil_image = bitmap.to_pil()
+            pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
+
+        # pages = convert_from_path(
+        #     f"{path}/{pdf_basename}.pdf",
+        #     paths_only=True,
+        #     output_folder=path,
+        #     fmt="jpg",
+        #     thread_count=2,
+        #     dpi=150
+        # )
+
+        # for i, page in enumerate(pages):
+        #     if os.path.exists(f"{path}/{pdf_basename}_{i}$.jpg"):
+        #         os.remove(page)
+        #     else:
+        #         Path(page).rename(f"{path}/{pdf_basename}_{i}$.jpg")
 
         words = {}
 
@@ -227,7 +236,7 @@ def export_pdf(path, force_recreate = False):
 def find_index_words(hocr_path):
     index_words = {}
     remove_chars = "«»“”.,;:!?()[]{}\"'"
-    with open(hocr_path) as f:
+    with open(hocr_path, encoding="utf-8") as f:
         hocrfile = json.load(f)
 
     hyphenated_last_word = False
@@ -270,7 +279,7 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
    
     index_words = find_index_words(hocr_path)
 
-    with open(hocr_path) as f:
+    with open(hocr_path, encoding="utf-8") as f:
         hocrfile = json.load(f)
 
     for section in hocrfile:
