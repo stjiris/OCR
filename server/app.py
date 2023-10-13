@@ -38,7 +38,7 @@ from src.utils.text import compare_dicts_words
 from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
-logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
+# logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
 log = app.logger
 
@@ -509,7 +509,6 @@ def submit_text():
     )
 
     make_changes.delay(data_folder, data)
-    # make_changes(data_folder, data)
 
     return {"success": True, "files": get_filesystem(session)}
 
@@ -585,6 +584,8 @@ if not os.path.exists("./files/"):
 if not os.path.exists("./pending-files/"):
     os.mkdir("./pending-files/")
 
-# app.config['DEBUG'] = os.environ.get('DEBUG', False)
-# app.run(port=5001, threaded=True)
-app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
+
+if __name__ == "__main__":
+    # app.config['DEBUG'] = os.environ.get('DEBUG', False)
+    # app.run(port=5001, threaded=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)

@@ -11,8 +11,8 @@ services:
       dockerfile: ../compose/server/Dockerfile
     environment:
       FLASK_APP: app
-      FLASK_ENV: development
-      FLASK_DEBUG: 1
+      FLASK_ENV: production
+      FLASK_DEBUG: 0
       ES_URL: http://elasticsearch:9200
     command: /app/start
     ports:

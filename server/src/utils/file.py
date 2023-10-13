@@ -11,10 +11,10 @@ from os import environ
 from pathlib import Path
 import pytz
 
+import pypdfium2 as pdfium
+
 from pdf2image import convert_from_path
 from PIL import Image
-# from PyPDF2 import PdfReader
-from pypdf import PdfReader
 from src.utils.export import export_file
 from src.utils.export import json_to_text
 from string import punctuation
@@ -314,7 +314,8 @@ def get_page_count(filename):
     extension = filename.split(".")[-1]
     if extension == "pdf":
         with open(filename, "rb") as f:
-            return len(PdfReader(f).pages)
+            return len(pdfium.PdfDocument(f))
+            # return len(PdfReader(f).pages)
     elif extension in ["jpg", "jpeg"]:
         return 1
 
