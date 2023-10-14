@@ -162,7 +162,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-spa \
   unpaper \
   file \
-  poppler-utils \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
