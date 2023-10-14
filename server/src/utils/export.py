@@ -136,21 +136,6 @@ def export_pdf(path, force_recreate = False):
 
         pdf.close()
 
-        # pages = convert_from_path(
-        #     f"{path}/{pdf_basename}.pdf",
-        #     paths_only=True,
-        #     output_folder=path,
-        #     fmt="jpg",
-        #     thread_count=2,
-        #     dpi=150
-        # )
-
-        # for i, page in enumerate(pages):
-        #     if os.path.exists(f"{path}/{pdf_basename}_{i}$.jpg"):
-        #         os.remove(page)
-        #     else:
-        #         Path(page).rename(f"{path}/{pdf_basename}_{i}$.jpg")
-
         words = {}
 
         load_invisible_font()
