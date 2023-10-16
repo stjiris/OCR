@@ -1,5 +1,5 @@
-Pillow==10.0.1
-pytz==2023.3.post1
+pytz
+Pillow==10.1.0
 Flask==2.3.*
 Werkzeug[watchdog]==2.3.*
 Flask-Cors==4.0.0
@@ -13,4 +13,4 @@ pytesseract==0.3.10
 opencv-python-headless==4.7.0.72
 hdbscan==0.8.33
 reportlab==3.6.12
-pypdfium2==4.21.0b1
+pypdfium2==4.21.0
