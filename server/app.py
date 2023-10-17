@@ -386,8 +386,8 @@ def perform_ocr():
         data["csv"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        task_file_ocr.delay(f, config, ocr_algorithm)
-        # task_file_ocr(f, config, ocr_algorithm, testing=True)
+        # task_file_ocr.delay(f, config, ocr_algorithm)
+        task_file_ocr(f, config, ocr_algorithm, testing=True)
 
     return {
         "success": True,
@@ -517,8 +517,8 @@ def submit_text():
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    make_changes.delay(data_folder, data)
-    # make_changes(data_folder, data)
+    # make_changes.delay(data_folder, data)
+    make_changes(data_folder, data)
 
     return {"success": True, "files": get_filesystem(session)}
 

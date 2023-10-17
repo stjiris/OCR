@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import Modal from '@mui/material/Modal';
 import IconButton from '@mui/material/IconButton';
 import SaveIcon from '@mui/icons-material/Save';
+import TextField from '@mui/material/TextField';
 
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -212,49 +213,148 @@ class EditPagePopUp extends React.Component {
         this.setState({imageHeight: newHeight});
     }
 
-    updateText() {
-        var parentNode = this.state.parentNode;
-        var coordinates = this.state.coordinates;
-        var text = this.state.editingText;
+    generatePossibleWordCombinations(words, combination, startIndex = 0) {
+        /**
+         * Generate all possible combinations of words
+         */
+        var word = words.splice(0, 1)[0];
+        var totalCombinations = [];
 
-        var widthPerChar = (coordinates[2] - coordinates[0]) / text.length;
-        var charsPassed = 0;
+        for (var i = startIndex; i < combination.length; i++) {
+            // Create a copy of combination
+            var newCombination = JSON.parse(JSON.stringify(combination));
 
-        var words = text.split(" ");
-        var newComponents = [];
-        for (var i = 0; i < words.length; i++) {
-            var word = words[i];
-            let id = `${coordinates[0] + charsPassed * widthPerChar} ${coordinates[1]} ${coordinates[0] + (charsPassed + word.length) * widthPerChar} ${coordinates[3]}`;
-            var newSpan = document.createElement("span");
-            newSpan.innerText = word;
-            newSpan.style.marginLeft = "2px";
-            newSpan.style.marginRight = "2px";
-            newSpan.id = id;
-            newSpan.onmouseenter = (e) => this.showImageHighlight(e, id.split(" ").map((item) => parseFloat(item)));
-            newSpan.onmouseleave = () => this.setState({selectedWordBox: null});
+            // Insert word in the new combination
+            newCombination[i].push(word);
 
-            newComponents.push(newSpan);
-            charsPassed += word.length + 1;
-        }
-
-        // Find the children of the parent node that is a input
-        var newChildren = [...parentNode.childNodes];
-
-        var inputIndex = -1;
-        for (i = 0; i < newChildren.length; i++) {
-            if (newChildren[i].tagName === "INPUT") {
-                inputIndex = i;
-                break;
+            // If there are more words, call the function again
+            if (words.length > 0) {
+                var combs = this.generatePossibleWordCombinations([...words], newCombination, i);
+                totalCombinations.push(...combs);
+            } else {
+                totalCombinations.push(newCombination);
             }
         }
 
-        if (inputIndex !== -1) {
-            // Replace the input with the new components
-            newChildren.splice(inputIndex, 1, ...newComponents);
+        var keepingCombinations = [];
+        for (var j = 0; j < totalCombinations.length; j++) {
+            var comb = totalCombinations[j];
+            var hasEmpty = false;
+
+            for (var k = 0; k < comb.length; k++) {
+                if (comb[k].length === 0) {
+                    hasEmpty = true;
+                    break;
+                }
+            }
+
+            if (!hasEmpty) keepingCombinations.push(totalCombinations[j]);
+        }
+        return keepingCombinations;
+    }
+
+    findBestCombination(combinations, lengths) {
+        /**
+         * Find the combination that minimizes the difference between the previous text and the new text
+         */
+
+        // Infinite
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity?retiredLocale=pt-PT
+        var score = Math.pow(10, 1000);
+        var best = null;
+
+        for (var i = 0; i < combinations.length; i++) {
+            var comb = combinations[i];
+            var currentLengths = [];
+
+            for (var j = 0; j < comb.length; j++) {
+                currentLengths.push(comb[j].reduce((a, b) => a + b.length, 0));
+            }
+
+            var currentDiff = 0;
+            for (j = 0; j < lengths.length; j++) {
+                currentDiff += Math.abs(lengths[j] - currentLengths[j]);
+            }
+
+            if (currentDiff < score) {
+                score = currentDiff;
+                best = comb;
+            }
         }
 
-        // Replace the parent node children with the new children
-        parentNode.replaceChildren(...newChildren);
+        return best;
+    }
+
+    splitWordsByLines(words, coordinates) {
+        if (coordinates.length === 1) return [words];
+
+        var separation = [];
+        var charsPerLine = [];
+        for (var i = 0; i < coordinates.length; i++) {
+            separation.push([]);
+            charsPerLine.push(coordinates[i][4]);
+        }
+
+        var combinations = this.generatePossibleWordCombinations(words, JSON.parse(JSON.stringify(separation)));
+        var bestCombination = this.findBestCombination(combinations, charsPerLine);
+
+        return bestCombination;
+
+        // var currentIndex = 0;
+        // for (i = 0; i < words.length; i++) {
+        //     var word = words[i];
+        //     separation[currentIndex].push(word);
+
+        //     var wordLength = word.length;
+        //     charsPerLine[currentIndex] -= wordLength;
+        //     if (charsPerLine[currentIndex] < 0) {
+        //         currentIndex = Math.min(currentIndex + 1, separation.length - 1);
+        //     }
+        // }
+
+        // // Check if any element of separation is an empty list
+        // for (i = coordinates.length - 1; i >= 0; i--) {
+        //     if (separation[i].length === 0) {
+        //         // Pick the element from the previous line
+        //         separation[i] = separation[i - 1].splice(-1, 1);
+        //     }
+        // }
+
+        // return separation;
+    }
+
+    updateText(sectionIndex, lineIndex, wordIndex) {
+        var contents = this.state.contents;
+        var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+
+        var text = line[wordIndex]["text"];
+        var words = text.split(" ");
+
+        var coordinates = line[wordIndex]["coordinates"];
+        var combination = this.splitWordsByLines(words, coordinates);
+        
+        var newWords = [];
+
+        for (var i = 0; i < combination.length; i++) {
+            var box = coordinates[i].slice(0, 4);
+            var widthPerChar = (box[2] - box[0]) / (combination[i].reduce((a, b) => a + b.length, 0) + combination[i].length - 1);
+            var charsPassed = 0;
+
+            for (var j = 0; j < combination[i].length; j++) {
+                var word = combination[i][j];
+                newWords.push({
+                    "b": 0,
+                    "box": [box[0] + charsPassed * widthPerChar, box[1], box[0] + (charsPassed + word.length) * widthPerChar, box[3]],
+                    "text": word,
+                });
+                charsPassed += word.length + 1;
+            }
+        }
+
+        line.splice(wordIndex, 1, ...newWords);
+        contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
+
+        this.setState({contents: contents});
     }
 
     updateInputSize() {
@@ -276,6 +376,7 @@ class EditPagePopUp extends React.Component {
 
     getSelectedText() {
         if (typeof window.getSelection !== "undefined") {
+            // Get the range and make the all word selected
             if (window.getSelection().toString().length === 0) return null;
 
             var selection = window.getSelection();
@@ -290,48 +391,57 @@ class EditPagePopUp extends React.Component {
             let range = new Range();
             range.setStart(parentNode, firstSpanIndex);
             range.setEnd(parentNode, lastSpanIndex + 1);
+            // Selection end here
 
-            var textField = document.createElement("input");
+            var firstSpanInfo = firstSpan.id.split(" ").map((item) => parseInt(item));
+            var lastSpanInfo = lastSpan.id.split(" ").map((item) => parseInt(item));
+
+            var contents = [...this.state.contents];
+            var line = contents[this.state.currentPage - 1]["content"][firstSpanInfo[4]][firstSpanInfo[5]];
+
+            var elements = line.slice(firstSpanInfo[6], lastSpanInfo[6] + 1)
+            var words = [];
+            var coordinates = [];
+            var totalChars = 0;
+
+            var initialCoords = null;
+            var rowCoords = null;
+
+            for (var i = 0; i < elements.length; i++) {
+                words.push(elements[i]["text"]);
+
+                var box = elements[i]["box"];
+
+                if (rowCoords === null || (initialCoords !== null && box[0] < initialCoords[0])) {
+                    if (rowCoords !== null) {
+                        rowCoords.push(totalChars);
+                        coordinates.push(rowCoords);
+                    }
+
+                    totalChars = 0;
+                    initialCoords = [box[0], box[1], box[2], box[3]];
+                    rowCoords = [box[0], box[1], box[2], box[3]];
+                }
+
+                totalChars += elements[i]["text"].length;
+
+                rowCoords[2] = box[2];
+                rowCoords[3] = box[3];
+            }
+
+            rowCoords.push(totalChars);
+            coordinates.push(rowCoords);
+
+            var text = words.join(" ");
+
+            var textField = {"input": true, "text": text, "coordinates": coordinates};
 
             document.getSelection().removeAllRanges();
 
-            var newChildren = [...parentNode.childNodes];
-            var deletedElements = newChildren.splice(
-                firstSpanIndex,
-                lastSpanIndex - firstSpanIndex + 1,
-                textField
-            );
-            parentNode.replaceChildren(...newChildren);
+            line.splice(firstSpanInfo[6], elements.length, textField);
+            contents[this.state.currentPage - 1]["content"][firstSpanInfo[4]][firstSpanInfo[5]] = line;
 
-            var words = [];
-            for (var i = 0; i < deletedElements.length; i++) {
-                words.push(deletedElements[i].innerText);
-            }
-            var text = words.join(" ");
-            textField.value = text;
-            textField.style.width = `${text.length * 1.5}ch`;
-            textField.onchange = (e) => {
-                this.setState({editingText: e.target.value}, this.updateInputSize);
-            }
-            textField.onkeydown = (e) => {
-                if (e.key === "Enter") {
-                    this.setState({editingText: e.target.value}, this.updateText);
-                }
-            }
-            textField.onblur = (e) => {
-                this.setState({editingText: e.target.value}, this.updateText);
-            }
-            textField.focus();
-
-            var firstSpanId = firstSpan.id.split(" ");
-            var lastSpanId = lastSpan.id.split(" ");
-            
-            this.setState({
-                selectedWordBox: null,
-                parentNode: parentNode,
-                coordinates: [firstSpanId[0], firstSpanId[1], lastSpanId[2], lastSpanId[3]].map((item) => parseFloat(item)),
-                editingText: text,
-            });
+            this.setState({contents: contents, inputSize: text.length});
         }
     }
 
@@ -596,15 +706,49 @@ class EditPagePopUp extends React.Component {
                                     >
                                         {
                                             this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
-                                                return <Box className="section" sx={{display: "flex", flexDirection: "column"}}>
+                                                return <Box key={`section${sectionIndex}`} className="section" sx={{display: "flex", flexDirection: "column"}}>
                                                     {
                                                         section.map((line, lineIndex) => {
-                                                            return <Box style={{marginBottom: "0px", marginTop: "10px"}}>
+                                                            return <Box key={`line${lineIndex} section${sectionIndex}`} style={{marginBottom: "0px", marginTop: "10px"}}>
                                                                 {
                                                                     line.map((word, wordIndex) => {
+                                                                        if ("input" in word) {
+                                                                            return <TextField
+                                                                                key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
+                                                                                variant='outlined'
+                                                                                defaultValue={word["text"]}
+                                                                                size="small"
+                                                                                style={{margin: "0px 2px", width: `${(this.state.inputSize + 1) * 9}px`}}
+                                                                                inputProps={{style: {fontSize: "14px", padding: "0px 5px"}}}
+                                                                                autoFocus={true}
+                                                                                onChange={(e) => {
+                                                                                    this.setState({inputSize: e.target.value.length});
+                                                                                }}
+                                                                                onBlur={(e) => {
+                                                                                    var contents = [...this.state.contents];
+                                                                                    var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+                                                                                    line[wordIndex]["text"] = e.target.value;
+                                                                                    contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
+                                                                                    this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
+                                                                                }}
+                                                                                onKeyDown={(e) => {
+                                                                                    if (e.key === "Enter") {
+                                                                                        e.preventDefault();
+
+                                                                                        var contents = [...this.state.contents];
+                                                                                        var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+                                                                                        line[wordIndex]["text"] = e.target.value;
+                                                                                        contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
+                                                                                        this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                        }
+
+
                                                                         if (word["text"] === "") return null;
 
-                                                                        let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]}`;
+                                                                        let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
 
                                                                         return <>
                                                                             {
@@ -619,6 +763,7 @@ class EditPagePopUp extends React.Component {
                                                                             }
 
                                                                             <p
+                                                                                key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
                                                                                 style={{margin: "0px 2px", display: "inline-block", fontSize: "14px"}}
                                                                                 id={id}
                                                                                 onMouseEnter={(e) => {
