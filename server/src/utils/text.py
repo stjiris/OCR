@@ -28,7 +28,7 @@ def compare_dicts_words(words, corpus):
 
     dict_words = set()
     for c in corpus:
-        with open(f"./corpus/{c}.txt", "r") as f:
+        with open(f"./corpus/{c}.txt", "r", encoding="utf-8") as f:
             for line in f:
                 dict_words.add(line.strip())
 

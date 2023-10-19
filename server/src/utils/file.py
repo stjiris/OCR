@@ -71,8 +71,18 @@ def get_file_parsed(path):
                 for l in s:
                     for w in l:
                         t = w["text"].lower().strip()
-                        for p in punctuation:
-                            t = t.replace(p, "")
+
+                        while t:
+                            if t[0] in punctuation + "«»—":
+                                t = t[1:]
+                            else:
+                                break
+                        
+                        while t:
+                            if t[-1] in punctuation + "«»—":
+                                t = t[:-1]
+                            else:
+                                break
 
                         if t == "" or t.isdigit():
                             continue
