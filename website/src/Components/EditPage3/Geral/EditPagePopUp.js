@@ -20,6 +20,8 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import AddLineIcon from '../../../static/addLine.svg';
 import RemoveLineIcon from '../../../static/removeLine.svg';
 
+import loadComponent from '../../../utils/loadComponents';
+
 import { Button } from '@mui/material';
 
 const style = {
@@ -62,6 +64,9 @@ class EditPagePopUp extends React.Component {
             imageHeight: 0,
             baseImageHeight: 0,
 
+            selectedWord: "",
+            selectedWordIndex: 0,
+
             selectedWordBox: null,
             parentNode: null,
             coordinates: null,
@@ -72,13 +77,51 @@ class EditPagePopUp extends React.Component {
         }
 
         this.image = React.createRef();
+        this.corpusSelect = React.createRef();
+        this.textWindow = React.createRef();
     }
 
     componentDidMount() {
         this.setState({
             imageHeight: window.innerHeight * 0.9 - 30,
             baseImageHeight: window.innerHeight * 0.9 - 30,
+
+            textWidth: window.innerWidth * 0.9 * 0.6 - 70,
+            wordsWidth: 0,
+            wordsMargin: 0,
+
+            corpusChoice: [{"name": "Português", "code": "Português"}],
         });
+    }
+
+    requestSintax() {
+        this.setState({ loadingSintax: true });
+        fetch(process.env.REACT_APP_API_URL + 'check-sintax', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "languages": this.corpusSelect.current.getChoiceList(),
+                "words": this.state.words_list,
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.updateSintax(data.result);
+                this.setState({ loadingSintax: false });
+            }
+        });
+    }
+
+    updateSintax(words) {
+        var words_list = this.state.words_list;
+        Object.entries(words).forEach(([key, value]) => {
+            words_list[key]["syntax"] = value;
+        });
+
+        this.setState({words_list: words_list});
     }
 
     getContents(page = 1) {
@@ -130,13 +173,27 @@ class EditPagePopUp extends React.Component {
     }
 
     toggleOpen() {
-        this.setState({ open: !this.state.open, currentPage: 1, selectedWordBox: null, parentNode: null, coordinates: null, editingText: "", imageHeight: this.state.baseImageHeight, addLineMode: false, removeLineMode: false });
+        this.setState({ 
+            open: !this.state.open, 
+            currentPage: 1, 
+            selectedWordBox: null, 
+            selectedWord: "",
+            selectedWordIndex: 0,
+            parentNode: null, 
+            coordinates: null, 
+            editingText: "", 
+            imageHeight: this.state.baseImageHeight, 
+            addLineMode: false, 
+            removeLineMode: false 
+        });
     }
 
     changePage(diff) {
         this.updateContents();
         this.setState({
             currentPage: this.state.currentPage + diff, 
+            selectedWord: "",
+            selectedWordIndex: 0,
             selectedWordBox: null,
             addLineMode: false,
             removeLineMode: false
@@ -147,6 +204,8 @@ class EditPagePopUp extends React.Component {
         this.updateContents();
         this.setState({
             currentPage: 1,
+            selectedWord: "",
+            selectedWordIndex: 0,
             selectedWordBox: null,
             addLineMode: false,
             removeLineMode: false
@@ -157,6 +216,8 @@ class EditPagePopUp extends React.Component {
         this.updateContents();
         this.setState({
             currentPage: this.state.totalPages, 
+            selectedWord: "",
+            selectedWordIndex: 0,
             selectedWordBox: null,
             addLineMode: false,
             removeLineMode: false
@@ -299,34 +360,36 @@ class EditPagePopUp extends React.Component {
         var bestCombination = this.findBestCombination(combinations, charsPerLine);
 
         return bestCombination;
+    }
 
-        // var currentIndex = 0;
-        // for (i = 0; i < words.length; i++) {
-        //     var word = words[i];
-        //     separation[currentIndex].push(word);
+    cleanWord(word) {
+        var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
+        while (word !== "") {
+            if (punctuation.includes(word[0])) {
+                word = word.slice(1);
+            } else {
+                break;
+            }
+        }
 
-        //     var wordLength = word.length;
-        //     charsPerLine[currentIndex] -= wordLength;
-        //     if (charsPerLine[currentIndex] < 0) {
-        //         currentIndex = Math.min(currentIndex + 1, separation.length - 1);
-        //     }
-        // }
+        while (word !== "") {
+            if (punctuation.includes(word[word.length - 1])) {
+                word = word.slice(0, word.length - 1);
+            } else {
+                break;
+            }
+        }
 
-        // // Check if any element of separation is an empty list
-        // for (i = coordinates.length - 1; i >= 0; i--) {
-        //     if (separation[i].length === 0) {
-        //         // Pick the element from the previous line
-        //         separation[i] = separation[i - 1].splice(-1, 1);
-        //     }
-        // }
-
-        // return separation;
+        return word;
     }
 
     updateText(sectionIndex, lineIndex, wordIndex) {
+        var wordsList = this.state.words_list;
+
         var contents = this.state.contents;
         var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
 
+        var initial_text = line[wordIndex]["initial_text"];
         var text = line[wordIndex]["text"];
         var words = text.split(" ");
 
@@ -334,6 +397,25 @@ class EditPagePopUp extends React.Component {
         var combination = this.splitWordsByLines(words, coordinates);
         
         var newWords = [];
+
+        initial_text.split(" ").forEach((item) => {
+            item = this.cleanWord(item.toLowerCase());
+
+            if (item === "") return;
+
+            var info = wordsList[item];
+
+            if (info["pages"].length === 1) {
+                // Remove the word from the wordsList dictionary
+                delete wordsList[item];
+            } else {
+                // Remove the page from the pages list
+                var pages = info["pages"];
+                pages.splice(pages.indexOf(this.state.currentPage - 1), 1);
+
+                wordsList[item]["pages"] = pages;
+            }
+        })
 
         for (var i = 0; i < combination.length; i++) {
             var box = coordinates[i].slice(0, 4);
@@ -348,13 +430,39 @@ class EditPagePopUp extends React.Component {
                     "text": word,
                 });
                 charsPassed += word.length + 1;
+
+                var cleanedWord = this.cleanWord(word.toLowerCase());
+                if (cleanedWord === "") continue;
+
+                // Update the words list
+                if (cleanedWord in wordsList) {
+                    var pages = wordsList[cleanedWord]["pages"];
+                    pages.push(this.state.currentPage - 1);
+
+                    // Sort the list
+                    pages.sort((a, b) => a - b);
+
+                    wordsList[cleanedWord]["pages"] = pages;
+                } else {
+                    wordsList[cleanedWord] = {"pages": [this.state.currentPage - 1], "syntax": true};
+                }
+
             }
         }
 
         line.splice(wordIndex, 1, ...newWords);
         contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
 
-        this.setState({contents: contents});
+        wordsList = this.orderWords(wordsList);
+
+        if (this.state.selectedWord !== "" && !(this.state.selectedWord in wordsList)) {
+            this.setState({contents: contents, words_list: wordsList, selectedWord: "", selectedWordIndex: 0});
+        }
+        else if (this.state.selectedWord !== "" && this.state.selectedWordIndex === this.state.words_list[this.state.selectedWord]["pages"].length) {
+            this.setState({contents: contents, words_list: wordsList, selectedWordIndex: 0}, this.goToNextOccurrence);
+        } else {
+            this.setState({contents: contents, words_list: wordsList}, this.goToNextOccurrence);
+        }
     }
 
     updateInputSize() {
@@ -434,7 +542,7 @@ class EditPagePopUp extends React.Component {
 
             var text = words.join(" ");
 
-            var textField = {"input": true, "text": text, "coordinates": coordinates};
+            var textField = {"input": true, "text": text, "initial_text": text, "coordinates": coordinates};
 
             document.getSelection().removeAllRanges();
 
@@ -512,7 +620,6 @@ class EditPagePopUp extends React.Component {
         var firstLine, secondLine, newLine;
 
         if (section.length -1 === lineIndex) {
-            console.log("Joining sections")
             // Join sections
             var firstSection = section;
             var secondSection = contents[this.state.currentPage - 1]["content"][sectionIndex + 1];
@@ -538,7 +645,6 @@ class EditPagePopUp extends React.Component {
             section.splice(lineIndex, 2, newLine);
 
             contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
-            console.log(contents);
             this.setState({contents: contents});
         }
     }
@@ -557,7 +663,80 @@ class EditPagePopUp extends React.Component {
         this.setState({contents: contents});
     }
 
+    isValidOccurence(word) {
+        var regExp = new RegExp(this.state.selectedWord, "gi");
+        if ((word.toLowerCase().match(regExp) || []).length !== 1) return false;
+
+        var newString = word.toLowerCase().replace(regExp, "");
+        var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
+
+        for (var i = 0; i < newString.length; i++) {
+            if (!punctuation.includes(newString[i])) return false;
+        }
+
+        return true;
+    }
+
+    getScrollValue(count = 0) {
+        var words = document.getElementsByClassName("word");
+
+        var middleHeight = window.innerHeight / 2;
+
+        var wordHeight = null;
+        var chosenWord = null;
+
+        for (var i = 0; i < words.length; i++) {
+            var word = words[i];
+            if (this.isValidOccurence(word.innerText)) {
+                if (count === 0) {
+                    chosenWord = word;
+                }
+                
+                count -= 1;
+                word.style.backgroundColor = "#ffd700";
+            }
+        }
+
+        if (chosenWord !== null) {
+            chosenWord.style.backgroundColor = "#e88504";
+            wordHeight = chosenWord.offsetTop;
+        }
+
+        var scrollValue = wordHeight - middleHeight;
+        return scrollValue;
+    }
+
+    goToNextOccurrence() {
+        this.updateContents();
+
+        var word = this.state.selectedWord;
+        var index = this.state.selectedWordIndex;
+        var pages = this.state.words_list[word]["pages"];
+
+        var newPage = pages[index];
+        var count = pages.slice(0, index).reduce((acc, value) => value === newPage ? acc + 1 : acc, 0);
+
+        var page = newPage + 1;
+
+        if (page !== this.state.currentPage) {
+            this.setState({
+                currentPage: page,
+                selectedWordBox: null,
+                addLineMode: false,
+                removeLineMode: false
+            }, () => {
+                var scrollValue = this.getScrollValue(count);
+                this.textWindow.current.scrollTop = scrollValue;
+            })
+        } else {
+            var scrollValue = this.getScrollValue(count);
+            this.textWindow.current.scrollTop = scrollValue;
+        }
+    }
+
     render() {
+        const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
+
         var incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
 
         return (
@@ -691,113 +870,234 @@ class EditPagePopUp extends React.Component {
 
                                 <Box sx={{display: "flex", flexDirection: "column"}}>
 
-                                    <Box
-                                        sx={{
-                                            position: 'relative',
-                                            marginLeft: "10px",
-                                            width: `${window.innerWidth * 0.9 * 0.55}px`,
-                                            height: `${this.state.baseImageHeight}px`,
-                                            overflowY: 'scroll', 
-                                            overflowX: 'wrap',
-                                            border: '1px solid grey',
-                                            paddingLeft: "10px"
-                                        }}
-                                        onMouseUp={() => this.getSelectedText()}
-                                    >
-                                        {
-                                            this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
-                                                return <Box key={`section${sectionIndex}`} className="section" sx={{display: "flex", flexDirection: "column"}}>
-                                                    {
-                                                        section.map((line, lineIndex) => {
-                                                            return <Box key={`line${lineIndex} section${sectionIndex}`} style={{marginBottom: "0px", marginTop: "10px"}}>
-                                                                {
-                                                                    line.map((word, wordIndex) => {
-                                                                        if ("input" in word) {
-                                                                            return <TextField
-                                                                                key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
-                                                                                variant='outlined'
-                                                                                defaultValue={word["text"]}
-                                                                                size="small"
-                                                                                style={{margin: "0px 2px", width: `${(this.state.inputSize + 1) * 9}px`}}
-                                                                                inputProps={{style: {fontSize: "14px", padding: "0px 5px"}}}
-                                                                                autoFocus={true}
-                                                                                onChange={(e) => {
-                                                                                    this.setState({inputSize: e.target.value.length});
-                                                                                }}
-                                                                                onBlur={(e) => {
-                                                                                    var contents = [...this.state.contents];
-                                                                                    var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
-                                                                                    line[wordIndex]["text"] = e.target.value;
-                                                                                    contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
-                                                                                    this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
-                                                                                }}
-                                                                                onKeyDown={(e) => {
-                                                                                    if (e.key === "Enter") {
-                                                                                        e.preventDefault();
-
+                                    <Box sx={{display: "flex", flexDirection: "row"}}>
+                                        <Box
+                                            ref={this.textWindow}
+                                            id="textWindow"
+                                            sx={{
+                                                position: 'relative',
+                                                marginLeft: "10px",
+                                                width: this.state.wordsMode ? `${window.innerWidth * 0.9 * 0.6 - 352}px` : `${window.innerWidth * 0.9 * 0.6 - 70}px`,
+                                                height: `${this.state.baseImageHeight}px`,
+                                                overflowY: 'scroll', 
+                                                overflowX: 'wrap',
+                                                border: '1px solid grey',
+                                                paddingLeft: "10px",
+                                                scrollBehavior: "smooth",
+                                            }}
+                                            onMouseUp={() => this.getSelectedText()}
+                                        >
+                                            {
+                                                this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
+                                                    return <Box key={`section${sectionIndex}`} className="section" sx={{display: "flex", flexDirection: "column"}}>
+                                                        {
+                                                            section.map((line, lineIndex) => {
+                                                                return <Box key={`line${lineIndex} section${sectionIndex}`} style={{marginBottom: "0px", marginTop: "10px"}}>
+                                                                    {
+                                                                        line.map((word, wordIndex) => {
+                                                                            if ("input" in word) {
+                                                                                return <TextField
+                                                                                    key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
+                                                                                    variant='outlined'
+                                                                                    defaultValue={word["text"]}
+                                                                                    size="small"
+                                                                                    style={{margin: "0px 2px", width: `${(this.state.inputSize + 1) * 9}px`}}
+                                                                                    inputProps={{style: {fontSize: "14px", padding: "0px 5px"}}}
+                                                                                    autoFocus={true}
+                                                                                    onChange={(e) => {
+                                                                                        this.setState({inputSize: e.target.value.length});
+                                                                                    }}
+                                                                                    onBlur={(e) => {
                                                                                         var contents = [...this.state.contents];
                                                                                         var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
                                                                                         line[wordIndex]["text"] = e.target.value;
                                                                                         contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
                                                                                         this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
-                                                                                    }
-                                                                                }}
-                                                                            />
-                                                                        }
+                                                                                    }}
+                                                                                    onKeyDown={(e) => {
+                                                                                        if (e.key === "Enter") {
+                                                                                            e.preventDefault();
 
-
-                                                                        if (word["text"] === "") return null;
-
-                                                                        let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
-
-                                                                        return <>
-                                                                            {
-                                                                                this.state.addLineMode && wordIndex !== 0 && this.state.hoveredId === id
-                                                                                ? <IconButton 
-                                                                                    sx={{p: 0.1, m: 0, backgroundColor: "#0000ff88", ml: 1, "&:hover": {backgroundColor: "#0000ffdd"}}}
-                                                                                    onClick={() => this.addLine(sectionIndex, lineIndex, wordIndex)}
-                                                                                >
-                                                                                    <img style={{width: '1rem', color: "white"}} alt="addLine" src={AddLineIcon} />
-                                                                                </IconButton>
-                                                                                : null
+                                                                                            var contents = [...this.state.contents];
+                                                                                            var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+                                                                                            line[wordIndex]["text"] = e.target.value;
+                                                                                            contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
+                                                                                            this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
+                                                                                        }
+                                                                                    }}
+                                                                                />
                                                                             }
 
-                                                                            <p
-                                                                                key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
-                                                                                style={{margin: "0px 2px", display: "inline-block", fontSize: "14px"}}
-                                                                                id={id}
-                                                                                onMouseEnter={(e) => {
-                                                                                    this.setState({hoveredId: id});
-                                                                                    this.showImageHighlight(e, word["box"]);
-                                                                                }}
-                                                                                onMouseLeave={(e) => {
-                                                                                    this.setState({selectedWordBox: null})
-                                                                                }}
-                                                                            >
-                                                                                {word["text"]}
-                                                                            </p>
 
-                                                                            {
-                                                                                this.state.removeLineMode && wordIndex === line.length - 1 && (lineIndex !== section.length - 1 || sectionIndex !== this.state.contents[this.state.currentPage - 1]["content"].length - 1)
-                                                                                ? <IconButton 
-                                                                                    sx={{p: 0.1, m: 0, ml: 1, backgroundColor: "#ff000088", "&:hover": {backgroundColor: "#ff0000dd"}}}
-                                                                                    onClick={() => this.removeLine(sectionIndex, lineIndex)}
+                                                                            if (word["text"] === "") return null;
+
+                                                                            let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
+
+                                                                            return <>
+                                                                                {
+                                                                                    this.state.addLineMode && wordIndex !== 0 && this.state.hoveredId === id
+                                                                                    ? <IconButton 
+                                                                                        sx={{p: 0.1, m: 0, backgroundColor: "#0000ff88", ml: 1, "&:hover": {backgroundColor: "#0000ffdd"}}}
+                                                                                        onClick={() => this.addLine(sectionIndex, lineIndex, wordIndex)}
+                                                                                    >
+                                                                                        <img style={{width: '1rem', color: "white"}} alt="addLine" src={AddLineIcon} />
+                                                                                    </IconButton>
+                                                                                    : null
+                                                                                }
+
+                                                                                <p
+                                                                                    key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]} ${this.state.selectedWord !== "" && this.isValidOccurence(word["text"])}`}
+                                                                                    className="word"
+                                                                                    style={{
+                                                                                        margin: "0px 2px", 
+                                                                                        display: "inline-block", 
+                                                                                        fontSize: "14px",
+                                                                                        backgroundColor: (this.state.selectedWord !== "" && this.isValidOccurence(word["text"])) ? "#ffd700" : "transparent",
+                                                                                        borderRadius: "5px",
+                                                                                    }}
+                                                                                    id={id}
+                                                                                    onMouseEnter={(e) => {
+                                                                                        this.setState({hoveredId: id});
+                                                                                        this.showImageHighlight(e, word["box"]);
+                                                                                    }}
+                                                                                    onMouseLeave={(e) => {
+                                                                                        this.setState({selectedWordBox: null})
+                                                                                    }}
                                                                                 >
-                                                                                    <img style={{width: '1rem', color: "white"}} alt="deleteLine" src={RemoveLineIcon} />
-                                                                                </IconButton>
-                                                                                : null
-                                                                            }
-                                                                        </>
+                                                                                    {word["text"]}
+                                                                                </p>
 
-                                                                    })
+                                                                                {
+                                                                                    this.state.removeLineMode && wordIndex === line.length - 1 && (lineIndex !== section.length - 1 || sectionIndex !== this.state.contents[this.state.currentPage - 1]["content"].length - 1)
+                                                                                    ? <IconButton 
+                                                                                        sx={{p: 0.1, m: 0, ml: 1, backgroundColor: "#ff000088", "&:hover": {backgroundColor: "#ff0000dd"}}}
+                                                                                        onClick={() => this.removeLine(sectionIndex, lineIndex)}
+                                                                                    >
+                                                                                        <img style={{width: '1rem', color: "white"}} alt="deleteLine" src={RemoveLineIcon} />
+                                                                                    </IconButton>
+                                                                                    : null
+                                                                                }
+                                                                            </>
+
+                                                                        })
+                                                                    }
+                                                                </Box>
+                                                            })
+                                                        }
+                                                    </Box>;
+                                                })
+                                                
+                                            }
+                                        </Box>
+
+                                        <Box sx={{
+                                            display: this.state.wordsMode ? "block" : "none",
+                                            overflowY: 'scroll',
+                                            overflowX: 'wrap',
+                                            marginLeft: "10px",
+                                            width: "250px",
+                                            height: `${this.state.baseImageHeight}px`,
+                                            border: '1px solid grey',
+                                            backgroundColor: "#f0f0f0",
+                                            padding: "0px 10px"
+                                        }}>
+                                            <p style={{fontSize: "18px", margin: "10px 0px 0px 0px"}}><b>Palavras</b></p>
+                                            <CorpusDropdown 
+                                                ref={this.corpusSelect} 
+                                                options={this.state.corpusOptions} 
+                                                choice={this.state.corpusChoice} 
+                                            />
+
+                                            <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
+                                                <Button
+                                                    variant="text"
+                                                    color="success"
+                                                    sx={{padding: 0, textTransform: "none", color: 'blue'}}
+                                                    onClick={() => this.requestSintax()}
+                                                >
+                                                    Verificar ortografia
+                                                </Button>
+
+                                                {
+                                                    this.state.loadingSintax
+                                                    ? <CircularProgress sx={{ml: "1rem"}} color="success" size="1rem" />
+                                                    : null
+                                                }
+
+                                            </Box>
+
+                                            {
+                                                Object.entries(this.state.words_list).map(([key, value]) => {
+                                                    return <Box
+                                                        sx={{display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center"}}
+                                                    >
+                                                        <Box
+                                                            sx={{':hover': {cursor: "pointer", textDecoration: 'underline'}}}
+                                                            onClick={() => {
+                                                                if (this.state.selectedWord === key)
+                                                                    this.setState({selectedWord: ""});
+                                                                else {
+                                                                    this.setState({selectedWord: key}, () => {
+                                                                        this.goToNextOccurrence();
+                                                                    });
                                                                 }
+                                                            }}
+                                                        >
+                                                            <span
+                                                                key={key + " " + value["pages"].length + " " + value["syntax"]}
+                                                                style={{
+                                                                    fontWeight: (key === this.state.selectedWord) ? 'bold' : 'normal',
+                                                                }}
+                                                            >
+                                                                {key} ({value["pages"].length})
+                                                                    <span style={{marginLeft: '5px'}}>
+                                                                        {
+                                                                            "syntax" in value && !value["syntax"]
+                                                                            ? "⚠️"
+                                                                            : ""
+                                                                        }
+                                                                    </span>
+                                                            </span>
+                                                        </Box>
+
+                                                        {
+                                                            this.state.selectedWord === key
+                                                            ? <Box>
+                                                                <IconButton
+                                                                    sx={{p: 0.1, m: 0, ml: 1}}
+                                                                    onClick={() => {
+                                                                        var newIndex = this.state.selectedWordIndex - 1;
+                                                                        if (newIndex < 0) newIndex += value["pages"].length;
+
+                                                                        this.setState({selectedWordIndex: (newIndex) % value["pages"].length}, () => {
+                                                                            this.goToNextOccurrence();
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <KeyboardArrowLeftIcon />
+                                                                </IconButton>
+
+                                                                <span key={this.state.selectedWordIndex}>{this.state.selectedWordIndex + 1}/{value["pages"].length}</span>
+
+                                                                <IconButton
+                                                                    sx={{p: 0.1, m: 0, ml: 1}}
+                                                                    onClick={() => {
+                                                                        this.setState({selectedWordIndex: (this.state.selectedWordIndex + 1) % value["pages"].length}, () => {
+                                                                            this.goToNextOccurrence();
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <KeyboardArrowRightIcon />
+                                                                </IconButton>
+
                                                             </Box>
-                                                        })
-                                                    }
-                                                </Box>;
-                                            })
-                                            
-                                        }
+                                                            : null
+                                                        }
+
+                                                    </Box>
+                                                })
+                                            }
+                                        </Box>
                                     </Box>
 
                                     <Box sx={{display: "flex", flexDirection: "row", justifyContent: "flex-end", mt: "5px"}}>
@@ -814,7 +1114,7 @@ class EditPagePopUp extends React.Component {
                                             </Button>
 
                                             : <Button
-                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
                                                 variant="contained"
                                                 onClick={() => {this.setState({addLineMode: true, removeLineMode: false})}}
                                                 startIcon={<img style={{width: '1.2rem'}} alt="newLine" src={AddLineIcon} />}
@@ -827,7 +1127,7 @@ class EditPagePopUp extends React.Component {
                                         {
                                             this.state.removeLineMode
                                             ? <Button
-                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
                                                 color="error"
                                                 variant="contained"
                                                 onClick={() => {this.setState({removeLineMode: false})}}
@@ -837,7 +1137,7 @@ class EditPagePopUp extends React.Component {
                                             </Button>
 
                                             : <Button
-                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
                                                 variant="contained"
                                                 onClick={() => {this.setState({removeLineMode: true, addLineMode: false})}}
                                                 startIcon={<img style={{width: '1.2rem'}} alt="deleteLine" src={RemoveLineIcon} />}
@@ -846,31 +1146,43 @@ class EditPagePopUp extends React.Component {
                                             </Button>
                                         }
 
-                                        <Button
-                                            disabled
-                                            style={{
-                                                border: '1px solid black', 
-                                                height: "25px", 
-                                                marginLeft: "10px"
-                                            }}
-                                            
-                                            variant="contained" 
-                                            onClick={() => this.toggleOpen()} 
-                                            startIcon={<SpellcheckIcon />
-                                        }>
-                                            Ortografia
-                                            {
-                                                incorrectSyntax.length > 0
-                                                ? <span style={{marginLeft: "15px"}}>
-                                                    {incorrectSyntax.length} ⚠️
-                                                </span>
-                                                : null
-                                            }
+                                        {
+                                            this.state.wordsMode
+                                            ? <Button
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
+                                                color="error"
+                                                variant="contained"
+                                                onClick={() => {this.setState({wordsMode: false})}}
+                                                startIcon={<CloseRoundedIcon />}
+                                            >
+                                                Fechar
+                                                {
+                                                    incorrectSyntax.length > 0
+                                                    ? <span style={{marginLeft: "15px"}}>
+                                                        {incorrectSyntax.length} ⚠️
+                                                    </span>
+                                                    : null
+                                                }
+                                            </Button>
+                                            : <Button
+                                                style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
+                                                variant="contained"
+                                                onClick={() => {this.setState({wordsMode: true})}}
+                                                startIcon={<SpellcheckIcon />}
+                                            >
+                                                Ortografia
+                                                {
+                                                    incorrectSyntax.length > 0
+                                                    ? <span style={{marginLeft: "15px"}}>
+                                                        {incorrectSyntax.length} ⚠️
+                                                    </span>
+                                                    : null
+                                                }
+                                            </Button>
+                                        }
 
-                                        </Button>
-
                                         <Button
-                                            style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
+                                            style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
                                             
                                             variant="contained" 
                                             color="success" 
