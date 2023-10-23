@@ -99,6 +99,7 @@ def get_file_parsed(path):
                 {
                     "original_file": file,
                     "content": hocr,
+                    "page_number": int(basename.split("_")[-1]),
                     "page_url": IMAGE_PREFIX
                     + "/images/"
                     + "/".join(file.split("/")[1:-2])
