@@ -124,12 +124,14 @@ def get_file_layouts(path):
             with open(filename, encoding="utf-8") as f:
                 layouts.append({
                     "boxes": json.load(f),
-                    "page_url": page_url
+                    "page_url": page_url,
+                    "page_number": page,
                 })
         else:
             layouts.append({
                 "boxes": [],
-                "page_url": page_url
+                "page_url": page_url,
+                "page_number": page,
             })
 
     return layouts
