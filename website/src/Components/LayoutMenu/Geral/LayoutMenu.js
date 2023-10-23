@@ -267,7 +267,7 @@ export default class LayoutMenu extends React.Component {
         }).then(response => {return response.json()})
         .then(data => {
             var contents = data["layouts"].sort((a, b) =>
-                (a["page_url"] > b["page_url"]) ? 1 : -1
+                (a["page_number"] > b["page_number"]) ? 1 : -1
             )
 
             for (var i = 0; i < contents.length; i++) {
@@ -556,7 +556,7 @@ export default class LayoutMenu extends React.Component {
         }).then(response => {return response.json()})
         .then(data => {
             var contents = data["layouts"].sort((a, b) =>
-                (a["page_url"] > b["page_url"]) ? 1 : -1
+                (a["page_number"] > b["page_number"]) ? 1 : -1
             )
 
             for (var i = 0; i < contents.length; i++) {

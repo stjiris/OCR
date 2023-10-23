@@ -134,7 +134,7 @@ class EditPagePopUp extends React.Component {
             var pages = parseInt(data["pages"]);
 
             var contents = data["doc"].sort((a, b) =>
-                (a["page_url"] > b["page_url"]) ? 1 : -1
+                (a["page_number"] > b["page_number"]) ? 1 : -1
             )
             
             var sortedWords = this.orderWords(data["words"]);
