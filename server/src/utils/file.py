@@ -60,6 +60,8 @@ def get_file_parsed(path):
         and "_data.json" not in f
     ]
 
+    files.sort(key=lambda x: int(x.split("/")[-1].split("_")[-1].split(".")[0]))
+
     data = []
     words = {}
     for id, file in enumerate(files):
