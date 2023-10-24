@@ -198,7 +198,7 @@ function App() {
             const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
             // const EditPage = loadComponent('EditPage', 'EditPage');
             // const EditPage2 = loadComponent('EditPage2', 'EditPage');
-            const EditPage = loadComponent('EditPage3', 'EditPage');
+            // const EditPage = loadComponent('EditPage3', 'EditPage');
             const EditPagePopUp = loadComponent('EditPage3', 'EditPagePopUp');
             const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
@@ -223,8 +223,8 @@ function App() {
                                 ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
                                 : <PrivateFileExplorer ref={this.fileSystem} current_folder={this.state.sessionId} files={{"files": []}} app={this}/>
 
-                            : this.state.editFileMode
-                                ? <EditPage ref={this.editPage} app={this}/>
+                            //: this.state.editFileMode
+                            //    ? <EditPage ref={this.editPage} app={this}/>
                                 : <ESPage app={this}/>
                         }
                     </Box>

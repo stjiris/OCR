@@ -44,6 +44,44 @@ const crossStyle = {
     right: '0.5rem'
 }
 
+class Word extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            overlay: props.overlay,
+            text: props.text,
+            id: props.id,
+            box: props.box,
+            cleanText: props.cleanText
+        }
+    }
+
+    render() {
+        return <p
+            id={this.state.id}
+            className={`${this.state.cleanText}`}
+            style={{
+                margin: "0px 2px", 
+                display: "inline-block", 
+                fontSize: "14px",
+                backgroundColor: (false) ? "#ffd700" : "transparent",
+                borderRadius: "5px",
+            }}
+            onMouseEnter={(e) => {
+                this.state.overlay.setState({hoveredId: this.state.id});
+                this.state.overlay.showImageHighlight(e, this.state.box);
+            }}
+            onMouseLeave={(e) => {
+                this.state.overlay.setState({selectedWordBox: null})
+            }}
+        >
+            {
+                this.state.text
+            }
+        </p>
+    }
+}
+
 class EditPagePopUp extends React.Component {
     constructor(props) {
         super(props);
@@ -79,9 +117,17 @@ class EditPagePopUp extends React.Component {
         this.image = React.createRef();
         this.corpusSelect = React.createRef();
         this.textWindow = React.createRef();
+
+        this.selectedWord = "";
+        this.wordsIndex = {};
     }
 
+    /**
+     * GENERAL FUNCTIONS
+     * Usually runned at the start of the component or called from the parent component
+     */
     componentDidMount() {
+        console.log("EditPagePopUp componentDidMount");
         this.setState({
             imageHeight: window.innerHeight * 0.9 - 30,
             baseImageHeight: window.innerHeight * 0.9 - 30,
@@ -94,37 +140,30 @@ class EditPagePopUp extends React.Component {
         });
     }
 
-    requestSintax() {
-        this.setState({ loadingSintax: true });
-        fetch(process.env.REACT_APP_API_URL + 'check-sintax', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                "languages": this.corpusSelect.current.getChoiceList(),
-                "words": this.state.words_list,
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                this.updateSintax(data.result);
-                this.setState({ loadingSintax: false });
-            }
+    toggleOpen() {
+        console.log("EditPagePopUp toggleOpen");
+        this.setState({ 
+            open: !this.state.open, 
+            currentPage: 1, 
+            selectedWordBox: null, 
+            selectedWord: "",
+            selectedWordIndex: 0,
+            parentNode: null, 
+            coordinates: null, 
+            editingText: "", 
+            imageHeight: this.state.baseImageHeight, 
+            addLineMode: false, 
+            removeLineMode: false 
         });
     }
 
-    updateSintax(words) {
-        var words_list = this.state.words_list;
-        Object.entries(words).forEach(([key, value]) => {
-            words_list[key]["syntax"] = value;
-        });
-
-        this.setState({words_list: words_list});
+    setFile(path, file) {
+        console.log("EditPagePopUp setFile");
+        this.setState({ path: path, file: file }, this.getContents);
     }
 
     getContents(page = 1) {
+        console.log("EditPagePopUp getContents");
         this.setState({loading: true});
         fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + this.state.file + '&page=' + page, {
             method: 'GET'
@@ -149,6 +188,7 @@ class EditPagePopUp extends React.Component {
     }
 
     orderWords(words) {
+        console.log("EditPagePopUp orderWords");
         var items = Object.keys(words).map(function(key) {
             return [key, words[key]];
         });
@@ -168,28 +208,12 @@ class EditPagePopUp extends React.Component {
         return sortedWords;
     }
 
-    setFile(path, file) {
-        this.setState({ path: path, file: file }, this.getContents);
-    }
-
-    toggleOpen() {
-        this.setState({ 
-            open: !this.state.open, 
-            currentPage: 1, 
-            selectedWordBox: null, 
-            selectedWord: "",
-            selectedWordIndex: 0,
-            parentNode: null, 
-            coordinates: null, 
-            editingText: "", 
-            imageHeight: this.state.baseImageHeight, 
-            addLineMode: false, 
-            removeLineMode: false 
-        });
-    }
-
+    /**
+     * IMAGE FUNCTIONS
+     * Used to zoom and change pages (text changes accordingly)
+     */
     changePage(diff) {
-        this.updateContents();
+        console.log("EditPagePopUp changePage");
         this.setState({
             currentPage: this.state.currentPage + diff, 
             selectedWord: "",
@@ -201,7 +225,7 @@ class EditPagePopUp extends React.Component {
     }
 
     firstPage() {
-        this.updateContents();
+        console.log("EditPagePopUp firstPage");
         this.setState({
             currentPage: 1,
             selectedWord: "",
@@ -213,7 +237,7 @@ class EditPagePopUp extends React.Component {
     }
 
     lastPage() {
-        this.updateContents();
+        console.log("EditPagePopUp lastPage");
         this.setState({
             currentPage: this.state.totalPages, 
             selectedWord: "",
@@ -224,18 +248,8 @@ class EditPagePopUp extends React.Component {
         });
     }
 
-    zoomImage(e) {
-        const delta = -Math.sign(e.deltaY);
-        
-        var newImageHeight = this.state.imageHeight * (1 + delta * 0.1);
-        if (newImageHeight < this.state.baseImageHeight) {
-            newImageHeight = this.state.baseImageHeight;
-        }
-
-        this.setState({imageHeight: newImageHeight});
-    }
-
     imageToScreenCoordinates(x, y) {
+        console.log("EditPagePopUp imageToScreenCoordinates");
         var image = this.image.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
@@ -251,6 +265,7 @@ class EditPagePopUp extends React.Component {
     }
 
     showImageHighlight(e, box) {
+        console.log("EditPagePopUp showImageHighlight");
         var topCorner = this.imageToScreenCoordinates(box[0], box[1]);
         var bottomCorner = this.imageToScreenCoordinates(box[2], box[3]);
 
@@ -265,6 +280,7 @@ class EditPagePopUp extends React.Component {
     }
 
     zoom(delta) {
+        console.log("EditPagePopUp zoom");
         var newHeight = this.state.imageHeight * (1 + delta * 0.4);
 
         if (newHeight < this.state.baseImageHeight) {
@@ -274,10 +290,52 @@ class EditPagePopUp extends React.Component {
         this.setState({imageHeight: newHeight});
     }
 
+    /**
+     * SYNTAX FUNCTIONS
+     * Used to check the syntax of the text
+     */
+
+    requestSyntax() {
+        console.log("EditPagePopUp requestSyntax");
+        this.setState({ loadingSintax: true });
+        fetch(process.env.REACT_APP_API_URL + 'check-sintax', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "languages": this.corpusSelect.current.getChoiceList(),
+                "words": this.state.words_list,
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.updateSyntax(data.result);
+                this.setState({ loadingSintax: false });
+            }
+        });
+    }
+
+    updateSyntax(words) {
+        console.log("EditPagePopUp updateSyntax");
+        var words_list = this.state.words_list;
+        Object.entries(words).forEach(([key, value]) => {
+            words_list[key]["syntax"] = value;
+        });
+
+        this.setState({words_list: words_list});
+    }
+
+    /**
+     * TEXT CORRECTION
+     * Used to handle the text selection and correction
+     */
     generatePossibleWordCombinations(words, combination, startIndex = 0) {
         /**
          * Generate all possible combinations of words
          */
+        console.log("EditPagePopUp generatePossibleWordCombinations");
         var word = words.splice(0, 1)[0];
         var totalCombinations = [];
 
@@ -319,6 +377,8 @@ class EditPagePopUp extends React.Component {
          * Find the combination that minimizes the difference between the previous text and the new text
          */
 
+        console.log("EditPagePopUp findBestCombination");
+
         // Infinite
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity?retiredLocale=pt-PT
         var score = Math.pow(10, 1000);
@@ -347,6 +407,7 @@ class EditPagePopUp extends React.Component {
     }
 
     splitWordsByLines(words, coordinates) {
+        console.log("EditPagePopUp splitWordsByLines");
         if (coordinates.length === 1) return [words];
 
         var separation = [];
@@ -361,29 +422,9 @@ class EditPagePopUp extends React.Component {
 
         return bestCombination;
     }
-
-    cleanWord(word) {
-        var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
-        while (word !== "") {
-            if (punctuation.includes(word[0])) {
-                word = word.slice(1);
-            } else {
-                break;
-            }
-        }
-
-        while (word !== "") {
-            if (punctuation.includes(word[word.length - 1])) {
-                word = word.slice(0, word.length - 1);
-            } else {
-                break;
-            }
-        }
-
-        return word;
-    }
-
+    
     updateText(sectionIndex, lineIndex, wordIndex) {
+        console.log("EditPagePopUp updateText");
         var wordsList = this.state.words_list;
 
         var contents = this.state.contents;
@@ -424,14 +465,15 @@ class EditPagePopUp extends React.Component {
 
             for (var j = 0; j < combination[i].length; j++) {
                 var word = combination[i][j];
+                var cleanedWord = this.cleanWord(word.toLowerCase());
                 newWords.push({
                     "b": 0,
                     "box": [box[0] + charsPassed * widthPerChar, box[1], box[0] + (charsPassed + word.length) * widthPerChar, box[3]],
                     "text": word,
+                    "clean_text": cleanedWord,
                 });
                 charsPassed += word.length + 1;
 
-                var cleanedWord = this.cleanWord(word.toLowerCase());
                 if (cleanedWord === "") continue;
 
                 // Update the words list
@@ -461,11 +503,12 @@ class EditPagePopUp extends React.Component {
         else if (this.state.selectedWord !== "" && this.state.selectedWordIndex === this.state.words_list[this.state.selectedWord]["pages"].length) {
             this.setState({contents: contents, words_list: wordsList, selectedWordIndex: 0}, this.goToNextOccurrence);
         } else {
-            this.setState({contents: contents, words_list: wordsList}, this.goToNextOccurrence);
+            this.setState({contents: contents, words_list: wordsList});
         }
     }
 
     updateInputSize() {
+        console.log("EditPagePopUp updateInputSize");
         var text = this.state.editingText;
         var parentNode = this.state.parentNode;
         var children = parentNode.children;
@@ -483,6 +526,7 @@ class EditPagePopUp extends React.Component {
     }
 
     getSelectedText() {
+        console.log("EditPagePopUp getSelectedText");
         if (typeof window.getSelection !== "undefined") {
             // Get the range and make the all word selected
             if (window.getSelection().toString().length === 0) return null;
@@ -552,68 +596,28 @@ class EditPagePopUp extends React.Component {
             this.setState({contents: contents, inputSize: text.length});
         }
     }
-
-    updateContents() {
-        var sections = document.getElementsByClassName("section");
+    
+    /**
+     * LINE FUNCTIONS
+     * Add and remove new lines (\n)
+     */
+    addLine(sectionIndex, lineIndex, wordIndex) {
+        console.log("EditPagePopUp addLine");
         var contents = this.state.contents;
-        var newPageContents = [];
-        
-        for (var i = 0; i < sections.length; i++) {
-            var section = sections[i];
-            var sectionContents = [];
+        var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
+        var line = section[lineIndex];
 
-            for (var j = 0; j < section.children.length; j++) {
-                var line = section.children[j];
-                var lineContents = [];
+        var secondPart = line.splice(wordIndex);
+        var firstPart = line;
 
-                for (var k = 0; k < line.children.length; k++) {
-                    var word = line.children[k];
-                    var wordId = word.id.split(" ");
-                    var wordText = word.innerText;
-                    var wordBox = [wordId[0], wordId[1], wordId[2], wordId[3]].map((item) => parseFloat(item));
+        section.splice(lineIndex, 1, firstPart, secondPart);
+        contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
 
-                    lineContents.push({
-                        "text": wordText,
-                        "box": wordBox,
-                        "b": 0,
-                    });
-                }
-                sectionContents.push(lineContents);
-            }
-            newPageContents.push(sectionContents);
-        }
-
-        contents[this.state.currentPage - 1]["content"] = newPageContents;
         this.setState({contents: contents});
     }
 
-    saveChanges() {
-        this.updateContents();
-        fetch(process.env.REACT_APP_API_URL + 'submit-text', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                "text": this.state.contents
-            })
-        })
-        .then(response => {return response.json()})
-        .then(data => {
-            if (data.success) {
-                // this.successNot.current.setMessage("Texto submetido com sucesso");
-                // this.successNot.current.open();
-                // this.setState({uncommittedChanges: false});
-                // window.removeEventListener('beforeunload', this.preventExit);
-                this.toggleOpen();
-            } else {
-                // this.errorNot.current.setMessage(data.error);
-                // this.errorNot.current.open();
-            }
-        });
-    }
-
     removeLine(sectionIndex, lineIndex) {
+        console.log("EditPagePopUp removeLine");
         var contents = this.state.contents;
         var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
 
@@ -649,52 +653,60 @@ class EditPagePopUp extends React.Component {
         }
     }
 
-    addLine(sectionIndex, lineIndex, wordIndex) {
-        var contents = this.state.contents;
-        var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
-        var line = section[lineIndex];
-
-        var secondPart = line.splice(wordIndex);
-        var firstPart = line;
-
-        section.splice(lineIndex, 1, firstPart, secondPart);
-        contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
-
-        this.setState({contents: contents});
-    }
-
-    isValidOccurence(word) {
-        var regExp = new RegExp(this.state.selectedWord, "gi");
-        if ((word.toLowerCase().match(regExp) || []).length !== 1) return false;
-
-        var newString = word.toLowerCase().replace(regExp, "");
+    /**
+     * WORD LIST FUNCTIONS
+     * Handle the words list and actions
+     */  
+    cleanWord(word) {
+        console.log("EditPagePopUp cleanWord");
         var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
-
-        for (var i = 0; i < newString.length; i++) {
-            if (!punctuation.includes(newString[i])) return false;
+        while (word !== "") {
+            if (punctuation.includes(word[0])) {
+                word = word.slice(1);
+            } else {
+                break;
+            }
         }
 
-        return true;
+        while (word !== "") {
+            if (punctuation.includes(word[word.length - 1])) {
+                word = word.slice(0, word.length - 1);
+            } else {
+                break;
+            }
+        }
+
+        return word.toLowerCase();
     }
 
-    getScrollValue(count = 0) {
-        var words = document.getElementsByClassName("word");
+    cleanWordSelection() {
+        console.log("EditPagePopUp cleanWordSelection");
+        var words = document.getElementsByClassName(this.selectedWord);
 
+        for (var i = 0; i < words.length; i++) {
+            var word = words[i];
+            word.style.backgroundColor = "transparent";
+        }
+    }
+
+    getScrollValue(word, count = 0) {
+        console.log("EditPagePopUp getScrollValue");
+        // var words = [];
+        var words = document.getElementsByClassName(word);
+    
         var middleHeight = window.innerHeight / 2;
 
         var wordHeight = null;
         var chosenWord = null;
 
         for (var i = 0; i < words.length; i++) {
-            var word = words[i];
-            if (this.isValidOccurence(word.innerText)) {
-                if (count === 0) {
-                    chosenWord = word;
-                }
-                
-                count -= 1;
-                word.style.backgroundColor = "#ffd700";
+            var wordComponent = words[i];
+            if (count === 0) {
+                chosenWord = wordComponent;
             }
+            
+            count -= 1;
+            wordComponent.style.backgroundColor = "#ffd700";
         }
 
         if (chosenWord !== null) {
@@ -706,17 +718,21 @@ class EditPagePopUp extends React.Component {
         return scrollValue;
     }
 
-    goToNextOccurrence() {
-        this.updateContents();
-
-        var word = this.state.selectedWord;
-        var index = this.state.selectedWordIndex;
+    goToNextOccurrence(word) {
+        console.log("EditPagePopUp goToNextOccurrence");
+        
+        // var word = this.state.selectedWord;
+        var index = Math.max(0, this.state.selectedWordIndex);
         var pages = this.state.words_list[word]["pages"];
-
+        
         var newPage = pages[index];
         var count = pages.slice(0, index).reduce((acc, value) => value === newPage ? acc + 1 : acc, 0);
 
         var page = newPage + 1;
+
+        this.selectedWord = word;
+
+        this.setState({selectedWordIndex: index});
 
         if (page !== this.state.currentPage) {
             this.setState({
@@ -725,19 +741,54 @@ class EditPagePopUp extends React.Component {
                 addLineMode: false,
                 removeLineMode: false
             }, () => {
-                var scrollValue = this.getScrollValue(count);
+                var scrollValue = this.getScrollValue(word, count);
                 this.textWindow.current.scrollTop = scrollValue;
             })
         } else {
-            var scrollValue = this.getScrollValue(count);
+            var scrollValue = this.getScrollValue(word, count);
             this.textWindow.current.scrollTop = scrollValue;
         }
     }
 
+    /**
+     * SAVE FINAL CHANGES
+     * Send to the server the new text and structure
+     */
+    saveChanges() {
+        console.log("EditPagePopUp saveChanges");
+        fetch(process.env.REACT_APP_API_URL + 'submit-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "text": this.state.contents
+            })
+        })
+        .then(response => {return response.json()})
+        .then(data => {
+            if (data.success) {
+                // this.successNot.current.setMessage("Texto submetido com sucesso");
+                // this.successNot.current.open();
+                // this.setState({uncommittedChanges: false});
+                // window.removeEventListener('beforeunload', this.preventExit);
+                this.toggleOpen();
+            } else {
+                // this.errorNot.current.setMessage(data.error);
+                // this.errorNot.current.open();
+            }
+        });
+    }
+
+    /**
+     * Render the component
+     */
     render() {
+        console.log("EditPagePopUp render");
         const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 
         var incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
+        this.wordsIndex = {};
 
         return (
             <Box>
@@ -932,6 +983,7 @@ class EditPagePopUp extends React.Component {
                                                                             if (word["text"] === "") return null;
 
                                                                             let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
+                                                                            var ref = React.createRef();
 
                                                                             return <>
                                                                                 {
@@ -945,27 +997,15 @@ class EditPagePopUp extends React.Component {
                                                                                     : null
                                                                                 }
 
-                                                                                <p
-                                                                                    key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]} ${this.state.selectedWord !== "" && this.isValidOccurence(word["text"])}`}
-                                                                                    className="word"
-                                                                                    style={{
-                                                                                        margin: "0px 2px", 
-                                                                                        display: "inline-block", 
-                                                                                        fontSize: "14px",
-                                                                                        backgroundColor: (this.state.selectedWord !== "" && this.isValidOccurence(word["text"])) ? "#ffd700" : "transparent",
-                                                                                        borderRadius: "5px",
-                                                                                    }}
+                                                                                <Word
+                                                                                    ref = {ref}
+                                                                                    key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
+                                                                                    overlay={this}
+                                                                                    text={word["text"]}
                                                                                     id={id}
-                                                                                    onMouseEnter={(e) => {
-                                                                                        this.setState({hoveredId: id});
-                                                                                        this.showImageHighlight(e, word["box"]);
-                                                                                    }}
-                                                                                    onMouseLeave={(e) => {
-                                                                                        this.setState({selectedWordBox: null})
-                                                                                    }}
-                                                                                >
-                                                                                    {word["text"]}
-                                                                                </p>
+                                                                                    box={word["box"]}  
+                                                                                    cleanText={word["clean_text"]}   
+                                                                                />
 
                                                                                 {
                                                                                     this.state.removeLineMode && wordIndex === line.length - 1 && (lineIndex !== section.length - 1 || sectionIndex !== this.state.contents[this.state.currentPage - 1]["content"].length - 1)
@@ -1013,7 +1053,7 @@ class EditPagePopUp extends React.Component {
                                                     variant="text"
                                                     color="success"
                                                     sx={{padding: 0, textTransform: "none", color: 'blue'}}
-                                                    onClick={() => this.requestSintax()}
+                                                    onClick={() => this.requestSyntax()}
                                                 >
                                                     Verificar ortografia
                                                 </Button>
@@ -1034,19 +1074,19 @@ class EditPagePopUp extends React.Component {
                                                         <Box
                                                             sx={{':hover': {cursor: "pointer", textDecoration: 'underline'}}}
                                                             onClick={() => {
-                                                                if (this.state.selectedWord === key)
-                                                                    this.setState({selectedWord: ""});
-                                                                else {
-                                                                    this.setState({selectedWord: key}, () => {
-                                                                        this.goToNextOccurrence();
-                                                                    });
+                                                                this.cleanWordSelection();
+                                                                this.setState({selectedWordIndex: 0});
+                                                                if (this.selectedWord === key) {
+                                                                    this.selectedWord = "";
+                                                                } else {
+                                                                    this.goToNextOccurrence(key);
                                                                 }
                                                             }}
                                                         >
                                                             <span
                                                                 key={key + " " + value["pages"].length + " " + value["syntax"]}
                                                                 style={{
-                                                                    fontWeight: (key === this.state.selectedWord) ? 'bold' : 'normal',
+                                                                    fontWeight: (key === this.selectedWord) ? 'bold' : 'normal',
                                                                 }}
                                                             >
                                                                 {key} ({value["pages"].length})
@@ -1061,7 +1101,7 @@ class EditPagePopUp extends React.Component {
                                                         </Box>
 
                                                         {
-                                                            this.state.selectedWord === key
+                                                            this.selectedWord === key
                                                             ? <Box>
                                                                 <IconButton
                                                                     sx={{p: 0.1, m: 0, ml: 1}}
@@ -1070,7 +1110,7 @@ class EditPagePopUp extends React.Component {
                                                                         if (newIndex < 0) newIndex += value["pages"].length;
 
                                                                         this.setState({selectedWordIndex: (newIndex) % value["pages"].length}, () => {
-                                                                            this.goToNextOccurrence();
+                                                                            this.goToNextOccurrence(this.selectedWord);
                                                                         });
                                                                     }}
                                                                 >
@@ -1083,7 +1123,7 @@ class EditPagePopUp extends React.Component {
                                                                     sx={{p: 0.1, m: 0, ml: 1}}
                                                                     onClick={() => {
                                                                         this.setState({selectedWordIndex: (this.state.selectedWordIndex + 1) % value["pages"].length}, () => {
-                                                                            this.goToNextOccurrence();
+                                                                            this.goToNextOccurrence(this.selectedWord);
                                                                         });
                                                                     }}
                                                                 >
@@ -1152,7 +1192,7 @@ class EditPagePopUp extends React.Component {
                                                 style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
                                                 color="error"
                                                 variant="contained"
-                                                onClick={() => {this.setState({wordsMode: false})}}
+                                                onClick={() => {this.cleanWordSelection(); this.setState({wordsMode: false})}}
                                                 startIcon={<CloseRoundedIcon />}
                                             >
                                                 Fechar

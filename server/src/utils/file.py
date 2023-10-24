@@ -69,9 +69,9 @@ def get_file_parsed(path):
         with open(file, encoding="utf-8") as f:
             hocr = json.load(f)
 
-            for s in hocr:
-                for l in s:
-                    for w in l:
+            for sectionId, s in enumerate(hocr):
+                for lineId, l in enumerate(s):
+                    for wordId, w in enumerate(l):
                         t = w["text"].lower().strip()
 
                         while t:
@@ -88,6 +88,8 @@ def get_file_parsed(path):
 
                         if t == "" or t.isdigit():
                             continue
+
+                        hocr[sectionId][lineId][wordId]["clean_text"] = t
 
                         if t in words:
                             words[t]["pages"].append(id)
