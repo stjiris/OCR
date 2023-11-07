@@ -121,6 +121,16 @@ def get_txt():
     path = request.values["path"]
     return send_file(f"{path}/_text.txt")
 
+@app.route("/get_zip", methods=["GET"])
+def get_zip():
+    path = request.values["path"]
+    try:
+        export_file(path, "zip")
+    except Exception as e:
+        print(e)
+        return {"success": False, "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde"}
+    
+    return send_file(f"{path}/{path.split('/')[-1]}.zip")
 
 @app.route("/get_pdf", methods=["GET"])
 def get_pdf():
