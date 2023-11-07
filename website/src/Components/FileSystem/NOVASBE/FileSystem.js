@@ -13,6 +13,7 @@ import Paper from '@mui/material/Paper';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 import { v4 as uuidv4 } from 'uuid';
 
@@ -791,7 +792,7 @@ class FileExplorer extends React.Component {
                                 disabled={this.state.downloadLoading}
                                 variant="contained"
                                 startIcon={<FileDownloadIcon />}
-                                onClick={() => getZip()}
+                                onClick={() => this.getZip()}
                                 sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
                             >
                                 Descarregar Ficheiros
