@@ -20,7 +20,7 @@ import loadComponent from '../../../utils/loadComponents';
 
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
-const validExtensions = [".pdf", ".jpg", ".jpeg"];
+const validExtensions = [".pdf"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
@@ -43,6 +43,8 @@ class FileExplorer extends React.Component {
 
             layoutMenu: false,
             layoutFilename: null,
+
+            downloadLoading: false,
         }
 
         this.folderMenu = React.createRef();
@@ -639,6 +641,43 @@ class FileExplorer extends React.Component {
         return true;
     }
 
+    getZip() {
+        /**
+         * Export the .zip file
+         */
+        this.setState({downloadLoading: true});
+        var path = this.state.current_folder.join('/');
+
+        fetch(process.env.REACT_APP_API_URL + "get_zip?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {
+            this.setState({downloadLoading: false});
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json();
+            }
+
+            this.successNot.current.setMessage("O seu download vai começar em breves momentos.")
+            this.successNot.current.open();
+            return response.blob()
+        })
+        .then(data => {
+            // Check if data is a blob
+            if (data instanceof Blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(data);
+    
+                a.download = path.split('/').slice(-1)[0] + '.zip';
+                a.click();
+                a.remove();
+            } else {
+                this.errorNot.current.setMessage(data.message)
+                this.errorNot.current.open();
+            }
+        });
+    }
+
     changeFolderFromPath(folder_name) {
         var current_folder = this.state.current_folder;
 
@@ -746,6 +785,16 @@ class FileExplorer extends React.Component {
                                 sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
                             >
                                 Adicionar documento
+                            </Button>
+
+                            <Button
+                                disabled={this.state.downloadLoading}
+                                variant="contained"
+                                startIcon={<FileDownloadIcon />}
+                                onClick={() => getZip()}
+                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
+                            >
+                                Descarregar Ficheiros
                             </Button>
                         </Box>
 

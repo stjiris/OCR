@@ -14,17 +14,15 @@ import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import LockIcon from '@mui/icons-material/Lock';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
 
-// import FolderRow from './FolderRow';
-// import FileRow from './FileRow';
-
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
-const validExtensions = [".pdf", ".jpg", ".jpeg"];
+const validExtensions = [".pdf"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
@@ -47,6 +45,8 @@ class FileExplorer extends React.Component {
 
             layoutMenu: false,
             layoutFilename: null,
+
+            downloadLoading: false,
         }
 
         this.folderMenu = React.createRef();
@@ -328,6 +328,43 @@ class FileExplorer extends React.Component {
             a.download = basename + '_ocr.' + type;
             a.click();
             a.remove();
+        });
+    }
+
+    getZip() {
+        /**
+         * Export the .zip file
+         */
+        this.setState({downloadLoading: true});
+        var path = this.state.current_folder.join('/');
+
+        fetch(process.env.REACT_APP_API_URL + "get_zip?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {
+            this.setState({downloadLoading: false});
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json();
+            }
+
+            this.successNot.current.setMessage("O seu download vai começar em breves momentos.")
+            this.successNot.current.open();
+            return response.blob()
+        })
+        .then(data => {
+            // Check if data is a blob
+            if (data instanceof Blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(data);
+    
+                a.download = path.split('/').slice(-1)[0] + '.zip';
+                a.click();
+                a.remove();
+            } else {
+                this.errorNot.current.setMessage(data.message)
+                this.errorNot.current.open();
+            }
         });
     }
 
@@ -753,10 +790,20 @@ class FileExplorer extends React.Component {
                             </Button>
 
                             <Button
+                                disabled={this.state.downloadLoading}
+                                variant="contained"
+                                startIcon={<FileDownloadIcon />}
+                                onClick={() => this.getZip()}
+                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
+                            >
+                                Descarregar Ficheiros
+                            </Button>
+
+                            <Button
                                 variant="contained"
                                 startIcon={<LockIcon />}
                                 onClick={() => this.createPrivateSession()}
-                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
+                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: '1rem'}}
                             >
                                 Sessão privada
                             </Button>
