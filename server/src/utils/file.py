@@ -181,13 +181,13 @@ def delete_structure(client, path):
             delete_structure(client, folder)
 
 # TODO
-def get_filesystem(path):
+def get_filesystem(path, private_session = None):
     """
         @@ -106,7 +101,7 @@ def get_filesystem(path):
     @param path: path to the folder
     """
-    files = get_structure(path)
-    info = get_structure_info(path)
+    files = get_structure(path, private_session)
+    info = get_structure_info(path, private_session)
 
     if files is None:
         files = {path: []}
@@ -264,7 +264,7 @@ def get_folder_info(path):
     return info
 
 # TODO
-def get_structure_info(path):
+def get_structure_info(path, private_session):
     """
     Get the info of each file/folder
     @param files: the filesystem structure
@@ -272,7 +272,14 @@ def get_structure_info(path):
     info = {}
 
     for root, folders, _ in os.walk(path):
+        root = root.replace("\\", "/")
         for folder in folders:
+            if private_session is None and ("_private_sessions" in root or folder == "_private_sessions"): continue
+
+            if private_session is not None and \
+                not(f"files/_private_sessions/{private_session}" in f"{root}/{folder}" or \
+                    f"{root}/{folder}" in f"files/_private_sessions/{private_session}"): continue
+            
             folder_path = f"{root}/{folder}".replace("\\", "/")
 
             folder_info = get_folder_info(folder_path)
@@ -282,7 +289,7 @@ def get_structure_info(path):
     return info
 
 # TODO
-def get_structure(path):
+def get_structure(path, private_session):
     """
     Put the file system structure in a dict
     {
@@ -298,6 +305,7 @@ def get_structure(path):
 
     :param path: the path to the files
     """
+
     filesystem = {}
     name = path.split("/")[-1]
 
@@ -311,7 +319,13 @@ def get_structure(path):
     contents = []
     folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")])
     for folder in folders:
-        file = get_structure(f"{path}/{folder}")
+        if private_session is None and folder == "_private_sessions": continue
+        if private_session is not None and \
+            not (path + "/" + folder in f"files/_private_sessions/{private_session}" or \
+                 f"files/_private_sessions/{private_session}" in path + "/" + folder): continue
+
+        file = get_structure(f"{path}/{folder}", private_session)
+
         if file is not None:
             contents.append(file)
 
@@ -407,7 +421,7 @@ def prepare_file_ocr(path):
             img = Image.open(f"{path}/{basename}.{extension}")
             img.save(f"{path}/{basename}.jpg", "JPEG")
     except Exception as e:
-        print(e)
+        
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"] = data.get("ocr", {})

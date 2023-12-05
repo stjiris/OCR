@@ -221,7 +221,7 @@ function App() {
 
                             ? this.getPrivateSession() == null
                                 ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
-                                : <PrivateFileExplorer ref={this.fileSystem} current_folder={this.state.sessionId} files={{"files": []}} app={this}/>
+                                : <PrivateFileExplorer ref={this.fileSystem} current_folder={"files/_private_sessions/" + this.state.sessionId} files={{"files": []}} app={this}/>
 
                             //: this.state.editFileMode
                             //    ? <EditPage ref={this.editPage} app={this}/>
