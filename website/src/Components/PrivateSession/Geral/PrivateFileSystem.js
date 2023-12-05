@@ -40,6 +40,9 @@ class PrivateFileExplorer extends React.Component {
             updateCount: 0,
 
             loading: false,
+
+            layoutMenu: false,
+            layoutFilename: null,
         }
 
         this.folderMenu = React.createRef();
@@ -73,6 +76,8 @@ class PrivateFileExplorer extends React.Component {
             files[session] = data[session];
 
             var disabled = data[session].length !== 0;
+
+            
 
             this.setState({files: files, info: info, loading: false, addDisabled: disabled}, this.displayFileSystem);
         });
@@ -121,13 +126,13 @@ class PrivateFileExplorer extends React.Component {
                         }
                     }
                 }
-
                 this.setState({info: info, updateCount: 0}, this.updateInfo);
             });
         }, 1000 * STUCK_UPDATE_TIME);
     }
 
     updateInfo() {
+        if (this.state.layoutMenu) return;
         this.rowRefs.forEach(ref => {
             var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
             if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
@@ -149,8 +154,10 @@ class PrivateFileExplorer extends React.Component {
          */
 
         var files = {}
-        files[this.state.current_folder.join("/")] = data[this.state.current_folder.join("/")]
+        files["files"] = data["files"]
         var info = data['info'];
+
+        
 
         this.setState({ files: files, info: info }, this.displayFileSystem);
     }
@@ -213,6 +220,10 @@ class PrivateFileExplorer extends React.Component {
         });
     }
 
+    createLayout(filename) {
+        this.setState({layoutMenu: true, layoutFilename: filename});
+    }
+
     createFile() {
         /**
          * This is a hack to get around the fact that the input type="file" element
@@ -260,7 +271,7 @@ class PrivateFileExplorer extends React.Component {
                         var filesystem = data["filesystem"];
                         var info = filesystem["info"];
                         var files = {}
-                        files[this.state.current_folder.join("/")] = filesystem[this.state.current_folder.join("/")];
+                        files["files"] = filesystem["files"];
 
                         this.setState({files: files, info: info, addDisabled: true, ocrDisabled: false}, this.displayFileSystem);
                         fileName = data["filename"];
@@ -399,6 +410,7 @@ class PrivateFileExplorer extends React.Component {
         /**
          * Get the contents of the current folder
          */
+
         var files = this.state.files;
         var current_folder = this.state.current_folder;
 
@@ -414,6 +426,10 @@ class PrivateFileExplorer extends React.Component {
         /**
          * Get the info of the file
          */
+        
+        
+        
+
         return this.state.info[path];
     }
 
@@ -486,6 +502,7 @@ class PrivateFileExplorer extends React.Component {
             this.rowRefs.push(ref);
 
             var item = contents[f];
+
             if (typeof item === 'string' || item instanceof String) {
                 items.push(
                     <PrivateFileRow
@@ -613,25 +630,32 @@ class PrivateFileExplorer extends React.Component {
         const OcrMenu = loadComponent('Form', 'OcrMenu');
         const DeleteMenu = loadComponent('Form', 'DeleteMenu');
         const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
+        const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu')
 
         return (
-            <Box sx={{
-                ml: '1.5rem',
-                mr: '1.5rem',
-                mb: '1.5rem',
-            }}>
-                <Notification message={""} severity={"success"} ref={this.successNot}/>
-                <Notification message={""} severity={"error"} ref={this.errorNot}/>
-
-                <FolderMenu filesystem={this} ref={this.folderMenu}/>
-                <OcrMenu filesystem={this} ref={this.ocrMenu}/>
-                <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-                <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
-
+            <>
                 {
-                    this.generateTable()
+                    this.state.layoutMenu
+                    ? <LayoutMenu filesystem={this} filename={this.state.layoutFilename} />
+                    : <Box sx={{
+                        ml: '1.5rem',
+                        mr: '1.5rem',
+                        mb: '1.5rem',
+                    }}>
+                        <Notification message={""} severity={"success"} ref={this.successNot}/>
+                        <Notification message={""} severity={"error"} ref={this.errorNot}/>
+
+                        <FolderMenu filesystem={this} ref={this.folderMenu}/>
+                        <OcrMenu filesystem={this} ref={this.ocrMenu}/>
+                        <DeleteMenu filesystem={this} ref={this.deleteMenu} />
+                        <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
+
+                        {
+                            this.generateTable()
+                        }
+                    </Box>
                 }
-            </Box>
+            </>
         );
     }
 }

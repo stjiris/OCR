@@ -194,7 +194,7 @@ export default class FileRow extends React.Component {
                             </TableCell>
                             
                             { 
-                                this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] === this.state.info["pages"]
+                                this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                                 ? <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
                                     {
                                         this.state.info["ocr"] === undefined

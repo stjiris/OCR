@@ -54,10 +54,12 @@ def get_file_system():
     if "path" not in request.values:
         return get_filesystem("files")
     
-    path = request.values["path"].split("/")[0]
-    print(path)
+    path = request.values["path"]
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
 
-    return get_filesystem(path)
+    return get_filesystem("files", private_session=private_session)
 
 
 @app.route("/info", methods=["GET"])
@@ -65,8 +67,11 @@ def get_info():
     if "path" not in request.values:
         return get_filesystem("files")
     
-    path = request.values["path"].split("/")[0]
-    return {"info": get_structure_info(path)}
+    path = request.values["path"]
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
+    return {"info": get_structure_info("files", private_session=private_session)}
 
 
 @app.route("/system-info", methods=["GET"])
@@ -127,7 +132,7 @@ def get_zip():
     try:
         export_file(path, "zip")
     except Exception as e:
-        print(e)
+        
         return {"success": False, "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde"}
     
     return send_file(f"{path}/{path.split('/')[-1]}.zip")
@@ -158,11 +163,15 @@ def delete_path():
     shutil.rmtree(path)
 
     session = path.split("/")[0]
+    
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
 
     return {
         "success": True,
         "message": "Apagado com sucesso",
-        "files": get_filesystem(session),
+        "files": get_filesystem(session, private_session=private_session),
     }
 
 @app.route("/delete-private-session", methods=["POST"])
@@ -170,7 +179,7 @@ def delete_private_session():
     data = request.json
     session_id = data["sessionId"]
 
-    shutil.rmtree(session_id)
+    shutil.rmtree("files/_private_sessions/" + session_id)
     if session_id in private_sessions:
         del private_sessions[session_id]
 
@@ -191,10 +200,14 @@ def set_upload_stuck():
     data["upload_stuck"] = True
     update_data(f"{path}/_data.json", data)
 
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
+
     return {
         "success": True,
         "message": "O upload do ficheiro falhou",
-        "files": get_filesystem(session),
+        "files": get_filesystem(session, private_session=private_session),
     }
 
 #####################################
@@ -265,7 +278,12 @@ def prepare_upload():
             indent=2,
             ensure_ascii=False,
         )
-    return {"success": True, "filesystem": get_filesystem(session), "filename": filename}
+
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
+
+    return {"success": True, "filesystem": get_filesystem(session, private_session=private_session), "filename": filename}
 
 def join_chunks(path, filename, total_count, complete_filename):
     # Save the file
@@ -396,13 +414,19 @@ def perform_ocr():
         data["csv"]["complete"] = False
         update_data(f"{f}/_data.json", data)
 
-        task_file_ocr.delay(f, config, ocr_algorithm)
-        # task_file_ocr(f, config, ocr_algorithm, testing=True)
+        # task_file_ocr.delay(f, config, ocr_algorithm)
+        task_file_ocr(f, config, ocr_algorithm, testing=True)
+
+    # 
+
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[2]
 
     return {
         "success": True,
         "message": "O OCR começou, por favor aguarde",
-        "files": get_filesystem(session),
+        "files": get_filesystem(session, private_session=private_session),
     }
 
 
@@ -457,10 +481,14 @@ def index_doc():
 
         update_data(path + "/_data.json", {"indexed": True})
 
+        private_session = None
+        if "_private_sessions" in path:
+            private_session = path.split("/")[-1]
+
         return {
             "success": True,
             "message": "Documento indexado",
-            "files": get_filesystem(session),
+            "files": get_filesystem(session, private_session=private_session),
         }
 
 
@@ -493,10 +521,14 @@ def remove_index_doc():
 
         update_data(path + "/_data.json", {"indexed": False})
 
+        private_session = None
+        if "_private_sessions" in path:
+            private_session = path.split("/")[-1]
+
         return {
             "success": True,
             "message": "Documento removido",
-            "files": get_filesystem(session),
+            "files": get_filesystem(session, private_session=private_session),
         }
 
 
@@ -518,19 +550,19 @@ def submit_text():
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(text, f, indent=2, ensure_ascii=False)
 
-        # if data["indexed"]:
-        #     id = generate_uuid(filename)
-        #     es.update_document(id, text)
-
     update_data(
         data_folder + "/_data.json",
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    make_changes.delay(data_folder, data)
-    # make_changes(data_folder, data)
+    # make_changes.delay(data_folder, data)
+    make_changes(data_folder, data)
 
-    return {"success": True, "files": get_filesystem(session)}
+    private_session = None
+    if "_private_sessions" in data_folder:
+        private_session = data_folder.split("/")[-1]
+
+    return {"success": True, "files": get_filesystem(session, private_session=private_session)}
 
 @app.route("/check-sintax", methods=["POST"])
 def check_sintax():
@@ -555,7 +587,31 @@ def create_private_session():
     session_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     private_sessions[session_id] = {}
 
-    os.mkdir(session_id)
+    if not os.path.isdir("files/_private_sessions"):
+        os.mkdir("files/_private_sessions")
+        with open(f"files/_private_sessions/_data.json", "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "type": "folder",
+                    "creation": get_current_time(),
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )    
+
+    os.mkdir("files/_private_sessions/" + session_id)
+
+    with open(f"files/_private_sessions/{session_id}/_data.json", "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "type": "folder",
+                "creation": get_current_time(),
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
 
     return {"success": True, "sessionId": session_id}
 

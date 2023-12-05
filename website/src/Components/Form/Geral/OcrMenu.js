@@ -314,6 +314,9 @@ class OcrMenu extends React.Component {
             }
 
             this.state.filesystem.updateFiles(data.files)
+
+            
+
             this.setState({ open: false });
         });
     }

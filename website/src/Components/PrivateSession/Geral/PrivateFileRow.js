@@ -82,7 +82,14 @@ export default class PrivateFileRow extends React.Component {
         this.state.filesystem.removeIndexFile(this.state.name, false);
     }
 
+    createLayout(e) {
+        e.stopPropagation();
+        this.state.filesystem.createLayout(this.state.name);
+    }
+
     render() {
+        // 
+        
         const Notification = loadComponent('Notification', 'Notifications');
 
         return (
@@ -144,6 +151,7 @@ export default class PrivateFileRow extends React.Component {
                                     <span>{this.state.info["creation"]}</span>
                                     <span>{this.state.info["pages"]} página(s)</span>
                                     <span>{this.state.info['size']}</span>
+                                    <Button sx={{p: 0}} variant="text" onClick={(e) => this.createLayout(e)}>Criar Layout</Button>
                                 </Box>
                             </TableCell>
                             
@@ -179,21 +187,6 @@ export default class PrivateFileRow extends React.Component {
                                     )
                                 )
                             }
-
-                            {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                                <Box>
-
-                                    <IconButton
-                                        disabled={this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]}
-                                        color="primary"
-                                        aria-label="edit"
-                                        onClick={(e) => this.editFile(e)}
-                                    >
-                                        <EditIcon />
-                                    </IconButton>
-
-                                </Box>
-                            </TableCell> */}
                         </>
                     }
                 </TableRow>

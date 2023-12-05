@@ -71,6 +71,7 @@ class FileExplorer extends React.Component {
         .then(data => {
             var info = data["info"];
             var files = {'files': data["files"]};
+            
             this.setState({files: files, info: info, loading: false}, this.displayFileSystem);
         });
 

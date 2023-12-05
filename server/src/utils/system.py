@@ -29,7 +29,7 @@ def get_logs(
 def get_private_sessions():
     # Get the private sessions
     private_sessions = [
-        session for session in os.listdir()
+        session for session in os.listdir("files/_private_sessions")
         if os.path.isdir(session) and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
     ]
     return private_sessions

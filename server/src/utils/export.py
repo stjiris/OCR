@@ -152,6 +152,7 @@ def export_pdf(path, force_recreate = False):
         for image in images:
             image_basename = get_file_basename(image)
             image_basename = image_basename[:-1]
+
             hocr_path = f"{path}/ocr_results/{image_basename}.json"
 
             im = Image.open(f"{path}/{image}")
@@ -216,7 +217,10 @@ def export_pdf(path, force_recreate = False):
         # Delete compressed images
         for compressed_image in os.listdir(path):
             if compressed_image.endswith("$.jpg"):
-                os.remove(os.path.join(path, compressed_image))
+                try:
+                    os.remove(os.path.join(path, compressed_image))
+                except:
+                    pass
 
         return filename
 

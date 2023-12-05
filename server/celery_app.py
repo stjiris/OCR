@@ -1,6 +1,8 @@
 import json
 import os
 
+import traceback
+
 from celery import Celery
 from flask import Flask
 from flask_cors import CORS
@@ -100,6 +102,10 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
     :param ocr_algorithm: algorithm to use
     """
 
+    if filename.split(".")[0][-1] == "$": return
+
+    
+
     try:
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
@@ -155,8 +161,11 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         data["ocr"]["progress"] = len(files)
         update_data(data_folder, data)
 
+        
         if data["pages"] == len(files):
             log.info(f"{path}: Acabei OCR")
+
+            
 
             creation_date = get_current_time()
 
@@ -194,6 +203,9 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
     except Exception as e:
         print(e)
+        
+        traceback.print_exc()
+
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"]["exceptions"] = str(e)

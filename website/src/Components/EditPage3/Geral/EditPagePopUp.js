@@ -127,7 +127,6 @@ class EditPagePopUp extends React.Component {
      * Usually runned at the start of the component or called from the parent component
      */
     componentDidMount() {
-        console.log("EditPagePopUp componentDidMount");
         this.setState({
             imageHeight: window.innerHeight * 0.9 - 30,
             baseImageHeight: window.innerHeight * 0.9 - 30,
@@ -141,7 +140,6 @@ class EditPagePopUp extends React.Component {
     }
 
     toggleOpen() {
-        console.log("EditPagePopUp toggleOpen");
         this.setState({ 
             open: !this.state.open, 
             currentPage: 1, 
@@ -158,12 +156,10 @@ class EditPagePopUp extends React.Component {
     }
 
     setFile(path, file) {
-        console.log("EditPagePopUp setFile");
         this.setState({ path: path, file: file }, this.getContents);
     }
 
     getContents(page = 1) {
-        console.log("EditPagePopUp getContents");
         this.setState({loading: true});
         fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + this.state.file + '&page=' + page, {
             method: 'GET'
@@ -188,7 +184,6 @@ class EditPagePopUp extends React.Component {
     }
 
     orderWords(words) {
-        console.log("EditPagePopUp orderWords");
         var items = Object.keys(words).map(function(key) {
             return [key, words[key]];
         });
@@ -213,7 +208,7 @@ class EditPagePopUp extends React.Component {
      * Used to zoom and change pages (text changes accordingly)
      */
     changePage(diff) {
-        console.log("EditPagePopUp changePage");
+        
         this.setState({
             currentPage: this.state.currentPage + diff, 
             selectedWord: "",
@@ -225,7 +220,7 @@ class EditPagePopUp extends React.Component {
     }
 
     firstPage() {
-        console.log("EditPagePopUp firstPage");
+        
         this.setState({
             currentPage: 1,
             selectedWord: "",
@@ -237,8 +232,7 @@ class EditPagePopUp extends React.Component {
     }
 
     lastPage() {
-        console.log("EditPagePopUp lastPage");
-        this.setState({
+            this.setState({
             currentPage: this.state.totalPages, 
             selectedWord: "",
             selectedWordIndex: 0,
@@ -249,7 +243,7 @@ class EditPagePopUp extends React.Component {
     }
 
     imageToScreenCoordinates(x, y) {
-        console.log("EditPagePopUp imageToScreenCoordinates");
+        
         var image = this.image.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
@@ -265,7 +259,7 @@ class EditPagePopUp extends React.Component {
     }
 
     showImageHighlight(e, box) {
-        console.log("EditPagePopUp showImageHighlight");
+        
         var topCorner = this.imageToScreenCoordinates(box[0], box[1]);
         var bottomCorner = this.imageToScreenCoordinates(box[2], box[3]);
 
@@ -280,7 +274,7 @@ class EditPagePopUp extends React.Component {
     }
 
     zoom(delta) {
-        console.log("EditPagePopUp zoom");
+        
         var newHeight = this.state.imageHeight * (1 + delta * 0.4);
 
         if (newHeight < this.state.baseImageHeight) {
@@ -296,7 +290,7 @@ class EditPagePopUp extends React.Component {
      */
 
     requestSyntax() {
-        console.log("EditPagePopUp requestSyntax");
+        
         this.setState({ loadingSintax: true });
         fetch(process.env.REACT_APP_API_URL + 'check-sintax', {
             method: 'POST',
@@ -318,7 +312,7 @@ class EditPagePopUp extends React.Component {
     }
 
     updateSyntax(words) {
-        console.log("EditPagePopUp updateSyntax");
+        
         var words_list = this.state.words_list;
         Object.entries(words).forEach(([key, value]) => {
             words_list[key]["syntax"] = value;
@@ -335,7 +329,7 @@ class EditPagePopUp extends React.Component {
         /**
          * Generate all possible combinations of words
          */
-        console.log("EditPagePopUp generatePossibleWordCombinations");
+        
         var word = words.splice(0, 1)[0];
         var totalCombinations = [];
 
@@ -377,7 +371,7 @@ class EditPagePopUp extends React.Component {
          * Find the combination that minimizes the difference between the previous text and the new text
          */
 
-        console.log("EditPagePopUp findBestCombination");
+        
 
         // Infinite
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity?retiredLocale=pt-PT
@@ -407,7 +401,7 @@ class EditPagePopUp extends React.Component {
     }
 
     splitWordsByLines(words, coordinates) {
-        console.log("EditPagePopUp splitWordsByLines");
+        
         if (coordinates.length === 1) return [words];
 
         var separation = [];
@@ -424,7 +418,7 @@ class EditPagePopUp extends React.Component {
     }
     
     updateText(sectionIndex, lineIndex, wordIndex) {
-        console.log("EditPagePopUp updateText");
+        
         var wordsList = this.state.words_list;
 
         var contents = this.state.contents;
@@ -508,7 +502,7 @@ class EditPagePopUp extends React.Component {
     }
 
     updateInputSize() {
-        console.log("EditPagePopUp updateInputSize");
+        
         var text = this.state.editingText;
         var parentNode = this.state.parentNode;
         var children = parentNode.children;
@@ -526,7 +520,7 @@ class EditPagePopUp extends React.Component {
     }
 
     getSelectedText() {
-        console.log("EditPagePopUp getSelectedText");
+        
         if (typeof window.getSelection !== "undefined") {
             // Get the range and make the all word selected
             if (window.getSelection().toString().length === 0) return null;
@@ -602,7 +596,7 @@ class EditPagePopUp extends React.Component {
      * Add and remove new lines (\n)
      */
     addLine(sectionIndex, lineIndex, wordIndex) {
-        console.log("EditPagePopUp addLine");
+        
         var contents = this.state.contents;
         var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
         var line = section[lineIndex];
@@ -617,7 +611,7 @@ class EditPagePopUp extends React.Component {
     }
 
     removeLine(sectionIndex, lineIndex) {
-        console.log("EditPagePopUp removeLine");
+        
         var contents = this.state.contents;
         var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
 
@@ -658,7 +652,7 @@ class EditPagePopUp extends React.Component {
      * Handle the words list and actions
      */  
     cleanWord(word) {
-        console.log("EditPagePopUp cleanWord");
+        
         var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
         while (word !== "") {
             if (punctuation.includes(word[0])) {
@@ -680,7 +674,7 @@ class EditPagePopUp extends React.Component {
     }
 
     cleanWordSelection() {
-        console.log("EditPagePopUp cleanWordSelection");
+        
         var words = document.getElementsByClassName(this.selectedWord);
 
         for (var i = 0; i < words.length; i++) {
@@ -690,7 +684,7 @@ class EditPagePopUp extends React.Component {
     }
 
     getScrollValue(word, count = 0) {
-        console.log("EditPagePopUp getScrollValue");
+        
         // var words = [];
         var words = document.getElementsByClassName(word);
     
@@ -719,7 +713,7 @@ class EditPagePopUp extends React.Component {
     }
 
     goToNextOccurrence(word) {
-        console.log("EditPagePopUp goToNextOccurrence");
+        
         
         // var word = this.state.selectedWord;
         var index = Math.max(0, this.state.selectedWordIndex);
@@ -755,7 +749,7 @@ class EditPagePopUp extends React.Component {
      * Send to the server the new text and structure
      */
     saveChanges() {
-        console.log("EditPagePopUp saveChanges");
+        
         fetch(process.env.REACT_APP_API_URL + 'submit-text', {
             method: 'POST',
             headers: {
@@ -784,7 +778,7 @@ class EditPagePopUp extends React.Component {
      * Render the component
      */
     render() {
-        console.log("EditPagePopUp render");
+        
         const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 
         var incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
