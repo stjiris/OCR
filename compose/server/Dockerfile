@@ -14,24 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   zlib1g \
   liblept5
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-	glib-2.0-dev \
-	libexpat1-dev \
-	libpango1.0-dev \
-	librsvg2-dev \
-	libpng-dev \
-	libwebp-dev \
-	libjpeg-turbo8-dev \
-	libtiff5-dev \
-	libexif-dev \
-	liblcms2-dev \
-	libgsf-1-dev \
-	liborc-0.4-dev \
-	libimagequant-dev \
-	libcgif-dev \
-	libheif-dev \
-	libfftw3-dev
-
 FROM base as builder
 
 # populate variable for later
@@ -52,8 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \
   git \
   libcairo2-dev \
-  pkg-config \
-  ninja-build
+  pkg-config
 
 # Get the latest pip (Ubuntu version doesn't support manylinux2010)
 RUN \
@@ -72,11 +53,11 @@ RUN \
   && cd .. \
   && rm -rf jbig2
 
-ARG PYPDFIUM2_VERSION=4.24.0
+ARG PYPDFIUM2_VERSION=4.25.0
 RUN pip3 install --no-cache-dir pypdfium2==$PYPDFIUM2_VERSION
 
 # synced with libpdfium version bundled by pypdfium above
-ARG PDFIUM_VERSION=6110
+ARG PDFIUM_VERSION=6164
 ARG PDFIUM_URL=https://github.com/bblanchon/pdfium-binaries/releases/download/chromium
 
 # build to this prefix 
@@ -92,47 +73,6 @@ RUN \
   && cp -r include/* $PREFIX/include \
   && cd .. \
   && rm -rf pdfium
-
-# make a pdfium.pc file libvips can use
-RUN mkdir -p $PREFIX/lib/pkgconfig \
-  && cd $PREFIX/lib/pkgconfig \
-  && echo "prefix=$PREFIX" >> pdfium.pc \
-  && echo "exec_prefix=\${prefix}" >> pdfium.pc \
-  && echo "libdir=\${exec_prefix}/lib" >> pdfium.pc \
-  && echo "includedir=\${prefix}/include" >> pdfium.pc \
-  && echo "Name: pdfium" >> pdfium.pc \
-  && echo "Description: pdfium" >> pdfium.pc \
-  && echo "Version: $PDFIUM_VERSION" >> pdfium.pc \
-  && echo "Requires: " >> pdfium.pc \
-  && echo "Libs: -L\${libdir} -lpdfium" >> pdfium.pc \
-  && echo "Cflags: -I\${includedir}" >> pdfium.pc
-
-RUN pip3 install --no-cache-dir meson
-
-ARG VIPS_VERSION=8.14.5
-ARG VIPS_URL=https://github.com/libvips/libvips/releases/download
-
-RUN \
-  mkdir vips \
-  && curl -L ${VIPS_URL}/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz | \
-	tar xJ -C vips --strip-components=1 \
-	&& cd vips \
-	&& meson setup build \
-		--prefix=$PREFIX \
-    --libdir=lib \
-		--buildtype=release \
-		-Dradiance=false \
-		-Danalyze=false \
-		-Dintrospection=false \
-	&& cd build \
-	&& meson compile \
-	&& meson install \
-  && cd .. \
-  && rm -rf vips
-
-ARG PYVIPS_VERSION=2.2.1
-RUN pip3 install --no-cache-dir pyvips==$PYVIPS_VERSION
-
 COPY . /app
 
 WORKDIR /app
@@ -168,10 +108,6 @@ WORKDIR /app
 
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
-
-# For vips
-RUN ldconfig
-RUN vips --vips-config
 
 COPY --from=builder /app/ /app/
 RUN sed -i 's/\r$//g' /app/start
