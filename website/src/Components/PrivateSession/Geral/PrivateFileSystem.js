@@ -327,6 +327,40 @@ class PrivateFileExplorer extends React.Component {
         });
     }
 
+    getEntities(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "get_entities?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+
+            var basename = file.split('.').slice(0, -1).join('.');
+            a.download = basename + '_entidades.json';
+            a.click();
+            a.remove();
+        });
+    }
+
+    requestEntities(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "request_entities?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.json()})
+        .then(data => {
+            if (data.success) {
+                var filesystem = data["filesystem"];
+                var info = filesystem["info"];
+                var files = {'files': filesystem["files"]};
+
+                this.setState({files: files, info: info}, this.displayFileSystem);
+            }
+        });
+    }
+
     getOriginalFile(file) {
         var path = this.state.current_folder.join('/') + '/' + file;
 
@@ -544,9 +578,7 @@ class PrivateFileExplorer extends React.Component {
                                 </Button>
                             </TableCell>
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>
-                            {/* <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Data de Criação</b></TableCell> */}
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Progresso</b></TableCell>
-                            {/* <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell> */}
                         </TableRow>
                     </TableHead>
                     <TableBody>

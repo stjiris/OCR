@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import random
 import shutil
@@ -125,6 +124,34 @@ def get_file():
 def get_txt():
     path = request.values["path"]
     return send_file(f"{path}/_text.txt")
+
+@app.route("/get_entities", methods=["GET"])
+def get_entities():
+    path = request.values["path"]
+    return send_file(f"{path}/_entities.json")
+
+@app.route("/request_entities", methods=["GET"])
+def request_entities():
+    path = request.values["path"]
+
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
+
+    data = get_data(path + "/_data.json")
+
+    data["ner"] = {
+        "error": False,
+        "complete": False,
+    }
+
+    update_data(path + "/_data.json", data)
+
+    # request_ner.delay(path)
+    Thread(target=request_ner, args=(path,)).start()
+
+
+    return {"success": True, "filesystem": get_filesystem("files", private_session=private_session)}
 
 @app.route("/get_zip", methods=["GET"])
 def get_zip():
@@ -402,22 +429,19 @@ def perform_ocr():
 
         # Update the information related to the OCR
         data = get_data(f"{f}/_data.json")
-        data["ocr"] = {}
-        data["ocr"]["algorithm"] = algorithm
-        data["ocr"]["config"] = "_".join(config)
-        data["ocr"]["progress"] = 0
-        data["txt"] = {}
-        data["txt"]["complete"] = False
-        data["pdf"] = {}
-        data["pdf"]["complete"] = False
-        data["csv"] = {}
-        data["csv"]["complete"] = False
+        data["ocr"] = {
+            "algorithm": algorithm,
+            "config": "_".join(config),
+            "progress": 0,
+        }
+        data["txt"] = {"complete": False}
+        data["pdf"] = {"complete": False}
+        data["csv"] = {"complete": False}
+        data["ner"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
         # task_file_ocr.delay(f, config, ocr_algorithm)
         task_file_ocr(f, config, ocr_algorithm, testing=True)
-
-    # 
 
     private_session = None
     if "_private_sessions" in path:

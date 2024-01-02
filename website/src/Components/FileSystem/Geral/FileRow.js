@@ -52,6 +52,20 @@ export default class FileRow extends React.Component {
         this.successNot.current.open();
     }
 
+    getEntities(e) {
+        e.stopPropagation();
+        this.state.filesystem.getEntities(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
+    requestEntities(e) {
+        e.stopPropagation();
+        this.state.filesystem.requestEntities(this.state.name);
+        this.successNot.current.setMessage("A obter entidades, por favor aguarde");
+        this.successNot.current.open();
+    }
+
     getCSV(e) {
         e.stopPropagation();
         this.state.filesystem.getCSV(this.state.name);
@@ -170,6 +184,7 @@ export default class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                 <Box>
                                     <TooltipIcon
@@ -240,6 +255,36 @@ export default class FileRow extends React.Component {
                                             <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
                                                 <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
                                             </TableCell>                        
+                                        }
+                                    </>                          
+                            }
+
+                            {   
+                                this.state.info["ner"] === undefined || this.state.info["ocr"]["progress"] !== this.state.info["pages"]
+                                    ? <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                        <p>-</p>
+                                    </TableCell>
+                                    : <>
+                                        {
+                                            this.state.info["ner"]["error"]
+                                            ? <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                                <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                                    <span>Erro ao obter as entidades. Tente mais tarde</span>
+                                                    <Button sx={{p: 0}} variant="text" onClick={(e) => this.requestEntities(e)}>Voltar a tentar</Button>
+                                                </Box>
+                                            </TableCell>
+
+                                            : this.state.info["ner"]["complete"]
+                                                ? <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                                    <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                                        <span>{this.state.info["ner"]["creation"]}</span>
+                                                        <span>{this.state.info["ner"]["size"]}</span>
+                                                        <Button sx={{p: 0}} variant="text" onClick={(e) => this.getEntities(e)}>Descarregar</Button>
+                                                    </Box>
+                                                </TableCell>
+                                                : <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                                    <Box sx={{ paddingTop: 2, paddingBottom: 2, overflow: 'hidden' }}><CircularProgress size='2rem'/></Box>
+                                                </TableCell>                        
                                         }
                                     </>                          
                             }
