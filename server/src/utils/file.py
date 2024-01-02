@@ -2,11 +2,9 @@ import json
 import logging as log
 import os
 import random
-import re
-import time
+import requests
 import uuid
 from datetime import datetime
-from difflib import SequenceMatcher
 from os import environ
 from pathlib import Path
 import pytz
@@ -33,6 +31,19 @@ TIMEZONE = pytz.timezone("Europe/Lisbon")
 #       - filename_changes.txt          (the text changed by the user)
 #       - conf.txt                      (the conf file of the OCR engine used)
 # - folder2
+
+def get_ner_file(path):
+    r = requests.post(
+        "https://iris.sysresearch.org/absconditus/from-text",
+        files={"file": open(f"{path}/_text.txt", "rb")},
+    )
+
+    if r.status_code == 200:
+        with open(f"{path}/_entities.json", "w", encoding="utf-8") as f:
+            json.dump(r.json(), f, indent=2, ensure_ascii=False)
+        return True
+    else:
+        return False
 
 # DONE
 def get_current_time():

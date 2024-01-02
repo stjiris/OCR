@@ -332,6 +332,40 @@ class FileExplorer extends React.Component {
         });
     }
 
+    getEntities(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "get_entities?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+
+            var basename = file.split('.').slice(0, -1).join('.');
+            a.download = basename + '_entidades.json';
+            a.click();
+            a.remove();
+        });
+    }
+
+    requestEntities(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "request_entities?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.json()})
+        .then(data => {
+            if (data.success) {
+                var filesystem = data["filesystem"];
+                var info = filesystem["info"];
+                var files = {'files': filesystem["files"]};
+
+                this.setState({files: files, info: info}, this.displayFileSystem);
+            }
+        });
+    }
+
     getZip() {
         /**
          * Export the .zip file
@@ -368,6 +402,8 @@ class FileExplorer extends React.Component {
             }
         });
     }
+
+
 
     getOriginalFile(file) {
         var path = this.state.current_folder.join('/') + '/' + file;
@@ -601,6 +637,7 @@ class FileExplorer extends React.Component {
                             {<TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>}
                             {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>OCR</b></TableCell>}
                             {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Texto</b></TableCell>}
+                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Entidades</b></TableCell>}
                             {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Índice de palavras</b></TableCell>}
                             {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF (com texto)</b></TableCell>}
                             <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell>
@@ -790,21 +827,27 @@ class FileExplorer extends React.Component {
                                 Adicionar documento
                             </Button>
 
-                            <Button
-                                disabled={this.state.downloadLoading}
-                                variant="contained"
-                                startIcon={<FileDownloadIcon />}
-                                onClick={() => this.getZip()}
-                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
-                            >
-                                Descarregar Ficheiros
-                            </Button>
+
+                            {
+                                process.env.REACT_APP_HEADER_STYLE !== "STJ"
+                                ? <Button
+                                    disabled={this.state.downloadLoading}
+                                    variant="contained"
+                                    startIcon={<FileDownloadIcon />}
+                                    onClick={() => this.getZip()}
+                                    sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
+                                >
+                                    Descarregar Ficheiros
+                                </Button>
+                                : null
+                            }
+                            
 
                             <Button
                                 variant="contained"
                                 startIcon={<LockIcon />}
                                 onClick={() => this.createPrivateSession()}
-                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: '1rem'}}
+                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: process.env.REACT_APP_HEADER_STYLE === "STJ" ? 'auto' : '1rem'}}
                             >
                                 Sessão privada
                             </Button>

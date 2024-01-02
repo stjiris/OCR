@@ -22,6 +22,7 @@ from src.utils.file import prepare_file_ocr
 from src.utils.file import get_file_basename
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
+from src.utils.file import get_ner_file
 
 app = Flask(__name__)
 CORS(app)
@@ -50,9 +51,31 @@ def make_changes(data_folder, data):
     data["csv"]["creation"] = current_date
     data["csv"]["size"] = get_size(data_folder + "/_index.csv", path_complete=True)
 
-    update_data(data_folder + "/_data.json", data)
+    request_ner(data_folder)
 
     return {"status": "success"}
+
+@celery.task(name="request_ner")
+def request_ner(data_folder):
+    data = get_data(data_folder + "/_data.json")
+
+    current_date = get_current_time()
+
+    os.remove(data_folder + "/_entities.json")
+    success = get_ner_file(data_folder)
+    if success:
+        data["ner"] = {
+            "complete": True,
+            "size": get_size(f"{data_folder}/_entities.json", path_complete=True),
+            "creation": current_date,
+        }
+    else:
+        data["ner"] = {
+            "complete": False,
+            "error": True
+        }
+
+    update_data(data_folder + "/_data.json", data)
 
 @celery.task(name="file_ocr")
 def task_file_ocr(path, config, ocr_algorithm, testing=False):
@@ -165,38 +188,58 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         if data["pages"] == len(files):
             log.info(f"{path}: Acabei OCR")
 
-            
-
             creation_date = get_current_time()
 
-            data["ocr"]["progress"] = len(files)
-            data["ocr"]["size"] = get_ocr_size(f"{path}/ocr_results")
-            data["ocr"]["creation"] = creation_date
+            data["ocr"] = {
+                "progress": len(files),
+                "size": get_ocr_size(f"{path}/ocr_results"),
+                "creation": creation_date,
+            }
 
             update_data(data_folder, data)
 
-            log.info("Txt")
-
             export_file(path, "txt")
             creation_date = get_current_time()
-            data["txt"]["complete"] = True
-            data["txt"]["size"] = get_size(f"{path}/_text.txt", path_complete=True)
-            data["txt"]["creation"] = creation_date
 
-            log.info("Txt finished")
+            data["indexed"] = False
+            data["txt"] = {
+                "complete": True,
+                "size": get_size(f"{path}/_text.txt", path_complete=True),
+                "creation": creation_date,
+            }
+
+            update_data(data_folder, data)
 
             export_file(path, "pdf")
             creation_date = get_current_time()
+            data["pdf"] = {
+                "complete": True,
+                "size": get_size(f"{path}/_search.pdf", path_complete=True),
+                "creation": creation_date,
+                "pages": get_page_count(f"{path}/_search.pdf"),
+            }
+            data["csv"] = {
+                "complete": True,
+                "size": get_size(f"{path}/_index.csv", path_complete=True),
+                "creation": creation_date,
+            }
 
-            data["pdf"]["complete"] = True
-            data["pdf"]["size"] = get_size(f"{path}/_search.pdf", path_complete=True)
-            data["pdf"]["creation"] = creation_date
-            data["pdf"]["pages"] = get_page_count(f"{path}/_search.pdf")
-            data["csv"]["complete"] = True
-            data["csv"]["creation"] = creation_date
-            data["csv"]["size"] = get_size(f"{path}/_index.csv", path_complete=True)
+            update_data(data_folder, data)
 
-            data["indexed"] = False
+            success = get_ner_file(path)
+            if success:
+                data["ner"] = {
+                    "complete": True,
+                    "size": get_size(f"{path}/_entities.json", path_complete=True),
+                    "creation": creation_date,
+                }
+            else:
+                data["ner"] = {
+                    "complete": False,
+                    "error": True
+                }
+
+
             update_data(data_folder, data)
 
         return {"status": "success"}

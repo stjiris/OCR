@@ -43,6 +43,20 @@ export default class PrivateFileRow extends React.Component {
         this.successNot.current.open();
     }
 
+    getEntities(e) {
+        e.stopPropagation();
+        this.state.filesystem.getEntities(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
+    requestEntities(e) {
+        e.stopPropagation();
+        this.state.filesystem.requestEntities(this.state.name);
+        this.successNot.current.setMessage("A obter entidades, por favor aguarde");
+        this.successNot.current.open();
+    }
+
     getCSV(e) {
         e.stopPropagation();
         this.state.filesystem.getCSV(this.state.name);
@@ -232,7 +246,7 @@ export default class PrivateFileRow extends React.Component {
                                     textAlign: "left",
                                 }}
                             >
-                                {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_ocr.csv"}
+                                {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_palavras.csv"}
                             </Button>
                         </TableCell>
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
@@ -274,6 +288,84 @@ export default class PrivateFileRow extends React.Component {
                         {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
                     </TableRow>
                     : null
+                }
+
+                {
+                    this.state.info["ner"] !== undefined && this.state.info["ner"]["error"]
+                    ? <TableRow>
+                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <Button disabled
+                                onClick={(e) => this.getPdf(e)}
+                                style={{
+                                    p: 0,
+                                    textTransform: 'none',
+                                    display: "flex",
+                                    textAlign: "left",
+                                    color: '#fff'
+                                }}
+                            >
+                                {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_ocr.pdf"}
+                            </Button>
+                        </TableCell>
+                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                <span>Erro ao obter entidades</span>
+                                <Button sx={{p: 0}} variant="text" onClick={(e) => this.requestEntities(e)}>Voltar a tentar</Button>
+                            </Box>
+                        </TableCell>
+                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <p>
+                                -
+                            </p>
+                        </TableCell>
+                    </TableRow>                            
+                    : this.state.info["ner"] !== undefined && this.state.info["ner"]["complete"]
+                        ? <TableRow>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                <Button
+                                    onClick={(e) => this.getEntities(e)}
+                                    style={{
+                                        p: 0,
+                                        textTransform: 'none',
+                                        display: "flex",
+                                        textAlign: "left",
+                                    }}
+                                >
+                                    {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_entidades.json"}
+                                </Button>
+                            </TableCell>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                    <span>{this.state.info["ner"]["creation"]}</span>
+                                    <span>{this.state.info["ner"]["size"]}</span>
+                                </Box>
+                            </TableCell>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                        </TableRow>
+                        : this.state.info["ner"] !== undefined && this.state.info["ner"]["creation"] !== undefined
+                            ? <TableRow>
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                    <Button disabled
+                                        onClick={(e) => this.requestEntities(e)}
+                                        style={{
+                                            p: 0,
+                                            textTransform: 'none',
+                                            display: "flex",
+                                            textAlign: "left",
+                                            color: '#000'
+                                        }}
+                                    >
+                                        {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_entidades.json"}
+                                    </Button>
+                                </TableCell>
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                    <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: "center"}}>
+                                        <CircularProgress size='1.5rem' />
+                                    </Box>
+                                </TableCell>
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                            </TableRow>
+                            : null
                 }
             </>
         )
