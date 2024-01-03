@@ -86,7 +86,7 @@ function App() {
         }
 
         getPrivateSession() {
-            if (["", "ocr", "ocr-dev", process.env.REACT_APP_ADMIN].includes(this.state.sessionId)) return null;
+            if (["", "ocr", "ocr-dev", "ocr-prod", process.env.REACT_APP_ADMIN].includes(this.state.sessionId)) return null;
             return this.state.sessionId;
         }
 
