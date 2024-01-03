@@ -68,7 +68,7 @@ class BoxLine extends React.Component {
     }
 
     endReorderBox(e) {
-        var yCoord = Math.max(e.clientY - this.state.menu.menu.current.offsetTop - 20, 0);
+        var yCoord = Math.max(e.clientY - this.state.menu.menu.current.offsetTop - window.scrollY - 20, 0);
         this.setState({dragging: false}, () => this.state.menu.boxDropped(this.state.type, this.state.box - 1, yCoord));
     }
 
@@ -249,6 +249,7 @@ export default class LayoutMenu extends React.Component {
         this.confirmLeave = React.createRef();
 
         this.warningNot = React.createRef();
+        this.successNot = React.createRef();
         this.textBox = React.createRef();
         this.imageBox = React.createRef();
         this.ignoreBox = React.createRef();
@@ -551,6 +552,10 @@ export default class LayoutMenu extends React.Component {
 
     GenerateLayoutAutomatically() {
         const path = this.state.filesystem.state.current_folder.join("/");
+
+        this.successNot.current.setMessage("A gerar layouts automaticamente... Por favor aguarde.");
+        this.successNot.current.open();
+
         fetch(process.env.REACT_APP_API_URL + 'generate-automatic-layouts?path=' + path + "/" + this.state.filename, {
             method: 'GET'
         }).then(response => {return response.json()})
@@ -585,6 +590,7 @@ export default class LayoutMenu extends React.Component {
         return (
             <>
                 <Notification message={""} severity={"warning"} ref={this.warningNot}/>
+                <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <ConfirmLeave page={this} ref={this.confirmLeave}/>
                 <Box sx={{
                     ml: '1.5rem',
@@ -618,7 +624,7 @@ export default class LayoutMenu extends React.Component {
                                     onClick={() => this.GenerateLayoutAutomatically()}
                                     sx={{border: '1px solid black', mr: '1rem'}}
                                 >
-                                    Gerar caixas automaticamente
+                                    Segmentar automaticamente
                         </Button>
                         <Button
                             disabled={this.state.buttonsDisabled}

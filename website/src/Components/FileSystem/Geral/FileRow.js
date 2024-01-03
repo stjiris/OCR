@@ -348,7 +348,7 @@ export default class FileRow extends React.Component {
                                             ? <TooltipIcon
                                                 key={"remove " + buttonsDisabled}
                                                 color="#f00"
-                                                message="Remover da Base de Dados"
+                                                message="Desindexar"
                                                 disabled={buttonsDisabled}
                                                 clickFunction={(e) => this.removeIndex(e)}
                                                 icon={<IconDatabaseOff/>}
@@ -357,7 +357,7 @@ export default class FileRow extends React.Component {
                                             : <TooltipIcon
                                                 key={"add " + buttonsDisabled}
                                                 color="#1976d2"
-                                                message="Adicionar à Base de Dados"
+                                                message="Indexar"
                                                 disabled={buttonsDisabled}
                                                 clickFunction={(e) => this.indexFile(e)}
                                                 icon={<IconDatabaseImport/>}

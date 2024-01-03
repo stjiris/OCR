@@ -126,7 +126,7 @@ class LayoutBox extends React.Component {
         var shiftY = this.state.view.current.offsetTop;
 
         var mouseX = e.clientX - shiftX + this.state.view.current.scrollLeft;
-        var mouseY = e.clientY - shiftY + this.state.view.current.scrollTop;
+        var mouseY = e.clientY - shiftY + this.state.view.current.scrollTop + window.scrollY;
 
         if (
             mouseX <= 0 || mouseY <= 0
@@ -401,8 +401,8 @@ export default class LayoutImage extends React.Component {
     dragStart(e) {
         e.stopPropagation();
 
-        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft;
-        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop;
+        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX;
+        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY;
 
         this.preview.current.toggleVisibility();
         this.preview.current.setInitialCoordinates(y, x);
@@ -418,8 +418,8 @@ export default class LayoutImage extends React.Component {
     duringDrag(e) {
         if (!this.state.dragging) return;
 
-        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft;
-        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop;
+        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX;
+        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY;
 
         this.preview.current.updateCoordinates(y, x);
     }
@@ -432,7 +432,7 @@ export default class LayoutImage extends React.Component {
         if (!this.state.dragging) return;
 
         var initialCoords = this.screenToImageCoordinates(this.state.initialCoords.x, this.state.initialCoords.y);
-        var finalCoords = this.screenToImageCoordinates(e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft, e.clientY - this.view.current.offsetTop + this.view.current.scrollTop);
+        var finalCoords = this.screenToImageCoordinates(e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX, e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY);
 
         var boxes = [...this.state.boxes];
         var refs = [...this.state.boxRefs];
