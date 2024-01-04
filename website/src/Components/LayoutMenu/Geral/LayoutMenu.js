@@ -519,13 +519,13 @@ export default class LayoutMenu extends React.Component {
             this.confirmLeave.current.toggleOpen();
         } else {
             window.removeEventListener('beforeunload', this.preventExit);
-            this.state.filesystem.setState({layoutMenu: false});
+            this.state.filesystem.closeLayoutMenu();
         }
     }
 
     leave() {
         window.removeEventListener('beforeunload', this.preventExit);
-        this.state.filesystem.setState({layoutMenu: false})
+        this.state.filesystem.closeLayoutMenu();
         this.confirmLeave.current.toggleOpen();
     }
 
@@ -543,7 +543,7 @@ export default class LayoutMenu extends React.Component {
         .then(data => {
             if (data["success"]) {
                 this.setState({uncommittedChanges: false});
-                this.state.filesystem.setState({layoutMenu: false})
+                this.state.filesystem.closeLayoutMenu();
             } else {
                 alert("Erro inesperado ao guardar o layout.")
             }
