@@ -477,7 +477,10 @@ class FileExplorer extends React.Component {
          */
         var current_folder = this.state.current_folder;
         current_folder.push(folder);
-        this.state.app.setState({path: current_folder.join('/')});
+        this.state.app.setState({
+            path: current_folder.join('/'),
+            currentFolder: current_folder
+        });
         this.setState({
             current_folder: current_folder,
             buttonsDisabled: false,
@@ -621,7 +624,13 @@ class FileExplorer extends React.Component {
     }
 
     createLayout(filename) {
+        this.state.app.setState({layoutMenu: true});
         this.setState({layoutMenu: true, layoutFilename: filename});
+    }
+
+    closeLayoutMenu() {
+        this.state.app.setState({layoutMenu: false});
+        this.setState({layoutMenu: false, layoutFilename: null});
     }
 
     generateTable() {
@@ -806,7 +815,7 @@ class FileExplorer extends React.Component {
                         <OcrMenu filesystem={this} ref={this.ocrMenu}/>
                         <DeleteMenu filesystem={this} ref={this.deleteMenu} />
 
-                        <Box sx={{
+                        {/* <Box sx={{
                             display: 'flex',
                             flexDirection: 'row',
                             flexWrap: 'wrap'
@@ -859,7 +868,7 @@ class FileExplorer extends React.Component {
 
                         {
                             this.generatePath()
-                        }
+                        } */}
 
                         {
                             this.generateTable()
