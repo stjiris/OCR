@@ -566,10 +566,10 @@ class PrivateFileExplorer extends React.Component {
     generateTable() {
         return (
             <TableContainer component={Paper}>
-                <Table aria-label="filesystem table" sx={{border:"1px solid #d9d9d9"}}>
+                <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{borderLeft:"1px solid #d9d9d9"}}>
+                            <TableCell sx={{borderLeft:"1px solid #aaa"}}>
                                 <Button
                                     startIcon={<SwapVertIcon />}
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
@@ -577,8 +577,8 @@ class PrivateFileExplorer extends React.Component {
                                     <b>Ficheiro</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Progresso</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Detalhes</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Progresso</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

@@ -10,11 +10,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import LockIcon from '@mui/icons-material/Lock';
-import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 import { v4 as uuidv4 } from 'uuid';
 
@@ -636,10 +632,10 @@ class FileExplorer extends React.Component {
     generateTable() {
         return (
             <TableContainer component={Paper}>
-                <Table aria-label="filesystem table" sx={{border:"1px solid #d9d9d9"}}>
+                <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{borderLeft:"1px solid #d9d9d9"}}>
+                            <TableCell sx={{borderLeft:"1px solid #aaa"}}>
                                 <Button
                                     startIcon={<SwapVertIcon />}
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
@@ -647,13 +643,10 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            {<TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>OCR</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Texto</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Entidades</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Índice de palavras</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF (com texto)</b></TableCell>}
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Páginas</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

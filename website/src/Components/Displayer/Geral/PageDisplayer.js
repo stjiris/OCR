@@ -39,7 +39,7 @@ class PageDisplayer extends React.Component {
                     />
                 </Box>
                 <Box
-                    sx={{maxWidth: `${this.state.width}`, border: '1px solid #d9d9d9', boxShadow: 1}}
+                    sx={{maxWidth: `${this.state.width}`, border: '1px solid #aaa', boxShadow: 1}}
                 >
 
                     <a

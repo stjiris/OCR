@@ -133,13 +133,13 @@ export default class PrivateFileRow extends React.Component {
                         ? <>
                             {
                                 this.state.info["upload_stuck"] === true
-                                ? <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                ? <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
                                     <Box>
                                         <span>Erro ao carregar ficheiro</span>
                                     </Box>
                                 </TableCell>
                                 : this.state.info["progress"] !== 100.00
-                                ? <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                ? <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
                                     <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                         <span>Carregamento</span>
                                         <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
@@ -149,7 +149,7 @@ export default class PrivateFileRow extends React.Component {
                                     </Box>
                                 </TableCell>
                                 :
-                                <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #d9d9d9"}}>
+                                <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
                                     <Box>
                                         <span>A preparar o documento</span>
                                         <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
@@ -157,10 +157,10 @@ export default class PrivateFileRow extends React.Component {
                                 </TableCell>
                             }
                             
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}></TableCell>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}></TableCell>
                         </>
                         : <>
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                                 <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                     <span>{this.state.info["creation"]}</span>
                                     <span>{this.state.info["pages"]} página(s)</span>
@@ -171,7 +171,7 @@ export default class PrivateFileRow extends React.Component {
                             
                             { 
                                 this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] === this.state.info["pages"] ? 
-                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa", height: '100%'}}>
                                 {
                                     this.state.info["ocr"] === undefined
                                     ? <Button variant="text" onClick={(e) => this.performOCR(e)}>Realizar OCR</Button>
@@ -185,14 +185,14 @@ export default class PrivateFileRow extends React.Component {
                                 : 
                                 (
                                     this.state.info["ocr"]["exceptions"] ? (
-                                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
+                                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa", height: '100%'}}>
                                             <Box sx={{overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent:'space-evenly' }}>
                                                 <span>Erro ao fazer OCR</span>
                                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.performOCR(e)}>Refazer OCR</Button>
                                             </Box>                             
                                         </TableCell>
                                     ) : (
-                                    <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9", height: '100%'}}>
+                                    <TableCell align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa", height: '100%'}}>
                                         <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'space-evenly' }}>
                                             <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
                                             <CircularProgress size='1rem' />
@@ -208,7 +208,7 @@ export default class PrivateFileRow extends React.Component {
                 {
                     this.state.info["txt"] !== undefined && this.state.info["txt"]["complete"]
                     ? <TableRow>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <Button
                                 onClick={(e) => this.getTxt(e)}
                                 style={{
@@ -221,14 +221,14 @@ export default class PrivateFileRow extends React.Component {
                                 {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_ocr.txt"}
                             </Button>
                         </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["txt"]["creation"]}</span>
                                 <span>{this.state.info["txt"]["size"]}</span>
                             </Box>
                         </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
-                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell> */}
                     </TableRow>
                     : null
                 }
@@ -236,7 +236,7 @@ export default class PrivateFileRow extends React.Component {
                 {   
                     this.state.info["csv"] !== undefined && this.state.info["csv"]["complete"]
                     ? <TableRow>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <Button
                                 onClick={(e) => this.getCSV(e)}
                                 style={{
@@ -249,14 +249,14 @@ export default class PrivateFileRow extends React.Component {
                                 {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_palavras.csv"}
                             </Button>
                         </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["csv"]["creation"]}</span>
                                 <span>{this.state.info["csv"]["size"]}</span>
                             </Box>
                         </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
-                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell> */}
                     </TableRow>
                     : null                        
                 }
@@ -264,7 +264,7 @@ export default class PrivateFileRow extends React.Component {
                 {
                     this.state.info["pdf"] !== undefined && this.state.info["pdf"]["complete"]
                     ? <TableRow>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <Button
                                 onClick={(e) => this.getPdf(e)}
                                 style={{
@@ -277,15 +277,15 @@ export default class PrivateFileRow extends React.Component {
                                 {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_ocr.pdf"}
                             </Button>
                         </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>{this.state.info["pdf"]["creation"]}</span>
                                 <span>{this.state.info["pages"]} página(s) + {this.state.info["pdf"]["pages"] - this.state.info["pages"]} página(s) de índice</span>
                                 <span>{this.state.info["pdf"]["size"]}</span>
                             </Box>
                         </TableCell>
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
-                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell> */}
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
+                        {/* <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell> */}
                     </TableRow>
                     : null
                 }
@@ -293,7 +293,7 @@ export default class PrivateFileRow extends React.Component {
                 {
                     this.state.info["ner"] !== undefined && this.state.info["ner"]["error"]
                     ? <TableRow>
-                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <Button disabled
                                 onClick={(e) => this.getPdf(e)}
                                 style={{
@@ -307,13 +307,13 @@ export default class PrivateFileRow extends React.Component {
                                 {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_ocr.pdf"}
                             </Button>
                         </TableCell>
-                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                 <span>Erro ao obter entidades</span>
                                 <Button sx={{p: 0}} variant="text" onClick={(e) => this.requestEntities(e)}>Voltar a tentar</Button>
                             </Box>
                         </TableCell>
-                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                        <TableCell align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                             <p>
                                 -
                             </p>
@@ -321,7 +321,7 @@ export default class PrivateFileRow extends React.Component {
                     </TableRow>                            
                     : this.state.info["ner"] !== undefined && this.state.info["ner"]["complete"]
                         ? <TableRow>
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                                 <Button
                                     onClick={(e) => this.getEntities(e)}
                                     style={{
@@ -334,17 +334,17 @@ export default class PrivateFileRow extends React.Component {
                                     {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_entidades.json"}
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                                 <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                     <span>{this.state.info["ner"]["creation"]}</span>
                                     <span>{this.state.info["ner"]["size"]}</span>
                                 </Box>
                             </TableCell>
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
                         </TableRow>
                         : this.state.info["ner"] !== undefined && this.state.info["ner"]["creation"] !== undefined
                             ? <TableRow>
-                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                                     <Button disabled
                                         onClick={(e) => this.requestEntities(e)}
                                         style={{
@@ -358,12 +358,12 @@ export default class PrivateFileRow extends React.Component {
                                         {this.state.name.split(".").splice(0, this.state.name.split(".").length-1) + "_entidades.json"}
                                     </Button>
                                 </TableCell>
-                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                                     <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: "center"}}>
                                         <CircularProgress size='1.5rem' />
                                     </Box>
                                 </TableCell>
-                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>
+                                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
                             </TableRow>
                             : null
                 }
