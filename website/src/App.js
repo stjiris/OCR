@@ -23,7 +23,7 @@ import HelpIcon from '@mui/icons-material/Help';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.20.0";
+const VERSION = "0.21.0";
 const UPDATE_TIME = 30;
 
 function App() {
@@ -237,7 +237,7 @@ function App() {
 
         render() {
             const Notification = loadComponent('Notification', 'Notifications');
-            const Header = loadComponent('Header', 'Header');
+            // const Header = loadComponent('Header', 'Header');
             const VersionsMenu = loadComponent('Form', 'VersionsMenu');
             const LogsMenu = loadComponent('Form', 'LogsMenu');
             const FileExplorer = loadComponent('FileSystem', 'FileSystem');

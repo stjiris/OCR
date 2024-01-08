@@ -25,7 +25,7 @@ export default class FileRow extends React.Component {
             name: props.name,
             info: props.info,
             filesystem: props.filesystem,
-            expanded: true,
+            expanded: false,
         }
 
         this.successNot = React.createRef();
