@@ -45,28 +45,27 @@ export default class FolderRow extends React.Component {
                 sx={{":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}
                 onClick={() => this.folderClicked()}
             >
-                <TableCell sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                <TableCell sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
                         alignItems: 'center',
                     }}>
-                        <FolderOpenRoundedIcon color="success" sx={{ fontSize: 30, mr: '0.5rem' }} />
-                        <p>{this.state.name}</p>
+                        <FolderOpenRoundedIcon color="success" sx={{ p: 0, fontSize: 30, mr: '0.5rem' }} />
+                        <span>{this.state.name}</span>
                     </Box>
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
-                    {this.state.info["creation"]}
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
+                    <span>
+                        {this.state.info["creation"]}
+                    </span>
                 </TableCell>
 
-                {this.state.current_folder.length > 1 && <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>}
-                {this.state.current_folder.length > 1 && <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>}
-                {this.state.current_folder.length > 1 && <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>}
-                {this.state.current_folder.length > 1 && <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>}
-                {this.state.current_folder.length > 1 && <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>-</TableCell>}
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #d9d9d9"}}>
+                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                     <TooltipIcon
                         color="#f00"
                         message="Apagar"

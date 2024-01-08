@@ -147,8 +147,8 @@ def request_entities():
 
     update_data(path + "/_data.json", data)
 
-    # request_ner.delay(path)
-    Thread(target=request_ner, args=(path,)).start()
+    request_ner.delay(path)
+    # Thread(target=request_ner, args=(path,)).start()
 
 
     return {"success": True, "filesystem": get_filesystem("files", private_session=private_session)}
@@ -440,8 +440,8 @@ def perform_ocr():
         data["ner"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
-        # task_file_ocr.delay(f, config, ocr_algorithm)
-        task_file_ocr(f, config, ocr_algorithm, testing=True)
+        task_file_ocr.delay(f, config, ocr_algorithm)
+        # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
 
     private_session = None
     if "_private_sessions" in path:
@@ -579,8 +579,8 @@ def submit_text():
         {"txt": {"complete": False}, "pdf": {"complete": False}},
     )
 
-    # make_changes.delay(data_folder, data)
-    make_changes(data_folder, data)
+    make_changes.delay(data_folder, data)
+    # Thread(target=make_changes, args=(data_folder, data)).start()
 
     private_session = None
     if "_private_sessions" in data_folder:
