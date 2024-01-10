@@ -436,6 +436,26 @@ class FileExplorer extends React.Component {
          this.getDocument("csv", file);
     }
 
+    getImages(file) {
+        /**
+         * Export the .zip file
+         */
+        var path = this.state.current_folder.join('/') + '/' + file;
+
+        fetch(process.env.REACT_APP_API_URL + "get_images?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+                a.href = URL.createObjectURL(data);
+    
+                a.download = path.split('/').slice(-1)[0] + '.zip';
+                a.click();
+                a.remove();
+        });
+    }
+
     getPdf(file) {
         /**
          * Export the .pdf file

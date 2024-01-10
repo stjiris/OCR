@@ -77,6 +77,13 @@ export default class FileRow extends React.Component {
         this.successNot.current.open();
     }
 
+    getImages(e) {
+        e.stopPropagation();
+        this.state.filesystem.getImages(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
     getPdf(e) {
         e.stopPropagation();
         this.state.filesystem.getPdf(this.state.name);
@@ -476,7 +483,7 @@ export default class FileRow extends React.Component {
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <ZipIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} />
-                                    <Button onClick={(e) => {}} style={{p: 0, textTransform: 'none'}}>Imagens Extraídas</Button>
+                                    <Button onClick={(e) => this.getImages(e)} style={{p: 0, textTransform: 'none'}}>Imagens Extraídas</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>

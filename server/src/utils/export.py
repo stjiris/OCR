@@ -11,9 +11,9 @@ import csv
 import hashlib
 import io
 import json
-import pytz
 import os
 import re
+import shutil
 import zipfile
 import zlib
 
@@ -72,6 +72,22 @@ def export_file(path, filetype, delimiter=None, force_recreate = False, simple =
 ####################################################
 # EXPORT TXT FUNCTIONS
 ####################################################
+def export_imgs(path, force_recreate = False):
+    """
+    Export the images as a .zip file
+
+    :param path: the path to the file
+    :param force_recreate: force the recreation of the file
+
+    :return: the path to the exported file
+    """
+    filename = f"{path}/_images.zip"
+    if os.path.exists(filename) and not force_recreate:
+        return filename
+
+    shutil.make_archive(f"{path}/_images", "zip", path, base_dir="images")
+    return filename
+
 def export_txt(path, delimiter=None, force_recreate = False):
     """
     Export the file as a .txt file

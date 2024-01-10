@@ -181,6 +181,12 @@ def get_csv():
     path = request.values["path"]
     return send_file(f"{path}/_index.csv")
 
+@app.route("/get_images", methods=["GET"])
+def get_images():
+    path = request.values["path"]
+    file = export_file(path, "imgs")
+    return send_file(file)
+
 @app.route("/get_original", methods=["GET"])
 def get_original():
     path = request.values["path"]
@@ -444,11 +450,13 @@ def perform_ocr():
         data["pdf"] = {"complete": False}
         data["csv"] = {"complete": False}
         data["ner"] = {"complete": False}
+        data["zip"] = {"complete": False}
         data["pdf_simples"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
         # task_file_ocr.delay(f, config, ocr_algorithm)
-        Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
+        # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
+        task_file_ocr(f, config, ocr_algorithm, True)
 
     private_session = None
     if "_private_sessions" in path:

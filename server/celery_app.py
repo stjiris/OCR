@@ -146,6 +146,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         layout_path = f"{path}/layouts/{get_file_basename(filename)}.json"
         segment_ocr_flag = False
 
+        parsed_json = []
         if os.path.exists(layout_path):
             with open(layout_path, "r", encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
@@ -249,6 +250,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         
         if data["pages"] == len(files):
             log.info(f"{path}: Acabei OCR")
+            print("########################################################")
 
             creation_date = get_current_time()
 
@@ -264,11 +266,20 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             creation_date = get_current_time()
 
             data["indexed"] = False
+
             data["txt"] = {
                 "complete": True,
                 "size": get_size(f"{path}/_text.txt", path_complete=True),
                 "creation": creation_date,
             }
+
+            if os.path.exists(f"{path}/images") and os.listdir(f"{path}/images"):
+                export_file(path, "imgs")
+                data["zip"] = {
+                    "complete": True,
+                    "size": get_size(f"{path}/_images.zip", path_complete=True),
+                    "creation": creation_date,
+                }
 
             update_data(data_folder, data)
 
