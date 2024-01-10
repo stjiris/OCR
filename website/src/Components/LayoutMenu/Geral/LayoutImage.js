@@ -347,10 +347,11 @@ export default class LayoutImage extends React.Component {
         var refs = [...this.state.boxRefs];
         // var imageRefs = [...this.state.imageRefs];
         // var ignoreRefs = [...this.state.ignoreRefs];
-        refs.forEach((ref, index) => {
-            var coords = ref.current.getBoxDetails();
-            boxes.push(this.createLayoutBox(ref, index + 1, coords, "text"));
-        })
+        refs.forEach((groupRefs) => {
+            groupRefs.forEach((ref) => {
+                boxes.push(this.createLayoutBox(ref, boxes.length + 1, ref.current.getBoxDetails(), "text"));
+            });
+        });
 
         this.setState({boxes: boxes});
     }

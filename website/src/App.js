@@ -23,7 +23,7 @@ import HelpIcon from '@mui/icons-material/Help';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.21.0";
+const VERSION = "0.22.1";
 const UPDATE_TIME = 30;
 
 function App() {
