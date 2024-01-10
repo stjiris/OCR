@@ -51,7 +51,7 @@ def get_file_basename(filename):
 ####################################################
 # GENERAL FUNCTION
 ####################################################
-def export_file(path, filetype, delimiter=None, force_recreate = False):
+def export_file(path, filetype, delimiter=None, force_recreate = False, simple = False):
     """
     Direct to the correct function based on the filetype
 
@@ -61,6 +61,9 @@ def export_file(path, filetype, delimiter=None, force_recreate = False):
     """
 
     func = globals()[f"export_{filetype}"]
+    if simple:
+        return export_pdf(path, force_recreate, simple)
+
     if delimiter is None:
         return func(path, force_recreate)
 
@@ -114,16 +117,19 @@ def export_csv(filename_csv, index_data):
 ####################################################
 # EXPORT PDF FUNCTIONS
 ####################################################
-def export_pdf(path, force_recreate = False):
+def export_pdf(path, force_recreate = False, simple=False):
     """
     Export the file as a .pdf file
     """
     filename = f"{path}/_search.pdf"
+    simple_filename = f"{path}/_simple.pdf"
     filename_csv = f"{path}/_index.csv"
+
+    target = filename if not simple else simple_filename
+
+    if os.path.exists(target) and os.path.exists(filename_csv) and not force_recreate:
+        return target
     
-    if os.path.exists(filename) and os.path.exists(filename_csv) and not force_recreate:
-        return filename    
-      
     else:
         pdf_basename = get_file_basename(path)
 
@@ -140,9 +146,9 @@ def export_pdf(path, force_recreate = False):
 
         load_invisible_font()
 
-        pdf = Canvas(filename, pageCompression=1, pagesize=letter)
+        pdf = Canvas(target, pageCompression=1, pagesize=letter)
         pdf.setCreator("hocr-tools")
-        pdf.setTitle(filename)
+        pdf.setTitle(target)
 
         dpi_original = 200
         dpi_compressed = 150  # Adjust the DPI value for positioning and scaling
@@ -171,46 +177,47 @@ def export_pdf(path, force_recreate = False):
         words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
         export_csv(filename_csv, words)
 
-        rows = 100
-        cols = 3
-        size = 15
-        margin = 20
+        if not simple:
+            rows = 100
+            cols = 3
+            size = 15
+            margin = 20
 
-        word_count = len(words)
+            word_count = len(words)
 
-        for id in range(0, word_count, rows * cols):
-            pdf.setPageSize((w, h))
+            for id in range(0, word_count, rows * cols):
+                pdf.setPageSize((w, h))
 
-            x, y = margin, h - margin
+                x, y = margin, h - margin
 
-            set_words = words[id: id + rows * cols]
+                set_words = words[id: id + rows * cols]
 
-            available_height = h - 2 * margin
+                available_height = h - 2 * margin
 
-            max_rows = available_height // size
+                max_rows = available_height // size
 
-            rows = (len(set_words) - 1) // cols + 1
-            rows = min(max_rows, rows) 
-            for col in range(cols):
-                for row in range(rows):
-                    index = col * rows + row
-                    if index >= len(set_words):
-                        break
+                rows = (len(set_words) - 1) // cols + 1
+                rows = min(max_rows, rows) 
+                for col in range(cols):
+                    for row in range(rows):
+                        index = col * rows + row
+                        if index >= len(set_words):
+                            break
 
-                    word = set_words[index]
-                    text = pdf.beginText()
-                    text.setTextRenderMode(0)
-                    text.setFont("Helvetica", size)
-                    text.setTextOrigin(x, y)
-                    text.textLine(f"{word[0]} ({word[1]})")
-                    pdf.drawText(text)
+                        word = set_words[index]
+                        text = pdf.beginText()
+                        text.setTextRenderMode(0)
+                        text.setFont("Helvetica", size)
+                        text.setTextOrigin(x, y)
+                        text.textLine(f"{word[0]} ({word[1]})")
+                        pdf.drawText(text)
 
-                    y -= size
+                        y -= size
 
-                y = h - margin
-                x += (w - 2 * margin) // cols
+                    y = h - margin
+                    x += (w - 2 * margin) // cols
 
-            pdf.showPage()
+                pdf.showPage()
 
         pdf.save()
 
@@ -222,7 +229,7 @@ def export_pdf(path, force_recreate = False):
                 except:
                     pass
 
-        return filename
+        return target
 
 def find_index_words(hocr_path):
     index_words = {}

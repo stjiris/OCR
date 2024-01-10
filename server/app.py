@@ -147,8 +147,8 @@ def request_entities():
 
     update_data(path + "/_data.json", data)
 
-    request_ner.delay(path)
-    # Thread(target=request_ner, args=(path,)).start()
+    # request_ner.delay(path)
+    Thread(target=request_ner, args=(path,)).start()
 
 
     return {"success": True, "filesystem": get_filesystem("files", private_session=private_session)}
@@ -168,6 +168,12 @@ def get_zip():
 def get_pdf():
     path = request.values["path"]
     file = export_file(path, "pdf")
+    return send_file(file)
+
+@app.route("/get_pdf_simples", methods=["GET"])
+def get_pdf_simples():
+    path = request.values["path"]
+    file = export_file(path, "pdf", simple=True)
     return send_file(file)
 
 @app.route("/get_csv", methods=["GET"])
@@ -438,10 +444,11 @@ def perform_ocr():
         data["pdf"] = {"complete": False}
         data["csv"] = {"complete": False}
         data["ner"] = {"complete": False}
+        data["pdf_simples"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
-        task_file_ocr.delay(f, config, ocr_algorithm)
-        # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
+        # task_file_ocr.delay(f, config, ocr_algorithm)
+        Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
 
     private_session = None
     if "_private_sessions" in path:
@@ -576,11 +583,11 @@ def submit_text():
 
     update_data(
         data_folder + "/_data.json",
-        {"txt": {"complete": False}, "pdf": {"complete": False}},
+        {"txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
     )
 
-    make_changes.delay(data_folder, data)
-    # Thread(target=make_changes, args=(data_folder, data)).start()
+    # make_changes.delay(data_folder, data)
+    Thread(target=make_changes, args=(data_folder, data)).start()
 
     private_session = None
     if "_private_sessions" in data_folder:

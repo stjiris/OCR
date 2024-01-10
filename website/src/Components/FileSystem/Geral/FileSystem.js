@@ -326,7 +326,7 @@ class FileExplorer extends React.Component {
             a.href = URL.createObjectURL(data);
 
             var basename = file.split('.').slice(0, -1).join('.');
-            a.download = basename + '_ocr.' + type;
+            a.download = basename + '_ocr.' + type.split('_')[0];
             a.click();
             a.remove();
         });
@@ -441,6 +441,13 @@ class FileExplorer extends React.Component {
          * Export the .pdf file
          */
         this.getDocument("pdf", file);
+    }
+
+    getPdfSimples(file) {
+        /**
+         * Export the .pdf file
+         */
+        this.getDocument("pdf_simples", file);
     }
 
     editFile(file) {
@@ -644,7 +651,7 @@ class FileExplorer extends React.Component {
                                 </Button>
                             </TableCell>
                             <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Páginas</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Descrição</b></TableCell>
                             <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
                             <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
                         </TableRow>

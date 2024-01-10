@@ -7,7 +7,6 @@ import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
 
-import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
@@ -85,6 +84,13 @@ export default class FileRow extends React.Component {
         this.successNot.current.open();
     }
 
+    getPdfSimples(e) {
+        e.stopPropagation();
+        this.state.filesystem.getPdfSimples(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
     delete(e) {
         e.stopPropagation();
         this.state.filesystem.deleteItem(this.state.name);
@@ -145,17 +151,22 @@ export default class FileRow extends React.Component {
                         }}>
 
                             {
-                                this.state.info["progress"] === undefined || this.state.info["progress"] === true
+                                this.state.info["ocr"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                                 ? <IconButton
                                     onClick={() => this.setState({expanded: !this.state.expanded})}
                                     sx={{p: 0, color: '#1976d2', mr: '0.5rem'}}
                                 >
                                     {this.state.expanded ? <KeyboardArrowUpRoundedIcon/> : <KeyboardArrowDownRoundedIcon/>}
                                 </IconButton>
-                                : null
+                                : <IconButton
+                                    disabled
+                                    sx={{p: 0, color: '#fff', mr: '0.5rem'}}
+                                >
+                                    <KeyboardArrowDownRoundedIcon/>
+                                </IconButton>
                             }
 
-                            <InsertDriveFileOutlinedIcon color="primary" sx={{ fontSize: 30, mr: '0.5rem' }} />
+                            <PdfIcon sx={{ fontSize: 30, mr: '0.5rem' }} />
                             {
                                 this.state.info["progress"] === undefined || this.state.info["progress"] === true
                                 ? <Button
@@ -303,13 +314,13 @@ export default class FileRow extends React.Component {
                 </TableRow>
 
                 {
-                    this.state.info !== undefined && this.state.info["pdf"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info !== undefined && this.state.info["pdf"] !== undefined && this.state.info["pdf"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
-                                    <Button onClick={(e) => this.getPdf(e)} style={{p: 0, textTransform: 'none'}}>PDF (com texto)</Button>
+                                    <Button onClick={(e) => this.getPdf(e)} style={{p: 0, textTransform: 'none'}}>PDF + Texto + Índice</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
@@ -342,7 +353,46 @@ export default class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["txt"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info !== undefined && this.state.info["pdf_simples"] !== undefined && this.state.info["pdf_simples"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
+                                    <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
+                                    <Button onClick={(e) => this.getPdfSimples(e)} style={{p: 0, textTransform: 'none'}}>PDF + Texto</Button>
+                                </Box>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["pdf_simples"]["creation"]}</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["pdf_simples"]["pages"]} página(s)</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["pdf_simples"]["size"]}</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>-</span>
+                            </Collapse>
+                        </TableCell>
+                    </TableRow>
+                    : null
+                }
+
+                {
+                    this.state.info !== undefined && this.state.info["txt"] !== undefined && this.state.info["txt"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
@@ -381,7 +431,7 @@ export default class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["csv"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info !== undefined && this.state.info["csv"] !== undefined && this.state.info["csv"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
@@ -420,7 +470,7 @@ export default class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["zip"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info !== undefined && this.state.info["zip"] !== undefined && this.state.info["zip"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
@@ -459,7 +509,7 @@ export default class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["ner"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info !== undefined && this.state.info["ner"] !== undefined && this.state.info["ner"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>

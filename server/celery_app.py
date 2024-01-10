@@ -47,6 +47,13 @@ def make_changes(data_folder, data):
     data["pdf"]["complete"] = True
     data["pdf"]["creation"] = current_date
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
+
+    os.remove(data_folder + "/_simple.pdf")
+    export_file(data_folder, "pdf", force_recreate=True)
+    data["pdf_simples"]["complete"] = True
+    data["pdf_simples"]["creation"] = current_date
+    data["pdf_simples"]["size"] = get_size(data_folder + "/_simple.pdf", path_complete=True)
+
     data["csv"]["complete"] = True
     data["csv"]["creation"] = current_date
     data["csv"]["size"] = get_size(data_folder + "/_index.csv", path_complete=True)
@@ -145,7 +152,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 if contents != "[]":
                     segment_ocr_flag = True
 
-        if segment_ocr_flag == False:
+        if not segment_ocr_flag:
             json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
             json_d = [[x] for x in json_d]
             with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
@@ -156,13 +163,15 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
             box_coordinates_list = []
             for item in parsed_json:
-                left = item["left"]
-                top = item["top"]
-                right = item["right"]
-                bottom = item["bottom"]
+                if item["type"] != "text": continue
+                for sq in item["squares"]:
+                    left = sq["left"]
+                    top = sq["top"]
+                    right = sq["right"]
+                    bottom = sq["bottom"]
                 
-                box_coords = (left, top, right, bottom)
-                box_coordinates_list.append(box_coords)
+                    box_coords = (left, top, right, bottom)
+                    box_coordinates_list.append(box_coords)
 
             all_jsons = []
             for box in box_coordinates_list:                
@@ -222,6 +231,15 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 "complete": True,
                 "size": get_size(f"{path}/_index.csv", path_complete=True),
                 "creation": creation_date,
+            }
+
+            export_file(path, "pdf", simple=True)
+            creation_date = get_current_time()
+            data["pdf_simples"] = {
+                "complete": True,
+                "size": get_size(f"{path}/_simple.pdf", path_complete=True),
+                "creation": creation_date,
+                "pages": get_page_count(f"{path}/_simple.pdf"),
             }
 
             update_data(data_folder, data)
