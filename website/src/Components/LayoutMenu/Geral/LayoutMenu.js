@@ -409,6 +409,12 @@ export default class LayoutMenu extends React.Component {
     }
 
     renameGroups(groups, page) {
+        var textGroups = groups.filter(e => e["type"] === "text");
+        var imageGroups = groups.filter(e => e["type"] === "image");
+        var ignoreGroups = groups.filter(e => e["type"] === "ignore");
+
+        groups = textGroups.concat(imageGroups).concat(ignoreGroups);
+
         for (var i = 0; i < groups.length; i++) {
 
             var boxes = groups[i]["squares"];

@@ -7,7 +7,7 @@ from celery import Celery
 from flask import Flask
 from flask_cors import CORS
 import logging as log
-from PIL import Image
+from PIL import Image, ImageDraw
 import json
 
 from src.algorithms import tesseract
@@ -147,13 +147,29 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         segment_ocr_flag = False
 
         if os.path.exists(layout_path):
-            with open(layout_path, "r") as f:
-                contents = f.read().strip()
-                if contents != "[]":
+            with open(layout_path, "r", encoding="utf-8") as json_file:
+                parsed_json = json.load(json_file)
+
+                all_but_ignore = [x for x in parsed_json if x["type"] != "ignore"]
+
+                if all_but_ignore:
                     segment_ocr_flag = True
 
         if not segment_ocr_flag:
-            json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config)
+            image = Image.open(f"{path}/{filename}")
+
+            for item in [x for x in parsed_json if x["type"] == "ignore"]:
+                for sq in item["squares"]:
+                    left = sq["left"]
+                    top = sq["top"]
+                    right = sq["right"]
+                    bottom = sq["bottom"]
+
+                    box_coords = ((left, top), (right, bottom))
+                    img_draw = ImageDraw.Draw(image)
+                    img_draw.rectangle(box_coords, fill="white")
+
+            json_d = ocr_algorithm.get_structure(image, config)
             json_d = [[x] for x in json_d]
             with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
                 json.dump(json_d, f, indent=2, ensure_ascii=False)
@@ -161,8 +177,45 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             with open(layout_path, "r", encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
+            text_groups = [x for x in parsed_json if x["type"] == "text"]
+            image_groups = [x for x in parsed_json if x["type"] == "image"]
+            ignore_groups = [x for x in parsed_json if x["type"] == "ignore"]
+
+            image = Image.open(f"{path}/{filename}")
+            basename = get_file_basename(filename)
+            page_id = int(basename.split("_")[-1]) + 1
+
+            if ignore_groups:
+                for item in ignore_groups:
+                    for sq in item["squares"]:
+                        left = sq["left"]
+                        top = sq["top"]
+                        right = sq["right"]
+                        bottom = sq["bottom"]
+
+                        box_coords = ((left, top), (right, bottom))
+                        img_draw = ImageDraw.Draw(image)
+                        img_draw.rectangle(box_coords, fill="white")
+
+
+            if image_groups:
+                if not os.path.exists(f"{path}/images"):
+                    os.mkdir(f"{path}/images")
+
+                for id, item in enumerate(image_groups):
+                    for sq in item["squares"]:
+                        left = sq["left"]
+                        top = sq["top"]
+                        right = sq["right"]
+                        bottom = sq["bottom"]
+
+                        box_coords = (left, top, right, bottom)
+                        cropped_image = image.crop(box_coords)
+                        cropped_image.save(f"{path}/images/page{page_id}_{id+1}.jpg")
+
+
             box_coordinates_list = []
-            for item in parsed_json:
+            for item in text_groups:
                 if item["type"] != "text": continue
                 for sq in item["squares"]:
                     left = sq["left"]
@@ -175,7 +228,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
             all_jsons = []
             for box in box_coordinates_list:                
-                json_d = ocr_algorithm.get_structure(Image.open(f"{path}/{filename}"), config, box)
+                json_d = ocr_algorithm.get_structure(image, config, box)
                 if json_d:
                     all_jsons.append(json_d)
 
