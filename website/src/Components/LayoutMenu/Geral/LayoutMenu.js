@@ -14,9 +14,16 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
 
+import TextFieldsIcon from '@mui/icons-material/TextFields';
+import ImageIcon from '@mui/icons-material/Image';
+import DoNotDisturbAltIcon from '@mui/icons-material/DoNotDisturbAlt';
+
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+
 import loadComponent from '../../../utils/loadComponents';
 
-import { Checkbox, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Checkbox, FormControl, Icon, InputLabel, MenuItem, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 export default class LayoutMenu extends React.Component {
     constructor(props) {
@@ -31,6 +38,8 @@ export default class LayoutMenu extends React.Component {
             uncommittedChanges: false,
 
             selectedRows: [],
+
+            typeSelected: ""
         }
 
         this.boxRefs = [];
@@ -120,7 +129,7 @@ export default class LayoutMenu extends React.Component {
                             newBox["id"] = c_boxes[k]["id"];
                             c_boxes[k] = newBox;
 
-                            contents[j]["boxes"] = this.renameGroups(c_boxes, j + 1);
+                            contents[j]["boxes"] = c_boxes;
 
                             break;
                         }
@@ -129,8 +138,17 @@ export default class LayoutMenu extends React.Component {
             }
         }
 
+        for (i = 0; i < contents.length; i++) {
+            contents[i]["boxes"] = this.renameGroups(contents[i]["boxes"], i + 1);
+        }
 
-        this.setState({contents: contents, uncommittedChanges: true}, this.generateBoxes);
+        this.setState({contents: contents, uncommittedChanges: true}, () => {
+            this.generateBoxes();
+            this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+        });
+
+
+        // this.setState({contents: contents, uncommittedChanges: true}, this.generateBoxes);
         window.addEventListener('beforeunload', this.preventExit);
     }
 
@@ -193,7 +211,7 @@ export default class LayoutMenu extends React.Component {
         } else if (type === "image") {
             boxes = this.imageRefs;
             container = this.imageBox;
-        } else if (type === "ignore") {
+        } else if (type === "remove") {
             boxes = this.ignoreRefs;
             container = this.ignoreBox;
         }
@@ -231,7 +249,7 @@ export default class LayoutMenu extends React.Component {
         } else if (type === "image") {
             boxes = this.imageRefs;
             container = this.imageBox;
-        } else if (type === "ignore") {
+        } else if (type === "remove") {
             boxes = this.ignoreRefs;
             container = this.ignoreBox;
         }
@@ -411,27 +429,27 @@ export default class LayoutMenu extends React.Component {
     renameGroups(groups, page) {
         var textGroups = groups.filter(e => e["type"] === "text");
         var imageGroups = groups.filter(e => e["type"] === "image");
-        var ignoreGroups = groups.filter(e => e["type"] === "ignore");
+        var ignoreGroups = groups.filter(e => e["type"] === "remove");
+
+        for (var l_id in [textGroups, imageGroups, ignoreGroups]) {
+            var l = [textGroups, imageGroups, ignoreGroups][l_id];
+            for (var i = 0; i < l.length; i++) {
+                console.log(l);
+                var boxes = l[i]["squares"];
+                for (var j = 0; j < boxes.length; j++) {
+                    let id;
+                    if (boxes.length === 1) {
+                        id = l[i].type[0].toUpperCase() + (page) + "." + (i + 1);
+                    } else {
+                        id = l[i].type[0].toUpperCase() + (page) + "." + (i + 1) + "." + (j + 1);
+                    }
+                    boxes[j]["id"] = id;
+                }
+            }
+        }
+
 
         groups = textGroups.concat(imageGroups).concat(ignoreGroups);
-
-        for (var i = 0; i < groups.length; i++) {
-
-            var boxes = groups[i]["squares"];
-
-            for (var j = 0; j < boxes.length; j++) {
-                var box = boxes[j];
-
-                let id;
-                if (boxes.length === 1) {
-                    id = groups[i].type[0].toUpperCase() + (page) + "." + (i + 1);
-                } else {
-                    id = groups[i].type[0].toUpperCase() + (page) + "." + (i + 1) + "." + (j + 1);
-                }
-                box["id"] = id;
-            }
-            // newGroups.push(newGroup);
-        }
 
         return groups;
     }
@@ -538,6 +556,58 @@ export default class LayoutMenu extends React.Component {
         }
 
         contents[this.state.page - 1]["boxes"] = this.renameGroups(newGroups, this.state.page);
+        this.setState({contents: contents}, () => {
+            this.generateBoxes();
+            this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+        });
+    }
+
+    updateCheckBoxType(type) {
+        this.setState({typeSelected: type});
+
+        var contents = this.state.contents;
+        var groups = contents[this.state.page - 1]["boxes"];
+
+        for (var i = 0; i < groups.length; i++) {
+            if (groups[i].checked) {
+                groups[i]["type"] = type;
+            }
+        }
+
+        contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+
+        this.setState({contents: contents}, () => {
+            this.generateBoxes();
+            this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+        });
+    }
+
+    goUp(index) {
+        var contents = this.state.contents;
+        var groups = contents[this.state.page - 1]["boxes"];
+
+        var group = groups[index];
+        groups.splice(index, 1);
+        groups.splice(index - 1, 0, group);
+
+        contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+
+        this.setState({contents: contents}, () => {
+            this.generateBoxes();
+            this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+        });
+    }
+
+    goDown(index) {
+        var contents = this.state.contents;
+        var groups = contents[this.state.page - 1]["boxes"];
+
+        var group = groups[index];
+        groups.splice(index, 1);
+        groups.splice(index + 1, 0, group);
+
+        contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+
         this.setState({contents: contents}, () => {
             this.generateBoxes();
             this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
@@ -728,9 +798,24 @@ export default class LayoutMenu extends React.Component {
                                 Apagar
                             </Button>
 
+                            <FormControl sx={{ m: 1, minWidth: 100 }} size="small">
+                                <InputLabel id="demo-select-small-label">Tipo</InputLabel>
+                                <Select
+                                    disabled={noCheckBoxActive}
+                                    labelId="demo-select-small-label"
+                                    id="demo-select-small"
+                                    value={this.state.typeSelected}
+                                    label="Age"
+                                    onChange={(e) => this.updateCheckBoxType(e.target.value)}
+                                >
+                                    <MenuItem value={"text"}>Texto</MenuItem>
+                                    <MenuItem value={"image"}>Imagem</MenuItem>
+                                    <MenuItem value={"remove"}>Remover</MenuItem>
+                                </Select>
+                            </FormControl>
                         </Box>
 
-                        <TableContainer sx={{width: "100%", maxHeight: `${window.innerHeight - 197}px`, border: '1px solid #aaa'}}>
+                        <TableContainer sx={{width: "100%", maxHeight: `${window.innerHeight - 217}px`, border: '1px solid #aaa'}}>
                             <Table stickyHeader>
                                 <TableHead>
                                     <TableRow>
@@ -740,6 +825,7 @@ export default class LayoutMenu extends React.Component {
                                         <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}><b>ID</b></TableCell>
                                         <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}><b>Pixels</b></TableCell>
                                         <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}><b>Tipo</b></TableCell>
+                                        <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}><b>Ordenar</b></TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -754,10 +840,10 @@ export default class LayoutMenu extends React.Component {
                                                 <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}>
                                                     <Box>
                                                         {
-                                                            group["squares"].map((box, index) => {
+                                                            group["squares"].map((box, _index) => {
                                                             return (<Box
                                                                 sx = {{
-                                                                    backgroundColor: "#00f",
+                                                                    backgroundColor: group.type === "text" ? "#0000ff" : group.type === "image" ? '#08A045' : '#F05E16',
                                                                     borderRadius: '10px',
                                                                     justifyContent: 'center',
                                                                     display: 'flex',
@@ -774,13 +860,39 @@ export default class LayoutMenu extends React.Component {
                                                 <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}>
                                                     <Box sx={{display: "flex", flexDirection: "column"}}>
                                                         {
-                                                            group.squares.map((box, index) => {
+                                                            group.squares.map((box, _index) => {
                                                                 return (<span>{Math.ceil(box.bottom - box.top)} x {Math.ceil(box.right - box.left)}</span>);
                                                             })
                                                         }
                                                     </Box>
                                                 </TableCell>
-                                                <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}>{group.type}</TableCell>
+                                                <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}>
+                                                        <span>
+                                                            {
+                                                                group.type === "text"
+                                                                ? <Icon>
+                                                                    <TextFieldsIcon sx={{color: "#00f"}}/>
+                                                                </Icon>
+                                                                : group.type === "image"
+                                                                    ? <Icon>
+                                                                        <ImageIcon sx={{color: "#08A045"}}/>
+                                                                    </Icon>
+                                                                    : <Icon>
+                                                                        <DoNotDisturbAltIcon sx={{color: "#f00"}}/>
+                                                                    </Icon>
+                                                            }
+                                                        </span>
+                                                </TableCell>
+                                                <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}>
+                                                    <Box sx={{display: "flex", flexDirection: "column"}}>
+                                                        <IconButton sx={{m: 0, p: 0}} disabled={index === 0} onClick={() => this.goUp(index)}>
+                                                            <KeyboardArrowUpRoundedIcon/>
+                                                        </IconButton>
+                                                        <IconButton sx={{m: 0, p: 0}} onClick={() => this.goDown(index)} disabled={index === this.state.contents[this.state.page - 1]["boxes"].length - 1}>
+                                                            <KeyboardArrowDownRoundedIcon/>
+                                                        </IconButton>
+                                                    </Box>
+                                                </TableCell>
                                             </TableRow>
                                         })
                                     }

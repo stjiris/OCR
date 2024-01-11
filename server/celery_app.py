@@ -151,7 +151,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             with open(layout_path, "r", encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
-                all_but_ignore = [x for x in parsed_json if x["type"] != "ignore"]
+                all_but_ignore = [x for x in parsed_json if x["type"] != "remove"]
 
                 if all_but_ignore:
                     segment_ocr_flag = True
@@ -159,7 +159,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         if not segment_ocr_flag:
             image = Image.open(f"{path}/{filename}")
 
-            for item in [x for x in parsed_json if x["type"] == "ignore"]:
+            for item in [x for x in parsed_json if x["type"] == "remove"]:
                 for sq in item["squares"]:
                     left = sq["left"]
                     top = sq["top"]
@@ -180,7 +180,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
             text_groups = [x for x in parsed_json if x["type"] == "text"]
             image_groups = [x for x in parsed_json if x["type"] == "image"]
-            ignore_groups = [x for x in parsed_json if x["type"] == "ignore"]
+            ignore_groups = [x for x in parsed_json if x["type"] == "remove"]
 
             image = Image.open(f"{path}/{filename}")
             basename = get_file_basename(filename)

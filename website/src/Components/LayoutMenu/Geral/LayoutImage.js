@@ -334,7 +334,7 @@ export default class LayoutImage extends React.Component {
 
     getWindowWidth() {
         const width = window.innerWidth;
-        const widthReduction = 500;
+        const widthReduction = 550;
 
         return width - widthReduction;
     }

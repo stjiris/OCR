@@ -454,6 +454,9 @@ def perform_ocr():
         data["pdf_simples"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
+        if os.path.exists(f"{f}/images"):
+            shutil.rmtree(f"{f}/images")
+
         # task_file_ocr.delay(f, config, ocr_algorithm)
         # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         task_file_ocr(f, config, ocr_algorithm, True)
