@@ -598,7 +598,8 @@ def submit_text():
     )
 
     # make_changes.delay(data_folder, data)
-    Thread(target=make_changes, args=(data_folder, data)).start()
+    # Thread(target=make_changes, args=(data_folder, data)).start()
+    make_changes(data_folder, data)
 
     private_session = None
     if "_private_sessions" in data_folder:

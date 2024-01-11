@@ -105,7 +105,7 @@ export default class FileRow extends React.Component {
 
     editFile(e) {
         e.stopPropagation();
-        this.state.filesystem.editFile(this.state.name);
+        this.state.filesystem.editText(this.state.name);
     }
 
     performOCR(e) {

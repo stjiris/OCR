@@ -34,7 +34,7 @@ function App() {
                 sessionId: window.location.href.split("/").pop(),
 
                 fileSystemMode: true,
-                editFileMode: false,
+                editingMenu: false,
                 layoutMenu: false,
 
                 fileOpened: "",
@@ -110,7 +110,7 @@ function App() {
              * @param {string} path - The path of the file
              * @param {string} file - The name of the file
              */
-            // this.setState({path: path, fileOpened: file, fileSystemMode: false, editFileMode: true});
+            // this.setState({path: path, fileOpened: file, fileSystemMode: false, editingMenu: true});
             this.textEditor.current.setFile(path, file);
             this.textEditor.current.toggleOpen();
         }
@@ -124,7 +124,7 @@ function App() {
             this.setState(
                 {
                     fileSystemMode: false,
-                    editFileMode: false,
+                    editingMenu: false,
                     filesChoice: [{name: file, code: file}],
                     algorithmChoice: [{name: algorithm, code: algorithm}],
                     configChoice: [{name: config, code: config}]
@@ -191,7 +191,7 @@ function App() {
                 if (data.success) {
                     this.successNot.current.setMessage("Texto submetido com sucesso");
                     this.successNot.current.open();
-                    this.setState({contents: [], fileOpened: "", fileSystemMode: true, editFileMode: false})
+                    this.setState({contents: [], fileOpened: "", fileSystemMode: true, editingMenu: false})
 
                     var info = data["info"];
                     this.fileSystem.current.setState({info: info}, this.fileSystem.current.updateInfo);
@@ -228,11 +228,11 @@ function App() {
             this.setState({
                 currentFolder: current_folder,  
                 fileSystemMode: true,
-                editFileMode: false, 
+                editingMenu: false, 
                 layoutMenu: false,
             });
 
-            this.fileSystem.current.setState({layoutMenu: false});
+            this.fileSystem.current.setState({layoutMenu: false, editingMenu: false});
         }
 
         render() {
@@ -248,7 +248,7 @@ function App() {
             const EditPagePopUp = loadComponent('EditPage3', 'EditPagePopUp');
             const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
-            var buttonsDisabled = this.getPrivateSession() !== null || !this.state.fileSystemMode || this.state.layoutMenu;
+            var buttonsDisabled = this.getPrivateSession() !== null || !this.state.fileSystemMode || this.state.layoutMenu || this.state.editingMenu;
 
             return (
                 <Box className="App" sx={{height: '100vh'}}>
@@ -316,7 +316,7 @@ function App() {
                                         var name = (folder !== "files" || index > 0) ? folder : "Início";
                                         var folderDepth = this.state.currentFolder.length;
 
-                                        if (!this.state.fileSystemMode && !this.state.editFileMode && index > 0)
+                                        if (!this.state.fileSystemMode && !this.state.editingMenu && index > 0)
                                             return null;
                                         
                                         if (folderDepth > 3 && index === 1) {
@@ -342,7 +342,7 @@ function App() {
                                                     key={folder}
                                                     onClick={() => {
                                                         if (index === 0 && !this.state.fileSystemMode) {
-                                                            this.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})
+                                                            this.setState({fileSystemMode: true, editingMenu: false, filesChoice: [], algorithmChoice: [], configChoice: []})
                                                         } else if (this.getPrivateSession() !== null) {
                                                             this.redirectHome();
                                                         } else {
@@ -401,7 +401,7 @@ function App() {
                                 onClick={() => {
                                     this.setState({
                                         fileSystemMode: false,
-                                        editFileMode: false,
+                                        editingMenu: false,
                                         filesChoice: [],
                                         algorithmChoice: [],
                                         configChoice: []

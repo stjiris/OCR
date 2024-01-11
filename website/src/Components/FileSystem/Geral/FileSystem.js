@@ -42,6 +42,9 @@ class FileExplorer extends React.Component {
             layoutMenu: false,
             layoutFilename: null,
 
+            editingMenu: false,
+            editingFilename: null,
+
             downloadLoading: false,
         }
 
@@ -126,7 +129,7 @@ class FileExplorer extends React.Component {
     }
 
     updateInfo() {
-        if (this.state.layoutMenu) return;
+        if (this.state.layoutMenu || this.state.editingMenu) return;
         this.rowRefs.forEach(ref => {
             var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
             if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
@@ -307,7 +310,8 @@ class FileExplorer extends React.Component {
         this.setState({
             current_folder: current_folder,
             buttonsDisabled: buttonsDisabled,
-            createFileButtonDisabled: createFileButtonDisabled},
+            createFileButtonDisabled: createFileButtonDisabled
+        },
         this.displayFileSystem);
     }
 
@@ -656,6 +660,16 @@ class FileExplorer extends React.Component {
         this.setState({layoutMenu: false, layoutFilename: null});
     }
 
+    editText(filename) {
+        this.state.app.setState({editingMenu: true});
+        this.setState({editingMenu: true, editingFilename: filename});
+    }
+
+    closeEditingMenu() {
+        this.state.app.setState({editingMenu: false});
+        this.setState({editingMenu: false, editingFilename: null});
+    }
+
     generateTable() {
         return (
             <TableContainer component={Paper}>
@@ -817,83 +831,31 @@ class FileExplorer extends React.Component {
         const OcrMenu = loadComponent('Form', 'OcrMenu');
         const DeleteMenu = loadComponent('Form', 'DeleteMenu');
         const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
+        const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
 
         return (
             <>
                 {
                     this.state.layoutMenu
                     ? <LayoutMenu filesystem={this} filename={this.state.layoutFilename} />
-                    : <Box sx={{
-                        ml: '1.5rem',
-                        mr: '1.5rem',
-                        mb: '1.5rem',
-                    }}>
-                        <Notification message={""} severity={"success"} ref={this.successNot}/>
-                        <Notification message={""} severity={"error"} ref={this.errorNot}/>
-
-                        <FolderMenu filesystem={this} ref={this.folderMenu}/>
-                        <OcrMenu filesystem={this} ref={this.ocrMenu}/>
-                        <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-
-                        {/* <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            flexWrap: 'wrap'
+                    : this.state.editingMenu
+                        ? <EditingMenu filesystem={this} filename={this.state.editingFilename} />
+                        : <Box sx={{
+                            ml: '1.5rem',
+                            mr: '1.5rem',
+                            mb: '1.5rem',
                         }}>
+                            <Notification message={""} severity={"success"} ref={this.successNot}/>
+                            <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                            <Button
-                                variant="contained"
-                                startIcon={<CreateNewFolderIcon />}
-                                sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
-                                onClick={() => this.createFolder()}
-                            >
-                                Criar pasta
-                            </Button>
-
-                            <Button
-                                disabled={this.state.buttonsDisabled}
-                                variant="contained"
-                                startIcon={<NoteAddIcon />}
-                                onClick={() => this.createFile()}
-                                sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
-                            >
-                                Adicionar documento
-                            </Button>
-
+                            <FolderMenu filesystem={this} ref={this.folderMenu}/>
+                            <OcrMenu filesystem={this} ref={this.ocrMenu}/>
+                            <DeleteMenu filesystem={this} ref={this.deleteMenu} />
 
                             {
-                                process.env.REACT_APP_HEADER_STYLE !== "STJ"
-                                ? <Button
-                                    disabled={this.state.downloadLoading}
-                                    variant="contained"
-                                    startIcon={<FileDownloadIcon />}
-                                    onClick={() => this.getZip()}
-                                    sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
-                                >
-                                    Descarregar Ficheiros
-                                </Button>
-                                : null
+                                this.generateTable()
                             }
-                            
-
-                            <Button
-                                variant="contained"
-                                startIcon={<LockIcon />}
-                                onClick={() => this.createPrivateSession()}
-                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: process.env.REACT_APP_HEADER_STYLE === "STJ" ? 'auto' : '1rem'}}
-                            >
-                                Sessão privada
-                            </Button>
                         </Box>
-
-                        {
-                            this.generatePath()
-                        } */}
-
-                        {
-                            this.generateTable()
-                        }
-                    </Box>
                 }
             </>
         );

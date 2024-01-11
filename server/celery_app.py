@@ -49,7 +49,7 @@ def make_changes(data_folder, data):
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
 
     os.remove(data_folder + "/_simple.pdf")
-    export_file(data_folder, "pdf", force_recreate=True)
+    export_file(data_folder, "pdf", force_recreate=True, simple=True)
     data["pdf_simples"]["complete"] = True
     data["pdf_simples"]["creation"] = current_date
     data["pdf_simples"]["size"] = get_size(data_folder + "/_simple.pdf", path_complete=True)
@@ -58,7 +58,14 @@ def make_changes(data_folder, data):
     data["csv"]["creation"] = current_date
     data["csv"]["size"] = get_size(data_folder + "/_index.csv", path_complete=True)
 
-    request_ner(data_folder)
+    try:
+        request_ner(data_folder)
+    except Exception as e:
+        print(e)
+        data["ner"] = {
+            "complete": False,
+            "error": True
+        }
 
     return {"status": "success"}
 
