@@ -11,7 +11,11 @@ import LockIcon from '@mui/icons-material/Lock';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
 
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 
 
 
@@ -47,6 +51,11 @@ function App() {
                 filesChoice: [],
                 algorithmChoice: [],
                 configChoice: [],
+
+                privateSessionsOpen: false,
+                privateSessions: [],
+                freeSpace: props.freeSpace || 0,
+                freeSpacePercentage: props.freeSpacePercentage || 0,
             }
 
             this.saveButton = React.createRef();
@@ -74,11 +83,13 @@ function App() {
                 })
                 .then(response => {return response.json()})
                 .then(data => {
+                    console.log(data);
                     if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
-                    if (this.header.current !== null) {
-                        this.header.current.setFreeSpace(data["free_space"], data["free_space_percentage"]);
-                        this.header.current.setPrivateSessions(data["private_sessions"]);
-                    }
+                    this.setState({
+                        freeSpace: data["free_space"],
+                        freeSpacePercentage: data["free_space_percentage"],
+                        privateSessions: data["private_sessions"]
+                    });
                 });
 
                 this.interval = setInterval(() => {
@@ -237,7 +248,6 @@ function App() {
 
         render() {
             const Notification = loadComponent('Notification', 'Notifications');
-            // const Header = loadComponent('Header', 'Header');
             const VersionsMenu = loadComponent('Form', 'VersionsMenu');
             const LogsMenu = loadComponent('Form', 'LogsMenu');
             const FileExplorer = loadComponent('FileSystem', 'FileSystem');
@@ -247,6 +257,8 @@ function App() {
             // const EditPage = loadComponent('EditPage3', 'EditPage');
             const EditPagePopUp = loadComponent('EditPage3', 'EditPagePopUp');
             const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
+
+            const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 
             var buttonsDisabled = this.getPrivateSession() !== null || !this.state.fileSystemMode || this.state.layoutMenu || this.state.editingMenu;
 
@@ -436,7 +448,103 @@ function App() {
                         </Box>
                     </Box>
 
-                    {/* <Header ref={this.header} app={this} privateSession={this.getPrivateSession()} version={VERSION}/> */}
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'right',
+                        alignItems: "center",
+                        zIndex: '5',
+                        pt: '0.5rem',
+                        pl: '0.5rem',
+                        pb: '0.5rem',
+                        pr: '0.5rem',
+                    }}>
+                        <Box sx={{display: "flex", flexDirection: "column"}}>
+                            <Button
+                                sx={{
+                                    alignItems: "center",
+                                    textTransform: "none",
+                                    height: "2rem",
+                                    mr: "1.5rem"
+                                }}
+                                onClick={() => this.setState({privateSessionsOpen: !this.state.privateSessionsOpen})}
+                            >
+                                Sessões Privadas
+                                {
+                                    this.state.privateSessionsOpen
+                                    ? <KeyboardArrowUpRoundedIcon sx={{ml: '0.3rem'}} />
+                                    : <KeyboardArrowDownRoundedIcon sx={{ml: '0.3rem'}} />
+                                }
+                            </Button>
+
+                            {
+                                this.state.privateSessionsOpen
+                                ? <Box
+                                    sx = {{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        position: 'absolute',
+                                        zIndex: "1",
+                                        backgroundColor: "#fff",
+                                        border: "1px solid black",
+                                        borderRadius: '0.5rem',
+                                        top: "5.5rem",
+                                        p: "0rem 1rem",
+                                        width: "8rem",
+                                        
+                                    }}
+                                >
+                                    {
+                                        this.state.privateSessions.map((privateSession, index) => {
+                                            return (
+                                                <Box
+                                                    key={index}
+                                                    sx={{
+                                                        display: "flex",
+                                                        flexDirection: "row",
+                                                        justifyContent: "space-between",
+                                                        height: "2rem",
+                                                        lineHeight: "2rem",
+                                                        borderTop: index !== 0 ? "1px solid black" : "0px solid black",
+                                                        cursor: "pointer"
+                                                    }}
+                                                    onClick={() => {
+                                                        if (window.location.href.endsWith("/")) {
+                                                            window.location.href += privateSession
+                                                        } else {
+                                                            window.location.href += "/" + privateSession
+                                                        }
+                                                    }}
+                                                >
+                                                    <span>{privateSession}</span>
+                                                    <TooltipIcon
+                                                        color="#f00"
+                                                        message="Apagar"
+                                                        clickFunction={(e) => this.deletePrivateSession(e, privateSession)}
+                                                        icon={<DeleteForeverIcon />}
+                                                    />
+                                                </Box>
+                                            )
+                                        })
+                                    }
+                                </Box>
+                                : null
+                            }
+                        </Box>
+
+                        <Button
+                            sx={{
+                                p: 0,
+                                mr: "1.5rem"
+                            }}
+                            onClick={() => this.openLogsMenu()}
+                        >
+                            <AssignmentRoundedIcon sx={{mr: "0.3rem"}} />
+                            Logs
+                        </Button>
+
+                        <span>Free Space: {this.state.freeSpace} ({this.state.freeSpacePercentage}%)</span>
+                    </Box>
 
                     <Box>
                         {
