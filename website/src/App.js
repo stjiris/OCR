@@ -83,7 +83,6 @@ function App() {
                 })
                 .then(response => {return response.json()})
                 .then(data => {
-                    console.log(data);
                     if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
                     this.setState({
                         freeSpace: data["free_space"],

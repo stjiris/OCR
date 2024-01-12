@@ -32,9 +32,6 @@ def get_private_sessions():
         session for session in os.listdir("files/_private_sessions")
         if os.path.isdir(f"files/_private_sessions/{session}") and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
     ]
-    print(private_sessions)
-    # print(os.listdir("files/_private_sessions"))
-    # print([session for session in os.listdir("files/_private_sessions") if os.path.isdir(session)])
     return private_sessions
 
 def get_free_space():

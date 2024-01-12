@@ -257,7 +257,6 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         
         if data["pages"] == len(files):
             log.info(f"{path}: Acabei OCR")
-            print("########################################################")
 
             creation_date = get_current_time()
 

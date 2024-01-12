@@ -434,7 +434,6 @@ export default class LayoutMenu extends React.Component {
         for (var l_id in [textGroups, imageGroups, ignoreGroups]) {
             var l = [textGroups, imageGroups, ignoreGroups][l_id];
             for (var i = 0; i < l.length; i++) {
-                console.log(l);
                 var boxes = l[i]["squares"];
                 for (var j = 0; j < boxes.length; j++) {
                     let id;
