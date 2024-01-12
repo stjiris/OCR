@@ -466,103 +466,107 @@ function App() {
                         </Box>
                     </Box>
 
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        justifyContent: 'right',
-                        alignItems: "center",
-                        zIndex: '5',
-                        pt: '0.5rem',
-                        pl: '0.5rem',
-                        pb: '0.5rem',
-                        pr: '0.5rem',
-                    }}>
-                        <Box sx={{display: "flex", flexDirection: "column"}}>
-                            <Button
-                                sx={{
-                                    alignItems: "center",
-                                    textTransform: "none",
-                                    height: "2rem",
-                                    mr: "1.5rem"
-                                }}
-                                onClick={() => this.setState({privateSessionsOpen: !this.state.privateSessionsOpen})}
-                            >
-                                Sessões Privadas
+                    {
+                        window.location.href.includes(process.env.REACT_APP_ADMIN)
+                        ? <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'right',
+                            alignItems: "center",
+                            zIndex: '5',
+                            pt: '0.5rem',
+                            pl: '0.5rem',
+                            pb: '0.5rem',
+                            pr: '0.5rem',
+                        }}>
+                            <Box sx={{display: "flex", flexDirection: "column"}}>
+                                <Button
+                                    sx={{
+                                        alignItems: "center",
+                                        textTransform: "none",
+                                        height: "2rem",
+                                        mr: "1.5rem"
+                                    }}
+                                    onClick={() => this.setState({privateSessionsOpen: !this.state.privateSessionsOpen})}
+                                >
+                                    Sessões Privadas
+                                    {
+                                        this.state.privateSessionsOpen
+                                        ? <KeyboardArrowUpRoundedIcon sx={{ml: '0.3rem'}} />
+                                        : <KeyboardArrowDownRoundedIcon sx={{ml: '0.3rem'}} />
+                                    }
+                                </Button>
+
                                 {
                                     this.state.privateSessionsOpen
-                                    ? <KeyboardArrowUpRoundedIcon sx={{ml: '0.3rem'}} />
-                                    : <KeyboardArrowDownRoundedIcon sx={{ml: '0.3rem'}} />
+                                    ? <Box
+                                        sx = {{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            position: 'absolute',
+                                            zIndex: "1",
+                                            backgroundColor: "#fff",
+                                            border: "1px solid black",
+                                            borderRadius: '0.5rem',
+                                            top: "5.5rem",
+                                            p: "0rem 1rem",
+                                            width: "8rem",
+                                            
+                                        }}
+                                    >
+                                        {
+                                            this.state.privateSessions.map((privateSession, index) => {
+                                                return (
+                                                    <Box
+                                                        key={index}
+                                                        sx={{
+                                                            display: "flex",
+                                                            flexDirection: "row",
+                                                            justifyContent: "space-between",
+                                                            height: "2rem",
+                                                            lineHeight: "2rem",
+                                                            borderTop: index !== 0 ? "1px solid black" : "0px solid black",
+                                                            cursor: "pointer"
+                                                        }}
+                                                        onClick={() => {
+                                                            if (window.location.href.endsWith("/")) {
+                                                                window.location.href += privateSession
+                                                            } else {
+                                                                window.location.href += "/" + privateSession
+                                                            }
+                                                        }}
+                                                    >
+                                                        <span>{privateSession}</span>
+                                                        <TooltipIcon
+                                                            color="#f00"
+                                                            message="Apagar"
+                                                            clickFunction={(e) => this.deletePrivateSession(e, privateSession)}
+                                                            icon={<DeleteForeverIcon />}
+                                                        />
+                                                    </Box>
+                                                )
+                                            })
+                                        }
+                                    </Box>
+                                    : null
                                 }
+                            </Box>
+
+                            <Button
+                                sx={{
+                                    p: 0,
+                                    mr: "1.5rem"
+                                }}
+                                onClick={() => this.openLogsMenu()}
+                            >
+                                <AssignmentRoundedIcon sx={{mr: "0.3rem"}} />
+                                Logs
                             </Button>
 
-                            {
-                                this.state.privateSessionsOpen
-                                ? <Box
-                                    sx = {{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        position: 'absolute',
-                                        zIndex: "1",
-                                        backgroundColor: "#fff",
-                                        border: "1px solid black",
-                                        borderRadius: '0.5rem',
-                                        top: "5.5rem",
-                                        p: "0rem 1rem",
-                                        width: "8rem",
-                                        
-                                    }}
-                                >
-                                    {
-                                        this.state.privateSessions.map((privateSession, index) => {
-                                            return (
-                                                <Box
-                                                    key={index}
-                                                    sx={{
-                                                        display: "flex",
-                                                        flexDirection: "row",
-                                                        justifyContent: "space-between",
-                                                        height: "2rem",
-                                                        lineHeight: "2rem",
-                                                        borderTop: index !== 0 ? "1px solid black" : "0px solid black",
-                                                        cursor: "pointer"
-                                                    }}
-                                                    onClick={() => {
-                                                        if (window.location.href.endsWith("/")) {
-                                                            window.location.href += privateSession
-                                                        } else {
-                                                            window.location.href += "/" + privateSession
-                                                        }
-                                                    }}
-                                                >
-                                                    <span>{privateSession}</span>
-                                                    <TooltipIcon
-                                                        color="#f00"
-                                                        message="Apagar"
-                                                        clickFunction={(e) => this.deletePrivateSession(e, privateSession)}
-                                                        icon={<DeleteForeverIcon />}
-                                                    />
-                                                </Box>
-                                            )
-                                        })
-                                    }
-                                </Box>
-                                : null
-                            }
+                            <span>Free Space: {this.state.freeSpace} ({this.state.freeSpacePercentage}%)</span>
                         </Box>
-
-                        <Button
-                            sx={{
-                                p: 0,
-                                mr: "1.5rem"
-                            }}
-                            onClick={() => this.openLogsMenu()}
-                        >
-                            <AssignmentRoundedIcon sx={{mr: "0.3rem"}} />
-                            Logs
-                        </Button>
-
-                        <span>Free Space: {this.state.freeSpace} ({this.state.freeSpacePercentage}%)</span>
-                    </Box>
+                        : null
+                    }
 
                     <Box>
                         {
