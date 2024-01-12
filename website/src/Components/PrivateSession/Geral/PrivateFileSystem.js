@@ -43,6 +43,9 @@ class PrivateFileExplorer extends React.Component {
 
             layoutMenu: false,
             layoutFilename: null,
+
+            editingMenu: false,
+            editingFilename: null,
         }
 
         this.folderMenu = React.createRef();
@@ -132,7 +135,7 @@ class PrivateFileExplorer extends React.Component {
     }
 
     updateInfo() {
-        if (this.state.layoutMenu) return;
+        if (this.state.layoutMenu || this.state.editingMenu) return;
         this.rowRefs.forEach(ref => {
             var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
             if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
@@ -221,7 +224,23 @@ class PrivateFileExplorer extends React.Component {
     }
 
     createLayout(filename) {
+        this.state.app.setState({layoutMenu: true});
         this.setState({layoutMenu: true, layoutFilename: filename});
+    }
+
+    closeLayoutMenu() {
+        this.state.app.setState({layoutMenu: false});
+        this.setState({layoutMenu: false, layoutFilename: null});
+    }
+
+    editText(filename) {
+        this.state.app.setState({editingMenu: true});
+        this.setState({editingMenu: true, editingFilename: filename});
+    }
+
+    closeEditingMenu() {
+        this.state.app.setState({editingMenu: false});
+        this.setState({editingMenu: false, editingFilename: null});
     }
 
     createFile() {
@@ -567,18 +586,20 @@ class PrivateFileExplorer extends React.Component {
         return (
             <TableContainer component={Paper}>
                 <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
-                    <TableHead>
+                <TableHead>
                         <TableRow>
                             <TableCell sx={{borderLeft:"1px solid #aaa"}}>
                                 <Button
                                     startIcon={<SwapVertIcon />}
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
                                     onClick={() => this.sortByName(this.state.components)}>
-                                    <b>Ficheiro</b>
+                                    <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Detalhes</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Progresso</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Descrição</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -662,30 +683,33 @@ class PrivateFileExplorer extends React.Component {
         const OcrMenu = loadComponent('Form', 'OcrMenu');
         const DeleteMenu = loadComponent('Form', 'DeleteMenu');
         const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
-        const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu')
+        const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
+        const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
 
         return (
             <>
                 {
                     this.state.layoutMenu
                     ? <LayoutMenu filesystem={this} filename={this.state.layoutFilename} />
-                    : <Box sx={{
-                        ml: '1.5rem',
-                        mr: '1.5rem',
-                        mb: '1.5rem',
-                    }}>
-                        <Notification message={""} severity={"success"} ref={this.successNot}/>
-                        <Notification message={""} severity={"error"} ref={this.errorNot}/>
+                    : this.state.editingMenu
+                        ? <EditingMenu filesystem={this} filename={this.state.editingFilename} />
+                        : <Box sx={{
+                            ml: '1.5rem',
+                            mr: '1.5rem',
+                            mb: '1.5rem',
+                        }}>
+                            <Notification message={""} severity={"success"} ref={this.successNot}/>
+                            <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                        <FolderMenu filesystem={this} ref={this.folderMenu}/>
-                        <OcrMenu filesystem={this} ref={this.ocrMenu}/>
-                        <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-                        <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
+                            <FolderMenu filesystem={this} ref={this.folderMenu}/>
+                            <OcrMenu filesystem={this} ref={this.ocrMenu}/>
+                            <DeleteMenu filesystem={this} ref={this.deleteMenu} />
+                            <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
 
-                        {
-                            this.generateTable()
-                        }
-                    </Box>
+                            {
+                                this.generateTable()
+                            }
+                        </Box>
                 }
             </>
         );
