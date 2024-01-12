@@ -246,6 +246,25 @@ function App() {
             this.fileSystem.current.setState({layoutMenu: false, editingMenu: false});
         }
 
+        deletePrivateSession(e, privateSession) {
+            e.stopPropagation();
+            fetch(process.env.REACT_APP_API_URL + "/delete-private-session", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "sessionId": privateSession
+                })
+            })
+            .then(response => {return response.json()})
+            .then(data => {
+                if (data.success) {
+                    this.setState({privateSessions: data["private_sessions"]})
+                }
+            });
+        }
+
         render() {
             const Notification = loadComponent('Notification', 'Notifications');
             const VersionsMenu = loadComponent('Form', 'VersionsMenu');
