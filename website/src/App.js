@@ -553,16 +553,17 @@ function App() {
                                 }
                             </Box>
 
-                            <Button
+                            {/* <Button
                                 sx={{
                                     p: 0,
-                                    mr: "1.5rem"
+                                    mr: "1.5rem",
+                                    textTransform: "none",
                                 }}
                                 onClick={() => this.openLogsMenu()}
                             >
                                 <AssignmentRoundedIcon sx={{mr: "0.3rem"}} />
                                 Logs
-                            </Button>
+                            </Button> */}
 
                             <span>Free Space: {this.state.freeSpace} ({this.state.freeSpacePercentage}%)</span>
                         </Box>
