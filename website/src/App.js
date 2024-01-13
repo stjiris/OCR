@@ -83,7 +83,7 @@ function App() {
                 })
                 .then(response => {return response.json()})
                 .then(data => {
-                    if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
+                    // if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
                     this.setState({
                         freeSpace: data["free_space"],
                         freeSpacePercentage: data["free_space_percentage"],
@@ -97,11 +97,12 @@ function App() {
                     })
                     .then(response => {return response.json()})
                     .then(data => {
-                        if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
-                        if (this.header.current !== null) {
-                            this.header.current.setFreeSpace(data["free_space"], data["free_space_percentage"]);
-                            this.header.current.setPrivateSessions(data["private_sessions"]);
-                        }
+                        // if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
+                        this.setState({
+                            freeSpace: data["free_space"],
+                            freeSpacePercentage: data["free_space_percentage"],
+                            privateSessions: data["private_sessions"]
+                        });
                     });
                 }, 1000 * UPDATE_TIME);
             }
