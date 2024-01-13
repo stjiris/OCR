@@ -80,7 +80,7 @@ def get_system_info():
     return {
         "free_space": free_space,
         "free_space_percentage": free_space_percentage,
-        "logs": get_logs(),
+        # "logs": get_logs(),
         "private_sessions": get_private_sessions(),
     }
 
