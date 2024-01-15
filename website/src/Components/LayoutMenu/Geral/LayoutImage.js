@@ -421,6 +421,9 @@ export default class LayoutImage extends React.Component {
         var initialCoords = this.screenToImageCoordinates(this.state.initialCoords.x, this.state.initialCoords.y);
         var finalCoords = this.screenToImageCoordinates(e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX, e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY);
 
+        finalCoords.x = Math.max(finalCoords.x, initialCoords.x + 150);
+        finalCoords.y = Math.max(finalCoords.y, initialCoords.y + 150);
+
         var boxes = [...this.state.boxes];
         var refs = [...this.state.boxRefs];
         var ref = React.createRef();
