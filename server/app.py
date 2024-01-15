@@ -92,6 +92,9 @@ def create_folder():
     path = data["path"]
     folder = data["folder"]
 
+    if folder.startswith("_"):
+        return {"success": False, "error": "O nome da pasta não pode começar com _"}
+
     if os.path.exists(path + "/" + folder):
         return {"success": False, "error": "Já existe uma pasta com esse nome"}
 
@@ -704,6 +707,8 @@ if not os.path.exists("./files/"):
 if not os.path.exists("./pending-files/"):
     os.mkdir("./pending-files/")
 
+if not os.path.exists("./files/_private_sessions"):
+    os.mkdir("./files/_private_sessions")
 
 if __name__ == "__main__":
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
