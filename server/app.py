@@ -298,6 +298,9 @@ def find_valid_filename(path, basename, extension):
 
 @app.route("/prepare-upload", methods=["POST"])
 def prepare_upload():
+    if float(get_free_space()[1]) < 10:
+        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+
     data = request.json
     path = data["path"] 
     filename = data["name"]
@@ -348,6 +351,9 @@ def join_chunks(path, filename, total_count, complete_filename):
 
 @app.route("/upload-file", methods=["POST"])
 def upload_file():
+    if float(get_free_space()[1]) < 10:
+        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+    
     file = request.files["file"]
     path = request.form["path"]
     filename = request.form["name"]
@@ -418,6 +424,9 @@ def perform_ocr():
     @param multiple: if it is a folder or not
     """
 
+    if float(get_free_space()[1]) < 10:
+        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+    
     data = request.json
     path = data["path"]
     algorithm = data["algorithm"]

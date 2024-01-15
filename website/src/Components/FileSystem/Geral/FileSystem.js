@@ -51,6 +51,7 @@ class FileExplorer extends React.Component {
         this.folderMenu = React.createRef();
         this.ocrMenu = React.createRef();
         this.deleteMenu = React.createRef();
+        this.storageMenu = React.createRef();
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
@@ -164,6 +165,11 @@ class FileExplorer extends React.Component {
         this.folderMenu.current.toggleOpen();
     }
 
+    showStorageForm(errorMessage) {
+        this.storageMenu.current.setMessage(errorMessage);
+        this.storageMenu.current.toggleOpen();
+    }
+
     performOCR(multiple, file=null) {
         var path = this.state.current_folder.join('/');
         if (file !== null) path += '/' + file;
@@ -207,6 +213,9 @@ class FileExplorer extends React.Component {
                 } else {
                     this.setState({updateCount: this.state.updateCount + 1});
                 }
+            } else {
+                this.storageMenu.current.setMessage(data.error);
+                this.storageMenu.current.toggleOpen();
             }
         })
         .catch(error => {
@@ -275,6 +284,9 @@ class FileExplorer extends React.Component {
         
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
+                    } else {
+                        this.storageMenu.current.setMessage(data.error);
+                        this.storageMenu.current.toggleOpen();
                     }
                 });
 
@@ -832,6 +844,7 @@ class FileExplorer extends React.Component {
         const DeleteMenu = loadComponent('Form', 'DeleteMenu');
         const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
         const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
+        const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
 
         return (
             <>
@@ -851,6 +864,7 @@ class FileExplorer extends React.Component {
                             <FolderMenu filesystem={this} ref={this.folderMenu}/>
                             <OcrMenu filesystem={this} ref={this.ocrMenu}/>
                             <DeleteMenu filesystem={this} ref={this.deleteMenu} />
+                            <FullStorageMenu filesystem={this} ref={this.storageMenu} />
 
                             {
                                 this.generateTable()

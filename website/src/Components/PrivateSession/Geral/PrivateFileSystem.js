@@ -52,6 +52,7 @@ class PrivateFileExplorer extends React.Component {
         this.ocrMenu = React.createRef();
         this.deleteMenu = React.createRef();
         this.privateSessionMenu = React.createRef();
+        this.storageMenu = React.createRef();
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
@@ -216,6 +217,9 @@ class PrivateFileExplorer extends React.Component {
                 } else {
                     this.setState({updateCount: this.state.updateCount + 1});
                 }
+            } else {
+                this.storageMenu.current.setMessage(data.error);
+                this.storageMenu.current.toggleOpen();
             }
         })
         .catch(error => {
@@ -306,6 +310,9 @@ class PrivateFileExplorer extends React.Component {
         
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
+                    } else {
+                        this.storageMenu.current.setMessage(data.error);
+                        this.storageMenu.current.toggleOpen();
                     }
                 });
 
@@ -662,6 +669,11 @@ class PrivateFileExplorer extends React.Component {
         })
     }
 
+    showStorageForm(errorMessage) {
+        this.storageMenu.current.setMessage(errorMessage);
+        this.storageMenu.current.toggleOpen();
+    }
+
     checkOCRComplete() {
         let obj = this.state.info;
 
@@ -685,6 +697,7 @@ class PrivateFileExplorer extends React.Component {
         const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
         const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
         const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
+        const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
 
         return (
             <>
@@ -705,6 +718,7 @@ class PrivateFileExplorer extends React.Component {
                             <OcrMenu filesystem={this} ref={this.ocrMenu}/>
                             <DeleteMenu filesystem={this} ref={this.deleteMenu} />
                             <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
+                            <FullStorageMenu filesystem={this} ref={this.storageMenu} />
 
                             {
                                 this.generateTable()

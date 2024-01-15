@@ -257,6 +257,8 @@ class OcrMenu extends React.Component {
         this.errorNot = React.createRef();
         this.algoDropdown = React.createRef();
 
+        this.storageMenu = React.createRef();
+
         this.langs = React.createRef();
     }
 
@@ -309,8 +311,12 @@ class OcrMenu extends React.Component {
                 this.successNot.current.setMessage(data.message);
                 this.successNot.current.open();
             } else {
-                this.errorNot.current.setMessage(data.message);
-                this.errorNot.current.open();
+                if (data.error) {
+                    this.state.filesystem.showStorageForm(data.error);
+                } else {
+                    this.errorNot.current.setMessage(data.message);
+                    this.errorNot.current.open();
+                }
             }
 
             this.state.filesystem.updateFiles(data.files)
