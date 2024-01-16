@@ -316,7 +316,7 @@ def get_structure(path, private_session):
 
     :param path: the path to the files
     """
-    log.debug("Here")
+    log.info("Here")
     filesystem = {}
     name = path.split("/")[-1]
 
@@ -329,7 +329,7 @@ def get_structure(path, private_session):
 
     contents = []
     folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")])
-    log.debug(path, folders)
+    log.info(path, folders)
     for folder in folders:
         if private_session is None and folder == "_private_sessions": continue
         if private_session is not None and \
