@@ -453,6 +453,8 @@ class PrivateFileExplorer extends React.Component {
         /**
          * Find the folder in the files
          */
+        console.log(files, folder);
+
         if ( Array.isArray(files) ) {
             var i;
             for (i = 0; i < files.length; i++) {
