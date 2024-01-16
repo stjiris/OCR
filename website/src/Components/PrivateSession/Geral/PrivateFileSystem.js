@@ -65,6 +65,7 @@ class PrivateFileExplorer extends React.Component {
         /**
          * Fetch the files and info from the server
          */
+        console.log(this.state.current_folder.join("/"))
         fetch(process.env.REACT_APP_API_URL + 'files?path=' + this.state.current_folder.join("/"), {
             method: 'GET'
         })
