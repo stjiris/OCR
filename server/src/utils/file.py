@@ -329,7 +329,7 @@ def get_structure(path, private_session):
 
     contents = []
     folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")])
-    log.info(path, folders)
+    log.info(str(path) + " " + str(folders))
     for folder in folders:
         if private_session is None and folder == "_private_sessions": continue
         if private_session is not None and \
