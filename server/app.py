@@ -38,9 +38,9 @@ from src.utils.text import compare_dicts_words
 from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
-# logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
+logging.basicConfig(level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
-# log = app.logger
+log = app.logger
 
 lock_system = dict()
 private_sessions = dict()
@@ -51,6 +51,7 @@ private_sessions = dict()
 
 @app.route("/files", methods=["GET"])
 def get_file_system():
+    log.debug("Getting file system")
     if "path" not in request.values:
         return get_filesystem("files")
     
