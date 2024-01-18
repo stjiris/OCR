@@ -2,21 +2,19 @@ import json
 import logging as log
 import os
 import random
-import re
-import time
+import requests
 import uuid
 from datetime import datetime
-from difflib import SequenceMatcher
 from os import environ
 from pathlib import Path
 import pytz
 
-from pdf2image import convert_from_path
+import pypdfium2 as pdfium
+
 from PIL import Image
-# from PyPDF2 import PdfReader
-from pypdf import PdfReader
 from src.utils.export import export_file
 from src.utils.export import json_to_text
+from string import punctuation
 
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
@@ -33,6 +31,19 @@ TIMEZONE = pytz.timezone("Europe/Lisbon")
 #       - filename_changes.txt          (the text changed by the user)
 #       - conf.txt                      (the conf file of the OCR engine used)
 # - folder2
+
+def get_ner_file(path):
+    r = requests.post(
+        "https://iris.sysresearch.org/absconditus/from-text",
+        files={"file": open(f"{path}/_text.txt", "rb")},
+    )
+
+    if r.status_code == 200:
+        with open(f"{path}/_entities.json", "w", encoding="utf-8") as f:
+            json.dump(r.json(), f, indent=2, ensure_ascii=False)
+        return True
+    else:
+        return False
 
 # DONE
 def get_current_time():
@@ -60,16 +71,50 @@ def get_file_parsed(path):
         and "_data.json" not in f
     ]
 
+    files.sort(key=lambda x: int(x.split("/")[-1].split("_")[-1].split(".")[0]))
+
     data = []
-    for file in files:
+    words = {}
+    for id, file in enumerate(files):
         basename = get_file_basename(file)
         with open(file, encoding="utf-8") as f:
             hocr = json.load(f)
+
+            for sectionId, s in enumerate(hocr):
+                for lineId, l in enumerate(s):
+                    for wordId, w in enumerate(l):
+                        t = w["text"].lower().strip()
+
+                        while t:
+                            if t[0] in punctuation + "«»—":
+                                t = t[1:]
+                            else:
+                                break
+                        
+                        while t:
+                            if t[-1] in punctuation + "«»—":
+                                t = t[:-1]
+                            else:
+                                break
+
+                        if t == "" or t.isdigit():
+                            continue
+
+                        hocr[sectionId][lineId][wordId]["clean_text"] = t
+
+                        if t in words:
+                            words[t]["pages"].append(id)
+                        else:
+                            words[t] = {
+                                "pages": [id],
+                                "syntax": True
+                            }
 
             data.append(
                 {
                     "original_file": file,
                     "content": hocr,
+                    "page_number": int(basename.split("_")[-1]),
                     "page_url": IMAGE_PREFIX
                     + "/images/"
                     + "/".join(file.split("/")[1:-2])
@@ -78,7 +123,7 @@ def get_file_parsed(path):
                     + ".jpg",
                 }
             )
-    return data
+    return data, words
 
 # TODO
 def get_file_layouts(path):
@@ -94,12 +139,14 @@ def get_file_layouts(path):
             with open(filename, encoding="utf-8") as f:
                 layouts.append({
                     "boxes": json.load(f),
-                    "page_url": page_url
+                    "page_url": page_url,
+                    "page_number": page,
                 })
         else:
             layouts.append({
                 "boxes": [],
-                "page_url": page_url
+                "page_url": page_url,
+                "page_number": page,
             })
 
     return layouts
@@ -115,7 +162,7 @@ def save_file_layouts(path, layouts):
         filename = f"{path}/layouts/{basename}_{id}.json"
 
         with open(filename, "w", encoding="utf-8") as f:
-            json.dump(layouts, f, indent=2)
+            json.dump(layouts, f, indent=2, ensure_ascii=False)
   
 # DONE
 def generate_uuid(path):
@@ -145,13 +192,13 @@ def delete_structure(client, path):
             delete_structure(client, folder)
 
 # TODO
-def get_filesystem(path):
+def get_filesystem(path, private_session = None):
     """
         @@ -106,7 +101,7 @@ def get_filesystem(path):
     @param path: path to the folder
     """
-    files = get_structure(path)
-    info = get_structure_info(path)
+    files = get_structure(path, private_session)
+    info = get_structure_info(path, private_session)
 
     if files is None:
         files = {path: []}
@@ -228,7 +275,7 @@ def get_folder_info(path):
     return info
 
 # TODO
-def get_structure_info(path):
+def get_structure_info(path, private_session):
     """
     Get the info of each file/folder
     @param files: the filesystem structure
@@ -236,7 +283,14 @@ def get_structure_info(path):
     info = {}
 
     for root, folders, _ in os.walk(path):
+        root = root.replace("\\", "/")
         for folder in folders:
+            if private_session is None and ("_private_sessions" in root or folder == "_private_sessions"): continue
+
+            if private_session is not None and \
+                not(f"files/_private_sessions/{private_session}" in f"{root}/{folder}" or \
+                    f"{root}/{folder}" in f"files/_private_sessions/{private_session}"): continue
+            
             folder_path = f"{root}/{folder}".replace("\\", "/")
 
             folder_info = get_folder_info(folder_path)
@@ -246,7 +300,7 @@ def get_structure_info(path):
     return info
 
 # TODO
-def get_structure(path):
+def get_structure(path, private_session):
     """
     Put the file system structure in a dict
     {
@@ -275,7 +329,13 @@ def get_structure(path):
     contents = []
     folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")])
     for folder in folders:
-        file = get_structure(f"{path}/{folder}")
+        if private_session is None and folder == "_private_sessions": continue
+        if private_session is not None and \
+            not (path + "/" + folder in f"files/_private_sessions/{private_session}" or \
+                 f"files/_private_sessions/{private_session}" in path + "/" + folder): continue
+
+        file = get_structure(f"{path}/{folder}", private_session)
+
         if file is not None:
             contents.append(file)
 
@@ -294,7 +354,8 @@ def get_page_count(filename):
     extension = filename.split(".")[-1]
     if extension == "pdf":
         with open(filename, "rb") as f:
-            return len(PdfReader(f).pages)
+            return len(pdfium.PdfDocument(f))
+            # return len(PdfReader(f).pages)
     elif extension in ["jpg", "jpeg"]:
         return 1
 
@@ -341,7 +402,7 @@ def update_data(file, data):
     previous_data = get_data(file)
     with open(file, "w", encoding="utf-8") as f:
         previous_data.update(data)
-        json.dump(previous_data, f)
+        json.dump(previous_data, f, ensure_ascii=False, indent=2)
 
 # DONE
 def prepare_file_ocr(path):
@@ -357,25 +418,20 @@ def prepare_file_ocr(path):
         log.info("{path}: A preparar páginas")
 
         if extension == "pdf":
-            pages = convert_from_path(
-                f"{path}/{basename}.pdf",
-                paths_only=True,
-                output_folder=path,
-                fmt="jpg",
-                thread_count=2,
-            )
-            log.info("{path}: A trocar os nomes das páginas")
-            for i, page in enumerate(pages):
-                if os.path.exists(f"{path}/{basename}_{i}.jpg"):
-                    os.remove(page)
-                else:
-                    Path(page).rename(f"{path}/{basename}_{i}.jpg")
+            pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
+            for i in range(len(pdf)):
+                page = pdf[i]
+                bitmap = page.render(200 / 72)
+                pil_image = bitmap.to_pil()
+                pil_image.save(f"{path}/{basename}_{i}.jpg")
+
+            pdf.close()
 
         elif extension in ["jpeg", "jpg"]:
             img = Image.open(f"{path}/{basename}.{extension}")
             img.save(f"{path}/{basename}.jpg", "JPEG")
     except Exception as e:
-        print(e)
+        
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"] = data.get("ocr", {})

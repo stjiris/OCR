@@ -69,15 +69,18 @@ class LayoutBox extends React.Component {
             bottom: props.bottom,
             right: props.right,
 
-            type: props.type || "text"
+            type: props.type || "text",
+            id: props.id,
+            checked: props.checked || false,
+            copyId: props.copyId,
         }
     }
 
     componentDidMount() {
         this.setState({
-            mainColor: this.state.type === "text" ? "#00f" : this.state.type === "image" ? '#08A045' : '#F05E16',
-            numberColor: this.state.type === "text" ? "#00fa" : this.state.type === "image" ? '#08A045A6' : '#F05E16A6',
-            backColor: this.state.type === "text" ? "#00f2" : this.state.type === "image" ? '#08A04526' : '#F05E1626',
+            mainColor: this.state.type === "text" ? "#0000ff" : this.state.type === "image" ? '#08A045' : '#F05E16',
+            numberColor: this.state.type === "text" ? "#0000ff" : this.state.type === "image" ? '#08A045' : '#F05E16',
+            backColor: this.state.type === "text" ? "#0000ff22" : this.state.type === "image" ? '#08A04526' : '#F05E1626',
         })
     }
 
@@ -117,7 +120,10 @@ class LayoutBox extends React.Component {
             left: this.state.left,
             bottom: this.state.bottom,
             right: this.state.right,
-            type: this.state.type
+            type: this.state.type,
+            id: this.state.id,
+            checked: this.state.checked,
+            copyId: this.state.copyId,
         }
     }
 
@@ -126,7 +132,7 @@ class LayoutBox extends React.Component {
         var shiftY = this.state.view.current.offsetTop;
 
         var mouseX = e.clientX - shiftX + this.state.view.current.scrollLeft;
-        var mouseY = e.clientY - shiftY + this.state.view.current.scrollTop;
+        var mouseY = e.clientY - shiftY + this.state.view.current.scrollTop + window.scrollY;
 
         if (
             mouseX <= 0 || mouseY <= 0
@@ -151,11 +157,13 @@ class LayoutBox extends React.Component {
         var initialCoords = this.imageToScreenCoordinates(this.state.left, this.state.top);
         var finalCoords = this.imageToScreenCoordinates(this.state.right, this.state.bottom);
 
+        var mainColor = this.state.checked ? `${this.state.mainColor}` : `${this.state.mainColor}80`
+
         return (
             <Box
                 sx={{
                     position: 'absolute',
-                    border: `2px solid ${this.state.mainColor}`,
+                    border: `2px solid ${mainColor}`,
                     backgroundColor: `${this.state.backColor}`,
                     top: `${initialCoords.y}px`,
                     left: `${initialCoords.x}px`,
@@ -167,25 +175,23 @@ class LayoutBox extends React.Component {
                     <Box
                         sx={{
                             position: "absolute",
-                            backgroundColor: `${this.state.numberColor}`,
-                            width: "30px",
-                            height: "30px",
-                            borderRadius: "50%",
+                            backgroundColor: `${mainColor}`,
+                            padding: '0px 10px',
+                            borderRadius: '10px',
                             display: "flex",
                             justifyContent: "center",
-                            alignItems: "center",
                             color: "white",
-                            left: `${(finalCoords.x - initialCoords.x)/2 - 15}px`,
-                            top: `${(finalCoords.y - initialCoords.y)/2 - 15}px`
+                            left: `${(finalCoords.x - initialCoords.x)/2 - 25}px`,
+                            top: `${(finalCoords.y - initialCoords.y)/2 - 8}px`
                         }}
                     >
-                        <span><b>{this.state.index}</b></span>
+                        <span><b>{this.state.id}</b></span>
                     </Box>
 
                     <Box draggable
                         sx={{
                             position: "absolute", top: "-5px", left: "-5px",
-                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${this.state.mainColor}`,
+                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${mainColor}`,
                             cursor: "move",
                             zIndex: 100
                         }}
@@ -197,7 +203,7 @@ class LayoutBox extends React.Component {
                     <Box draggable
                         sx={{
                             position: "absolute", top: "-5px", right: "-5px",
-                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${this.state.mainColor}`,
+                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${mainColor}`,
                             cursor: "move",
                             zIndex: 100
                         }}
@@ -208,7 +214,7 @@ class LayoutBox extends React.Component {
                     <Box draggable
                         sx={{
                             position: "absolute", bottom: `-${finalCoords.y - initialCoords.y + 5}px`, left: "-5px",
-                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${this.state.mainColor}`,
+                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${mainColor}`,
                             cursor: "move",
                             zIndex: 100
                         }}
@@ -219,7 +225,7 @@ class LayoutBox extends React.Component {
                     <Box draggable
                         sx={{
                             position: "absolute", bottom: `-${finalCoords.y - initialCoords.y + 5}px`, right: "-5px",
-                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${this.state.mainColor}`,
+                            width: "10px", height: "10px", borderRadius: "50%", backgroundColor: `${mainColor}`,
                             cursor: "move",
                             zIndex: 100
                         }}
@@ -239,6 +245,7 @@ export default class LayoutImage extends React.Component {
         this.state = {
             menu: props.menu,
             image: props.image,
+            pageIndex: props.pageIndex,
             boxHeight: "450px",
             height: "450px",
 
@@ -262,15 +269,15 @@ export default class LayoutImage extends React.Component {
 
     componentDidMount() {
         this.setState({
-            boxHeight: `${height - heightReduction}px`,
-            height: `${height - heightReduction}px`,
+            boxHeight: `${window.innerHeight - 160}px`,
+            height: `${window.innerHeight - 160}px`,
         }, this.loadBoxes);
     }
 
-    createLayoutBox(ref, index, box, type) {
+    createLayoutBox(ref, index, box, type, checked = false, copyId = undefined) {
         return <LayoutBox
             ref={ref}
-            key={index + " " + box.top + " " + box.left + " " + box.bottom + " " + box.right}
+            key={index + " " + box.top + " " + box.left + " " + box.bottom + " " + box.right + " " + box.checked + " " + checked + " " + box.id + " " + box.copyId}
             index={index}
             layoutImage={this}
             view={this.view}
@@ -280,41 +287,33 @@ export default class LayoutImage extends React.Component {
             bottom={box.bottom}
             right={box.right}
             type={type}
+            id={box.id || type[0].toUpperCase() + this.state.pageIndex + "." + index}
+            checked={box.checked || checked || false}
+            copyId={box.copyId || copyId}
         />
     }
 
     loadBoxes() {
         var boxes = [];
-        var imageBoxes = [];
-        var ignoreBoxes = [];
-
         var refs = [];
-        var imageRefs = [];
-        var ignoreRefs = [];
 
-        this.state.boxesCoords.forEach((box) => {
-            var ref = React.createRef();
-            var type = box.type || "text";
+        this.state.boxesCoords.forEach((group) => {
+            var type = group.type || "text";
+            var checked = group.checked || false;
+            var copyId = group.copyId || undefined;
 
-            var boxList;
-            var refList;
+            var groupRefs = [];
 
-            if (type === "text") {
-                boxList = boxes;
-                refList = refs;
-            } else if (type === "image") {
-                boxList = imageBoxes;
-                refList = imageRefs;
-            } else if (type === "ignore") {
-                boxList = ignoreBoxes;
-                refList = ignoreRefs;
-            }
+            group.squares.forEach((box) => {
+                var ref = React.createRef();
+                boxes.push(this.createLayoutBox(ref, group.squares.length + 1, box, type, checked, copyId));
+                groupRefs.push(ref);
+            });
 
-            boxList.push(this.createLayoutBox(ref, boxList.length + 1, box, type));
-            refList.push(ref);
+            refs.push(groupRefs);
         })
 
-        this.setState({boxes: boxes, boxRefs: refs, imageBoxes: imageBoxes, imageRefs: imageRefs, ignoreBoxes: ignoreBoxes, ignoreRefs: ignoreRefs});
+        this.setState({boxes: boxes, boxRefs: refs});
     }
 
     updateBoxes(boxes) {
@@ -323,50 +322,38 @@ export default class LayoutImage extends React.Component {
 
     getAllBoxes() {
         var coords = [];
-        this.state.boxRefs.forEach((ref) => {
-            coords.push(ref.current.getBoxDetails());
-        })
-        this.state.imageRefs.forEach((ref) => {
-            coords.push(ref.current.getBoxDetails());
-        })
-        this.state.ignoreRefs.forEach((ref) => {
-            coords.push(ref.current.getBoxDetails());
+        this.state.boxRefs.forEach((groupRefs) => {
+            var squares = [];
+            groupRefs.forEach((ref) => {
+                squares.push(ref.current.getBoxDetails());
+            });
+            coords.push({squares: squares, type: squares[0].type, checked: squares[0].checked, copyId: squares[0].copyId});
         })
         return coords;
     }
 
     getWindowWidth() {
         const width = window.innerWidth;
-        const widthReduction = 400;
+        const widthReduction = 550;
 
         return width - widthReduction;
     }
 
     recreateBoxes() {
         var boxes = [];
-        var imageBoxes = [];
-        var ignoreBoxes = [];
+        // var imageBoxes = [];
+        // var ignoreBoxes = [];
 
         var refs = [...this.state.boxRefs];
-        var imageRefs = [...this.state.imageRefs];
-        var ignoreRefs = [...this.state.ignoreRefs];
+        // var imageRefs = [...this.state.imageRefs];
+        // var ignoreRefs = [...this.state.ignoreRefs];
+        refs.forEach((groupRefs) => {
+            groupRefs.forEach((ref) => {
+                boxes.push(this.createLayoutBox(ref, boxes.length + 1, ref.current.getBoxDetails(), "text"));
+            });
+        });
 
-        refs.forEach((ref, index) => {
-            var coords = ref.current.getBoxDetails();
-            boxes.push(this.createLayoutBox(ref, index + 1, coords, "text"));
-        })
-
-        imageRefs.forEach((ref, index) => {
-            var coords = ref.current.getBoxDetails();
-            imageBoxes.push(this.createLayoutBox(ref, index + 1, coords, "image"));
-        })
-
-        ignoreRefs.forEach((ref, index) => {
-            var coords = ref.current.getBoxDetails();
-            ignoreBoxes.push(this.createLayoutBox(ref, index + 1, coords, "ignore"));
-        })
-
-        this.setState({boxes: boxes, imageBoxes: imageBoxes, ignoreBoxes: ignoreBoxes});
+        this.setState({boxes: boxes});
     }
 
     zoomIn() {
@@ -401,8 +388,8 @@ export default class LayoutImage extends React.Component {
     dragStart(e) {
         e.stopPropagation();
 
-        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft;
-        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop;
+        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX;
+        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY;
 
         this.preview.current.toggleVisibility();
         this.preview.current.setInitialCoordinates(y, x);
@@ -418,8 +405,8 @@ export default class LayoutImage extends React.Component {
     duringDrag(e) {
         if (!this.state.dragging) return;
 
-        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft;
-        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop;
+        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX;
+        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY;
 
         this.preview.current.updateCoordinates(y, x);
     }
@@ -432,14 +419,17 @@ export default class LayoutImage extends React.Component {
         if (!this.state.dragging) return;
 
         var initialCoords = this.screenToImageCoordinates(this.state.initialCoords.x, this.state.initialCoords.y);
-        var finalCoords = this.screenToImageCoordinates(e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft, e.clientY - this.view.current.offsetTop + this.view.current.scrollTop);
+        var finalCoords = this.screenToImageCoordinates(e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX, e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY);
+
+        finalCoords.x = Math.max(finalCoords.x, initialCoords.x + 150);
+        finalCoords.y = Math.max(finalCoords.y, initialCoords.y + 150);
 
         var boxes = [...this.state.boxes];
         var refs = [...this.state.boxRefs];
         var ref = React.createRef();
         var coords = {top: initialCoords.y, left: initialCoords.x, bottom: finalCoords.y, right: finalCoords.x};
-        boxes.push(this.createLayoutBox(ref, boxes.length + 1, coords, "text"));
-        refs.push(ref);
+        boxes.push(this.createLayoutBox(ref, refs.length + 1, coords, "text"));
+        refs.push([ref]);
 
         this.preview.current.toggleVisibility();
         this.setState({dragging: false, boxes: boxes, boxRefs: refs}, this.updateMenu);

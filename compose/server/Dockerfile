@@ -16,6 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 FROM base as builder
 
+# populate variable for later
+ARG TARGETARCH
+RUN arch=$TARGETARCH \
+    && if [ "$TARGETARCH" = "amd64" ]; then arch="x64"; fi \
+    && echo $arch > /tmp/arch
+
 # Note we need leptonica here to build jbig2
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
@@ -26,11 +32,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libffi-dev \
   ca-certificates \
   curl \
-  git
+  git \
+  libcairo2-dev \
+  pkg-config
 
 # Get the latest pip (Ubuntu version doesn't support manylinux2010)
 RUN \
   curl https://bootstrap.pypa.io/get-pip.py | python3
+
+WORKDIR /usr/local/src
 
 # Compile and install jbig2
 # Needs libleptonica-dev, zlib1g-dev
@@ -43,6 +53,26 @@ RUN \
   && cd .. \
   && rm -rf jbig2
 
+ARG PYPDFIUM2_VERSION=4.25.0
+RUN pip3 install --no-cache-dir pypdfium2==$PYPDFIUM2_VERSION
+
+# synced with libpdfium version bundled by pypdfium above
+ARG PDFIUM_VERSION=6164
+ARG PDFIUM_URL=https://github.com/bblanchon/pdfium-binaries/releases/download/chromium
+
+# build to this prefix 
+ARG PREFIX=/usr/local
+ENV PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+
+RUN \
+  mkdir pdfium \
+  && curl -L $PDFIUM_URL/$PDFIUM_VERSION/pdfium-linux-$(cat /tmp/arch).tgz | \
+  tar xz -C pdfium \
+  && cd pdfium \
+  && cp lib/* $PREFIX/lib \
+  && cp -r include/* $PREFIX/include \
+  && cd .. \
+  && rm -rf pdfium
 COPY . /app
 
 WORKDIR /app
@@ -58,6 +88,7 @@ RUN add-apt-repository -y ppa:alex-p/tesseract-ocr-devel
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
+  fonts-droid-fallback \
   jbig2dec \
   img2pdf \
   libsm6 libxext6 libxrender-dev \
@@ -70,7 +101,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   tesseract-ocr-por \
   tesseract-ocr-spa \
   unpaper \
-  poppler-utils \
+  file \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -81,5 +112,3 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 COPY --from=builder /app/ /app/
 RUN sed -i 's/\r$//g' /app/start
 RUN chmod +x /app/start
-
-ENTRYPOINT [ "/app/start" ]

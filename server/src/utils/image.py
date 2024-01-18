@@ -226,7 +226,7 @@ def parse_images(path):
 
     if os.path.exists(filename):
         # Grab all the images already in the folder
-        images = glob.glob(f"{path}/{pdf_basename}_*.jpg")
+        images = [x for x in glob.glob(f"{path}/{pdf_basename}_*.jpg") if x[-5] != "$"]
         sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))
 
         all_layouts = []
@@ -238,10 +238,16 @@ def parse_images(path):
             for box in mer_boxes.values():
                 left, top, right, bottom = box
                 formatted_box = {
-                    "top": top,
-                    "left": left,
-                    "bottom": bottom,
-                    "right": right
+                    "checked": False,
+                    "type": "text",
+                    "squares": [
+                        {
+                            "top": top,
+                            "left": left,
+                            "bottom": bottom,
+                            "right": right,
+                        }
+                    ]
                 }
                 formatted_boxes.append(formatted_box)
 
@@ -252,9 +258,14 @@ def parse_images(path):
             os.mkdir(layouts_path)
 
         sorted_all_layouts = []
-        for layout in all_layouts:
+        for page, layout in enumerate(all_layouts):
             # This orders the segments based on typical reading order: top-left to bottom-right.
-            sorted_layout = sorted(layout['boxes'], key=lambda c: (c['top'], c['left']))
+            sorted_layout = sorted(layout['boxes'], key=lambda c: (c["squares"][0]['top'], c["squares"][0]['left']))
+
+            for i, group in enumerate(sorted_layout):
+                for b in group['squares']:
+                    b['id'] = f"T{page + 1}.{i + 1}"
+
             sorted_all_layouts.append({'boxes': sorted_layout})
         save_file_layouts(path, sorted_all_layouts)
     else:

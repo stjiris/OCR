@@ -2,9 +2,22 @@ import './App.css';
 import React from 'react';
 
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 
 import loadComponent from './utils/loadComponents';
 import footerBanner from './static/footerBanner.png';
+
+import LockIcon from '@mui/icons-material/Lock';
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import HelpIcon from '@mui/icons-material/Help';
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
+
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+
+
 
 /**
  * About Versioning:
@@ -14,7 +27,7 @@ import footerBanner from './static/footerBanner.png';
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.18.2";
+const VERSION = "0.22.4";
 const UPDATE_TIME = 30;
 
 function App() {
@@ -25,16 +38,24 @@ function App() {
                 sessionId: window.location.href.split("/").pop(),
 
                 fileSystemMode: true,
-                editFileMode: false,
+                editingMenu: false,
+                layoutMenu: false,
 
                 fileOpened: "",
                 path: "files",
+
+                currentFolder: ["files"],
 
                 contents: [],
 
                 filesChoice: [],
                 algorithmChoice: [],
                 configChoice: [],
+
+                privateSessionsOpen: false,
+                privateSessions: [],
+                freeSpace: props.freeSpace || 0,
+                freeSpacePercentage: props.freeSpacePercentage || 0,
             }
 
             this.saveButton = React.createRef();
@@ -50,6 +71,7 @@ function App() {
 
             this.fileSystem = React.createRef();
             this.editPage = React.createRef();
+            this.textEditor = React.createRef();
 
             this.sendChanges = this.sendChanges.bind(this);
         }
@@ -61,11 +83,12 @@ function App() {
                 })
                 .then(response => {return response.json()})
                 .then(data => {
-                    if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
-                    if (this.header.current !== null) {
-                        this.header.current.setFreeSpace(data["free_space"], data["free_space_percentage"]);
-                        this.header.current.setPrivateSessions(data["private_sessions"]);
-                    }
+                    // if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
+                    this.setState({
+                        freeSpace: data["free_space"],
+                        freeSpacePercentage: data["free_space_percentage"],
+                        privateSessions: data["private_sessions"]
+                    });
                 });
 
                 this.interval = setInterval(() => {
@@ -74,18 +97,20 @@ function App() {
                     })
                     .then(response => {return response.json()})
                     .then(data => {
-                        if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
-                        if (this.header.current !== null) {
-                            this.header.current.setFreeSpace(data["free_space"], data["free_space_percentage"]);
-                            this.header.current.setPrivateSessions(data["private_sessions"]);
-                        }
+                        // if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
+                        this.setState({
+                            freeSpace: data["free_space"],
+                            freeSpacePercentage: data["free_space_percentage"],
+                            privateSessions: data["private_sessions"]
+                        });
                     });
                 }, 1000 * UPDATE_TIME);
             }
         }
 
         getPrivateSession() {
-            if (["", "ocr", "ocr-dev", process.env.REACT_APP_ADMIN].includes(this.state.sessionId)) return null;
+            if (["", "ocr", "ocr-dev", "ocr-prod", process.env.REACT_APP_ADMIN].includes(this.state.sessionId)) return null;
+            // if (this.state.sessionId.startsWith("localhost")) return null;
             return this.state.sessionId;
         }
 
@@ -96,7 +121,9 @@ function App() {
              * @param {string} path - The path of the file
              * @param {string} file - The name of the file
              */
-            this.setState({path: path, fileOpened: file, fileSystemMode: false, editFileMode: true});
+            // this.setState({path: path, fileOpened: file, fileSystemMode: false, editingMenu: true});
+            this.textEditor.current.setFile(path, file);
+            this.textEditor.current.toggleOpen();
         }
 
         viewFile(file, algorithm, config) {
@@ -108,7 +135,7 @@ function App() {
             this.setState(
                 {
                     fileSystemMode: false,
-                    editFileMode: false,
+                    editingMenu: false,
                     filesChoice: [{name: file, code: file}],
                     algorithmChoice: [{name: algorithm, code: algorithm}],
                     configChoice: [{name: config, code: config}]
@@ -175,7 +202,7 @@ function App() {
                 if (data.success) {
                     this.successNot.current.setMessage("Texto submetido com sucesso");
                     this.successNot.current.open();
-                    this.setState({contents: [], fileOpened: "", fileSystemMode: true, editFileMode: false})
+                    this.setState({contents: [], fileOpened: "", fileSystemMode: true, editingMenu: false})
 
                     var info = data["info"];
                     this.fileSystem.current.setState({info: info}, this.fileSystem.current.updateInfo);
@@ -186,26 +213,362 @@ function App() {
             });
         }
 
+        createPrivateSession() {
+            fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
+                method: 'GET'
+            })
+            .then(response => {return response.json()})
+            .then(data => {
+                var sessionId = data["sessionId"];
+                if (window.location.href.endsWith('/')) {
+                    window.location.href = window.location.href + `${sessionId}`;
+                } else {
+                    window.location.href = window.location.href + `/${sessionId}`;
+                }
+            });
+        }
+
+        changeFolderFromPath(folder_name) {
+            var current_folder = this.state.currentFolder;
+    
+            // Remove the last element of the path until we find folder_name
+            while (current_folder[current_folder.length - 1] !== folder_name) {
+                current_folder.pop();
+            }
+    
+            this.setState({
+                currentFolder: current_folder,  
+                fileSystemMode: true,
+                editingMenu: false, 
+                layoutMenu: false,
+            });
+
+            this.fileSystem.current.setState({layoutMenu: false, editingMenu: false});
+        }
+
+        deletePrivateSession(e, privateSession) {
+            e.stopPropagation();
+            fetch(process.env.REACT_APP_API_URL + "/delete-private-session", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "sessionId": privateSession
+                })
+            })
+            .then(response => {return response.json()})
+            .then(data => {
+                if (data.success) {
+                    this.setState({privateSessions: data["private_sessions"]})
+                }
+            });
+        }
+
         render() {
             const Notification = loadComponent('Notification', 'Notifications');
-            const Header = loadComponent('Header', 'Header');
             const VersionsMenu = loadComponent('Form', 'VersionsMenu');
             const LogsMenu = loadComponent('Form', 'LogsMenu');
             const FileExplorer = loadComponent('FileSystem', 'FileSystem');
             const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
             // const EditPage = loadComponent('EditPage', 'EditPage');
-            const EditPage2 = loadComponent('EditPage2', 'EditPage');
+            // const EditPage2 = loadComponent('EditPage2', 'EditPage');
+            // const EditPage = loadComponent('EditPage3', 'EditPage');
+            const EditPagePopUp = loadComponent('EditPage3', 'EditPagePopUp');
             const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
+
+            const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
+
+            var buttonsDisabled = this.getPrivateSession() !== null || !this.state.fileSystemMode || this.state.layoutMenu || this.state.editingMenu;
 
             return (
                 <Box className="App" sx={{height: '100vh'}}>
                     <Notification message={""} severity={"success"} ref={this.successNot}/>
                     <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                    <Header ref={this.header} app={this} privateSession={this.getPrivateSession()} version={VERSION}/>
-
                     <VersionsMenu ref={this.versionsMenu}/>
                     <LogsMenu ref={this.logsMenu}/>
+
+                    <EditPagePopUp ref={this.textEditor} app={this}/>
+
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        zIndex: '5',
+                        // border: '1px solid #000000',
+                        pt: '0.5rem',
+                        pl: '0.5rem',
+                        pb: '0.5rem',
+                        pr: '0.5rem',
+                    }}>
+                        <Box sx={{display: "flex", flexDirection: "row"}}>
+                            <Button
+                                disabled={buttonsDisabled}
+                                variant="contained"
+                                startIcon={<LockIcon/>}
+                                onClick={() => this.createPrivateSession()}
+                                sx={{
+                                    border: '1px solid black',
+                                    height: '2rem',
+                                    textTransform: 'none',
+                                    fontSize: '0.75rem'
+                                }}
+                            >
+                                Sessão Privada
+                            </Button>
+                            
+                            <Button
+                                disabled={buttonsDisabled}
+                                variant="contained"
+                                startIcon={<CreateNewFolderIcon/>}
+                                onClick={() => this.fileSystem.current.createFolder()}
+                                sx={{
+                                    border: '1px solid black',
+                                    height: '2rem',
+                                    textTransform: 'none',
+                                    ml: '0.5rem',
+                                    fontSize: '0.75rem'
+                                }}
+                            >
+                                Nova Pasta
+                            </Button>
+
+                            <Box
+                                sx = {{
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    flexWrap: 'wrap',
+                                    ml: '0.2rem'
+                                }}
+                            >
+                                {
+                                    this.state.currentFolder.map((folder, index) => {
+                                        var name = (folder !== "files" || index > 0) ? folder : "Início";
+                                        var folderDepth = this.state.currentFolder.length;
+
+                                        if (!this.state.fileSystemMode && !this.state.editingMenu && index > 0)
+                                            return null;
+                                        
+                                        if (folderDepth > 3 && index === 1) {
+                                            return (
+                                                <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
+                                                    <p key={index} style={{margin: 0}}>... /</p>
+                                                </Box>
+                                            )
+                                        }
+
+                                        if (folderDepth > 3 && index > 0 && index < folderDepth - 2) return null;
+
+                                        return (
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    flexDirection: 'row',
+                                                    lineHeight: '2rem',
+                                                }}
+                                                key={"Box" + folder}
+                                            >
+                                                <Button
+                                                    key={folder}
+                                                    onClick={() => {
+                                                        if (index === 0 && !this.state.fileSystemMode) {
+                                                            this.setState({fileSystemMode: true, editingMenu: false, filesChoice: [], algorithmChoice: [], configChoice: []})
+                                                        } else if (this.getPrivateSession() !== null) {
+                                                            this.redirectHome();
+                                                        } else {
+                                                            this.changeFolderFromPath(folder);
+                                                            this.fileSystem.current.setState({current_folder: this.state.currentFolder});
+                                                            this.fileSystem.current.displayFileSystem();
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        margin: 0,
+                                                        padding: '0px 10px 0px 10px',
+                                                        textTransform: 'none',
+                                                        display: "flex",
+                                                        textAlign: "left",
+                                                        textDecoration: "underline",
+                                                        height: '2rem',
+                                                    }}
+                                                    variant="text"
+                                                >
+                                                    {name}
+                                                </Button>
+                                                <p key={index} style={{margin: 0}}>/</p>
+                                            </Box>
+                                        )
+                                    })
+                                }
+                                {
+                                    !buttonsDisabled && this.state.currentFolder.length > 1
+                                    ? <Button
+                                        variant="text"
+                                        startIcon={<NoteAddIcon/>}
+                                        onClick={() => this.fileSystem.current.createFile()}
+                                        style={{
+                                            margin: 0,
+                                            padding: '0px 10px 0px 10px',
+                                            display: "flex",
+                                            textAlign: "left",
+                                            height: '2rem',
+                                            textTransform: 'none',
+                                        }}
+                                    >
+                                        Adicionar Documento
+                                    </Button>
+                                    : null
+                                }
+                                
+                            </Box>
+                        </Box>
+
+                        
+                        
+                        <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
+                            <Button
+                                disabled={buttonsDisabled}
+                                variant="text"
+                                onClick={() => {
+                                    this.setState({
+                                        fileSystemMode: false,
+                                        editingMenu: false,
+                                        filesChoice: [],
+                                        algorithmChoice: [],
+                                        configChoice: []
+                                    })
+                                }}
+                                sx={{
+                                    mr: '1.5rem',
+                                    textTransform: 'none',
+                                    fontWeight: 'bold',
+                                    p: 0,
+                                    fontSize: '1rem',
+                                    textDecoration: 'underline'
+                                }}
+                            >
+                                Pesquisar
+                            </Button>
+
+                            <p style={{margin: 0}}>{`Versão: ${VERSION}`}</p>
+
+                            <Button
+                                variant="text"
+                                onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
+                                startIcon={<HelpIcon/>}
+                                sx={{
+                                    ml: '1.5rem',
+                                    textTransform: 'none',
+                                    p: 0
+                                }}
+                            >
+                                Ajuda
+                            </Button>
+                        </Box>
+                    </Box>
+
+                    {
+                        window.location.href.includes(process.env.REACT_APP_ADMIN)
+                        ? <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'right',
+                            alignItems: "center",
+                            zIndex: '5',
+                            pt: '0.5rem',
+                            pl: '0.5rem',
+                            pb: '0.5rem',
+                            pr: '0.5rem',
+                        }}>
+                            <Box sx={{display: "flex", flexDirection: "column"}}>
+                                <Button
+                                    sx={{
+                                        alignItems: "center",
+                                        textTransform: "none",
+                                        height: "2rem",
+                                        mr: "1.5rem"
+                                    }}
+                                    onClick={() => this.setState({privateSessionsOpen: !this.state.privateSessionsOpen})}
+                                >
+                                    Sessões Privadas
+                                    {
+                                        this.state.privateSessionsOpen
+                                        ? <KeyboardArrowUpRoundedIcon sx={{ml: '0.3rem'}} />
+                                        : <KeyboardArrowDownRoundedIcon sx={{ml: '0.3rem'}} />
+                                    }
+                                </Button>
+
+                                {
+                                    this.state.privateSessionsOpen
+                                    ? <Box
+                                        sx = {{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            position: 'absolute',
+                                            zIndex: "1",
+                                            backgroundColor: "#fff",
+                                            border: "1px solid black",
+                                            borderRadius: '0.5rem',
+                                            top: "5.5rem",
+                                            p: "0rem 1rem",
+                                            width: "8rem",
+                                            
+                                        }}
+                                    >
+                                        {
+                                            this.state.privateSessions.map((privateSession, index) => {
+                                                return (
+                                                    <Box
+                                                        key={index}
+                                                        sx={{
+                                                            display: "flex",
+                                                            flexDirection: "row",
+                                                            justifyContent: "space-between",
+                                                            height: "2rem",
+                                                            lineHeight: "2rem",
+                                                            borderTop: index !== 0 ? "1px solid black" : "0px solid black",
+                                                            cursor: "pointer"
+                                                        }}
+                                                        onClick={() => {
+                                                            if (window.location.href.endsWith("/")) {
+                                                                window.location.href += privateSession
+                                                            } else {
+                                                                window.location.href += "/" + privateSession
+                                                            }
+                                                        }}
+                                                    >
+                                                        <span>{privateSession}</span>
+                                                        <TooltipIcon
+                                                            color="#f00"
+                                                            message="Apagar"
+                                                            clickFunction={(e) => this.deletePrivateSession(e, privateSession)}
+                                                            icon={<DeleteForeverIcon />}
+                                                        />
+                                                    </Box>
+                                                )
+                                            })
+                                        }
+                                    </Box>
+                                    : null
+                                }
+                            </Box>
+
+                            {/* <Button
+                                sx={{
+                                    p: 0,
+                                    mr: "1.5rem",
+                                    textTransform: "none",
+                                }}
+                                onClick={() => this.openLogsMenu()}
+                            >
+                                <AssignmentRoundedIcon sx={{mr: "0.3rem"}} />
+                                Logs
+                            </Button> */}
+
+                            <span>Free Space: {this.state.freeSpace} ({this.state.freeSpacePercentage}%)</span>
+                        </Box>
+                        : null
+                    }
 
                     <Box>
                         {
@@ -213,15 +576,15 @@ function App() {
 
                             ? this.getPrivateSession() == null
                                 ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
-                                : <PrivateFileExplorer ref={this.fileSystem} current_folder={this.state.sessionId} files={{"files": []}} app={this}/>
+                                : <PrivateFileExplorer ref={this.fileSystem} current_folder={"files/_private_sessions/" + this.state.sessionId} files={{"files": []}} app={this}/>
 
-                            : this.state.editFileMode
-                                ? <EditPage2 ref={this.editPage} app={this}/>
-                                : <ESPage app={this}/>
+                            : <ESPage app={this}/>
                         }
                     </Box>
                     <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
-                        <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '6rem', width: 'auto'}}/>
+                        <a href={footerBanner} target='_blank' rel="noreferrer">
+                            <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
+                        </a>
                     </Box>
                 </Box>
             )

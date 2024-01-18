@@ -1,13 +1,30 @@
+import subprocess
 import os
 import psutil
-
-from flask import Flask
 
 def get_logs(
     starting_point: int = 0,
     number_of_logs: int = 50,
     endpoints: list = None
 ):
+    # try:
+    #     # Using subprocess to get the logs
+    #     res = subprocess.run(
+    #         "docker logs dissertacao-ocr-server-1 -f",
+    #         shell=True,
+    #         check=True,
+    #         capture_output=True,
+    #         text=True,
+    #         stderr=subprocess.DEVNULL,
+    #     )
+
+    #     for l in res.stdout.split('\n'):
+    #         with open('record.log', 'a') as file:
+    #             file.write(l + '\n')
+
+    # except Exception as e:
+    #     pass
+
     # Get the logs of the app
     with open('record.log', 'r') as file:
         logs = file.readlines()
@@ -29,8 +46,8 @@ def get_logs(
 def get_private_sessions():
     # Get the private sessions
     private_sessions = [
-        session for session in os.listdir()
-        if os.path.isdir(session) and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
+        session for session in os.listdir("files/_private_sessions")
+        if os.path.isdir(f"files/_private_sessions/{session}") and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
     ]
     return private_sessions
 

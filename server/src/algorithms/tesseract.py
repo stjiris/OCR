@@ -22,10 +22,32 @@ def get_hocr(page, config):
         page, lang="por", extension="hocr", config="+".join(config)
     )
 
+def is_left(point_a, point_b, point_c):
+    dx = 5
+    return ((point_b[0] + dx) - (point_a[0] + dx)) * (point_c[1] - point_a[1]) - (point_b[1] - point_a[1]) * (point_c[0] - (point_a[0] + dx)) >= 0
 
-def get_structure(page, config, box=None):
-    if box:
-        hocr = get_segment_hocr(page, config, box)
+def remove_extra_paragraphs(lines):
+    new_lines = [lines[0]]
+    start_coords = [(line[0]["box"][0], line[0]["box"][1]) for line in lines]
+
+    if len(set(x[0] for x in start_coords)) == 1:
+        # All vertical join all lines
+        for i in range(1, len(lines)):
+            line = lines[i]
+            new_lines[0].extend(line)
+
+    else:
+        for i in range(1, len(lines)):
+            if is_left(start_coords[0], start_coords[-1], start_coords[i]):
+                new_lines[-1].extend(lines[i])
+            else:
+                new_lines.append(lines[i])
+
+    return new_lines
+
+def get_structure(page, config, segment_box=None):
+    if segment_box:
+        hocr = get_segment_hocr(page, config, segment_box)
     else:
         hocr = get_hocr(page, config)
 
@@ -59,13 +81,20 @@ def get_structure(page, config, box=None):
                 continue
 
             box = p1.search(word.attrib["title"]).group(1).split()
-            box = [float(i) for i in box]
+
+            if segment_box:
+                box = [float(i) + segment_box[id%2] for id, i in enumerate(box)]
+            else:
+                box = [float(i) for i in box]
             b = polyval(baseline, (box[0] + box[2]) / 2 - linebox[0]) + linebox[3]
 
             words.append({"text": rawtext, "box": box, "b": b})
 
         if words:
             lines.append(words)
+
+    if segment_box and lines:
+        lines = remove_extra_paragraphs(lines)
 
     return lines
 

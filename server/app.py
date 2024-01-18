@@ -33,10 +33,12 @@ from src.utils.system import get_free_space
 from src.utils.system import get_logs
 from src.utils.system import get_private_sessions
 
+from src.utils.text import compare_dicts_words
+
 from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
-logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
+logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
 log = app.logger
 
@@ -52,10 +54,12 @@ def get_file_system():
     if "path" not in request.values:
         return get_filesystem("files")
     
-    path = request.values["path"].split("/")[0]
-    print(path)
+    path = request.values["path"]
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
 
-    return get_filesystem(path)
+    return get_filesystem("files", private_session=private_session)
 
 
 @app.route("/info", methods=["GET"])
@@ -63,8 +67,11 @@ def get_info():
     if "path" not in request.values:
         return get_filesystem("files")
     
-    path = request.values["path"].split("/")[0]
-    return {"info": get_structure_info(path)}
+    path = request.values["path"]
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
+    return {"info": get_structure_info("files", private_session=private_session)}
 
 
 @app.route("/system-info", methods=["GET"])
@@ -73,7 +80,7 @@ def get_system_info():
     return {
         "free_space": free_space,
         "free_space_percentage": free_space_percentage,
-        "logs": get_logs(),
+        # "logs": get_logs(),
         "private_sessions": get_private_sessions(),
     }
 
@@ -85,18 +92,23 @@ def create_folder():
     path = data["path"]
     folder = data["folder"]
 
+    if folder.startswith("_"):
+        return {"success": False, "error": "O nome da pasta não pode começar com _"}
+
     if os.path.exists(path + "/" + folder):
         return {"success": False, "error": "Já existe uma pasta com esse nome"}
 
     os.mkdir(path + "/" + folder)
 
-    with open(f"{path}/{folder}/_data.json", "w") as f:
+    with open(f"{path}/{folder}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "folder",
                 "creation": get_current_time(),
             },
             f,
+            indent=2,
+            ensure_ascii=False,
         )
 
     return {"success": True, "files": get_filesystem("files")}
@@ -105,8 +117,11 @@ def create_folder():
 @app.route("/get-file", methods=["GET"])
 def get_file():
     path = request.values["path"]
-    doc = get_file_parsed(path)
-    return {"doc": doc}
+    totalPages = len(os.listdir(path + "/ocr_results"))
+
+    doc, words = get_file_parsed(path)
+    
+    return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
 
 @app.route("/get_txt", methods=["GET"])
@@ -114,6 +129,44 @@ def get_txt():
     path = request.values["path"]
     return send_file(f"{path}/_text.txt")
 
+@app.route("/get_entities", methods=["GET"])
+def get_entities():
+    path = request.values["path"]
+    return send_file(f"{path}/_entities.json")
+
+@app.route("/request_entities", methods=["GET"])
+def request_entities():
+    path = request.values["path"]
+
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
+
+    data = get_data(path + "/_data.json")
+
+    data["ner"] = {
+        "error": False,
+        "complete": False,
+    }
+
+    update_data(path + "/_data.json", data)
+
+    request_ner.delay(path)
+    # Thread(target=request_ner, args=(path,)).start()
+
+
+    return {"success": True, "filesystem": get_filesystem("files", private_session=private_session)}
+
+@app.route("/get_zip", methods=["GET"])
+def get_zip():
+    path = request.values["path"]
+    try:
+        export_file(path, "zip")
+    except Exception as e:
+        
+        return {"success": False, "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde"}
+    
+    return send_file(f"{path}/{path.split('/')[-1]}.zip")
 
 @app.route("/get_pdf", methods=["GET"])
 def get_pdf():
@@ -121,10 +174,22 @@ def get_pdf():
     file = export_file(path, "pdf")
     return send_file(file)
 
+@app.route("/get_pdf_simples", methods=["GET"])
+def get_pdf_simples():
+    path = request.values["path"]
+    file = export_file(path, "pdf", simple=True)
+    return send_file(file)
+
 @app.route("/get_csv", methods=["GET"])
 def get_csv():
     path = request.values["path"]
     return send_file(f"{path}/_index.csv")
+
+@app.route("/get_images", methods=["GET"])
+def get_images():
+    path = request.values["path"]
+    file = export_file(path, "imgs")
+    return send_file(file)
 
 @app.route("/get_original", methods=["GET"])
 def get_original():
@@ -141,11 +206,15 @@ def delete_path():
     shutil.rmtree(path)
 
     session = path.split("/")[0]
+    
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
 
     return {
         "success": True,
         "message": "Apagado com sucesso",
-        "files": get_filesystem(session),
+        "files": get_filesystem(session, private_session=private_session),
     }
 
 @app.route("/delete-private-session", methods=["POST"])
@@ -153,7 +222,7 @@ def delete_private_session():
     data = request.json
     session_id = data["sessionId"]
 
-    shutil.rmtree(session_id)
+    shutil.rmtree("files/_private_sessions/" + session_id)
     if session_id in private_sessions:
         del private_sessions[session_id]
 
@@ -174,10 +243,14 @@ def set_upload_stuck():
     data["upload_stuck"] = True
     update_data(f"{path}/_data.json", data)
 
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
+
     return {
         "success": True,
         "message": "O upload do ficheiro falhou",
-        "files": get_filesystem(session),
+        "files": get_filesystem(session, private_session=private_session),
     }
 
 #####################################
@@ -225,6 +298,9 @@ def find_valid_filename(path, basename, extension):
 
 @app.route("/prepare-upload", methods=["POST"])
 def prepare_upload():
+    if float(get_free_space()[1]) < 10:
+        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+
     data = request.json
     path = data["path"] 
     filename = data["name"]
@@ -237,7 +313,7 @@ def prepare_upload():
         filename = find_valid_filename(path, basename, extension)
 
     os.mkdir(f"{path}/{filename}")
-    with open(f"{path}/{filename}/_data.json", "w") as f:
+    with open(f"{path}/{filename}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "file",
@@ -245,8 +321,15 @@ def prepare_upload():
                 "creation": get_current_time(),
             },
             f,
+            indent=2,
+            ensure_ascii=False,
         )
-    return {"success": True, "filesystem": get_filesystem(session), "filename": filename}
+
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[-1]
+
+    return {"success": True, "filesystem": get_filesystem(session, private_session=private_session), "filename": filename}
 
 def join_chunks(path, filename, total_count, complete_filename):
     # Save the file
@@ -254,6 +337,8 @@ def join_chunks(path, filename, total_count, complete_filename):
         for i in range(total_count):
             with open(f"pending-files/{complete_filename}/{i+1}", "rb") as chunk:
                 f.write(chunk.read())
+
+    prepare_file_ocr(f"{path}/{filename}")
 
     update_data(f"{path}/{filename}/_data.json", {
         "pages": get_page_count(f"{path}/{filename}/{filename}"),
@@ -266,6 +351,9 @@ def join_chunks(path, filename, total_count, complete_filename):
 
 @app.route("/upload-file", methods=["POST"])
 def upload_file():
+    if float(get_free_space()[1]) < 10:
+        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+    
     file = request.files["file"]
     path = request.form["path"]
     filename = request.form["name"]
@@ -278,12 +366,14 @@ def upload_file():
     if total_count == 1:
         file.save(f"{path}/{filename}/{filename}")
 
-        with open(f"{path}/{filename}/_data.json", "w") as f:
+        prepare_file_ocr(f"{path}/{filename}")
+
+        with open(f"{path}/{filename}/_data.json", "w", encoding="utf-8") as f:
             json.dump({
                 "type": "file",
                 "pages": get_page_count(f"{path}/{filename}/{filename}"),
                 "creation": get_current_time()
-            }, f)
+            }, f, indent=2, ensure_ascii=False)
 
         return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}
 
@@ -334,6 +424,9 @@ def perform_ocr():
     @param multiple: if it is a folder or not
     """
 
+    if float(get_free_space()[1]) < 10:
+        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+    
     data = request.json
     path = data["path"]
     algorithm = data["algorithm"]
@@ -361,24 +454,34 @@ def perform_ocr():
 
         # Update the information related to the OCR
         data = get_data(f"{f}/_data.json")
-        data["ocr"] = {}
-        data["ocr"]["algorithm"] = algorithm
-        data["ocr"]["config"] = "_".join(config)
-        data["ocr"]["progress"] = 0
-        data["txt"] = {}
-        data["txt"]["complete"] = False
-        data["pdf"] = {}
-        data["pdf"]["complete"] = False
-        data["csv"] = {}
-        data["csv"]["complete"] = False
+        data["ocr"] = {
+            "algorithm": algorithm,
+            "config": "_".join(config),
+            "progress": 0,
+        }
+        data["txt"] = {"complete": False}
+        data["pdf"] = {"complete": False}
+        data["csv"] = {"complete": False}
+        data["ner"] = {"complete": False}
+        data["zip"] = {"complete": False}
+        data["pdf_simples"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
+        if os.path.exists(f"{f}/images"):
+            shutil.rmtree(f"{f}/images")
+
         task_file_ocr.delay(f, config, ocr_algorithm)
+        # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
+        # task_file_ocr(f, config, ocr_algorithm, True)
+
+    private_session = None
+    if "_private_sessions" in path:
+        private_session = path.split("/")[2]
 
     return {
         "success": True,
         "message": "O OCR começou, por favor aguarde",
-        "files": get_filesystem(session),
+        "files": get_filesystem(session, private_session=private_session),
     }
 
 
@@ -407,7 +510,7 @@ def index_doc():
         for id, file in enumerate(files):
             file_path = f"{hOCR_path}/{file}"
 
-            with open(file_path) as f:
+            with open(file_path, encoding="utf-8") as f:
                 hocr = json.load(f)
                 text = json_to_text(hocr)
 
@@ -433,10 +536,14 @@ def index_doc():
 
         update_data(path + "/_data.json", {"indexed": True})
 
+        private_session = None
+        if "_private_sessions" in path:
+            private_session = path.split("/")[-1]
+
         return {
             "success": True,
             "message": "Documento indexado",
-            "files": get_filesystem(session),
+            "files": get_filesystem(session, private_session=private_session),
         }
 
 
@@ -469,10 +576,14 @@ def remove_index_doc():
 
         update_data(path + "/_data.json", {"indexed": False})
 
+        private_session = None
+        if "_private_sessions" in path:
+            private_session = path.split("/")[-1]
+
         return {
             "success": True,
             "message": "Documento removido",
-            "files": get_filesystem(session),
+            "files": get_filesystem(session, private_session=private_session),
         }
 
 
@@ -492,21 +603,30 @@ def submit_text():
         filename = t["original_file"]
 
         with open(filename, "w", encoding="utf-8") as f:
-            json.dump(text, f, indent=2)
-
-        # if data["indexed"]:
-        #     id = generate_uuid(filename)
-        #     es.update_document(id, text)
+            json.dump(text, f, indent=2, ensure_ascii=False)
 
     update_data(
         data_folder + "/_data.json",
-        {"txt": {"complete": False}, "pdf": {"complete": False}},
+        {"txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
     )
 
     make_changes.delay(data_folder, data)
+    # Thread(target=make_changes, args=(data_folder, data)).start()
+    # make_changes(data_folder, data)
 
-    return {"success": True, "files": get_filesystem(session)}
+    private_session = None
+    if "_private_sessions" in data_folder:
+        private_session = data_folder.split("/")[-1]
 
+    return {"success": True, "files": get_filesystem(session, private_session=private_session)}
+
+@app.route("/check-sintax", methods=["POST"])
+def check_sintax():
+    words = request.json["words"].keys()
+    languages = request.json["languages"]
+
+    result = compare_dicts_words(words, languages)
+    return {"success": True, "result": result}
 
 #####################################
 # ELASTICSEARCH
@@ -523,7 +643,31 @@ def create_private_session():
     session_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     private_sessions[session_id] = {}
 
-    os.mkdir(session_id)
+    if not os.path.isdir("files/_private_sessions"):
+        os.mkdir("files/_private_sessions")
+        with open(f"files/_private_sessions/_data.json", "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "type": "folder",
+                    "creation": get_current_time(),
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )    
+
+    os.mkdir("files/_private_sessions/" + session_id)
+
+    with open(f"files/_private_sessions/{session_id}/_data.json", "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "type": "folder",
+                "creation": get_current_time(),
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
 
     return {"success": True, "sessionId": session_id}
 
@@ -572,6 +716,21 @@ if not os.path.exists("./files/"):
 if not os.path.exists("./pending-files/"):
     os.mkdir("./pending-files/")
 
-# app.config['DEBUG'] = os.environ.get('DEBUG', False)
-# app.run(port=5001, threaded=True)
-app.run(host='0.0.0.0', port=5001, threaded=True, debug=True)
+if not os.path.exists("./files/_private_sessions"):
+    os.mkdir("./files/_private_sessions")
+
+    with open("./files/_private_sessions/_data.json", "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "type": "folder",
+                "creation": get_current_time(),
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+if __name__ == "__main__":
+    # app.config['DEBUG'] = os.environ.get('DEBUG', False)
+    # app.run(port=5001, threaded=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True)

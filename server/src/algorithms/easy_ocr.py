@@ -20,7 +20,7 @@ def get_structure(page, config):
         box, text, _ = box
         words.append((text, list(map(int, [*box[0], *box[2]]))))
 
-    print(box)
+    (box)
 
     ranges = {}
     for w in words:

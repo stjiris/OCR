@@ -10,21 +10,15 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import LockIcon from '@mui/icons-material/Lock';
-import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
 
-// import FolderRow from './FolderRow';
-// import FileRow from './FileRow';
-
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
-const validExtensions = [".pdf", ".jpg", ".jpeg"];
+const validExtensions = [".pdf"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
@@ -47,11 +41,17 @@ class FileExplorer extends React.Component {
 
             layoutMenu: false,
             layoutFilename: null,
+
+            editingMenu: false,
+            editingFilename: null,
+
+            downloadLoading: false,
         }
 
         this.folderMenu = React.createRef();
         this.ocrMenu = React.createRef();
         this.deleteMenu = React.createRef();
+        this.storageMenu = React.createRef();
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
@@ -71,6 +71,7 @@ class FileExplorer extends React.Component {
         .then(data => {
             var info = data["info"];
             var files = {'files': data["files"]};
+            
             this.setState({files: files, info: info, loading: false}, this.displayFileSystem);
         });
 
@@ -129,7 +130,7 @@ class FileExplorer extends React.Component {
     }
 
     updateInfo() {
-        if (this.state.layoutMenu) return;
+        if (this.state.layoutMenu || this.state.editingMenu) return;
         this.rowRefs.forEach(ref => {
             var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
             if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
@@ -162,6 +163,11 @@ class FileExplorer extends React.Component {
          */
         this.folderMenu.current.currentPath(this.state.current_folder.join('/'));
         this.folderMenu.current.toggleOpen();
+    }
+
+    showStorageForm(errorMessage) {
+        this.storageMenu.current.setMessage(errorMessage);
+        this.storageMenu.current.toggleOpen();
     }
 
     performOCR(multiple, file=null) {
@@ -207,6 +213,9 @@ class FileExplorer extends React.Component {
                 } else {
                     this.setState({updateCount: this.state.updateCount + 1});
                 }
+            } else {
+                this.storageMenu.current.setMessage(data.error);
+                this.storageMenu.current.toggleOpen();
             }
         })
         .catch(error => {
@@ -275,6 +284,9 @@ class FileExplorer extends React.Component {
         
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
+                    } else {
+                        this.storageMenu.current.setMessage(data.error);
+                        this.storageMenu.current.toggleOpen();
                     }
                 });
 
@@ -290,7 +302,11 @@ class FileExplorer extends React.Component {
         .then(response => {return response.json()})
         .then(data => {
             var sessionId = data["sessionId"];
-            window.location.href = window.location.href + `/${sessionId}`;
+            if (window.location.href.endsWith('/')) {
+                window.location.href = window.location.href + `${sessionId}`;
+            } else {
+                window.location.href = window.location.href + `/${sessionId}`;
+            }
         });
     }
 
@@ -306,7 +322,8 @@ class FileExplorer extends React.Component {
         this.setState({
             current_folder: current_folder,
             buttonsDisabled: buttonsDisabled,
-            createFileButtonDisabled: createFileButtonDisabled},
+            createFileButtonDisabled: createFileButtonDisabled
+        },
         this.displayFileSystem);
     }
 
@@ -325,11 +342,84 @@ class FileExplorer extends React.Component {
             a.href = URL.createObjectURL(data);
 
             var basename = file.split('.').slice(0, -1).join('.');
-            a.download = basename + '_ocr.' + type;
+            a.download = basename + '_ocr.' + type.split('_')[0];
             a.click();
             a.remove();
         });
     }
+
+    getEntities(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "get_entities?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+
+            var basename = file.split('.').slice(0, -1).join('.');
+            a.download = basename + '_entidades.json';
+            a.click();
+            a.remove();
+        });
+    }
+
+    requestEntities(file) {
+        var path = this.state.current_folder.join('/') + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "request_entities?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.json()})
+        .then(data => {
+            if (data.success) {
+                var filesystem = data["filesystem"];
+                var info = filesystem["info"];
+                var files = {'files': filesystem["files"]};
+
+                this.setState({files: files, info: info}, this.displayFileSystem);
+            }
+        });
+    }
+
+    getZip() {
+        /**
+         * Export the .zip file
+         */
+        this.setState({downloadLoading: true});
+        var path = this.state.current_folder.join('/');
+
+        fetch(process.env.REACT_APP_API_URL + "get_zip?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {
+            this.setState({downloadLoading: false});
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return response.json();
+            }
+
+            this.successNot.current.setMessage("O seu download vai começar em breves momentos.")
+            this.successNot.current.open();
+            return response.blob()
+        })
+        .then(data => {
+            // Check if data is a blob
+            if (data instanceof Blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(data);
+    
+                a.download = path.split('/').slice(-1)[0] + '.zip';
+                a.click();
+                a.remove();
+            } else {
+                this.errorNot.current.setMessage(data.message)
+                this.errorNot.current.open();
+            }
+        });
+    }
+
+
 
     getOriginalFile(file) {
         var path = this.state.current_folder.join('/') + '/' + file;
@@ -362,11 +452,38 @@ class FileExplorer extends React.Component {
          this.getDocument("csv", file);
     }
 
+    getImages(file) {
+        /**
+         * Export the .zip file
+         */
+        var path = this.state.current_folder.join('/') + '/' + file;
+
+        fetch(process.env.REACT_APP_API_URL + "get_images?path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            var a = document.createElement('a');
+                a.href = URL.createObjectURL(data);
+    
+                a.download = path.split('/').slice(-1)[0] + '.zip';
+                a.click();
+                a.remove();
+        });
+    }
+
     getPdf(file) {
         /**
          * Export the .pdf file
          */
         this.getDocument("pdf", file);
+    }
+
+    getPdfSimples(file) {
+        /**
+         * Export the .pdf file
+         */
+        this.getDocument("pdf_simples", file);
     }
 
     editFile(file) {
@@ -399,7 +516,10 @@ class FileExplorer extends React.Component {
          */
         var current_folder = this.state.current_folder;
         current_folder.push(folder);
-        this.state.app.setState({path: current_folder.join('/')});
+        this.state.app.setState({
+            path: current_folder.join('/'),
+            currentFolder: current_folder
+        });
         this.setState({
             current_folder: current_folder,
             buttonsDisabled: false,
@@ -543,16 +663,32 @@ class FileExplorer extends React.Component {
     }
 
     createLayout(filename) {
+        this.state.app.setState({layoutMenu: true});
         this.setState({layoutMenu: true, layoutFilename: filename});
+    }
+
+    closeLayoutMenu() {
+        this.state.app.setState({layoutMenu: false});
+        this.setState({layoutMenu: false, layoutFilename: null});
+    }
+
+    editText(filename) {
+        this.state.app.setState({editingMenu: true});
+        this.setState({editingMenu: true, editingFilename: filename});
+    }
+
+    closeEditingMenu() {
+        this.state.app.setState({editingMenu: false});
+        this.setState({editingMenu: false, editingFilename: null});
     }
 
     generateTable() {
         return (
             <TableContainer component={Paper}>
-                <Table aria-label="filesystem table" sx={{border:"1px solid #d9d9d9"}}>
+                <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{borderLeft:"1px solid #d9d9d9"}}>
+                            <TableCell sx={{borderLeft:"1px solid #aaa"}}>
                                 <Button
                                     startIcon={<SwapVertIcon />}
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
@@ -560,12 +696,10 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            {<TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Detalhes</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>OCR</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Texto</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Índice de palavras</b></TableCell>}
-                            {this.state.current_folder.length > 1 && <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>PDF (com texto)</b></TableCell>}
-                            <TableCell align='center' sx={{borderLeft:"1px solid #d9d9d9"}}><b>Ações</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Descrição</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
+                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -709,67 +843,33 @@ class FileExplorer extends React.Component {
         const OcrMenu = loadComponent('Form', 'OcrMenu');
         const DeleteMenu = loadComponent('Form', 'DeleteMenu');
         const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
+        const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
+        const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
 
         return (
             <>
                 {
                     this.state.layoutMenu
                     ? <LayoutMenu filesystem={this} filename={this.state.layoutFilename} />
-                    : <Box sx={{
-                        ml: '1.5rem',
-                        mr: '1.5rem',
-                        mb: '1.5rem',
-                    }}>
-                        <Notification message={""} severity={"success"} ref={this.successNot}/>
-                        <Notification message={""} severity={"error"} ref={this.errorNot}/>
-
-                        <FolderMenu filesystem={this} ref={this.folderMenu}/>
-                        <OcrMenu filesystem={this} ref={this.ocrMenu}/>
-                        <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            flexWrap: 'wrap'
+                    : this.state.editingMenu
+                        ? <EditingMenu filesystem={this} filename={this.state.editingFilename} />
+                        : <Box sx={{
+                            ml: '1.5rem',
+                            mr: '1.5rem',
+                            mb: '1.5rem',
                         }}>
+                            <Notification message={""} severity={"success"} ref={this.successNot}/>
+                            <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                            <Button
-                                variant="contained"
-                                startIcon={<CreateNewFolderIcon />}
-                                sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
-                                onClick={() => this.createFolder()}
-                            >
-                                Criar pasta
-                            </Button>
+                            <FolderMenu filesystem={this} ref={this.folderMenu}/>
+                            <OcrMenu filesystem={this} ref={this.ocrMenu}/>
+                            <DeleteMenu filesystem={this} ref={this.deleteMenu} />
+                            <FullStorageMenu filesystem={this} ref={this.storageMenu} />
 
-                            <Button
-                                disabled={this.state.buttonsDisabled}
-                                variant="contained"
-                                startIcon={<NoteAddIcon />}
-                                onClick={() => this.createFile()}
-                                sx={{border: '1px solid black', mr: '1rem', mb: '0.5rem'}}
-                            >
-                                Adicionar documento
-                            </Button>
-
-                            <Button
-                                variant="contained"
-                                startIcon={<LockIcon />}
-                                onClick={() => this.createPrivateSession()}
-                                sx={{border: '1px solid black', mb: '0.5rem', alignSelf: 'flex-end', ml: 'auto'}}
-                            >
-                                Sessão privada
-                            </Button>
+                            {
+                                this.generateTable()
+                            }
                         </Box>
-
-                        {
-                            this.generatePath()
-                        }
-
-                        {
-                            this.generateTable()
-                        }
-                    </Box>
                 }
             </>
         );
