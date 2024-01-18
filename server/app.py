@@ -720,6 +720,17 @@ if not os.path.exists("./pending-files/"):
 if not os.path.exists("./files/_private_sessions"):
     os.mkdir("./files/_private_sessions")
 
+    with open("./files/_private_sessions/_data.json", "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "type": "folder",
+                "creation": get_current_time(),
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+
 if __name__ == "__main__":
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
     # app.run(port=5001, threaded=True)
