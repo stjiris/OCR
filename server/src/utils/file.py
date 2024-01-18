@@ -316,7 +316,7 @@ def get_structure(path, private_session):
 
     :param path: the path to the files
     """
-    log.info("Here")
+    log.info("Here" + str(path))
     filesystem = {}
     name = path.split("/")[-1]
 
