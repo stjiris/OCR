@@ -12,7 +12,6 @@ import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
 
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
@@ -27,7 +26,7 @@ import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownR
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.22.4";
+const VERSION = "0.22.5";
 const UPDATE_TIME = 30;
 
 function App() {
