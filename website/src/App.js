@@ -12,7 +12,6 @@ import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
 
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
