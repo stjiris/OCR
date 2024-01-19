@@ -44,8 +44,8 @@ class ESItem extends React.Component {
                         ? <span><b>Página:</b> {this.state.page['_source']['Page']}</span>
                         : null
                     }
-                    <span><b>Algoritmo:</b> {this.state.page['_source']['Algorithm']}</span>
-                    <span><b>Configuração:</b> {this.state.page['_source']['Config']}</span>
+                    {/* <span><b>Algoritmo:</b> {this.state.page['_source']['Algorithm']}</span>
+                    <span><b>Configuração:</b> {this.state.page['_source']['Config']}</span> */}
                     <br/>
                     <span><b>Texto:</b><br/>{this.state.page['_source']['Text']}</span>
                 </Box>
@@ -183,9 +183,9 @@ class ESPage extends React.Component {
 
         var freeText = this.state.freeText;
         var journal = this.journal.current.getChoiceList();
-        var fileType = this.fileType.current.getChoiceList();
-        var algorithm = this.algorithm.current.getChoiceList();
-        var config = this.config.current.getChoiceList();
+        // var fileType = this.fileType.current.getChoiceList();
+        // var algorithm = this.algorithm.current.getChoiceList();
+        // var config = this.config.current.getChoiceList();
 
         const containsFreeText = (element) => element.toString().toLowerCase().includes(freeText.toLowerCase());
 
@@ -198,10 +198,10 @@ class ESPage extends React.Component {
 
             if (
                 values.some(containsFreeText) &&
-                (journal.length === 0 || journal.includes(this.get_journal(page))) &&
-                (fileType.length === 0 || fileType.includes(this.get_fileType(page))) &&
-                (algorithm.length === 0 || algorithm.includes(this.get_algorithm(page))) &&
-                (config.length === 0 || config.includes(this.get_config(page)))
+                (journal.length === 0 || journal.includes(this.get_journal(page)))
+                // (fileType.length === 0 || fileType.includes(this.get_fileType(page))) &&
+                // (algorithm.length === 0 || algorithm.includes(this.get_algorithm(page))) &&
+                // (config.length === 0 || config.includes(this.get_config(page)))
             ) {
                 current_showing.push(page);
             }
@@ -236,9 +236,9 @@ class ESPage extends React.Component {
                     </Box>
                     <TextField onChange={(e) => this.changeText(e)} ref={this.freeText} label="Pesquisar" variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.journal} label={"Documento"} options={[]} choice={[]} />
-                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"Tipo de Ficheiro"} options={[]} choice={[]} />
+                    {/* <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"Tipo de Ficheiro"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.algorithm} label={"Algoritmo"} options={[]} choice={[]} />
-                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.config} label={"Configuração"} options={[]} choice={[]} />
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.config} label={"Configuração"} options={[]} choice={[]} /> */}
                 </Box>
 
                 <Box sx={{

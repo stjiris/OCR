@@ -517,16 +517,16 @@ def index_doc():
             if ocr_config["pages"] > 1:
                 doc = create_document(
                     file_path,
-                    ocr_config["ocr"]["algorithm"],
-                    ocr_config["ocr"]["config"],
+                    "Tesseract",
+                    "pt",
                     text,
                     id + 1,
                 )
             else:
                 doc = create_document(
                     file_path,
-                    ocr_config["ocr"]["algorithm"],
-                    ocr_config["ocr"]["config"],
+                    "Tesseract",
+                    "pt",
                     text,
                 )
 
