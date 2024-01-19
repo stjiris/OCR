@@ -31,6 +31,12 @@ export default class FileRow extends React.Component {
     }
 
     updateInfo(info) {
+        if (
+            (this.state.info === undefined || this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] < this.state.info["pages"]) &&
+            (info !== undefined && info["ocr"] !== undefined && info["ocr"]["progress"] >= info["pages"])
+        ) {
+            this.setState({expanded: true});
+        }
         this.setState({info: info, versionsComponents: []});
     }
 
