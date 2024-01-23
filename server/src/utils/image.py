@@ -231,7 +231,8 @@ def parse_images(path):
 
         all_layouts = []
 
-        for img in sorted_images:
+        for id,img in enumerate(sorted_images):
+            print(id)
             mer_boxes = parse_image(img)
             formatted_boxes = []
 

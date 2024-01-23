@@ -327,7 +327,7 @@ class FileExplorer extends React.Component {
         this.displayFileSystem);
     }
 
-    getDocument(type, file) {
+    getDocument(type, file, suffix="") {
         /**
          * Export the .txt or .pdf file
          */
@@ -342,7 +342,7 @@ class FileExplorer extends React.Component {
             a.href = URL.createObjectURL(data);
 
             var basename = file.split('.').slice(0, -1).join('.');
-            a.download = basename + '_ocr.' + type.split('_')[0];
+            a.download = basename + '_ocr' + suffix + '.' + type.split('_')[0];
             a.click();
             a.remove();
         });
@@ -476,14 +476,14 @@ class FileExplorer extends React.Component {
         /**
          * Export the .pdf file
          */
-        this.getDocument("pdf", file);
+        this.getDocument("pdf", file, "_texto_indice");
     }
 
     getPdfSimples(file) {
         /**
          * Export the .pdf file
          */
-        this.getDocument("pdf_simples", file);
+        this.getDocument("pdf_simples", file, "_texto");
     }
 
     editFile(file) {

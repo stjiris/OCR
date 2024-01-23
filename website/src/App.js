@@ -26,7 +26,7 @@ import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownR
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.22.5";
+const VERSION = "0.22.6";
 const UPDATE_TIME = 30;
 
 function App() {

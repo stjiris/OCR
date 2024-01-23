@@ -4,6 +4,8 @@ import Box from '@mui/material/Box';
 import ZoomInRoundedIcon from '@mui/icons-material/ZoomInRounded';
 import ZoomOutRoundedIcon from '@mui/icons-material/ZoomOutRounded';
 import { IconButton } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+
 
 const height = window.innerHeight;
 const heightReduction = 250;
@@ -186,6 +188,11 @@ class LayoutBox extends React.Component {
                         }}
                     >
                         <span><b>{this.state.id}</b></span>
+                        {
+                            this.state.copyId
+                            ? <ContentCopyIcon sx={{fontSize: 15, ml: "10px"}}/>
+                            : null
+                        }
                     </Box>
 
                     <Box draggable
@@ -324,10 +331,16 @@ export default class LayoutImage extends React.Component {
         var coords = [];
         this.state.boxRefs.forEach((groupRefs) => {
             var squares = [];
+            var copyId = undefined;
             groupRefs.forEach((ref) => {
-                squares.push(ref.current.getBoxDetails());
+                var details = ref.current.getBoxDetails(); 
+                if (details.copyId) {
+                    copyId = details.copyId;
+                    delete details.copyId;
+                }
+                squares.push(details);
             });
-            coords.push({squares: squares, type: squares[0].type, checked: squares[0].checked, copyId: squares[0].copyId});
+            coords.push({squares: squares, type: squares[0].type, checked: squares[0].checked, copyId: copyId});
         })
         return coords;
     }
@@ -387,6 +400,8 @@ export default class LayoutImage extends React.Component {
 
     dragStart(e) {
         e.stopPropagation();
+
+        if (this.state.menu.state.segmentLoading) return;
 
         var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX;
         var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY;
