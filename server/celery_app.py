@@ -40,6 +40,11 @@ def make_changes(data_folder, data):
     data["txt"]["creation"] = current_date
     data["txt"]["size"] = get_size(data_folder + "/_text.txt", path_complete=True)
 
+    export_file(data_folder, "txt", delimiter=True, force_recreate=True)
+    data["delimiter_txt"]["complete"] = True
+    data["delimiter_txt"]["creation"] = current_date
+    data["delimiter_txt"]["size"] = get_size(data_folder + "/_text_delimiter.txt", path_complete=True)
+
     update_data(data_folder + "/_data.json", data)
 
     os.remove(data_folder + "/_search.pdf")
@@ -269,6 +274,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             update_data(data_folder, data)
 
             export_file(path, "txt")
+            export_file(path, "txt", delimiter=True)
             creation_date = get_current_time()
 
             data["indexed"] = False
@@ -276,6 +282,12 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             data["txt"] = {
                 "complete": True,
                 "size": get_size(f"{path}/_text.txt", path_complete=True),
+                "creation": creation_date,
+            }
+
+            data["delimiter_txt"] = {
+                "complete": True,
+                "size": get_size(f"{path}/_text_delimiter.txt", path_complete=True),
                 "creation": creation_date,
             }
 

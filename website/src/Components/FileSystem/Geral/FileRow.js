@@ -55,6 +55,13 @@ export default class FileRow extends React.Component {
         this.successNot.current.open();
     }
 
+    getDelimiterTxt(e) {
+        e.stopPropagation();
+        this.state.filesystem.getDelimiterTxt(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
     getTxt(e) {
         e.stopPropagation();
         this.state.filesystem.getTxt(this.state.name);
@@ -431,6 +438,45 @@ export default class FileRow extends React.Component {
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <span>{this.state.info["txt"]["size"]}</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>-</span>
+                            </Collapse>
+                        </TableCell>
+                    </TableRow>
+                    : null
+                }
+
+                {
+                    this.state.info !== undefined && this.state.info["delimiter_txt"] !== undefined && this.state.info["delimiter_txt"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
+                                    <TxtIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} />
+                                    <Button onClick={(e) => this.getDelimiterTxt(e)} style={{p: 0, textTransform: 'none'}}>Texto com Separador por Página</Button>
+                                </Box>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["delimiter_txt"]["creation"]}</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>-</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["delimiter_txt"]["size"]}</span>
                             </Collapse>
                         </TableCell>
 

@@ -438,6 +438,14 @@ class FileExplorer extends React.Component {
         });
     }
 
+    getDelimiterTxt(file) {
+        /**
+         * Export the .txt file
+         * with the delimiter
+         */
+        this.getDocument("txt_delimitado", file, "_delimitado");
+    }
+
     getTxt(file) {
         /**
          * Export the .txt file
