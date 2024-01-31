@@ -141,12 +141,14 @@ def get_file_layouts(path):
                     "boxes": json.load(f),
                     "page_url": page_url,
                     "page_number": page,
+                    "done": True
                 })
         else:
             layouts.append({
                 "boxes": [],
                 "page_url": page_url,
                 "page_number": page,
+                "done": False
             })
 
     return layouts

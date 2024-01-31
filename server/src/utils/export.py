@@ -51,7 +51,7 @@ def get_file_basename(filename):
 ####################################################
 # GENERAL FUNCTION
 ####################################################
-def export_file(path, filetype, delimiter=None, force_recreate = False, simple = False):
+def export_file(path, filetype, delimiter=False, force_recreate = False, simple = False):
     """
     Direct to the correct function based on the filetype
 
@@ -64,7 +64,7 @@ def export_file(path, filetype, delimiter=None, force_recreate = False, simple =
     if simple:
         return export_pdf(path, force_recreate, simple)
 
-    if delimiter is None:
+    if not delimiter:
         return func(path, force_recreate)
 
     return func(path, delimiter, force_recreate)
@@ -88,7 +88,7 @@ def export_imgs(path, force_recreate = False):
     shutil.make_archive(f"{path}/_images", "zip", path, base_dir="images")
     return filename
 
-def export_txt(path, delimiter=None, force_recreate = False):
+def export_txt(path, delimiter=False, force_recreate = False):
     """
     Export the file as a .txt file
 
@@ -98,6 +98,9 @@ def export_txt(path, delimiter=None, force_recreate = False):
     """
 
     filename = f"{path}/_text.txt"
+    if delimiter:
+        filename = f"{path}/_text_delimiter.txt"
+
     ocr_folder = f"{path}/ocr_results"
 
     files = [
@@ -113,8 +116,11 @@ def export_txt(path, delimiter=None, force_recreate = False):
         for id, file in enumerate(files):
             with open(file, encoding="utf-8") as _f:
                 hOCR = json.load(_f)
+
+            if delimiter:
                 f.write(f"----- PAGE {(id+1):04d} -----\n\n")
-                f.write(json_to_text(hOCR) + "\n\n")
+            
+            f.write(json_to_text(hOCR) + "\n\n")
 
     return filename
 

@@ -43,6 +43,13 @@ export default class FileRow extends React.Component {
         this.successNot.current.open();
     }
 
+    getDelimiterTxt(e) {
+        e.stopPropagation();
+        this.state.filesystem.getDelimiterTxt(this.state.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
     getTxt(e) {
         e.stopPropagation();
         this.state.filesystem.getTxt(this.state.name);
@@ -353,6 +360,35 @@ export default class FileRow extends React.Component {
 
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
                             <span>{this.state.info["txt"]["size"]}</span>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <span>-</span>
+                        </TableCell>
+                    </TableRow>
+                    : null
+                }
+
+                {
+                    this.state.info !== undefined && this.state.info["delimiter_txt"] !== undefined && this.state.info["delimiter_txt"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    ? <TableRow>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
+                            <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
+                                <TxtIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} />
+                                <Button onClick={(e) => this.getDelimiterTxt(e)} style={{p: 0, textTransform: 'none'}}>Texto com Separador por Página</Button>
+                            </Box>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <span>{this.state.info["delimiter_txt"]["creation"]}</span>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <span>-</span>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <span>{this.state.info["delimiter_txt"]["size"]}</span>
                         </TableCell>
 
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>

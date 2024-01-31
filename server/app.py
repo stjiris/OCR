@@ -38,7 +38,7 @@ from src.utils.text import compare_dicts_words
 from celery_app import *
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
-logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
+# logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
 log = app.logger
 
@@ -123,6 +123,10 @@ def get_file():
     
     return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
+@app.route("/get_txt_delimitado", methods=["GET"])
+def get_txt_delimitado():
+    path = request.values["path"]
+    return send_file(f"{path}/_text_delimiter.txt")
 
 @app.route("/get_txt", methods=["GET"])
 def get_txt():
@@ -151,8 +155,8 @@ def request_entities():
 
     update_data(path + "/_data.json", data)
 
-    request_ner.delay(path)
-    # Thread(target=request_ner, args=(path,)).start()
+    # request_ner.delay(path)
+    Thread(target=request_ner, args=(path,)).start()
 
 
     return {"success": True, "filesystem": get_filesystem("files", private_session=private_session)}
@@ -460,6 +464,7 @@ def perform_ocr():
             "progress": 0,
         }
         data["txt"] = {"complete": False}
+        data["delimiter_txt"] = {"complete": False}
         data["pdf"] = {"complete": False}
         data["csv"] = {"complete": False}
         data["ner"] = {"complete": False}
@@ -470,8 +475,8 @@ def perform_ocr():
         if os.path.exists(f"{f}/images"):
             shutil.rmtree(f"{f}/images")
 
-        task_file_ocr.delay(f, config, ocr_algorithm)
-        # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
+        # task_file_ocr.delay(f, config, ocr_algorithm)
+        Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         # task_file_ocr(f, config, ocr_algorithm, True)
 
     private_session = None
@@ -607,7 +612,7 @@ def submit_text():
 
     update_data(
         data_folder + "/_data.json",
-        {"txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
+        {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
     )
 
     make_changes.delay(data_folder, data)

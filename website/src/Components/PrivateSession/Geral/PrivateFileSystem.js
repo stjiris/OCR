@@ -332,7 +332,7 @@ class PrivateFileExplorer extends React.Component {
         });
     }
 
-    getDocument(type, file) {
+    getDocument(type, file, suffix="") {
         /**
          * Export the .txt or .pdf file
          */
@@ -347,7 +347,7 @@ class PrivateFileExplorer extends React.Component {
             a.href = URL.createObjectURL(data);
 
             var basename = file.split('.').slice(0, -1).join('.');
-            a.download = basename + '_ocr.' + type;
+            a.download = basename + '_ocr' + suffix + '.' + type.split('_')[0];
             a.click();
             a.remove();
         });
@@ -409,6 +409,14 @@ class PrivateFileExplorer extends React.Component {
          * Export the .txt file
          */
         this.getDocument("txt", file);
+    }
+
+    getDelimiterTxt(file) {
+        /**
+         * Export the .txt file
+         * with the delimiter
+         */
+        this.getDocument("txt_delimitado", file, "_delimitado");
     }
 
     getCSV(file) {
