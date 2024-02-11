@@ -7,6 +7,7 @@ import Button from '@mui/material/Button';
 import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import Switch from '@mui/material/Switch';
 
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
@@ -17,7 +18,7 @@ import CallSplitIcon from '@mui/icons-material/CallSplit';
 
 import loadComponent from '../../../utils/loadComponents';
 
-import { Checkbox, CircularProgress, FormControl, InputLabel, MenuItem, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Checkbox, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 export default class LayoutMenu extends React.Component {
     constructor(props) {
@@ -36,6 +37,8 @@ export default class LayoutMenu extends React.Component {
             typeSelected: "",
 
             segmentLoading: false,
+
+            textModeState: true,
         }
 
         this.boxRefs = [];
@@ -79,6 +82,7 @@ export default class LayoutMenu extends React.Component {
             this.setState({contents: contents}, () => {
                 this.generateBoxes();
                 this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+                this.updateTextMode();
             });
         });
 
@@ -106,6 +110,7 @@ export default class LayoutMenu extends React.Component {
                 this.setState({contents: contents, segmentLoading: false}, () => {
                     this.generateBoxes();
                     this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+                    this.updateTextMode();
                 });
             });
         }, 1000);
@@ -129,6 +134,7 @@ export default class LayoutMenu extends React.Component {
         this.setState({page: page, contents: contents}, () => {
             this.generateBoxes();
             this.image.current.loadBoxes();
+            this.updateTextMode();
         });
     }
 
@@ -671,6 +677,59 @@ export default class LayoutMenu extends React.Component {
         });
     }
 
+    switchType(box) {
+        var contents = this.state.contents;
+        var groups = contents[this.state.page - 1]["boxes"];
+
+        var group = groups[box];
+        var newType = group["type"] === "image" ? (this.state.textModeState ? "text" : "remove") : "image";
+        group["type"] = newType;
+
+        groups[box] = group;
+        contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+
+        this.setState({contents: contents}, () => {
+            this.generateBoxes();
+            this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+        });
+    }
+
+    switchMode() {
+        var contents = this.state.contents;
+        var groups = contents[this.state.page - 1]["boxes"];
+
+        for (var i = 0; i < groups.length; i++) {
+            if (groups[i]["type"] !== "image") {
+                groups[i]["type"] = this.state.textModeState ? "remove" : "text";
+            }
+        }
+
+        contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+
+        this.setState({contents: contents, textModeState: !this.state.textModeState}, () => {
+            this.generateBoxes();
+            this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+        });
+    }
+
+    updateTextMode() {
+        var contents = this.state.contents;
+        var groups = contents[this.state.page - 1]["boxes"];
+
+        var mode = true;
+        for (var i = 0; i < groups.length; i++) {
+            if (groups[i]["type"] === "text") break;
+            else if (groups[i]["type"] === "remove") {
+                mode = false;
+                break;
+            }
+        }
+
+        console.log(mode);
+
+        this.setState({textModeState: mode});
+    }
+
     render() {
         const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
         const ConfirmLeave = loadComponent('EditPage', 'ConfirmLeave');
@@ -685,7 +744,7 @@ export default class LayoutMenu extends React.Component {
             var separateDisabled = noCheckBoxActive || this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["squares"].length === 1 && e["copyId"] === undefined);
 
             var copyDisabled = noCheckBoxActive || this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["squares"].length !== 1)
-            var typeDisabled = noCheckBoxActive || this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
+            // var typeDisabled = noCheckBoxActive || this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
         }
 
         return (
@@ -836,7 +895,7 @@ export default class LayoutMenu extends React.Component {
                                     textTransform: 'none',
                                 }}
                             >
-                                Copiar
+                                Replicar
                             </Button>
 
                             <Button
@@ -860,7 +919,7 @@ export default class LayoutMenu extends React.Component {
                                     textTransform: 'none',
                                 }}
                             >
-                                Separar
+                                Desagrupar
                             </Button>
 
                             <Button
@@ -876,21 +935,20 @@ export default class LayoutMenu extends React.Component {
                                 Apagar
                             </Button>
 
-                            <FormControl sx={{ m: 1, minWidth: 100 }} size="small">
-                                <InputLabel id="demo-select-small-label">Tipo</InputLabel>
-                                <Select
-                                    disabled={typeDisabled}
-                                    labelId="demo-select-small-label"
-                                    id="demo-select-small"
-                                    value={this.state.typeSelected}
-                                    label="Age"
-                                    onChange={(e) => this.updateCheckBoxType(e.target.value)}
-                                >
-                                    <MenuItem value={"text"}>Texto</MenuItem>
-                                    <MenuItem value={"image"}>Imagem</MenuItem>
-                                    <MenuItem value={"remove"}>Remover</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <Switch
+                                checked={this.state.textModeState}
+                                onChange={() => this.switchMode()}
+                                sx={{
+                                    "& .MuiSwitch-switchBase": {
+                                        color: "#f00",
+                                        '&.Mui-checked': {
+                                            color: "#00f",
+                                        }
+                                    }
+                                }}
+                                size='small'
+                            />
+                            <span>Ignorar/Extrair OCR</span>
                         </Box>
 
                         <TableContainer sx={{width: "100%", maxHeight: `${window.innerHeight - 217}px`, border: '1px solid #aaa'}}>
@@ -955,12 +1013,24 @@ export default class LayoutMenu extends React.Component {
                                                 </TableCell>
                                                 <TableCell align='center' sx={{borderBottom: '1px solid #aaa', p: "4px 16px"}}>
                                                     {
-                                                        group.type === "text"
+                                                        this.state.textModeState
                                                         ? <span>Texto</span>
-                                                        : group.type === "image"
-                                                            ? <span>Imagem</span>
-                                                            : <span>Remover</span>
+                                                        : <span>Remover</span>   
                                                     }
+                                                    <Switch 
+                                                        size="small"
+                                                        checked={group.type === "image"}
+                                                        onChange={() => this.switchType(index)}
+                                                        sx={{
+                                                            "& .MuiSwitch-switchBase": {
+                                                                color: this.state.textModeState ? "#00f" : "#f05e16",
+                                                                '&.Mui-checked': {
+                                                                    color: "#08A045",
+                                                                }
+                                                            }
+                                                        }}
+                                                    />
+                                                    <span>Imagem</span>
                                                 </TableCell>
                                             </TableRow>
                                         })

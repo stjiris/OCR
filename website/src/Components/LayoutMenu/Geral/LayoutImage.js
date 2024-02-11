@@ -347,7 +347,7 @@ export default class LayoutImage extends React.Component {
 
     getWindowWidth() {
         const width = window.innerWidth;
-        const widthReduction = 550;
+        const widthReduction = 600;
 
         return width - widthReduction;
     }
@@ -445,7 +445,7 @@ export default class LayoutImage extends React.Component {
         var refs = [...this.state.boxRefs];
         var ref = React.createRef();
         var coords = {top: initialCoords.y, left: initialCoords.x, bottom: finalCoords.y, right: finalCoords.x};
-        boxes.push(this.createLayoutBox(ref, refs.length + 1, coords, "text"));
+        boxes.push(this.createLayoutBox(ref, refs.length + 1, coords, this.state.menu.state.textModeState ? "text" : "remove"));
         refs.push([ref]);
 
         this.preview.current.toggleVisibility();
