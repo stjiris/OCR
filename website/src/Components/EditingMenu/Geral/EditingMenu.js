@@ -3,14 +3,12 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
-import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 import TextField from '@mui/material/TextField';
-
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
@@ -18,7 +16,6 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
-
 
 import AddLineIcon from '../../../static/addLine.svg';
 import RemoveLineIcon from '../../../static/removeLine.svg';
@@ -100,6 +97,8 @@ export default class EditingMenu extends React.Component {
         this.image = React.createRef();
         this.corpusSelect = React.createRef();
         this.textWindow = React.createRef();
+
+        this.successNot = React.createRef();
 
         this.selectedWord = "";
         this.wordsIndex = {};
@@ -721,7 +720,7 @@ export default class EditingMenu extends React.Component {
      * SAVE FINAL CHANGES
      * Send to the server the new text and structure
      */
-    saveChanges() {
+    saveChanges(remakeFiles = false) {
         
         fetch(process.env.REACT_APP_API_URL + 'submit-text', {
             method: 'POST',
@@ -729,7 +728,8 @@ export default class EditingMenu extends React.Component {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                "text": this.state.contents
+                "text": this.state.contents,
+                "remakeFiles": remakeFiles,
             })
         })
         .then(response => {return response.json()})
@@ -740,7 +740,12 @@ export default class EditingMenu extends React.Component {
                 this.setState({uncommittedChanges: false});
                 window.removeEventListener('beforeunload', this.preventExit);
                 
-                this.state.filesystem.closeEditingMenu();
+                this.successNot.current.setMessage("Texto submetido com sucesso");
+                this.successNot.current.open();
+
+                if (remakeFiles) {
+                    this.state.filesystem.closeEditingMenu();
+                }
             } else {
                 // this.errorNot.current.setMessage(data.error);
                 // this.errorNot.current.open();
@@ -750,12 +755,14 @@ export default class EditingMenu extends React.Component {
 
     render() {
         const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
+        const Notification = loadComponent('Notification', 'Notifications');
 
         var incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
         this.wordsIndex = {};
 
         return (
             <Box>
+                <Notification message={""} severity={"success"} ref={this.successNot}/>
                 {
                     this.state.loading
                     ? <Box sx={{
@@ -1192,6 +1199,16 @@ export default class EditingMenu extends React.Component {
                                     startIcon={<SaveIcon />
                                 }>
                                     Guardar
+                                </Button>
+
+                                <Button
+                                    style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
+                                    variant="contained" 
+                                    color="success" 
+                                    onClick={() => this.saveChanges(true)} 
+                                    startIcon={<CheckRoundedIcon />
+                                }>
+                                    Terminar
                                 </Button>
                             </Box>
                         </Box> 
