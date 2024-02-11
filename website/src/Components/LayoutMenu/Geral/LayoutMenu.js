@@ -6,6 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
@@ -360,7 +361,7 @@ export default class LayoutMenu extends React.Component {
         this.confirmLeave.current.toggleOpen();
     }
 
-    saveLayout() {
+    saveLayout(closeWindow = false) {
         fetch(process.env.REACT_APP_API_URL + 'save-layouts', {
             method: 'POST',
             headers: {
@@ -368,13 +369,19 @@ export default class LayoutMenu extends React.Component {
             },
             body: JSON.stringify({
                 path: this.state.filesystem.state.current_folder.join("/") + "/" + this.state.filename,
-                layouts: this.state.contents  
+                layouts: this.state.contents
             })
         }).then(response => {return response.json()})
         .then(data => {
             if (data["success"]) {
                 this.setState({uncommittedChanges: false});
-                this.state.filesystem.closeLayoutMenu();
+
+                this.successNot.current.setMessage("Layout guardado com sucesso.");
+                this.successNot.current.open();
+
+                if (closeWindow) {
+                    this.state.filesystem.closeLayoutMenu();
+                }
             } else {
                 alert("Erro inesperado ao guardar o layout.")
             }
@@ -763,11 +770,27 @@ export default class LayoutMenu extends React.Component {
                                 border: '1px solid black',
                                 height: '2rem',
                                 textTransform: 'none',
+                                mr: '1rem',
                                 fontSize: '0.75rem',
                             }}
                             onClick={() => this.saveLayout()}
                         >
                             Guardar
+                        </Button>
+                        <Button
+                            disabled={this.state.buttonsDisabled}
+                            variant="contained"
+                            color="success"
+                            startIcon={<CheckRoundedIcon />}
+                            sx={{
+                                border: '1px solid black',
+                                height: '2rem',
+                                textTransform: 'none',
+                                fontSize: '0.75rem',
+                            }}
+                            onClick={() => this.saveLayout(true)}
+                        >
+                            Terminar
                         </Button>
                     </Box>
                 </Box>

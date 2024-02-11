@@ -155,8 +155,8 @@ def request_entities():
 
     update_data(path + "/_data.json", data)
 
-    # request_ner.delay(path)
-    Thread(target=request_ner, args=(path,)).start()
+    request_ner.delay(path)
+    # Thread(target=request_ner, args=(path,)).start()
 
 
     return {"success": True, "filesystem": get_filesystem("files", private_session=private_session)}
@@ -475,8 +475,8 @@ def perform_ocr():
         if os.path.exists(f"{f}/images"):
             shutil.rmtree(f"{f}/images")
 
-        # task_file_ocr.delay(f, config, ocr_algorithm)
-        Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
+        task_file_ocr.delay(f, config, ocr_algorithm)
+        # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         # task_file_ocr(f, config, ocr_algorithm, True)
 
     private_session = None
@@ -594,9 +594,8 @@ def remove_index_doc():
 
 @app.route("/submit-text", methods=["POST"])
 def submit_text():
-    texts = request.json[
-        "text"
-    ]  # estrutura com texto, nome do ficheiro e url da imagem
+    texts = request.json["text"]  # estrutura com texto, nome do ficheiro e url da imagem
+    remake_files = request.json["remakeFiles"]
 
     data_folder = "/".join(texts[0]["original_file"].split("/")[:-2])
     data = get_data(data_folder + "/_data.json")
@@ -610,14 +609,15 @@ def submit_text():
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(text, f, indent=2, ensure_ascii=False)
 
-    update_data(
-        data_folder + "/_data.json",
-        {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
-    )
+    if remake_files:
+        update_data(
+            data_folder + "/_data.json",
+            {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
+        )
 
-    make_changes.delay(data_folder, data)
-    # Thread(target=make_changes, args=(data_folder, data)).start()
-    # make_changes(data_folder, data)
+        make_changes.delay(data_folder, data)
+        # Thread(target=make_changes, args=(data_folder, data)).start()
+        # make_changes(data_folder, data)
 
     private_session = None
     if "_private_sessions" in data_folder:
