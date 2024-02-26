@@ -1,4 +1,4 @@
-# Dissertacao-OCR
+# OCR
 
 # Setup
 ## Environment Variables for Local Testing
@@ -38,7 +38,7 @@ http {
         server_name  localhost;
 
         location / {
-            root path/to/Dissertacao-OCR/website/build;
+            root path/to/OCR/website/build;
             index index.html;
         }
 
@@ -48,7 +48,7 @@ http {
         }
 
         location /images/ {
-            alias path/to/Dissertacao-OCR/server/files/;
+            alias path/to/OCR/server/files/;
         }
     }
 
