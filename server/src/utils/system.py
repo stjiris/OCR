@@ -10,7 +10,7 @@ def get_logs(
     # try:
     #     # Using subprocess to get the logs
     #     res = subprocess.run(
-    #         "docker logs dissertacao-ocr-server-1 -f",
+    #         "docker logs ocr-server-1 -f",
     #         shell=True,
     #         check=True,
     #         capture_output=True,
