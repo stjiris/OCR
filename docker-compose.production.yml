@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3'
 
 volumes:
   elasticsearch_data: {}
@@ -26,22 +26,26 @@ services:
       - files_data:/app/files
     restart: unless-stopped
 
+    networks:
+      - ocr-network
+
   celery_worker:
     build:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
     environment:
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379
+      CELERY_RESULT_BACKEND: redis://redis:6379
       C_FORCE_ROOT: true
     command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
     volumes:
       - files_data:/app/files
-    links:
-      - redis
     depends_on:
       - redis
     restart: unless-stopped
+
+    networks:
+      - ocr-network
 
   redis:
     image: redis:7.2
@@ -57,6 +61,9 @@ services:
       - files_data:/app/files
     restart: unless-stopped
 
+    networks:
+      - ocr-network
+
   nginx:
     build:
       context: .
@@ -71,6 +78,9 @@ services:
       PUBLIC_URL: /ocr/
       REACT_APP_API_URL: ./api/
     restart: unless-stopped
+
+    networks:
+      - ocr-network
 
   elasticsearch:
     build:
@@ -90,3 +100,10 @@ services:
       retries: 15
       start_period: 10s
     restart: unless-stopped
+
+    networks:
+      - ocr-network
+
+networks:
+  ocr-network:
+    driver: bridge
