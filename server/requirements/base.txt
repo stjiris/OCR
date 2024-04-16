@@ -12,7 +12,7 @@ elasticsearch==8.5.0
 pytesseract==0.3.10
 opencv-python-headless==4.7.0.72
 hdbscan==0.8.33
-reportlab==3.6.12
+reportlab==3.6.13
 pypdfium2==4.25.0
 requests==2.31.0
 dnspython<2.6.0  #eventlet breaks with any higher version
