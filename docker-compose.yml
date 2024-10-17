@@ -14,8 +14,8 @@ services:
       FLASK_DEBUG: 1
       ES_URL: http://elasticsearch:9200
     command: /app/start
-    ports:
-      - "5001:5001"
+    expose:
+      - "5001"  # exposed only to other services
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -24,7 +24,6 @@ services:
     volumes:
       - files_data:/app/files
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -42,7 +41,6 @@ services:
     depends_on:
       - redis
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -56,14 +54,13 @@ services:
     depends_on:
       - redis
     restart: unless-stopped
-
     networks:
       - ocr-network
 
   redis:
     image: redis:7.2
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"  # exposed only to other services
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -73,7 +70,6 @@ services:
     volumes:
       - files_data:/app/files
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -91,7 +87,6 @@ services:
       PUBLIC_URL: /ocr/
       REACT_APP_API_URL: ./api/
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -99,8 +94,8 @@ services:
     build:
       context: ./compose/elasticsearch
       dockerfile: Dockerfile
-    ports:
-     - "9200:9200"
+    expose:
+      - "9200"  # exposed only to other services
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
@@ -113,7 +108,6 @@ services:
       retries: 15
       start_period: 10s
     restart: unless-stopped
-
     networks:
       - ocr-network
 
