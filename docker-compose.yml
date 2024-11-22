@@ -48,9 +48,12 @@ services:
     image: ocr-server
     environment:
       CELERY_BROKER_URL: redis://redis:6379
-    command: celery -A celery_app.celery flower --port=5555
-    ports:
-      - "5555:5555"
+      CELERY_RESULT_BACKEND: redis://redis:6379
+      # NO AUTHENTICATION BY DEFAULT; BASIC AUTH IS UNSAFE
+      #FLOWER_BASIC_AUTH: TEMP:PWD
+    command: celery -A celery_app.celery flower --port=5050
+    expose:
+      - "5050"  # exposed only to other services
     depends_on:
       - redis
     restart: unless-stopped

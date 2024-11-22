@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-FROM ubuntu:22.04 as base
+FROM ubuntu:22.04 AS base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3 \
   python-is-python3
 
-FROM base as builder
+FROM base AS builder
 
 # populate variable for later
 ARG TARGETARCH

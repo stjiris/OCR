@@ -30,7 +30,7 @@ from src.utils.file import get_file_layouts
 from src.utils.file import save_file_layouts
 
 from src.utils.system import get_free_space
-from src.utils.system import get_logs
+#from src.utils.system import get_logs
 from src.utils.system import get_private_sessions
 
 from src.utils.text import compare_dicts_words
@@ -53,7 +53,7 @@ private_sessions = dict()
 def get_file_system():
     if "path" not in request.values:
         return get_filesystem("files")
-    
+
     path = request.values["path"]
     private_session = None
     if "_private_sessions" in path:
@@ -66,7 +66,7 @@ def get_file_system():
 def get_info():
     if "path" not in request.values:
         return get_filesystem("files")
-    
+
     path = request.values["path"]
     private_session = None
     if "_private_sessions" in path:
@@ -120,7 +120,7 @@ def get_file():
     totalPages = len(os.listdir(path + "/ocr_results"))
 
     doc, words = get_file_parsed(path)
-    
+
     return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
 @app.route("/get_txt_delimitado", methods=["GET"])
@@ -167,9 +167,9 @@ def get_zip():
     try:
         export_file(path, "zip")
     except Exception as e:
-        
+
         return {"success": False, "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde"}
-    
+
     return send_file(f"{path}/{path.split('/')[-1]}.zip")
 
 @app.route("/get_pdf", methods=["GET"])
@@ -204,13 +204,13 @@ def get_original():
 @app.route("/delete-path", methods=["POST"])
 def delete_path():
     data = request.json
-    path = data["path"] 
+    path = data["path"]
 
     delete_structure(es, path)
     shutil.rmtree(path)
 
     session = path.split("/")[0]
-    
+
     private_session = None
     if "_private_sessions" in path:
         private_session = path.split("/")[-1]
@@ -280,7 +280,7 @@ def is_filename_reserved(path, filename):
         data = get_data(f"{path}/{f}/_data.json")
         if "original_filename" in data and data["original_filename"] == filename:
             return True
-        
+
     return False
 
 
@@ -306,7 +306,7 @@ def prepare_upload():
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
 
     data = request.json
-    path = data["path"] 
+    path = data["path"]
     filename = data["name"]
 
     session = path.split("/")[0]
@@ -357,7 +357,7 @@ def join_chunks(path, filename, total_count, complete_filename):
 def upload_file():
     if float(get_free_space()[1]) < 10:
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
-    
+
     file = request.files["file"]
     path = request.form["path"]
     filename = request.form["name"]
@@ -430,7 +430,7 @@ def perform_ocr():
 
     if float(get_free_space()[1]) < 10:
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
-    
+
     data = request.json
     path = data["path"]
     algorithm = data["algorithm"]
@@ -659,7 +659,7 @@ def create_private_session():
                 f,
                 indent=2,
                 ensure_ascii=False,
-            )    
+            )
 
     os.mkdir("files/_private_sessions/" + session_id)
 
@@ -680,7 +680,7 @@ def create_private_session():
 def validate_private_session():
     data = request.json
     session_id = data["sessionId"]
-    
+
     if session_id in private_sessions:
         response = {"success": True, "valid": True}
     else:
@@ -737,5 +737,4 @@ if not os.path.exists("./files/_private_sessions"):
 
 if __name__ == "__main__":
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
-    # app.run(port=5001, threaded=True)
     app.run(host='0.0.0.0', port=5001, threaded=True)
