@@ -1,3 +1,5 @@
 # This file is expected by the Dockerfile.
 
 -r requirements/production.txt
+
+memory-profiler

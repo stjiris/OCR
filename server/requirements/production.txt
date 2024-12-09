@@ -2,4 +2,6 @@
 
 -r base.txt
 
-gunicorn==21.2.0
+gunicorn==22.0.0
+memory-profiler
+tesserocr==2.7.0

@@ -1,4 +1,4 @@
-version: '3'
+version: '3.9'
 
 volumes:
   elasticsearch_data: {}
@@ -11,8 +11,8 @@ services:
       dockerfile: ../compose/server/Dockerfile
     environment:
       FLASK_APP: app
-      FLASK_ENV: production
-      FLASK_DEBUG: 0
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
       ES_URL: http://elasticsearch:9200
     command: /app/start
     ports:
@@ -25,27 +25,27 @@ services:
     volumes:
       - files_data:/app/files
     restart: unless-stopped
-
     networks:
-      - ocr-network
+      - app-network
 
   celery_worker:
     build:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
     environment:
-      CELERY_BROKER_URL: redis://redis:6379
-      CELERY_RESULT_BACKEND: redis://redis:6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
       C_FORCE_ROOT: true
-    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
+    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet -E --hostname=worker1@%h
     volumes:
       - files_data:/app/files
+    links:
+      - redis
     depends_on:
       - redis
     restart: unless-stopped
-
     networks:
-      - ocr-network
+      - app-network
 
   redis:
     image: redis:7.2
@@ -60,9 +60,8 @@ services:
     volumes:
       - files_data:/app/files
     restart: unless-stopped
-
     networks:
-      - ocr-network
+      - app-network
 
   nginx:
     build:
@@ -78,9 +77,8 @@ services:
       PUBLIC_URL: /ocr/
       REACT_APP_API_URL: ./api/
     restart: unless-stopped
-
     networks:
-      - ocr-network
+      - app-network
 
   elasticsearch:
     build:
@@ -100,10 +98,26 @@ services:
       retries: 15
       start_period: 10s
     restart: unless-stopped
-
     networks:
-      - ocr-network
+      - app-network
 
+  flower:
+    build:
+      context: ./server
+      dockerfile: ../compose/server/Dockerfile
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+    command: celery -A celery_app.celery flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - app-network
+
+# Define the network at the end of the file
 networks:
-  ocr-network:
+  app-network:
+    name: ocr-network
     driver: bridge

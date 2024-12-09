@@ -6,6 +6,7 @@ import shutil
 import string
 
 from threading import Lock, Thread
+import time
 
 from flask import request
 from flask import send_file
@@ -428,10 +429,14 @@ def perform_ocr():
     @param multiple: if it is a folder or not
     """
 
+    # Start timing the page OCR process
+    start_time = time.time()
+
     if float(get_free_space()[1]) < 10:
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
     
     data = request.json
+    print(data)
     path = data["path"]
     algorithm = data["algorithm"]
     config = data["config"]
@@ -478,6 +483,8 @@ def perform_ocr():
         task_file_ocr.delay(f, config, ocr_algorithm)
         # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         # task_file_ocr(f, config, ocr_algorithm, True)
+        end_time = time.time()
+        processing_time = end_time - start_time
 
     private_session = None
     if "_private_sessions" in path:
@@ -487,6 +494,7 @@ def perform_ocr():
         "success": True,
         "message": "O OCR começou, por favor aguarde",
         "files": get_filesystem(session, private_session=private_session),
+        "time": processing_time,
     }
 
 

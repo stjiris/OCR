@@ -1,17 +1,21 @@
 import json
 import os
+import time
 
 import traceback
 
-from celery import Celery
+from celery import Celery, chord
 from flask import Flask
 from flask_cors import CORS
 import logging as log
 from PIL import Image, ImageDraw
 import json
+from tesserocr import PyTessBaseAPI
+
 
 from src.algorithms import tesseract
 from src.algorithms import easy_ocr
+from src.algorithms import tesserOCR
 
 from src.utils.file import get_current_time
 from src.utils.file import export_file
@@ -105,21 +109,28 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
     @param ocr_algorithm: algorithm to use
     """
 
+    print("ESTOU NO TASK_FILE_OCR")
+    
+    # Start timer for the entire OCR process
+    start_time = time.time()
+
     # Generate the images
     try:
         prepare_file_ocr(path)
         images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
+
+        print(f"Starting OCR for {len(images)} pages at {time.strftime('%Y-%m-%d %H:%M:%S')}.\n")
 
         if not os.path.exists(f"{path}/ocr_results"):
             os.mkdir(f"{path}/ocr_results")
 
         log.info("{path}: A começar OCR")
 
-        for image in images:
-            if testing:
-                task_page_ocr(path, image, config, ocr_algorithm)
-            else:
-                task_page_ocr.delay(path, image, config, ocr_algorithm)
+        # Create tasks for each image
+        tasks = [task_page_ocr.s(path, image, config, ocr_algorithm) for image in images]
+
+        # Use chord to execute the tasks and call the finalizer
+        chord(tasks)(task_ocr_complete.s(path, start_time))
 
         return {"status": "success"}
 
@@ -144,16 +155,25 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
     :param ocr_algorithm: algorithm to use
     """
 
-    if filename.split(".")[0][-1] == "$": return
+    print("ESTOU NO TASK_PAGE_OCR")
 
-    
+    # Start timing the page OCR process
+    start_time = time.time()
+
+    if filename.split(".")[0][-1] == "$": return
 
     try:
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
 
+        ocr_algorithm = "tesserOCR"
+
         # Convert the ocr_algorithm to the correct class
         ocr_algorithm = globals()[ocr_algorithm]
+
+        print(ocr_algorithm)
+        print("Resolved OCR Algorithm:", ocr_algorithm)
+        print("OCR Algorithm Type:", type(ocr_algorithm))
 
         layout_path = f"{path}/layouts/{get_file_basename(filename)}.json"
         segment_ocr_flag = False
@@ -339,7 +359,9 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                     "error": True
                 }
 
-
+            end_time = time.time()
+            processing_time = end_time - start_time
+            print(f"Page {filename} OCR completed in {processing_time:.2f} seconds.\n")
             update_data(data_folder, data)
 
         return {"status": "success"}
@@ -355,4 +377,21 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         update_data(data_folder, data)
         log.error(f"Error in performing a page's OCR for file at {path}: {e}")
 
+        return {"status": "error"}
+    
+@celery.task(name="ocr_complete")
+def task_ocr_complete(results, path, start_time):
+    """
+    Callback task executed after all OCR tasks are complete.
+    """
+    try:
+        # Calculate the total time
+        total_time = time.time() - start_time
+
+        print(f"Total OCR time for {path}: {total_time:.2f} seconds", flush=True)
+        print(f"Total OCR time for {path}: {total_time:.2f} seconds")
+
+        return {"status": "success", "total_time": total_time}
+
+    except Exception as e:
         return {"status": "error"}
