@@ -2,7 +2,7 @@ FROM node:20.8.1 AS builder
 
 COPY ./website/package* .
 
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 
 COPY ./website .
 
