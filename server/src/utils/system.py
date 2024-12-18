@@ -53,9 +53,12 @@ def get_private_sessions():
 
 def get_free_space():
     # Get the free space of the disk and its percentage
+    # UNIX usually reserves ~5% of total for root user;
+    # 'total' and 'used' are overall total and used space
+    # 'free' is space available for current user, 'percent' is user utilization
     disk_usage = psutil.disk_usage('/')
     free_space = disk_usage.free
-    total_space = disk_usage.total
+    total_space = disk_usage.used + disk_usage.free
 
     free_space_percentage = free_space / total_space * 100
 
