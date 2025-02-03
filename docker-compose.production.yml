@@ -15,7 +15,7 @@ services:
       ES_URL: http://elasticsearch:9200
     command: /app/start
     ports:
-      - "5001:5001"
+      - "5001"  # exposed only to other services
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -24,7 +24,6 @@ services:
     volumes:
       - files_data:/app/files
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -50,20 +49,19 @@ services:
     image: ocr-server
     environment:
       CELERY_BROKER_URL: redis://redis:6379
-    command: celery -A celery_app.celery flower --port=5555
+    command: celery -A celery_app.celery flower --port=5050
     ports:
-      - "5555:5555"
+      - "5050"  # exposed only to other services
     depends_on:
       - redis
     restart: unless-stopped
-
     networks:
       - ocr-network
 
   redis:
     image: redis:7.2
     ports:
-      - "6379:6379"
+      - "6379"  # exposed only to other services
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -73,7 +71,6 @@ services:
     volumes:
       - files_data:/app/files
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -91,7 +88,6 @@ services:
       PUBLIC_URL: /ocr/
       REACT_APP_API_URL: ./api/
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -100,7 +96,7 @@ services:
       context: ./compose/elasticsearch
       dockerfile: Dockerfile
     ports:
-     - "9200:9200"
+      - "9200"  # exposed only to other services
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
