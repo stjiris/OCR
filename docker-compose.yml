@@ -1,6 +1,7 @@
 version: '3.9'
 
 volumes:
+  elasticsearch_data: {}
   files_data: {}
 
 services:
@@ -17,6 +18,8 @@ services:
     ports:
       - "5001:5001"
     depends_on:
+      elasticsearch:
+        condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
