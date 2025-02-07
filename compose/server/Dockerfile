@@ -98,6 +98,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   file \
   && rm -rf /var/lib/apt/lists/*
 
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
+
 WORKDIR /app
 
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
