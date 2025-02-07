@@ -1,33 +1,26 @@
 import json
+import logging as log
 import os
 import traceback
 
 from celery import Celery
-from flask import Flask
-from flask_cors import CORS
-import logging as log
-from PIL import Image, ImageDraw
-import json
+from PIL import Image
+from PIL import ImageDraw
 
 from src.algorithms import tesseract
-from src.algorithms import easy_ocr
-
 from src.utils.export import export_file, load_invisible_font
 from src.utils.file import get_current_time
-from src.utils.file import get_size
-from src.utils.file import update_data
 from src.utils.file import get_data
-from src.utils.file import prepare_file_ocr
 from src.utils.file import get_file_basename
+from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
-from src.utils.file import get_ner_file
+from src.utils.file import get_size
+from src.utils.file import prepare_file_ocr
+from src.utils.file import update_data
 
-app = Flask(__name__)
-CORS(app)
-
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://ocr-redis-1:6379'),
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://ocr-redis-1:6379')
+CELERY_BROKER_URL = (os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0"),)
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 celery = Celery("celery_app", broker=CELERY_BROKER_URL)
 
 load_invisible_font()  # TODO: can it be loaded once at startup of the OCR worker?
@@ -68,12 +61,10 @@ def make_changes(data_folder, data):
         request_ner(data_folder)
     except Exception as e:
         print(e)
-        data["ner"] = {
-            "complete": False,
-            "error": True
-        }
+        data["ner"] = {"complete": False, "error": True}
 
     return {"status": "success"}
+
 
 @celery.task(name="request_ner")
 def request_ner(data_folder):
@@ -90,12 +81,10 @@ def request_ner(data_folder):
             "creation": current_date,
         }
     else:
-        data["ner"] = {
-            "complete": False,
-            "error": True
-        }
+        data["ner"] = {"complete": False, "error": True}
 
     update_data(data_folder + "/_data.json", data)
+
 
 @celery.task(name="file_ocr")
 def task_file_ocr(path, config, ocr_algorithm, testing=False):
@@ -135,6 +124,7 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
 
         return {"status": "error"}
 
+
 @celery.task(name="page_ocr")
 def task_page_ocr(path, filename, config, ocr_algorithm):
     """
@@ -146,7 +136,8 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
     :param ocr_algorithm: algorithm to use
     """
 
-    if filename.split(".")[0][-1] == "$": return
+    if filename.split(".")[0][-1] == "$":
+        return
 
     try:
         # Convert the ocr_algorithm to the correct class
@@ -207,7 +198,6 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                         img_draw = ImageDraw.Draw(image)
                         img_draw.rectangle(box_coords, fill="white")
 
-
             if image_groups:
                 if not os.path.exists(f"{path}/_images"):
                     os.mkdir(f"{path}/_images")
@@ -223,10 +213,10 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                         cropped_image = image.crop(box_coords)
                         cropped_image.save(f"{path}/_images/page{page_id}_{id+1}.{filename.split('.')[-1].lower()}")
 
-
             box_coordinates_list = []
             for item in text_groups:
-                if item["type"] != "text": continue
+                if item["type"] != "text":
+                    continue
                 for sq in item["squares"]:
                     left = sq["left"]
                     top = sq["top"]
@@ -256,7 +246,6 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         data["ocr"] = data.get("ocr", {})
         data["ocr"]["progress"] = len(files)
         update_data(data_folder, data)
-
 
         if data["pages"] == len(files):
             log.info(f"{path}: Acabei OCR")
@@ -332,10 +321,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                     "creation": creation_date,
                 }
             else:
-                data["ner"] = {
-                    "complete": False,
-                    "error": True
-                }
+                data["ner"] = {"complete": False, "error": True}
 
             update_data(data_folder, data)
 
