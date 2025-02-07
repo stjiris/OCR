@@ -7,6 +7,7 @@ services:
     build:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
+    image: ocr-server
     environment:
       FLASK_APP: app
       FLASK_ENV: development
@@ -35,9 +36,23 @@ services:
       CELERY_BROKER_URL: redis://redis:6379
       CELERY_RESULT_BACKEND: redis://redis:6379
       C_FORCE_ROOT: true
-    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
+    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet -E --hostname=worker1@%h
     volumes:
       - files_data:/app/files
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+    networks:
+      - ocr-network
+
+  flower:
+    image: ocr-server
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379
+    command: celery -A celery_app.celery flower --port=5555
+    ports:
+      - "5555:5555"
     depends_on:
       - redis
     restart: unless-stopped
