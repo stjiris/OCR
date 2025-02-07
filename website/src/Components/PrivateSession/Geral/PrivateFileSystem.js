@@ -17,7 +17,7 @@ import loadComponent from '../../../utils/loadComponents';
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
 
-const validExtensions = [".pdf", ".jpg", ".jpeg"];
+const validExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 

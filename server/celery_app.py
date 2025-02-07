@@ -117,7 +117,7 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
     # Generate the images
     try:
         prepare_file_ocr(path)
-        images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
+        images = sorted([x for x in os.listdir(path) if x.endswith(".png")])
 
         print(f"Starting OCR for {len(images)} pages at {time.strftime('%Y-%m-%d %H:%M:%S')}.\n")
 
@@ -244,7 +244,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
                         box_coords = (left, top, right, bottom)
                         cropped_image = image.crop(box_coords)
-                        cropped_image.save(f"{path}/images/page{page_id}_{id+1}.jpg")
+                        cropped_image.save(f"{path}/images/page{page_id}_{id+1}.png")
 
 
             box_coordinates_list = []

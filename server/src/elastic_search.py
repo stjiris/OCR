@@ -126,7 +126,7 @@ def create_document(path, algorithm, config, text, page=None):
         + "/".join(path.split("/")[1:-2])
         + "/"
         + basename
-        + ".jpg"
+        + ".png"
     )
 
     if page is None:
