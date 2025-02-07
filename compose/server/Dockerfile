@@ -10,9 +10,7 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   python3 \
-  libqpdf-dev \
-  zlib1g \
-  liblept5
+  python-is-python3
 
 FROM base as builder
 
@@ -28,7 +26,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libleptonica-dev \
   zlib1g-dev \
   python3-dev \
-  python3-distutils \
   libffi-dev \
   ca-certificates \
   curl \
@@ -36,26 +33,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libcairo2-dev \
   pkg-config
 
-# Get the latest pip (Ubuntu version doesn't support manylinux2010)
-RUN \
-  curl https://bootstrap.pypa.io/get-pip.py | python3
-
-WORKDIR /usr/local/src
-
 # Compile and install jbig2
 # Needs libleptonica-dev, zlib1g-dev
 RUN \
   mkdir jbig2 \
-  && curl -L https://github.com/agl/jbig2enc/archive/ea6a40a.tar.gz | \
+  && curl -L https://github.com/agl/jbig2enc/archive/c0141bf.tar.gz | \
   tar xz -C jbig2 --strip-components=1 \
   && cd jbig2 \
   && ./autogen.sh && ./configure && make && make install \
   && cd .. \
   && rm -rf jbig2
 
-ARG PYPDFIUM2_VERSION=4.30.1
-RUN pip3 install --no-cache-dir pypdfium2==$PYPDFIUM2_VERSION
+WORKDIR /usr/local/src
 
+ARG PYPDFIUM2_VERSION=4.30.1
 # synced with libpdfium version bundled by pypdfium above
 ARG PDFIUM_VERSION=6899
 ARG PDFIUM_URL=https://github.com/bblanchon/pdfium-binaries/releases/download/chromium
@@ -73,9 +64,14 @@ RUN \
   && cp -r include/* $PREFIX/include \
   && cd .. \
   && rm -rf pdfium
+
 COPY . /app
 
 WORKDIR /app
+
+# Get the latest pip (Ubuntu version doesn't support manylinux2010)
+RUN \
+  curl https://bootstrap.pypa.io/get-pip.py | python3
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
@@ -90,8 +86,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ghostscript \
   fonts-droid-fallback \
   jbig2dec \
-  img2pdf \
-  libsm6 libxext6 libxrender-dev \
   pngquant \
   tesseract-ocr \
   tesseract-ocr-chi-sim \
@@ -110,5 +104,6 @@ COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY --from=builder /app/ /app/
+
 RUN sed -i 's/\r$//g' /app/start
 RUN chmod +x /app/start
