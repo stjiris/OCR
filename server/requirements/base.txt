@@ -1,5 +1,5 @@
 pytz
-Pillow==10.3.0
+Pillow==11.1.0
 Flask==2.3.*
 Werkzeug[watchdog]==3.0.1
 Flask-Cors==4.0.0
