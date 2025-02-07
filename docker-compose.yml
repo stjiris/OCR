@@ -28,7 +28,7 @@ services:
     networks:
       - ocr-network
 
-  celery_worker:
+  worker:
     build:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
