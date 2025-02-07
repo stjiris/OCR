@@ -1,4 +1,4 @@
-FROM elasticsearch:8.4.2
+FROM elasticsearch:8.17.1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
