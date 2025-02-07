@@ -71,3 +71,22 @@ services:
       PUBLIC_URL: /ocr/
       REACT_APP_API_URL: ./api/
     restart: unless-stopped
+
+  elasticsearch:
+    build:
+      context: ./compose/elasticsearch
+      dockerfile: Dockerfile
+    ports:
+     - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    environment:
+      xpack.security.enabled: false
+      discovery.type: single-node
+    healthcheck:
+      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:9200
+      interval: 10s
+      timeout: 30s
+      retries: 15
+      start_period: 10s
+    restart: unless-stopped
