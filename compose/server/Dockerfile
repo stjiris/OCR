@@ -53,14 +53,14 @@ RUN \
   && cd .. \
   && rm -rf jbig2
 
-ARG PYPDFIUM2_VERSION=4.25.0
+ARG PYPDFIUM2_VERSION=4.30.1
 RUN pip3 install --no-cache-dir pypdfium2==$PYPDFIUM2_VERSION
 
 # synced with libpdfium version bundled by pypdfium above
-ARG PDFIUM_VERSION=6164
+ARG PDFIUM_VERSION=6899
 ARG PDFIUM_URL=https://github.com/bblanchon/pdfium-binaries/releases/download/chromium
 
-# build to this prefix 
+# build to this prefix
 ARG PREFIX=/usr/local
 ENV PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
 
