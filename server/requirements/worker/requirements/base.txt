@@ -1,15 +1,11 @@
 pytz
 Pillow==11.1.0
-Flask==2.3.*
-Werkzeug>=3.0.6
-Flask-Cors==4.0.2
 celery==5.3.6
 flower==2.0.1
 eventlet==0.35.2
 redis==5.0.3
 lxml==4.9.3
 psutil==5.9.5
-elasticsearch==8.17.1
 pytesseract==0.3.10
 opencv-python-headless==4.11.0.86
 hdbscan==0.8.40

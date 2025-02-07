@@ -1,35 +1,30 @@
 import json
+import logging as log
 import os
-
 import traceback
 
 from celery import Celery
-from flask import Flask
-from flask_cors import CORS
-import logging as log
-from PIL import Image, ImageDraw
-import json
-
-from src.algorithms import tesseract
+from PIL import Image
+from PIL import ImageDraw
 from src.algorithms import easy_ocr
-
-from src.utils.file import get_current_time
+from src.algorithms import tesseract
 from src.utils.file import export_file
-from src.utils.file import get_size
-from src.utils.file import update_data
+from src.utils.file import get_current_time
 from src.utils.file import get_data
-from src.utils.file import prepare_file_ocr
 from src.utils.file import get_file_basename
+from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
-from src.utils.file import get_ner_file
+from src.utils.file import get_size
+from src.utils.file import prepare_file_ocr
+from src.utils.file import update_data
 
-app = Flask(__name__)
-CORS(app)
-
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://ocr-redis-1:6379'),
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://ocr-redis-1:6379')
+CELERY_BROKER_URL = (os.environ.get("CELERY_BROKER_URL", "redis://ocr-redis-1:6379"),)
+CELERY_RESULT_BACKEND = os.environ.get(
+    "CELERY_RESULT_BACKEND", "redis://ocr-redis-1:6379"
+)
 celery = Celery("celery_app", broker=CELERY_BROKER_URL)
+
 
 @celery.task(name="changes")
 def make_changes(data_folder, data):
@@ -43,7 +38,9 @@ def make_changes(data_folder, data):
     export_file(data_folder, "txt", delimiter=True, force_recreate=True)
     data["delimiter_txt"]["complete"] = True
     data["delimiter_txt"]["creation"] = current_date
-    data["delimiter_txt"]["size"] = get_size(data_folder + "/_text_delimiter.txt", path_complete=True)
+    data["delimiter_txt"]["size"] = get_size(
+        data_folder + "/_text_delimiter.txt", path_complete=True
+    )
 
     update_data(data_folder + "/_data.json", data)
 
@@ -57,7 +54,9 @@ def make_changes(data_folder, data):
     export_file(data_folder, "pdf", force_recreate=True, simple=True)
     data["pdf_simples"]["complete"] = True
     data["pdf_simples"]["creation"] = current_date
-    data["pdf_simples"]["size"] = get_size(data_folder + "/_simple.pdf", path_complete=True)
+    data["pdf_simples"]["size"] = get_size(
+        data_folder + "/_simple.pdf", path_complete=True
+    )
 
     data["csv"]["complete"] = True
     data["csv"]["creation"] = current_date
@@ -67,12 +66,10 @@ def make_changes(data_folder, data):
         request_ner(data_folder)
     except Exception as e:
         print(e)
-        data["ner"] = {
-            "complete": False,
-            "error": True
-        }
+        data["ner"] = {"complete": False, "error": True}
 
     return {"status": "success"}
+
 
 @celery.task(name="request_ner")
 def request_ner(data_folder):
@@ -89,12 +86,10 @@ def request_ner(data_folder):
             "creation": current_date,
         }
     else:
-        data["ner"] = {
-            "complete": False,
-            "error": True
-        }
+        data["ner"] = {"complete": False, "error": True}
 
     update_data(data_folder + "/_data.json", data)
+
 
 @celery.task(name="file_ocr")
 def task_file_ocr(path, config, ocr_algorithm, testing=False):
@@ -133,6 +128,7 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
 
         return {"status": "error"}
 
+
 @celery.task(name="page_ocr")
 def task_page_ocr(path, filename, config, ocr_algorithm):
     """
@@ -144,9 +140,8 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
     :param ocr_algorithm: algorithm to use
     """
 
-    if filename.split(".")[0][-1] == "$": return
-
-    
+    if filename.split(".")[0][-1] == "$":
+        return
 
     try:
         data_folder = f"{path}/_data.json"
@@ -160,7 +155,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
         parsed_json = []
         if os.path.exists(layout_path):
-            with open(layout_path, "r", encoding="utf-8") as json_file:
+            with open(layout_path, encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
                 all_but_ignore = [x for x in parsed_json if x["type"] != "remove"]
@@ -184,10 +179,14 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
             json_d = ocr_algorithm.get_structure(image, config)
             json_d = [[x] for x in json_d]
-            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
+            with open(
+                f"{path}/ocr_results/{get_file_basename(filename)}.json",
+                "w",
+                encoding="utf-8",
+            ) as f:
                 json.dump(json_d, f, indent=2, ensure_ascii=False)
         else:
-            with open(layout_path, "r", encoding="utf-8") as json_file:
+            with open(layout_path, encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
             text_groups = [x for x in parsed_json if x["type"] == "text"]
@@ -210,7 +209,6 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                         img_draw = ImageDraw.Draw(image)
                         img_draw.rectangle(box_coords, fill="white")
 
-
             if image_groups:
                 if not os.path.exists(f"{path}/images"):
                     os.mkdir(f"{path}/images")
@@ -226,21 +224,21 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                         cropped_image = image.crop(box_coords)
                         cropped_image.save(f"{path}/images/page{page_id}_{id+1}.jpg")
 
-
             box_coordinates_list = []
             for item in text_groups:
-                if item["type"] != "text": continue
+                if item["type"] != "text":
+                    continue
                 for sq in item["squares"]:
                     left = sq["left"]
                     top = sq["top"]
                     right = sq["right"]
                     bottom = sq["bottom"]
-                
+
                     box_coords = (left, top, right, bottom)
                     box_coordinates_list.append(box_coords)
 
             all_jsons = []
-            for box in box_coordinates_list:                
+            for box in box_coordinates_list:
                 json_d = ocr_algorithm.get_structure(image, config, box)
                 if json_d:
                     all_jsons.append(json_d)
@@ -248,8 +246,12 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             page_json = []
             for sublist in all_jsons:
                 page_json.append(sublist)
-            
-            with open(f"{path}/ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
+
+            with open(
+                f"{path}/ocr_results/{get_file_basename(filename)}.json",
+                "w",
+                encoding="utf-8",
+            ) as f:
                 json.dump(page_json, f, indent=2, ensure_ascii=False)
 
         files = os.listdir(f"{path}/ocr_results")
@@ -259,7 +261,6 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         data["ocr"]["progress"] = len(files)
         update_data(data_folder, data)
 
-        
         if data["pages"] == len(files):
             log.info(f"{path}: Acabei OCR")
 
@@ -334,11 +335,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                     "creation": creation_date,
                 }
             else:
-                data["ner"] = {
-                    "complete": False,
-                    "error": True
-                }
-
+                data["ner"] = {"complete": False, "error": True}
 
             update_data(data_folder, data)
 
@@ -346,7 +343,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
     except Exception as e:
         print(e)
-        
+
         traceback.print_exc()
 
         data_folder = f"{path}/_data.json"
