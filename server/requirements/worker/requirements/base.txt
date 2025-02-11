@@ -10,6 +10,6 @@ pytesseract==0.3.10
 opencv-python-headless==4.11.0.86
 hdbscan==0.8.40
 reportlab==3.6.13
-pypdfium2==4.30.1
+pypdfium2==5.0.0b1
 requests==2.32.2
 dnspython<2.6.0  #eventlet breaks with any higher version
