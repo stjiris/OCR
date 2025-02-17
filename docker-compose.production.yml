@@ -22,7 +22,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - files_data:/app/files
+      - files_data:/app/_files
     restart: unless-stopped
     networks:
       - ocr-network
@@ -37,11 +37,10 @@ services:
       C_FORCE_ROOT: true
     command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
     volumes:
-      - files_data:/app/files
+      - files_data:/app/_files
     depends_on:
       - redis
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -69,7 +68,7 @@ services:
       retries: 15
       start_period: 10s
     volumes:
-      - files_data:/app/files
+      - files_data:/app/_files
     restart: unless-stopped
     networks:
       - ocr-network
@@ -109,7 +108,6 @@ services:
       retries: 15
       start_period: 10s
     restart: unless-stopped
-
     networks:
       - ocr-network
 

@@ -2,6 +2,9 @@ import subprocess
 import os
 import psutil
 
+from src.utils.file import PRIVATE_PATH
+
+
 def get_logs(
     starting_point: int = 0,
     number_of_logs: int = 50,
@@ -46,8 +49,8 @@ def get_logs(
 def get_private_sessions():
     # Get the private sessions
     private_sessions = [
-        session for session in os.listdir("files/_private_sessions")
-        if os.path.isdir(f"files/_private_sessions/{session}") and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
+        session for session in os.listdir(PRIVATE_PATH)
+        if os.path.isdir(f"{PRIVATE_PATH}/{session}") and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
     ]
     return private_sessions
 

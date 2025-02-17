@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import random
 import shutil
@@ -7,27 +6,38 @@ import string
 
 from threading import Lock, Thread
 
+from flask import abort
 from flask import request
 from flask import send_file
+from werkzeug.utils import safe_join
 
-from src.elastic_search import *
+from src.elastic_search import create_document
+from src.elastic_search import ElasticSearchClient
+from src.elastic_search import ES_URL
+from src.elastic_search import ES_INDEX
+from src.elastic_search import mapping
+from src.elastic_search import settings
 from src.utils.export import export_file
-from src.utils.image import parse_images
+from src.utils.export import json_to_text
 from src.utils.file import delete_structure
 from src.utils.file import generate_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_file_basename
 from src.utils.file import get_file_extension
+from src.utils.file import get_file_layouts
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
-from src.utils.file import get_page_count
 from src.utils.file import get_folder_info
+from src.utils.file import get_page_count
 from src.utils.file import get_structure_info
-from src.utils.file import json_to_text
+from src.utils.file import prepare_file_ocr
 from src.utils.file import update_data
-from src.utils.file import get_file_layouts
 from src.utils.file import save_file_layouts
+
+from src.utils.file import FILES_PATH, PRIVATE_PATH
+
+from src.utils.image import parse_images
 
 from src.utils.system import get_free_space
 #from src.utils.system import get_logs
@@ -35,7 +45,10 @@ from src.utils.system import get_private_sessions
 
 from src.utils.text import compare_dicts_words
 
-from celery_app import *
+from celery_app import app
+from celery_app import request_ner
+from celery_app import task_file_ocr
+from celery_app import make_changes
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 # logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
@@ -45,33 +58,114 @@ log = app.logger
 lock_system = dict()
 private_sessions = dict()
 
+
+def format_path(request_data):
+    is_private = "_private" in request_data and (request_data["_private"] == 'true' or request_data["_private"] == True)
+    if is_private:
+        private_session = request_data["path"].strip("/").split("/")[0]
+        if private_session == "":  # path for private session must start with session ID
+            abort(400)  # Bad Request
+        return safe_join(PRIVATE_PATH, request_data["path"].strip("/")), True
+    else:
+        return safe_join(FILES_PATH, request_data["path"].strip("/")), False
+
+
+def format_filesystem_path(request_data):
+    is_private = "_private" in request_data and (request_data["_private"] == 'true' or request_data["_private"] == True)
+    private_session = None
+    filesystem_path = FILES_PATH
+    if is_private:
+        stripped_path = request_data["path"].strip("/")
+        path = safe_join(PRIVATE_PATH, stripped_path)
+        private_session = stripped_path.split("/")[0]
+        if private_session == "":  # path for private session must start with session ID
+            abort(400)  # Bad Request
+        filesystem_path = safe_join(PRIVATE_PATH, private_session)
+        if filesystem_path is None:
+            abort(404)
+    else:
+        path = safe_join(FILES_PATH, request_data["path"].strip("/"))
+
+    if path is None:
+        abort(404)
+    return path, filesystem_path, private_session, is_private
+
+
+# Endpoint requires a non-empty 'path' argument
+def requires_arg_path(func):
+    func._requires_arg_path = True  # value unimportant
+    return func
+
+# Endpoint requires a non-empty 'path' JSON value
+def requires_json_path(func):
+    func._requires_json_path = True  # value unimportant
+    return func
+
+# Endpoint requires a non-empty 'path' form value
+def requires_form_path(func):
+    func.requires_form_path = True  # value unimportant
+    return func
+
+
+@app.before_request
+def abort_bad_request():
+    if request.endpoint in app.view_functions:
+        view_func = app.view_functions[request.endpoint]
+        if hasattr(view_func, '_requires_arg_path'):
+            if "path" not in request.values or request.values["path"] == "":
+                abort(400)  # Bad Request
+        elif hasattr(view_func, '_requires_json_path'):
+            if "path" not in request.json or request.json["path"] == "":
+                abort(400)  # Bad Request
+        elif hasattr(view_func, '_requires_form_path'):
+            if "path" not in request.form or request.form["path"] == "":
+                abort(400)  # Bad Request
+
+
 #####################################
 # FILE SYSTEM ROUTES
 #####################################
 
 @app.route("/files", methods=["GET"])
 def get_file_system():
-    if "path" not in request.values:
-        return get_filesystem("files")
-
-    path = request.values["path"]
+    is_private = "_private" in request.values and (request.values["_private"] == 'true')
     private_session = None
-    if "_private_sessions" in path:
-        private_session = path.split("/")[-1]
 
-    return get_filesystem("files", private_session=private_session)
+    try:
+        if "path" not in request.values or request.values["path"] == "":
+            return get_filesystem(FILES_PATH)
+
+        path = request.values["path"].strip("/")
+        log.info(f'Request values: {request.values}')
+        if is_private:
+            log.info(f'Is private? {is_private}')
+            private_session = path.split('/')[-1]
+            path = safe_join(PRIVATE_PATH, private_session)
+        else:
+            path = safe_join(FILES_PATH, path)
+
+        return get_filesystem(path, private_session, is_private)
+    except FileNotFoundError:
+        abort(404)
 
 
 @app.route("/info", methods=["GET"])
 def get_info():
-    if "path" not in request.values:
-        return get_filesystem("files")
+    is_private = "_private" in request.values and (request.values["_private"] == 'true')
+    try:
+        if "path" not in request.values or request.values["path"] == "":
+            return get_filesystem(FILES_PATH)
 
-    path = request.values["path"]
-    private_session = None
-    if "_private_sessions" in path:
-        private_session = path.split("/")[-1]
-    return {"info": get_structure_info("files", private_session=private_session)}
+        path = request.values["path"].strip("/")
+        if is_private:
+            private_session = path.split('/')[-1]
+            path = safe_join(PRIVATE_PATH, private_session)
+            return {"info": get_structure_info(path, private_session, is_private)}
+        else:
+            path = safe_join(FILES_PATH, path)  # TODO: alter front-end and response to get info only from current folder
+            return {"info": get_structure_info(FILES_PATH)}
+    except FileNotFoundError:
+        abort(404)
 
 
 @app.route("/system-info", methods=["GET"])
@@ -88,19 +182,25 @@ def get_system_info():
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
+    log.info(data)
 
-    path = data["path"]
+    if ("path" not in data  # empty path is valid: new top-level public session folder
+        or "folder" not in data or data["folder"] == ''):
+        abort(400)  # Bad Request
+
+    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     folder = data["folder"]
 
     if folder.startswith("_"):
         return {"success": False, "error": "O nome da pasta não pode começar com _"}
 
-    if os.path.exists(path + "/" + folder):
+    new_folder_path = safe_join(path, folder)
+    if os.path.exists(new_folder_path):
         return {"success": False, "error": "Já existe uma pasta com esse nome"}
 
-    os.mkdir(path + "/" + folder)
+    os.mkdir(new_folder_path)
 
-    with open(f"{path}/{folder}/_data.json", "w", encoding="utf-8") as f:
+    with open(f"{new_folder_path}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "folder",
@@ -111,41 +211,48 @@ def create_folder():
             ensure_ascii=False,
         )
 
-    return {"success": True, "files": get_filesystem("files")}
+    # TODO: alter front-end and response to get info only from current folder
+    return {"success": True, "files": get_filesystem(filesystem_path, private_session, is_private)}
 
 
 @app.route("/get-file", methods=["GET"])
+@requires_arg_path
 def get_file():
-    path = request.values["path"]
-    totalPages = len(os.listdir(path + "/ocr_results"))
-
-    doc, words = get_file_parsed(path)
-
+    path, is_private = format_path(request.values)
+    if path is None:
+        abort(404)
+    totalPages = len(os.listdir(path + "/_ocr_results"))
+    doc, words = get_file_parsed(path, is_private)
     return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
 @app.route("/get_txt_delimitado", methods=["GET"])
+@requires_arg_path
 def get_txt_delimitado():
-    path = request.values["path"]
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
     return send_file(f"{path}/_text_delimiter.txt")
 
 @app.route("/get_txt", methods=["GET"])
+@requires_arg_path
 def get_txt():
-    path = request.values["path"]
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
     return send_file(f"{path}/_text.txt")
 
 @app.route("/get_entities", methods=["GET"])
+@requires_arg_path
 def get_entities():
-    path = request.values["path"]
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
     return send_file(f"{path}/_entities.json")
 
 @app.route("/request_entities", methods=["GET"])
+@requires_arg_path
 def request_entities():
-    path = request.values["path"]
-
-    private_session = None
-    if "_private_sessions" in path:
-        private_session = path.split("/")[-1]
-
+    path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
     data = get_data(path + "/_data.json")
 
     data["ner"] = {
@@ -153,80 +260,107 @@ def request_entities():
         "complete": False,
     }
 
-    update_data(path + "/_data.json", data)
+    update_data(f"{path}/_data.json", data)
 
     request_ner.delay(path)
     # Thread(target=request_ner, args=(path,)).start()
+    return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private)}
 
 
-    return {"success": True, "filesystem": get_filesystem("files", private_session=private_session)}
-
+# TODO: check if used
 @app.route("/get_zip", methods=["GET"])
+@requires_arg_path
 def get_zip():
-    path = request.values["path"]
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
     try:
         export_file(path, "zip")
     except Exception as e:
-
         return {"success": False, "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde"}
+    return send_file(safe_join(path, f"{path.split('/')[-1]}.zip"))  # filename == folder name
 
-    return send_file(f"{path}/{path.split('/')[-1]}.zip")
 
 @app.route("/get_pdf", methods=["GET"])
+@requires_arg_path
 def get_pdf():
-    path = request.values["path"]
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
     file = export_file(path, "pdf")
     return send_file(file)
 
 @app.route("/get_pdf_simples", methods=["GET"])
+@requires_arg_path
 def get_pdf_simples():
-    path = request.values["path"]
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
     file = export_file(path, "pdf", simple=True)
     return send_file(file)
 
 @app.route("/get_csv", methods=["GET"])
+@requires_arg_path
 def get_csv():
-    path = request.values["path"]
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
     return send_file(f"{path}/_index.csv")
 
 @app.route("/get_images", methods=["GET"])
+@requires_arg_path
 def get_images():
-    path = request.values["path"]
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
     file = export_file(path, "imgs")
     return send_file(file)
 
 @app.route("/get_original", methods=["GET"])
+@requires_arg_path
 def get_original():
-    path = request.values["path"]
-    file = path + "/" + path.split("/")[-1]
-    return send_file(file)
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
+    file_path = safe_join(path, path.split('/')[-1])  # filename == folder name
+    return send_file(file_path)
+
 
 @app.route("/delete-path", methods=["POST"])
+@requires_json_path
 def delete_path():
-    data = request.json
-    path = data["path"]
+    path, filesystem_path, private_session, is_private = format_filesystem_path(request.json)
+    try:
+        # avoid deleting roots
+        # filesystem_path is either FILES_PATH or PRIVATE_PATH/private_session -> another endpoint deletes priv. sessions
+        if (os.path.samefile(FILES_PATH, path)
+            or os.path.samefile(PRIVATE_PATH, path)
+            or os.path.samefile(path, filesystem_path)):
+            abort(404)
 
-    delete_structure(es, path)
-    shutil.rmtree(path)
-
-    session = path.split("/")[0]
-
-    private_session = None
-    if "_private_sessions" in path:
-        private_session = path.split("/")[-1]
+        shutil.rmtree(path)
+        delete_structure(es, path)
+    except FileNotFoundError:
+        abort(404)
 
     return {
         "success": True,
         "message": "Apagado com sucesso",
-        "files": get_filesystem(session, private_session=private_session),
+        "files": get_filesystem(filesystem_path, private_session, is_private),
     }
 
 @app.route("/delete-private-session", methods=["POST"])
 def delete_private_session():
     data = request.json
+    if "sessionId" not in data:
+        abort(400)  # Bad Request
     session_id = data["sessionId"]
 
-    shutil.rmtree("files/_private_sessions/" + session_id)
+    session_path = safe_join(PRIVATE_PATH, session_id)
+    if session_path is None:
+        abort(404)
+
+    shutil.rmtree(session_path)
     if session_id in private_sessions:
         del private_sessions[session_id]
 
@@ -237,24 +371,20 @@ def delete_private_session():
     }
 
 @app.route("/set-upload-stuck", methods=["POST"])
+@requires_json_path
 def set_upload_stuck():
-    data = request.json
-    path = data["path"]
-
-    session = path.split("/")[0]
-
-    data = get_data(f"{path}/_data.json")
+    path, filesystem_path, private_session, is_private = format_filesystem_path(request.json)
+    try:
+        data = get_data(f"{path}/_data.json")
+    except FileNotFoundError:
+        abort(404)
     data["upload_stuck"] = True
     update_data(f"{path}/_data.json", data)
-
-    private_session = None
-    if "_private_sessions" in path:
-        private_session = path.split("/")[-1]
 
     return {
         "success": True,
         "message": "O upload do ficheiro falhou",
-        "files": get_filesystem(session, private_session=private_session),
+        "files": get_filesystem(filesystem_path, private_session, is_private),
     }
 
 #####################################
@@ -301,23 +431,30 @@ def find_valid_filename(path, basename, extension):
     return f"{basename} ({id}).{extension}"
 
 @app.route("/prepare-upload", methods=["POST"])
+@requires_json_path
 def prepare_upload():
     if float(get_free_space()[1]) < 10:
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
 
     data = request.json
-    path = data["path"]
-    filename = data["name"]
+    # TODO: TEST for EMPTY PATH
+    #if ("path" not in data
+    #    or "name" not in data or data["name"] == ''):
+    if "name" not in data or data["name"] == '':
+        abort(400)  # Bad Request
 
-    session = path.split("/")[0]
+    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
+    filename = data["name"]
 
     if is_filename_reserved(path, filename):
         basename = get_file_basename(filename)
         extension = get_file_extension(filename)
         filename = find_valid_filename(path, basename, extension)
 
-    os.mkdir(f"{path}/{filename}")
-    with open(f"{path}/{filename}/_data.json", "w", encoding="utf-8") as f:
+    target = safe_join(path, filename)
+
+    os.mkdir(target)
+    with open(f"{target}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "file",
@@ -329,53 +466,61 @@ def prepare_upload():
             ensure_ascii=False,
         )
 
-    private_session = None
-    if "_private_sessions" in path:
-        private_session = path.split("/")[-1]
+    return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private), "filename": filename}
 
-    return {"success": True, "filesystem": get_filesystem(session, private_session=private_session), "filename": filename}
 
-def join_chunks(path, filename, total_count, complete_filename):
+def join_chunks(target_path, file_path, filename, total_count, complete_filename):
     # Save the file
-    with open(f"{path}/{filename}/{filename}", "wb") as f:
+    with open(f"{target_path}/{filename}", "wb") as f:
         for i in range(total_count):
             with open(f"pending-files/{complete_filename}/{i+1}", "rb") as chunk:
                 f.write(chunk.read())
 
-    prepare_file_ocr(f"{path}/{filename}")
+    prepare_file_ocr(target_path)
 
-    update_data(f"{path}/{filename}/_data.json", {
-        "pages": get_page_count(f"{path}/{filename}/{filename}"),
+    update_data(f"{target_path}/_data.json", {
+        "pages": get_page_count(file_path),
         "progress": True
     })
 
     shutil.rmtree(f"pending-files/{complete_filename}")
-
     log.info(f"Finished uploading file {filename}")
 
 @app.route("/upload-file", methods=["POST"])
+@requires_form_path
 def upload_file():
     if float(get_free_space()[1]) < 10:
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
 
+    if ("file" not in request.files
+        or "name" not in request.form
+        or "counter" not in request.form
+        or "totalCount" not in request.form):
+        abort(400)  # Bad Request
+
+    path, filesystem_path, private_session, is_private = format_filesystem_path(request.form)
     file = request.files["file"]
-    path = request.form["path"]
     filename = request.form["name"]
     counter = int(request.form["counter"])
     total_count = int(request.form["totalCount"])
 
-    complete_filename = path.replace("/", "_") + "_" + filename
+    complete_filename = safe_join(path.replace("/", "_"),  f"_{filename}")
+    target_path = safe_join(path, filename)  # path for document data is "path/filename"
+    file_path = safe_join(target_path, filename)  # file stored as "path/filename/filename"
 
     # If only one chunk, save the file directly
     if total_count == 1:
-        file.save(f"{path}/{filename}/{filename}")
+        file.save(file_path)
 
-        prepare_file_ocr(f"{path}/{filename}")
+        try:
+            prepare_file_ocr(target_path)
+        except Exception:
+            abort(500)
 
-        with open(f"{path}/{filename}/_data.json", "w", encoding="utf-8") as f:
+        with open(f"{target_path}/_data.json", "w", encoding="utf-8") as f:
             json.dump({
                 "type": "file",
-                "pages": get_page_count(f"{path}/{filename}/{filename}"),
+                "pages": get_page_count(file_path),
                 "creation": get_current_time()
             }, f, indent=2, ensure_ascii=False)
 
@@ -403,22 +548,23 @@ def upload_file():
 
         log.info(f"Uploading file {filename} ({counter}/{total_count}) - {progress}%")
 
-        update_data(f"{path}/{filename}/_data.json", {"progress": progress})
+        update_data(f"{target_path}/_data.json", {"progress": progress})
 
         if chunks_saved == total_count:
             del lock_system[complete_filename]
 
             Thread(
                 target=join_chunks,
-                args=(path, filename, total_count, complete_filename)
+                args=(target_path, file_path, filename, total_count, complete_filename)
             ).start()
 
-            return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}
+            return {"success": True, "finished": True, "info": get_folder_info(target_path)}
 
-    return {"success": True, "finished": False, "info": get_folder_info(f"{path}/{filename}")}
+    return {"success": True, "finished": False, "info": get_folder_info(target_path)}
 
 
 @app.route("/perform-ocr", methods=["POST"])
+@requires_json_path
 def perform_ocr():
     """
     Request to perform OCR on a file/folder
@@ -432,18 +578,17 @@ def perform_ocr():
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
 
     data = request.json
-    path = data["path"]
+    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     algorithm = data["algorithm"]
     config = data["config"]
     multiple = data["multiple"]
 
-    session = path.split("/")[0]
-
+    # ocr_algorithm = "tesserOCR"
     ocr_algorithm = "tesseract"
 
     if multiple:
         files = [
-            f"{path}/{f}"
+            f"{path}/{f}"  # path is safe, 'f' obtained by server
             for f in os.listdir(path)
             if os.path.isdir(os.path.join(path, f))
         ]
@@ -451,13 +596,17 @@ def perform_ocr():
         files = [path]
 
     for f in files:
+        try:
+            data = get_data(f"{f}/_data.json")
+        except FileNotFoundError:
+            abort(500)  # TODO: improve feedback to users on error
+
         # Delete previous results
-        if os.path.exists(f"{f}/ocr_results"):
-            shutil.rmtree(f"{f}/ocr_results")
-        os.mkdir(f"{f}/ocr_results")
+        if os.path.exists(f"{f}/_ocr_results"):
+            shutil.rmtree(f"{f}/_ocr_results")
+        os.mkdir(f"{f}/_ocr_results")
 
         # Update the information related to the OCR
-        data = get_data(f"{f}/_data.json")
         data["ocr"] = {
             "algorithm": algorithm,
             "config": "_".join(config),
@@ -472,25 +621,22 @@ def perform_ocr():
         data["pdf_simples"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
-        if os.path.exists(f"{f}/images"):
-            shutil.rmtree(f"{f}/images")
+        if os.path.exists(f"{f}/_images"):
+            shutil.rmtree(f"{f}/_images")
 
         task_file_ocr.delay(f, config, ocr_algorithm)
         # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         # task_file_ocr(f, config, ocr_algorithm, True)
 
-    private_session = None
-    if "_private_sessions" in path:
-        private_session = path.split("/")[2]
-
     return {
         "success": True,
         "message": "O OCR começou, por favor aguarde",
-        "files": get_filesystem(session, private_session=private_session),
+        "files": get_filesystem(filesystem_path, private_session, is_private),
     }
 
 
 @app.route("/index-doc", methods=["POST"])
+@requires_json_path
 def index_doc():
     """
     Index a document in Elasticsearch
@@ -498,18 +644,21 @@ def index_doc():
     @param multiple: if it is a folder or not
     """
     data = request.json
-    path = data["path"]
+    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
+    if PRIVATE_PATH in path:  # avoid indexing private sessions
+        abort(404)
     multiple = data["multiple"]
-
-    session = path.split("/")[0]
 
     if multiple:
         pass
 
         return {}
     else:
-        hOCR_path = path + "/ocr_results"
-        ocr_config = get_data(path + "/_data.json")
+        try:
+            data_path = get_data(path + "/_data.json")
+        except FileNotFoundError:
+            abort(404)
+        hOCR_path = path + "/_ocr_results"
         files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
 
         for id, file in enumerate(files):
@@ -519,7 +668,7 @@ def index_doc():
                 hocr = json.load(f)
                 text = json_to_text(hocr)
 
-            if ocr_config["pages"] > 1:
+            if data_path["pages"] > 1:
                 doc = create_document(
                     file_path,
                     "Tesseract",
@@ -539,20 +688,17 @@ def index_doc():
 
             es.add_document(id, doc)
 
-        update_data(path + "/_data.json", {"indexed": True})
-
-        private_session = None
-        if "_private_sessions" in path:
-            private_session = path.split("/")[-1]
+        update_data(data_path, {"indexed": True})
 
         return {
             "success": True,
             "message": "Documento indexado",
-            "files": get_filesystem(session, private_session=private_session),
+            "files": get_filesystem(filesystem_path, private_session, is_private),
         }
 
 
 @app.route("/remove-index-doc", methods=["POST"])
+@requires_json_path
 def remove_index_doc():
     """
     Remove a document in Elasticsearch
@@ -560,18 +706,21 @@ def remove_index_doc():
     @param multiple: if it is a folder or not
     """
     data = request.json
-    path = data["path"]
+    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
+    if PRIVATE_PATH in path:
+        abort(404)
     multiple = data["multiple"]
-
-    session = path.split("/")[0]
 
     if multiple:
         pass
 
         return {}
     else:
-        hOCR_path = path + "/ocr_results"
-        # config = get_data("/".join(path.split("/")[:-1]) + "/_data.json")
+        try:
+            data_path = get_data(path + "/_data.json")
+        except FileNotFoundError:
+            abort(404)
+        hOCR_path = path + "/_ocr_results"
         files = [f for f in os.listdir(hOCR_path) if f.endswith(".json")]
 
         for f in files:
@@ -579,54 +728,77 @@ def remove_index_doc():
             id = generate_uuid(file_path)
             es.delete_document(id)
 
-        update_data(path + "/_data.json", {"indexed": False})
-
-        private_session = None
-        if "_private_sessions" in path:
-            private_session = path.split("/")[-1]
+        update_data(data_path, {"indexed": False})
 
         return {
             "success": True,
             "message": "Documento removido",
-            "files": get_filesystem(session, private_session=private_session),
+            "files": get_filesystem(filesystem_path, private_session, is_private),
         }
 
 
 @app.route("/submit-text", methods=["POST"])
 def submit_text():
-    texts = request.json["text"]  # estrutura com texto, nome do ficheiro e url da imagem
-    remake_files = request.json["remakeFiles"]
+    data = request.json
+    if "text" not in data or "remakeFiles" not in data:
+        abort(400)  # Bad Request
 
-    data_folder = "/".join(texts[0]["original_file"].split("/")[:-2])
-    data = get_data(data_folder + "/_data.json")
+    texts = data["text"]  # estrutura com texto, nome do ficheiro e url da imagem
+    remake_files = data["remakeFiles"]
+    data_folder_list = texts[0]["original_file"].strip("/").split("/")[:-2]
+    data_folder = '/'.join(data_folder_list)
 
-    session = data_folder.split("/")[0]
+    is_private = "_private" in data and (data["_private"] == 'true' or data["_private"] == True)
+    private_session = None
+    filesystem_path = FILES_PATH
+    if is_private:
+        path = safe_join(PRIVATE_PATH, data_folder)
+        data_path = path + "/_data.json"
+        private_session = data_folder_list[0]
+        if private_session == "":  # path for private session must start with session ID
+            abort(400)  # Bad Request
+        filesystem_path = safe_join(PRIVATE_PATH, private_session)
+    else:
+        path = safe_join(FILES_PATH, data_folder)
+        data_path = path + "/_data.json"
+
+    try:
+        data = get_data(data_path)
+    except FileNotFoundError:
+        abort(404)
 
     for t in texts:
         text = t["content"]
-        filename = t["original_file"]
+        if is_private:
+            filename = safe_join(PRIVATE_PATH, t["original_file"].strip("/"))
+        else:
+            filename = safe_join(FILES_PATH, t["original_file"].strip("/"))
+
+        if filename is None:
+            abort(404)
 
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(text, f, indent=2, ensure_ascii=False)
 
     if remake_files:
         update_data(
-            data_folder + "/_data.json",
+            data_path,
             {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
         )
 
-        make_changes.delay(data_folder, data)
+        make_changes.delay(path, data)
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
 
-    private_session = None
-    if "_private_sessions" in data_folder:
-        private_session = data_folder.split("/")[-1]
+    return {"success": True, "files": get_filesystem(filesystem_path, private_session, is_private)}
 
-    return {"success": True, "files": get_filesystem(session, private_session=private_session)}
 
 @app.route("/check-sintax", methods=["POST"])
 def check_sintax():
+    if ("words" not in request.json
+        or "languages" not in request.json):
+        abort(400)  # Bad Request
+
     words = request.json["words"].keys()
     languages = request.json["languages"]
 
@@ -648,9 +820,9 @@ def create_private_session():
     session_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     private_sessions[session_id] = {}
 
-    if not os.path.isdir("files/_private_sessions"):
-        os.mkdir("files/_private_sessions")
-        with open(f"files/_private_sessions/_data.json", "w", encoding="utf-8") as f:
+    if not os.path.isdir(PRIVATE_PATH):
+        os.mkdir(PRIVATE_PATH)
+        with open(f"{PRIVATE_PATH}/_data.json", "w", encoding="utf-8") as f:
             json.dump(
                 {
                     "type": "folder",
@@ -661,9 +833,9 @@ def create_private_session():
                 ensure_ascii=False,
             )
 
-    os.mkdir("files/_private_sessions/" + session_id)
+    os.mkdir(f"{PRIVATE_PATH}/{session_id}")
 
-    with open(f"files/_private_sessions/{session_id}/_data.json", "w", encoding="utf-8") as f:
+    with open(f"{PRIVATE_PATH}/{session_id}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "folder",
@@ -679,6 +851,9 @@ def create_private_session():
 @app.route('/validate-private-session', methods=['POST'])
 def validate_private_session():
     data = request.json
+    if "sessionId" not in data:
+        abort(400)  # Bad Request
+
     session_id = data["sessionId"]
 
     if session_id in private_sessions:
@@ -692,39 +867,62 @@ def validate_private_session():
 # LAYOUTS
 #####################################
 @app.route("/get-layouts", methods=["GET"])
+@requires_arg_path
 def get_layouts():
-    path = request.values["path"]
-    return {"layouts": get_file_layouts(path)}
+    path, is_private = format_path(request.values)
+    if path is None:
+        abort(404)
+    try:
+        layouts = get_file_layouts(path, is_private)
+    except FileNotFoundError:
+        abort(404)
+    return {"layouts": layouts}
+
 
 @app.route("/save-layouts", methods=["POST"])
+@requires_json_path
 def save_layouts():
     data = request.json
-    path = data["path"]
+    if ("layouts" not in data):
+        abort(400)  # Bad Request
+
+    path, _ = format_path(data)
+    if path is None:
+        abort(404)
     layouts = data["layouts"]
-
-    save_file_layouts(path, layouts)
-
+    try:
+        save_file_layouts(path, layouts)
+    except FileNotFoundError:
+        abort(404)
     return {"success": True}
 
 @app.route("/generate-automatic-layouts", methods=["GET"])
+@requires_arg_path
 def generate_automatic_layouts():
-    path = request.values["path"]
-    parse_images(path)
-    return {"layouts": get_file_layouts(path)}
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(404)
+    try:
+        parse_images(path)
+        layouts = get_file_layouts(path)
+    except FileNotFoundError:
+        abort(404)
+    return {"layouts": layouts}
+
 
 #####################################
-# JOB QUEUES
+# MAIN
 #####################################
-if not os.path.exists("./files/"):
-    os.mkdir("./files/")
+if not os.path.exists(f"./{FILES_PATH}/"):
+    os.mkdir(f"./{FILES_PATH}/")
 
 if not os.path.exists("./pending-files/"):
     os.mkdir("./pending-files/")
 
-if not os.path.exists("./files/_private_sessions"):
-    os.mkdir("./files/_private_sessions")
+if not os.path.exists(f"./{PRIVATE_PATH}/"):
+    os.mkdir(f"./{PRIVATE_PATH}/")
 
-    with open("./files/_private_sessions/_data.json", "w", encoding="utf-8") as f:
+    with open(f"./{PRIVATE_PATH}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "folder",

@@ -20,12 +20,15 @@ import zlib
 import pypdfium2 as pdfium
 
 from datetime import datetime
-from pathlib import Path
 from PIL import Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter
+
+FILES_PATH = os.environ.get("FILES_PATH", "_files")
+PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
+
 
 def json_to_text(json_d):
     """
@@ -101,7 +104,7 @@ def export_txt(path, delimiter=False, force_recreate = False):
     if delimiter:
         filename = f"{path}/_text_delimiter.txt"
 
-    ocr_folder = f"{path}/ocr_results"
+    ocr_folder = f"{path}/_ocr_results"
 
     files = [
         os.path.join(ocr_folder, f)
@@ -119,7 +122,7 @@ def export_txt(path, delimiter=False, force_recreate = False):
 
             if delimiter:
                 f.write(f"----- PAGE {(id+1):04d} -----\n\n")
-            
+
             f.write(json_to_text(hOCR) + "\n\n")
 
     return filename
@@ -133,7 +136,7 @@ def export_csv(filename_csv, index_data):
         csv_out.writerow(['Word', 'Count'])
         csv_out.writerow([' '])
         csv_out.writerows(index_data)
-        
+
     return filename_csv
 
 ####################################################
@@ -151,7 +154,7 @@ def export_pdf(path, force_recreate = False, simple=False):
 
     if os.path.exists(target) and os.path.exists(filename_csv) and not force_recreate:
         return target
-    
+
     else:
         pdf_basename = get_file_basename(path)
 
@@ -181,7 +184,7 @@ def export_pdf(path, force_recreate = False, simple=False):
             image_basename = get_file_basename(image)
             image_basename = image_basename[:-1]
 
-            hocr_path = f"{path}/ocr_results/{image_basename}.json"
+            hocr_path = f"{path}/_ocr_results/{image_basename}.json"
 
             im = Image.open(f"{path}/{image}")
             w, h = im.size
@@ -219,7 +222,7 @@ def export_pdf(path, force_recreate = False, simple=False):
                 max_rows = available_height // size
 
                 rows = (len(set_words) - 1) // cols + 1
-                rows = min(max_rows, rows) 
+                rows = min(max_rows, rows)
                 for col in range(cols):
                     for row in range(rows):
                         index = col * rows + row
@@ -295,7 +298,7 @@ def find_index_words(hocr_path):
 
 def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
     """Draw an invisible text layer for OCR data"""
-   
+
     index_words = find_index_words(hocr_path)
 
     with open(hocr_path, encoding="utf-8") as f:
@@ -369,8 +372,8 @@ def get_md5_checksum(path):
     with open(path, "rb") as f:
         data = f.read()
         return hashlib.md5(data).hexdigest()
-    
-    
+
+
 def get_file_size(path):
     return os.path.getsize(path)
 
@@ -393,7 +396,7 @@ def create_mets_files(path):
         create_folder_mets(path)
 
 def create_folder_mets(path):
-    if path == "files": return
+    if os.path.samefile(path, FILES_PATH) or os.path.samefile(path, PRIVATE_PATH): return
 
     data_path = path + "/_data.json"
     with open(data_path, encoding="utf-8") as f:
@@ -401,7 +404,7 @@ def create_folder_mets(path):
 
     creation_date = datetime.strptime(info["creation"], "%d/%m/%Y %H:%M:%S").strftime("%Y-%m-%dT%H:%M:%S")
 
-    folders = [x for x in os.listdir(path) if os.path.isdir(path + "/" + x) and x != "ocr_results" and x != "alto_schemas" and x != "ocr_results.zip" and x != "_mets.xml" and x != "mets.zip" and x != "ocr_results.zip"]
+    folders = [x for x in os.listdir(path) if os.path.isdir(path + "/" + x) and x != "_ocr_results" and x != "alto_schemas" and x != "ocr_results.zip" and x != "_mets.xml" and x != "mets.zip" and x != "ocr_results.zip"]
 
     fileSec = "\n\t\t".join(
         f"""<fileGrp ID="{f}" USE="TEXT">
@@ -488,7 +491,7 @@ def create_document_mets(path):
 
     structMap = ""
 
-    files = [f"{path}/ocr_results/{f}" for f in os.listdir(f"{path}/ocr_results") if f.endswith(".json")]
+    files = [f"{path}/_ocr_results/{f}" for f in os.listdir(f"{path}/_ocr_results") if f.endswith(".json")]
 
     for id, file in enumerate(files):
         export_alto(file)
@@ -498,12 +501,12 @@ def create_document_mets(path):
             '\n\t\t\t</div>\n'
 
     jpg_grp = "\n\t\t\t".join(
-        generate_file(path, f.replace("/ocr_results", "").replace(".json", ".jpg"), "IMG", id + 1, "image/jpeg")
+        generate_file(path, f.replace("/_ocr_results", "").replace(".json", ".jpg"), "IMG", id + 1, "image/jpeg")
         for id, f in enumerate(files)
     )
 
     alto_grp = "\n\t\t\t".join(
-        generate_file(path, f.replace("/ocr_results", "/alto_schemas").replace(".json", ".xml"), "ALTO", id + 1, "text/xml")
+        generate_file(path, f.replace("/_ocr_results", "/alto_schemas").replace(".json", ".xml"), "ALTO", id + 1, "text/xml")
         for id, f in enumerate(files)
     )
 
@@ -689,7 +692,7 @@ def export_alto(path):
         </Page>
     </Layout>
 </alto>"""
-    
+
     path = path.split("/")
     path[-2] = "alto_schemas"
     path[-1] = path[-1].replace(".json", ".xml")
@@ -698,14 +701,14 @@ def export_alto(path):
         f.write(xml)
 
 def export_zip(path, _):
-    create_mets_files("files")
+    create_mets_files("_files")
     basename = path.split("/")[-1]
     with zipfile.ZipFile(f"{path}/{basename}.zip", "w") as zipf:
         for root, _, files in os.walk(path):
             for file in files:
                 if file.endswith(".json") or file.endswith(".zip"): continue
-                zipf.write(os.path.join(root, file), 
-                       os.path.relpath(os.path.join(root, file), 
+                zipf.write(os.path.join(root, file),
+                       os.path.relpath(os.path.join(root, file),
                                        os.path.join(path, '..')))
 
 if __name__ == "__main__":

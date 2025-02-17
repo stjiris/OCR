@@ -254,7 +254,7 @@ def parse_images(path):
 
             all_layouts.append({"boxes": formatted_boxes})
 
-        layouts_path = f"{path}/layouts"
+        layouts_path = f"{path}/_layouts"
         if not os.path.isdir(layouts_path):
             os.mkdir(layouts_path)
 
@@ -271,3 +271,4 @@ def parse_images(path):
         save_file_layouts(path, sorted_all_layouts)
     else:
         log.error(f"Error in parsing images at {path}")
+        raise FileNotFoundError
