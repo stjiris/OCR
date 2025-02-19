@@ -58,6 +58,7 @@ def get_ner_file(path):
     else:
         return False
 
+
 # DONE
 def get_current_time():
     """
@@ -218,11 +219,11 @@ def delete_structure(client, path):
         for folder in folders:
             delete_structure(client, folder)
 
+
 # TODO
 def get_filesystem(path, private_session=None, is_private=False):
     """
-        @@ -106,7 +101,7 @@ def get_filesystem(path):
-    @param path: path to the folder
+    :param path: path to the folder
     """
     files = get_structure(path, private_session, is_private)
     info = get_structure_info(path, private_session, is_private)
@@ -234,6 +235,7 @@ def get_filesystem(path, private_session=None, is_private=False):
             files = {"files": []}
 
     return {**files, "info": info}
+
 
 # TODO
 def get_ocr_size(path):
