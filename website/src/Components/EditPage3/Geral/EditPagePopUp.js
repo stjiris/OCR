@@ -50,7 +50,7 @@ class Word extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            overlay: props.overlay,
+            overlay: props.overlay,  // TODO: remove this reference and use strictly necessary props
             text: props.text,
             id: props.id,
             box: props.box,
@@ -90,7 +90,6 @@ class EditPagePopUp extends React.Component {
         this.state = {
             path: "",
             file: "",
-            app: props.app,
             open: false,
 
             loading: true,

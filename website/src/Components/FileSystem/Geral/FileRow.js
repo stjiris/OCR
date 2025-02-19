@@ -35,7 +35,6 @@ export default class FileRow extends React.Component {
         this.state = {
             name: props.name,
             info: props.info,
-            filesystem: props.filesystem,
             expanded: false,
         }
 
@@ -49,11 +48,7 @@ export default class FileRow extends React.Component {
         ) {
             this.setState({expanded: true});
         }
-        this.setState({info: info, versionsComponents: []});
-    }
-
-    updateVersions(versions) {
-        this.setState({versions: versions});
+        this.setState({info: info});
     }
 
     fileClicked() {
@@ -62,95 +57,95 @@ export default class FileRow extends React.Component {
 
     getOriginalFile(e) {
         e.stopPropagation();
-        this.state.filesystem.getOriginalFile(this.state.name);
+        this.props.getOriginalFile(this.state.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getDelimiterTxt(e) {
         e.stopPropagation();
-        this.state.filesystem.getDelimiterTxt(this.state.name);
+        this.props.getDelimiterTxt(this.state.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getTxt(e) {
         e.stopPropagation();
-        this.state.filesystem.getTxt(this.state.name);
+        this.props.getTxt(this.state.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getEntities(e) {
         e.stopPropagation();
-        this.state.filesystem.getEntities(this.state.name);
+        this.props.getEntities(this.state.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     requestEntities(e) {
         e.stopPropagation();
-        this.state.filesystem.requestEntities(this.state.name);
+        this.props.requestEntities(this.state.name);
         this.successNot.current.setMessage("A obter entidades, por favor aguarde");
         this.successNot.current.open();
     }
 
     getCSV(e) {
         e.stopPropagation();
-        this.state.filesystem.getCSV(this.state.name);
+        this.props.getCSV(this.state.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getImages(e) {
         e.stopPropagation();
-        this.state.filesystem.getImages(this.state.name);
+        this.props.getImages(this.state.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getPdf(e) {
         e.stopPropagation();
-        this.state.filesystem.getPdf(this.state.name);
+        this.props.getPdf(this.state.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getPdfSimples(e) {
         e.stopPropagation();
-        this.state.filesystem.getPdfSimples(this.state.name);
+        this.props.getPdfSimples(this.state.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     delete(e) {
         e.stopPropagation();
-        this.state.filesystem.deleteItem(this.state.name);
+        this.props.deleteItem(this.state.name);
     }
 
     editFile(e) {
         e.stopPropagation();
-        this.state.filesystem.editText(this.state.name);
+        this.props.editText(this.state.name);
     }
 
     performOCR(e) {
         e.stopPropagation();
-        this.state.filesystem.performOCR(false, this.state.name);
+        this.props.performOCR(false, this.state.name);
     }
 
     indexFile(e) {
         e.stopPropagation();
-        this.state.filesystem.indexFile(this.state.name, false);
+        this.props.indexFile(this.state.name, false);
     }
 
     removeIndex(e) {
         e.stopPropagation();
-        this.state.filesystem.removeIndexFile(this.state.name, false);
+        this.props.removeIndexFile(this.state.name, false);
     }
 
     createLayout(e) {
         e.stopPropagation();
-        this.state.filesystem.createLayout(this.state.name);
+        this.props.createLayout(this.state.name);
     }
 
     render() {
@@ -186,7 +181,7 @@ export default class FileRow extends React.Component {
                                 </IconButton>
                             }
 
-                            <PdfIcon sx={{ fontSize: 30, mr: '0.5rem' }} />
+                            <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
                             {
                                 this.state.info["progress"] === undefined || this.state.info["progress"] === true
                                 ? <Button
@@ -228,7 +223,7 @@ export default class FileRow extends React.Component {
                                             </Box>
                                         </TableCell>
                                     </>
-                                    
+
                                     : this.state.info["progress"] !== 100.00
                                         ? <TableCell colSpan={4} align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
                                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
@@ -297,7 +292,7 @@ export default class FileRow extends React.Component {
                                         clickFunction={(e) => this.editFile(e)}
                                         icon={<EditIcon/>}
                                     />
-                                    
+
                                     {
                                         this.state.info["indexed"]
                                             ? <TooltipIcon
@@ -308,7 +303,7 @@ export default class FileRow extends React.Component {
                                                 clickFunction={(e) => this.removeIndex(e)}
                                                 icon={<IconDatabaseOff/>}
                                             />
-                                            
+
                                             : <TooltipIcon
                                                 key={"add " + (buttonsDisabled || this.state.info["ocr"] === undefined)}
                                                 color="#1976d2"

@@ -35,7 +35,7 @@ class PrivateSessionMenu extends React.Component {
         super(props);
         this.state = {
             open: true,
-            filesystem: props.filesystem,
+            filesystem: props.filesystem,  // TODO: remove this reference and use strictly necessary props
             buttonDisabled: false
         }
 
@@ -56,9 +56,10 @@ class PrivateSessionMenu extends React.Component {
 
     createPrivateSession() {
         this.setState({ buttonDisabled: true, open: false });
-        this.state.filesystem.createFile();        
+        this.state.filesystem.createFile();
     }
 
+    // TODO: render welcome screen only on first entering private session
     render() {
         return (
             <Box>
@@ -70,7 +71,7 @@ class PrivateSessionMenu extends React.Component {
                             <b>Sessão privada</b>
                         </Typography>
                         <Typography variant="body1" component="p" sx={{mt: '1rem', mb: '1rem'}}>
-                            Para poder aceder a esta sessão novamente no futuro, certifique-se que guarda o link da sessão privada num lugar seguro. 
+                            Para poder aceder a esta sessão novamente no futuro, certifique-se que guarda o link da sessão privada num lugar seguro.
                         </Typography>
                         <Button
                             disabled={this.state.buttonDisabled}
@@ -79,10 +80,10 @@ class PrivateSessionMenu extends React.Component {
                         >
                             <Box sx={{display: 'flex'}}>
                                 <Typography variant="button" display="block" sx={{mr: '0.3rem'}}>
-                                    Copiar link 
+                                    Copiar link
                                 </Typography>
                                 <ArrowForwardIcon sx={{mr: '0.3rem'}} />
-                                <Typography variant="button" display="block" sx={{mr: '0.5rem'}}> 
+                                <Typography variant="button" display="block" sx={{mr: '0.5rem'}}>
                                     <b>{window.location.href}</b>
                                 </Typography>
                             </Box>
@@ -91,8 +92,12 @@ class PrivateSessionMenu extends React.Component {
                         <Typography variant="body1" component="p" sx={{mt: '1rem', mb: '1rem'}}>
                             Caso perca o link, não conseguirá aceder novamente a esta sessão privada.
                         </Typography>
-                        <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>                            
-                            {!this.checkHasFile() &&
+                        <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
+                            {this.checkHasFile() ?
+                                <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                                    <CloseRoundedIcon/>
+                                </IconButton>
+                                :
                                 <Button
                                     disabled={this.checkHasFile()}
                                     variant="contained"
@@ -102,11 +107,6 @@ class PrivateSessionMenu extends React.Component {
                                     Adicionar documento
                                 </Button>
                             }
-                            {this.checkHasFile() &&
-                                <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
-                                    <CloseRoundedIcon />
-                                </IconButton>
-                            }                          
                         </Box>
                     </Box>
                 </Modal>

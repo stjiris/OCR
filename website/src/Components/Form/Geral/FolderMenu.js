@@ -37,9 +37,7 @@ class FolderMenu extends React.Component {
             open: false,
             path: "",
             textFieldValue: "",
-
-            filesystem: props.filesystem,
-            buttonDisabled: false
+            buttonDisabled: false,
         }
 
         this.textField = React.createRef();
@@ -47,7 +45,7 @@ class FolderMenu extends React.Component {
         this.errorNot = React.createRef();
     }
 
-    currentPath(path) {
+    setPath(path) {
         this.setState({ path: path });
     }
 
@@ -68,14 +66,15 @@ class FolderMenu extends React.Component {
             },
             body: JSON.stringify({
                 "path": this.state.path,
-                "folder": this.state.textFieldValue
+                "folder": this.state.textFieldValue,
+                "_private": this.props._private
             })
         })
         .then(response => {return response.json()})
         .then(data => {
             this.setState({ buttonDisabled: false });
             if (data.success) {
-                this.state.filesystem.updateFiles(data.files);
+                this.props.updateFiles(data.files);
 
                 this.successNot.current.setMessage("Pasta criada com sucesso");
                 this.successNot.current.open();
@@ -98,7 +97,8 @@ class FolderMenu extends React.Component {
                         <Typography id="modal-modal-title" variant="h6" component="h2">
                             Crie uma nova pasta
                         </Typography>
-                        <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Nome da pasta" variant="outlined" />
+                        <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Nome da pasta" variant="outlined"
+                                   onKeyUp={e => { if (e.key === 'Enter') { this.createFolder() }}}/>
                         <Button
                             disabled={this.state.buttonDisabled}
                             variant="contained"
@@ -116,6 +116,10 @@ class FolderMenu extends React.Component {
             </Box>
         )
     }
+}
+
+FolderMenu.defaultProps = {
+    _private: false
 }
 
 export default FolderMenu;

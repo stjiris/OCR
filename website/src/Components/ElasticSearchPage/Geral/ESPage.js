@@ -62,7 +62,7 @@ class ESPage extends React.Component {
             showing: [],
             freeText: "",
 
-            app: props.app,
+            app: props.app,  // TODO: remove this reference and use strictly necessary props
             loading: true
         }
 
