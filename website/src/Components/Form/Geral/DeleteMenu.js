@@ -34,8 +34,6 @@ class DeleteMenu extends React.Component {
             open: false,
             path: "",
             textFieldValue: "",
-
-            filesystem: props.filesystem,
             buttonDisabled: false
         }
 
@@ -44,7 +42,7 @@ class DeleteMenu extends React.Component {
         this.errorNot = React.createRef();
     }
 
-    currentPath(path) {
+    setPath(path) {
         this.setState({ path: path });
     }
 
@@ -64,14 +62,15 @@ class DeleteMenu extends React.Component {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                "path": this.state.path
+                "path": this.state.path,
+                "_private": this.props._private
             })
         })
         .then(response => {return response.json()})
         .then(data => {
             this.setState({ buttonDisabled: false });
             if (data.success) {
-                this.state.filesystem.updateFiles(data.files);
+                this.props.updateFiles(data.files);
 
                 this.successNot.current.setMessage(data.message);
                 this.successNot.current.open();
@@ -120,6 +119,10 @@ class DeleteMenu extends React.Component {
             </Box>
         )
     }
+}
+
+DeleteMenu.defaultProps = {
+    _private: false
 }
 
 export default DeleteMenu;

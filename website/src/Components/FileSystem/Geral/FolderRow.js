@@ -13,9 +13,7 @@ export default class FolderRow extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            name: props.name,
             info: props.info,
-            filesystem: props.filesystem,
             current_folder: props.current_folder,
         }
     }
@@ -24,17 +22,13 @@ export default class FolderRow extends React.Component {
         this.setState({info: info});
     }
 
-    updateVersions(_) {
-        // Do nothing
-    }
-
     folderClicked() {
-        this.state.filesystem.enterFolder(this.state.name);
+        this.props.enterFolder(this.props.name);
     }
 
     delete(e) {
         e.stopPropagation();
-        this.state.filesystem.deleteItem(this.state.name);
+        this.props.deleteItem(this.props.name);
     }
 
     render() {
@@ -52,7 +46,7 @@ export default class FolderRow extends React.Component {
                         alignItems: 'center',
                     }}>
                         <FolderOpenRoundedIcon color="success" sx={{ p: 0, fontSize: 30, mr: '0.5rem' }} />
-                        <span>{this.state.name}</span>
+                        <span>{this.props.name}</span>
                     </Box>
                 </TableCell>
 

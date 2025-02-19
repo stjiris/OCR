@@ -16,6 +16,7 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 
+import {fileSystemState, layoutMenuState, editingMenuState, searchMenuState, closeFileSystemMenus} from "./states";
 
 
 /**
@@ -36,14 +37,12 @@ function App() {
             this.state = {
                 sessionId: window.location.href.split("/").pop(),
 
-                fileSystemMode: true,
+                searchMenu: false,
                 editingMenu: false,
                 layoutMenu: false,
 
                 fileOpened: "",
-                path: "files",
-
-                currentFolder: ["files"],
+                currentFolderPathList: [""],
 
                 contents: [],
 
@@ -73,6 +72,10 @@ function App() {
             this.textEditor = React.createRef();
 
             this.sendChanges = this.sendChanges.bind(this);
+            this.setCurrentPath = this.setCurrentPath.bind(this);
+            this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
+            this.enterEditingMenu = this.enterEditingMenu.bind(this);
+            this.exitMenus = this.exitMenus.bind(this);
         }
 
         componentDidMount() {
@@ -113,24 +116,24 @@ function App() {
             return this.state.sessionId;
         }
 
-        editFile(path, file) {
-            /**
-             * Open a file in the text editor
-             *
-             * @param {string} path - The path of the file
-             * @param {string} file - The name of the file
-             */
-            // this.setState({path: path, fileOpened: file, fileSystemMode: false, editingMenu: true});
-            this.textEditor.current.setFile(path, file);
-            this.textEditor.current.toggleOpen();
-        }
-
-        viewFile(file, algorithm, config) {
+        //editFile(path, file) {
+        //    /**
+        //     * Open a file in the text editor
+        //     *
+        //     * @param {string} path - The path of the file
+        //     * @param {string} file - The name of the file
+        //     */
+        //    this.setState({path: path, fileOpened: file, fileSystemMode: false, editingMenu: true});
+        //    this.textEditor.current.setFile(path, file);
+        //    this.textEditor.current.toggleOpen();
+        //}
+        //viewFile(file, algorithm, config) {
             /**
              * View a file in ES page
              *
              * @param {string} file - The name of the file
              */
+            /*
             this.setState(
                 {
                     fileSystemMode: false,
@@ -141,6 +144,7 @@ function App() {
                 }
             );
         }
+            */
 
         updateContents(event, index) {
             /**
@@ -149,22 +153,22 @@ function App() {
              * @param {event} event - The event
              * @param {int} index - The index of the text field changed
              */
-            var contents = this.state.contents;
+            let contents = this.state.contents;
             contents[index]["content"] = event.target.value;
             this.setState({contents: contents});
         }
 
         redirectHome() {
-            var currentURL = window.location.href;
+            const currentURL = window.location.href;
 
             // Check if the current URL is deployed
             if (currentURL.includes('iris.sysresearch.org')) {
-                var deployedURL = currentURL.split("/")[3] + (currentURL.includes(process.env.REACT_APP_ADMIN) ? process.env.REACT_APP_ADMIN : "");
+                const deployedURL = currentURL.split("/")[3] + (currentURL.includes(process.env.REACT_APP_ADMIN) ? process.env.REACT_APP_ADMIN : "");
                 window.location.href = 'https://iris.sysresearch.org/' + deployedURL + '/';
             }
             // Check if the current URL is in the local environment
             else if (currentURL.includes('localhost')) {
-                var port = currentURL.split(":")[2].split("/")[0] + (currentURL.includes(process.env.REACT_APP_ADMIN) ? process.env.REACT_APP_ADMIN : "");
+                const port = currentURL.split(":")[2].split("/")[0] + (currentURL.includes(process.env.REACT_APP_ADMIN) ? process.env.REACT_APP_ADMIN : "");
                 window.location.href = 'http://localhost:' + port + '/';
             }
         }
@@ -201,10 +205,10 @@ function App() {
                 if (data.success) {
                     this.successNot.current.setMessage("Texto submetido com sucesso");
                     this.successNot.current.open();
-                    this.setState({contents: [], fileOpened: "", fileSystemMode: true, editingMenu: false})
+                    this.setState(fileSystemState);
 
-                    var info = data["info"];
-                    this.fileSystem.current.setState({info: info}, this.fileSystem.current.updateInfo);
+                    const info = data["info"];
+                    this.fileSystem.current.setState({info: info});
                 } else {
                     this.errorNot.current.setMessage(data.error);
                     this.errorNot.current.open();
@@ -218,7 +222,7 @@ function App() {
             })
             .then(response => {return response.json()})
             .then(data => {
-                var sessionId = data["sessionId"];
+                const sessionId = data["sessionId"];
                 if (window.location.href.endsWith('/')) {
                     window.location.href = window.location.href + `${sessionId}`;
                 } else {
@@ -227,22 +231,38 @@ function App() {
             });
         }
 
-        changeFolderFromPath(folder_name) {
-            var current_folder = this.state.currentFolder;
-    
-            // Remove the last element of the path until we find folder_name
-            while (current_folder[current_folder.length - 1] !== folder_name) {
-                current_folder.pop();
-            }
-    
-            this.setState({
-                currentFolder: current_folder,  
-                fileSystemMode: true,
-                editingMenu: false, 
-                layoutMenu: false,
-            });
+        setCurrentPath(new_path_list) {
+            this.setState({...fileSystemState, currentFolderPathList: new_path_list},
+                () => this.fileSystem.current.setState({...closeFileSystemMenus, current_folder: new_path_list.join('/')})
+            );
+        }
 
-            this.fileSystem.current.setState({layoutMenu: false, editingMenu: false});
+        enterLayoutMenu(filename = null) {
+            this.setState({...layoutMenuState, fileOpened: filename},
+                () => this.fileSystem.current.setState({...layoutMenuState, fileOpened: filename})
+            );
+        }
+
+        enterEditingMenu(filename = null) {
+            this.setState({...editingMenuState, fileOpened: filename},
+                () => this.fileSystem.current.setState({...editingMenuState, fileOpened: filename})
+            );
+        }
+
+        exitMenus() {
+            this.setState({...fileSystemState, fileOpened: null},
+                () => this.fileSystem.current.setState({...closeFileSystemMenus})
+            );
+        }
+
+        changeFolderFromPath(folder_name) {
+            let current_list = this.state.currentFolderPathList;
+
+            // Remove the last element of the path until we find folder_name or until root
+            while (current_list.length > 1 && current_list[current_list.length - 1] !== folder_name) {
+                current_list.pop();
+            }
+            this.setCurrentPath(current_list);
         }
 
         deletePrivateSession(e, privateSession) {
@@ -278,8 +298,7 @@ function App() {
 
             const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 
-            var buttonsDisabled = this.getPrivateSession() !== null || !this.state.fileSystemMode || this.state.layoutMenu || this.state.editingMenu;
-
+            const buttonsDisabled = this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: '100vh'}}>
                     <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -288,7 +307,7 @@ function App() {
                     <VersionsMenu ref={this.versionsMenu}/>
                     <LogsMenu ref={this.logsMenu}/>
 
-                    <EditPagePopUp ref={this.textEditor} app={this}/>
+                    <EditPagePopUp ref={this.textEditor}/>
 
                     <Box sx={{
                         display: 'flex',
@@ -316,7 +335,7 @@ function App() {
                             >
                                 Sessão Privada
                             </Button>
-                            
+
                             <Button
                                 disabled={buttonsDisabled}
                                 variant="contained"
@@ -334,7 +353,7 @@ function App() {
                             </Button>
 
                             <Box
-                                sx = {{
+                                sx={{
                                     display: 'flex',
                                     flexDirection: 'row',
                                     flexWrap: 'wrap',
@@ -342,13 +361,13 @@ function App() {
                                 }}
                             >
                                 {
-                                    this.state.currentFolder.map((folder, index) => {
-                                        var name = (folder !== "files" || index > 0) ? folder : "Início";
-                                        var folderDepth = this.state.currentFolder.length;
+                                    this.state.currentFolderPathList.map((folder, index) => {
+                                        const name = index > 0 ? folder : "Início";
+                                        const folderDepth = this.state.currentFolderPathList.length;
 
-                                        if (!this.state.fileSystemMode && !this.state.editingMenu && index > 0)
+                                        if (this.state.searchMenu && index > 0)
                                             return null;
-                                        
+
                                         if (folderDepth > 3 && index === 1) {
                                             return (
                                                 <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
@@ -371,25 +390,19 @@ function App() {
                                                 <Button
                                                     key={folder}
                                                     onClick={() => {
-                                                        if (index === 0 && !this.state.fileSystemMode) {
-                                                            this.setState({fileSystemMode: true, editingMenu: false, filesChoice: [], algorithmChoice: [], configChoice: []})
-                                                        } else if (this.getPrivateSession() !== null) {
-                                                            this.redirectHome();
+                                                        if (index === 0 && this.state.searchMenu) {
+                                                            this.setState({...fileSystemState,
+                                                                filesChoice: [],
+                                                                algorithmChoice: [],
+                                                                configChoice: []
+                                                            });
+                                                        //} else if (this.getPrivateSession() !== null) {
+                                                        //    this.redirectHome();
                                                         } else {
                                                             this.changeFolderFromPath(folder);
-                                                            this.fileSystem.current.setState({current_folder: this.state.currentFolder});
-                                                            this.fileSystem.current.displayFileSystem();
                                                         }
                                                     }}
-                                                    style={{
-                                                        margin: 0,
-                                                        padding: '0px 10px 0px 10px',
-                                                        textTransform: 'none',
-                                                        display: "flex",
-                                                        textAlign: "left",
-                                                        textDecoration: "underline",
-                                                        height: '2rem',
-                                                    }}
+                                                    className="pathElement pathButton"
                                                     variant="text"
                                                 >
                                                     {name}
@@ -399,43 +412,30 @@ function App() {
                                         )
                                     })
                                 }
+                                <p className="pathElement">
+                                    {this.state.fileOpened}
+                                </p>
                                 {
-                                    !buttonsDisabled && this.state.currentFolder.length > 1
-                                    ? <Button
-                                        variant="text"
-                                        startIcon={<NoteAddIcon/>}
-                                        onClick={() => this.fileSystem.current.createFile()}
-                                        style={{
-                                            margin: 0,
-                                            padding: '0px 10px 0px 10px',
-                                            display: "flex",
-                                            textAlign: "left",
-                                            height: '2rem',
-                                            textTransform: 'none',
-                                        }}
-                                    >
-                                        Adicionar Documento
-                                    </Button>
-                                    : null
+                                    (!buttonsDisabled && (this.state.currentFolderPathList.length > 1 || this.getPrivateSession() != null))  // in private session, root level can have docs
+                                        ? <Button
+                                            variant="text"
+                                            startIcon={<NoteAddIcon/>}
+                                            onClick={() => this.fileSystem.current.createFile()}
+                                            className="pathElement"
+                                        >
+                                            Adicionar Documento
+                                        </Button>
+                                        : null
                                 }
-                                
                             </Box>
                         </Box>
 
-                        
-                        
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
                             <Button
                                 disabled={buttonsDisabled}
                                 variant="text"
                                 onClick={() => {
-                                    this.setState({
-                                        fileSystemMode: false,
-                                        editingMenu: false,
-                                        filesChoice: [],
-                                        algorithmChoice: [],
-                                        configChoice: []
-                                    })
+                                    this.setState(searchMenuState)
                                 }}
                                 sx={{
                                     mr: '1.5rem',
@@ -511,7 +511,7 @@ function App() {
                                             top: "5.5rem",
                                             p: "0rem 1rem",
                                             width: "8rem",
-                                            
+
                                         }}
                                     >
                                         {
@@ -571,12 +571,23 @@ function App() {
 
                     <Box>
                         {
-                            this.state.fileSystemMode
-
-                            ? this.getPrivateSession() == null
-                                ? <FileExplorer ref={this.fileSystem} current_folder={this.state.path} files={{"files": []}} app={this}/>
-                                : <PrivateFileExplorer ref={this.fileSystem} current_folder={"files/_private_sessions/" + this.state.sessionId} files={{"files": []}} app={this}/>
-
+                            !this.state.searchMenu
+                                ? this.getPrivateSession() == null
+                                    ? <FileExplorer ref={this.fileSystem}
+                                                    current_folder={this.state.currentFolderPathList}
+                                                    files={{"files": []}}
+                                                    setCurrentPath={this.setCurrentPath}
+                                                    enterLayoutMenu={this.enterLayoutMenu}
+                                                    enterEditingMenu={this.enterEditingMenu}
+                                                    exitMenus={this.exitMenus}/>
+                                    : <PrivateFileExplorer ref={this.fileSystem}
+                                                           sessionId={this.state.sessionId}
+                                                           current_folder={this.state.currentFolderPathList}
+                                                           files={{"files": []}}
+                                                           setCurrentPath={this.setCurrentPath}
+                                                           enterLayoutMenu={this.enterLayoutMenu}
+                                                           enterEditingMenu={this.enterEditingMenu}
+                                                           exitMenus={this.exitMenus}/>
                             : <ESPage app={this}/>
                         }
                     </Box>

@@ -17,7 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import loadComponent from '../../../utils/loadComponents';
 
 const UPDATE_TIME = 15;
-const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
+const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
 const validExtensions = [".pdf"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
@@ -26,11 +26,9 @@ class FileExplorer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            app: props.app,
             files: props.files,
-            info: {},
-            current_folder: props.current_folder.split('/'),
-            buttonsDisabled: props.current_folder.split('/').length === 1,
+            info: props.info,
+            current_folder: props.current_folder.join('/'),
             components: [],
 
             updatingRows: [],
@@ -40,12 +38,8 @@ class FileExplorer extends React.Component {
             loading: false,
 
             layoutMenu: false,
-            layoutFilename: null,
-
             editingMenu: false,
-            editingFilename: null,
-
-            downloadLoading: false,
+            fileOpened: null,
         }
 
         this.folderMenu = React.createRef();
@@ -58,6 +52,36 @@ class FileExplorer extends React.Component {
 
         this.interval = null;
         this.rowRefs = [];
+
+        // functions for file/folder rows
+        this.enterFolder = this.enterFolder.bind(this);
+        this.deleteItem = this.deleteItem.bind(this);
+        this.getOriginalFile = this.getOriginalFile.bind(this);
+        this.getDelimiterTxt = this.getDelimiterTxt.bind(this);
+        this.getTxt = this.getTxt.bind(this);
+        this.getEntities = this.getEntities.bind(this);
+        this.requestEntities = this.requestEntities.bind(this);
+        this.getCSV = this.getCSV.bind(this);
+        this.getImages = this.getImages.bind(this);
+        this.getPdf = this.getPdf.bind(this);
+        this.getPdfSimples = this.getPdfSimples.bind(this);
+        this.editText = this.editText.bind(this);
+        this.performOCR = this.performOCR.bind(this);
+        this.indexFile = this.indexFile.bind(this);
+        this.removeIndexFile = this.removeIndexFile.bind(this);
+        this.createLayout = this.createLayout.bind(this);
+
+        // functions for OCR menu
+        this.showStorageForm = this.showStorageForm.bind(this);
+
+        // functions for layout menu
+        this.closeLayoutMenu = this.closeLayoutMenu.bind(this);
+
+        // functions for editing menu
+        this.closeEditingMenu = this.closeEditingMenu.bind(this);
+
+        // functions for menus
+        this.updateFiles = this.updateFiles.bind(this);
     }
 
     componentDidMount() {
@@ -69,10 +93,9 @@ class FileExplorer extends React.Component {
         })
         .then(response => {return response.json()})
         .then(data => {
-            var info = data["info"];
-            var files = {'files': data["files"]};
-            
-            this.setState({files: files, info: info, loading: false}, this.displayFileSystem);
+            const info = data["info"];
+            const files = {'files': data["files"]};
+            this.setState({files: files, info: info, loading: false});
         });
 
         // Update the info every UPDATE_TIME seconds
@@ -80,7 +103,7 @@ class FileExplorer extends React.Component {
 
         // Check for stuck uploads every STUCK_UPDATE_TIME seconds
         this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.join("/"), {
+            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.replace(/^\//, ''), {
                 method: 'GET'
             })
             .then(response => {return response.json()})
@@ -93,7 +116,7 @@ class FileExplorer extends React.Component {
                             const creationTime = new Date(value.creation.replace(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
                             const currentTime = new Date();
                             const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
-                        
+
                             if (timeDiffMinutes >= 10) {
                                 fetch(process.env.REACT_APP_API_URL + 'set-upload-stuck', {
                                     method: 'POST',
@@ -101,30 +124,37 @@ class FileExplorer extends React.Component {
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
-                                        "path": path,
+                                        "path": path.replace(/^\//, ''),
                                     }),
                                 })
-                                .then(response => response.json());                                
+                                .then(response => response.json());
                             }
                         }
                     }
                 }
-
-                this.setState({info: info, updateCount: 0}, this.updateInfo);
+                this.setState({info: info, updateCount: 0});
             });
         }, 1000 * STUCK_UPDATE_TIME);
     }
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files) {
+            this.displayFileSystem();
+        } else if (this.state.info !== prevState.info || this.state.components !== prevState.components) {
+            this.updateInfo();
+        }
+    }
+
     createUpdateInfo() {
         this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.join("/"), {
+            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.replace(/^\//, ''), {
                 method: 'GET'
             })
             .then(response => {return response.json()})
             .then(data => {
                 var info = data["info"];
 
-                this.setState({info: info, updateCount: 0}, this.updateInfo);
+                this.setState({info: info, updateCount: 0});
             });
         }, 1000 * UPDATE_TIME);
     }
@@ -132,13 +162,13 @@ class FileExplorer extends React.Component {
     updateInfo() {
         if (this.state.layoutMenu || this.state.editingMenu) return;
         this.rowRefs.forEach(ref => {
-            var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
+            const filename = (this.state.current_folder + '/' + ref.current.props.name);
             if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
-                var rowInfo = this.getInfo(filename);
+                const rowInfo = this.getInfo(filename);
                 ref.current.updateInfo(rowInfo);
             }
         });
-        this.setState({updateCount: 0, updatingRows: []});
+        this.setState({updatingRows: []});
     }
 
     componentWillUnmount() {
@@ -151,17 +181,17 @@ class FileExplorer extends React.Component {
          * Update the files and info
          */
 
-        var files = {'files': data['files']}
-        var info = data['info'];
+        const files = {'files': data['files']}
+        const info = data['info'];
 
-        this.setState({ files: files, info: info }, this.displayFileSystem);
+        this.setState({ files: files, info: info });
     }
 
     createFolder() {
         /**
          * Open the folder menu
          */
-        this.folderMenu.current.currentPath(this.state.current_folder.join('/'));
+        this.folderMenu.current.setPath(this.state.current_folder.replace(/^\//, ''));
         this.folderMenu.current.toggleOpen();
     }
 
@@ -171,9 +201,11 @@ class FileExplorer extends React.Component {
     }
 
     performOCR(multiple, file=null) {
-        var path = this.state.current_folder.join('/');
-        if (file !== null) path += '/' + file;
-        this.ocrMenu.current.currentPath(path);
+        let path = this.state.current_folder;
+        if (file !== null) {
+            path = (path + '/' + file).replace(/^\//, '');
+        }
+        this.ocrMenu.current.setPath(path);
         this.ocrMenu.current.setMultiple(multiple);
         this.ocrMenu.current.performOCR("Tesseract", ["por"], path, multiple);
 
@@ -184,7 +216,7 @@ class FileExplorer extends React.Component {
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
         var formData = new FormData();
         formData.append('file', chunk);
-        formData.append('path', this.state.current_folder.join('/'))
+        formData.append('path', this.state.current_folder.replace(/^\//, ''));
         formData.append('name', fileName);
         formData.append("fileID", _fileID);
         formData.append('counter', i+1);
@@ -202,14 +234,14 @@ class FileExplorer extends React.Component {
                     info[k] = data["info"][k];
                 }
 
-                var updatingList = this.state.updatingRows;
-                var complete_filename = this.state.current_folder.join("/") + "/" + fileName;
+                const updatingList = this.state.updatingRows;
+                const complete_filename = (this.state.current_folder + '/' + fileName).replace(/^\//, '');;
                 if (!updatingList.includes(complete_filename)) {
                     updatingList.push(complete_filename);
                 }
 
                 if (data["finished"] || this.state.updateCount === this.state.updatingRate) {
-                    this.setState({info: info, updateCount: 0, updatingRows: updatingList}, this.updateInfo);
+                    this.setState({info: info, updateCount: 0, updatingRows: updatingList});
                 } else {
                     this.setState({updateCount: this.state.updateCount + 1});
                 }
@@ -261,7 +293,7 @@ class FileExplorer extends React.Component {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        path: this.state.current_folder.join('/'),
+                        path: this.state.current_folder.replace(/^\//, ''),
                         name: fileName,
                     })
                 }).then(response => {return response.json()})
@@ -270,18 +302,18 @@ class FileExplorer extends React.Component {
                         var filesystem = data["filesystem"];
                         var info = filesystem["info"];
                         var files = {'files': filesystem["files"]};
-                        this.setState({files: files, info: info}, this.displayFileSystem);
+                        this.setState({files: files, info: info});
                         fileName = data["filename"];
 
                         // Send chunks
                         var startChunk = 0;
                         var endChunk = chunkSize;
-        
+
                         for (let i = 0; i < _totalCount; i++) {
                             var chunk = fileBlob.slice(startChunk, endChunk, fileType);
                             startChunk = endChunk;
                             endChunk = endChunk + chunkSize;
-        
+
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
                     } else {
@@ -310,38 +342,29 @@ class FileExplorer extends React.Component {
         });
     }
 
-    goBack() {
+    goBack(current_folder_path) {
         /**
-         * Go back to the previous folder
+         * Go back to the given folder path
          */
-        var current_folder = this.state.current_folder;
-        current_folder.pop();
-        var buttonsDisabled = current_folder.length === 1;
-        var createFileButtonDisabled = current_folder.length === 1;
-        this.state.app.setState({path: current_folder.join('/')});
-        this.setState({
-            current_folder: current_folder,
-            buttonsDisabled: buttonsDisabled,
-            createFileButtonDisabled: createFileButtonDisabled
-        },
-        this.displayFileSystem);
+        this.setState({layoutMenu: false, editingMenu: false,
+            current_folder: current_folder_path.join('/')
+        });
     }
 
     getDocument(type, file, suffix="") {
         /**
          * Export the .txt or .pdf file
          */
-        var path = this.state.current_folder.join('/') + '/' + file;
-
+        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
         fetch(process.env.REACT_APP_API_URL + "get_" + type + '?path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
         .then(data => {
-            var a = document.createElement('a');
+            const a = document.createElement('a');
             a.href = URL.createObjectURL(data);
 
-            var basename = file.split('.').slice(0, -1).join('.');
+            const basename = file.split('.').slice(0, -1).join('.');
             a.download = basename + '_ocr' + suffix + '.' + type.split('_')[0];
             a.click();
             a.remove();
@@ -349,16 +372,16 @@ class FileExplorer extends React.Component {
     }
 
     getEntities(file) {
-        var path = this.state.current_folder.join('/') + '/' + file;
+        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
         fetch(process.env.REACT_APP_API_URL + "get_entities?path=" + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
         .then(data => {
-            var a = document.createElement('a');
+            const a = document.createElement('a');
             a.href = URL.createObjectURL(data);
 
-            var basename = file.split('.').slice(0, -1).join('.');
+            const basename = file.split('.').slice(0, -1).join('.');
             a.download = basename + '_entidades.json';
             a.click();
             a.remove();
@@ -366,18 +389,18 @@ class FileExplorer extends React.Component {
     }
 
     requestEntities(file) {
-        var path = this.state.current_folder.join('/') + '/' + file;
+        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
         fetch(process.env.REACT_APP_API_URL + "request_entities?path=" + path, {
             method: 'GET'
         })
         .then(response => {return response.json()})
         .then(data => {
             if (data.success) {
-                var filesystem = data["filesystem"];
-                var info = filesystem["info"];
-                var files = {'files': filesystem["files"]};
+                const filesystem = data["filesystem"];
+                const info = filesystem["info"];
+                const files = {'files': filesystem["files"]};
 
-                this.setState({files: files, info: info}, this.displayFileSystem);
+                this.setState({files: files, info: info});
             }
         });
     }
@@ -386,14 +409,12 @@ class FileExplorer extends React.Component {
         /**
          * Export the .zip file
          */
-        this.setState({downloadLoading: true});
-        var path = this.state.current_folder.join('/');
+        const path = this.state.current_folder.replace(/^\//, '');
 
         fetch(process.env.REACT_APP_API_URL + "get_zip?path=" + path, {
             method: 'GET'
         })
         .then(response => {
-            this.setState({downloadLoading: false});
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 return response.json();
@@ -406,9 +427,9 @@ class FileExplorer extends React.Component {
         .then(data => {
             // Check if data is a blob
             if (data instanceof Blob) {
-                var a = document.createElement('a');
+                const a = document.createElement('a');
                 a.href = URL.createObjectURL(data);
-    
+
                 a.download = path.split('/').slice(-1)[0] + '.zip';
                 a.click();
                 a.remove();
@@ -420,22 +441,27 @@ class FileExplorer extends React.Component {
     }
 
 
-
     getOriginalFile(file) {
-        var path = this.state.current_folder.join('/') + '/' + file;
-
+        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
         fetch(process.env.REACT_APP_API_URL + "get_original?path=" + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
         .then(data => {
-            var a = document.createElement('a');
+            const a = document.createElement('a');
             a.href = URL.createObjectURL(data);
 
             a.download = file;
             a.click();
             a.remove();
         });
+    }
+
+    /**
+     * Export the .txt file
+     */
+    getTxt(file) {
+        this.getDocument("txt", file);
     }
 
     getDelimiterTxt(file) {
@@ -446,145 +472,131 @@ class FileExplorer extends React.Component {
         this.getDocument("txt_delimitado", file, "_delimitado");
     }
 
-    getTxt(file) {
-        /**
-         * Export the .txt file
-         */
-        this.getDocument("txt", file);
-    }
-
+    /**
+     * Export the .csv file
+     */
     getCSV(file) {
-        /**
-         * Export the .csv file
-         */
          this.getDocument("csv", file);
     }
 
+    /**
+     * Export the .zip file
+     */
     getImages(file) {
-        /**
-         * Export the .zip file
-         */
-        var path = this.state.current_folder.join('/') + '/' + file;
-
+        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
         fetch(process.env.REACT_APP_API_URL + "get_images?path=" + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
         .then(data => {
-            var a = document.createElement('a');
-                a.href = URL.createObjectURL(data);
-    
-                a.download = path.split('/').slice(-1)[0] + '.zip';
-                a.click();
-                a.remove();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+
+            a.download = path.split('/').slice(-1)[0] + '.zip';
+            a.click();
+            a.remove();
         });
     }
 
+    /**
+     * Export the .pdf file
+     */
     getPdf(file) {
-        /**
-         * Export the .pdf file
-         */
         this.getDocument("pdf", file, "_texto_indice");
     }
 
+    /**
+     * Export the .pdf file
+     */
     getPdfSimples(file) {
-        /**
-         * Export the .pdf file
-         */
         this.getDocument("pdf_simples", file, "_texto");
     }
 
+    /*
     editFile(file) {
-        /**
-         * Open the file in the editor
-         */
-        var path = this.state.current_folder.join('/');
-        var filename = path + '/' + file;
-        this.state.app.editFile(path, filename);
+        const filename = this.state.current_folder + '/' + file;
+        this.state.app.editFile(this.state.current_folder, filename);
     }
+     */
 
+    /*
     viewFile(file, algorithm, config) {
         var path = this.state.current_folder.slice(1).join('/');
         file = file.split('/')[0];
         var filename = path + '/' + file;
         this.state.app.viewFile(filename, algorithm, config);
     }
+    */
 
+    /**
+     * Open the delete menu
+     */
     deleteItem(name) {
-        /**
-         * Open the delete menu
-         */
-        this.deleteMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
+        this.deleteMenu.current.setPath((this.state.current_folder + '/' + name).replace(/^\//, ''));
         this.deleteMenu.current.toggleOpen();
     }
 
+    /**
+     * Enter the folder and update the path
+     */
     enterFolder(folder) {
-        /**
-         * Enter the folder and update the path
-         */
-        var current_folder = this.state.current_folder;
-        current_folder.push(folder);
-        this.state.app.setState({
-            path: current_folder.join('/'),
-            currentFolder: current_folder
-        });
-        this.setState({
-            current_folder: current_folder,
-            buttonsDisabled: false,
-            createFileButtonDisabled: false},
-        this.displayFileSystem);
+        const current_folder_list = this.state.current_folder.split('/');
+        current_folder_list.push(folder);
+        this.props.setCurrentPath(current_folder_list);
     }
 
+    /**
+     * Find the folder in the files
+     */
     findFolder(files, folder) {
-        /**
-         * Find the folder in the files
-         */
-        if ( Array.isArray(files) ) {
-            var i;
-            for (i = 0; i < files.length; i++) {
-                var dict = files[i];
+        if (Array.isArray(files)) {
+            for (let i = 0; i < files.length; i++) {
+                const dict = files[i];
                 const key = Object.keys(dict)[0];
                 if (key === folder) {
                     return dict[folder];
                 }
             }
+        } else {
+            // whole object was passed, return top-level array of folders
+            return files["files"];
         }
-        return files[folder];
     }
 
+    /**
+     * Get the contents of the current folder
+     */
     getPathContents() {
-        /**
-         * Get the contents of the current folder
-         */
-        var files = this.state.files;
-        var current_folder = this.state.current_folder;
+        let files = this.state.files;
+        let current_folder_list = this.state.current_folder.split('/');
 
-        for (let f in current_folder) {
-            var key = current_folder[f];
+        // if path is at top level, findFolder() is called once, returns whole list of folders and files
+        for (let f in current_folder_list) {
+            let key = current_folder_list[f];
             files = this.findFolder(files, key);
         }
 
         return files;
     }
 
+    /**
+     * Get the info of the file
+     */
     getInfo(path) {
-        /**
-         * Get the info of the file
-         */
         return this.state.info[path];
     }
 
+    /**
+     * Sorts the contents of the current folder
+     * First order by type (folder, file)
+     * Then order by name
+     */
     sortContents(contents) {
-        /**
-         * Sorts the contents of the current folder
-         * First order by type (folder, file)
-         * Then order by name
-         */
-        var folders = [];
-        var files = [];
+        let folders = [];
+        let files = [];
 
         for (let f in contents) {
-            var item = contents[f];
+            const item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
                 files.push(item);
             } else {
@@ -593,8 +605,8 @@ class FileExplorer extends React.Component {
         }
 
         folders.sort(function(d1, d2) {
-            var key1 = Object.keys(d1)[0];
-            var key2 = Object.keys(d2)[0];
+            const key1 = Object.keys(d1)[0];
+            const key2 = Object.keys(d2)[0];
             return key1.localeCompare(key2);
         });
         files.sort();
@@ -620,9 +632,9 @@ class FileExplorer extends React.Component {
         }
 
         if (isSorted(contents)) {
-            this.setState({components: contents.sort((a, b) => (b.key).localeCompare(a.key))}, this.updateInfo);
+            this.setState({components: contents.sort((a, b) => (b.key).localeCompare(a.key))});
         } else {
-            this.setState({components: contents.sort((a, b) => (a.key).localeCompare(b.key))}, this.updateInfo);
+            this.setState({components: contents.sort((a, b) => (a.key).localeCompare(b.key))});
         }
     }
 
@@ -633,61 +645,77 @@ class FileExplorer extends React.Component {
         const FileRow = loadComponent('FileSystem', 'FileRow');
         const FolderRow = loadComponent('FileSystem', 'FolderRow');
 
-        var contents = this.sortContents(this.getPathContents());
+        // ensure current folder is updated without re-rendering
+        //if (this.props) {
+        //    this.state.current_folder = this.props.current_folder.join('/');
+        //}
+
+        const contents = this.sortContents(this.getPathContents());
         this.rowRefs = [];
 
-        var items = [];
+        let items = [];
 
         for (let f in contents) {
-            var ref = React.createRef();
+            let ref = React.createRef();
             this.rowRefs.push(ref);
 
-            var item = contents[f];
+            const item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
                 items.push(
                     <FileRow
                         ref={ref}
                         key={item}
                         name={item}
-                        info={this.getInfo(this.state.current_folder.join("/") + "/" + item)}
-                        filesystem={this}
+                        info={this.getInfo(this.state.current_folder + '/' + item)}
+                        deleteItem={this.deleteItem}
+                        getOriginalFile={this.getOriginalFile}
+                        getDelimiterTxt={this.getDelimiterTxt}
+                        getTxt={this.getTxt}
+                        getEntities={this.getEntities}
+                        requestEntities={this.requestEntities}
+                        getCSV={this.getCSV}
+                        getImages={this.getImages}
+                        getPdf={this.getPdf}
+                        getPdfSimples={this.getPdfSimples}
+                        editText={this.editText}
+                        performOCR={this.performOCR}
+                        indexFile={this.indexFile}
+                        removeIndexFile={this.removeIndexFile}
+                        createLayout={this.createLayout}
                     />
                 )
             } else {
-                var key = Object.keys(item)[0];
+                const key = Object.keys(item)[0];
                 items.push(
                     <FolderRow
                         ref={ref}
                         key={key}
                         name={key}
-                        info={this.getInfo(this.state.current_folder.join("/") + "/" + key)}
-                        filesystem={this}
+                        info={this.getInfo(this.state.current_folder + '/' + key)}
                         current_folder={this.state.current_folder}
+                        enterFolder={this.enterFolder}
+                        deleteItem={this.deleteItem}
                     />
                 )
             }
         }
-        this.setState({components: items}, this.updateInfo);
+        this.setState({components: items});
     }
 
     createLayout(filename) {
-        this.state.app.setState({layoutMenu: true});
-        this.setState({layoutMenu: true, layoutFilename: filename});
+        this.props.enterLayoutMenu(filename);
     }
 
     closeLayoutMenu() {
-        this.state.app.setState({layoutMenu: false});
-        this.setState({layoutMenu: false, layoutFilename: null});
+        this.props.exitMenus();
     }
 
     editText(filename) {
-        this.state.app.setState({editingMenu: true});
-        this.setState({editingMenu: true, editingFilename: filename});
+        this.props.enterEditingMenu(filename);
     }
 
     closeEditingMenu() {
-        this.state.app.setState({editingMenu: false});
-        this.setState({editingMenu: false, editingFilename: null});
+        this.props.exitMenus();
     }
 
     generateTable() {
@@ -719,7 +747,7 @@ class FileExplorer extends React.Component {
     }
 
     indexFile(file, multiple) {
-        var path = this.state.current_folder.join('/') + '/' + file;
+        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
 
         fetch(process.env.REACT_APP_API_URL + 'index-doc', {
             method: 'POST',
@@ -745,7 +773,7 @@ class FileExplorer extends React.Component {
     }
 
     removeIndexFile(file, multiple) {
-        var path = this.state.current_folder.join('/') + '/' + file;
+        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
 
         fetch(process.env.REACT_APP_API_URL + 'remove-index-doc', {
             method: 'POST',
@@ -770,6 +798,7 @@ class FileExplorer extends React.Component {
         })
     }
 
+    /*
     checkOCRComplete() {
         let obj = this.state.info;
 
@@ -821,7 +850,7 @@ class FileExplorer extends React.Component {
                         }
                         return (
                             <Box sx={{display: "flex", flexDirection: "row"}} key={"Box" + folder}>
-                                <Button 
+                                <Button
                                     key={folder}
                                     onClick={() => this.changeFolderFromPath(folder)}
                                     style={{
@@ -844,6 +873,7 @@ class FileExplorer extends React.Component {
             </Box>
         )
     }
+     */
 
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
@@ -858,9 +888,9 @@ class FileExplorer extends React.Component {
             <>
                 {
                     this.state.layoutMenu
-                    ? <LayoutMenu filesystem={this} filename={this.state.layoutFilename} />
+                    ? <LayoutMenu current_folder={this.state.current_folder} filename={this.state.fileOpened} closeLayoutMenu={this.closeLayoutMenu}/>
                     : this.state.editingMenu
-                        ? <EditingMenu filesystem={this} filename={this.state.editingFilename} />
+                        ? <EditingMenu current_folder={this.state.current_folder} filename={this.state.fileOpened} closeEditingMenu={this.closeEditingMenu}/>
                         : <Box sx={{
                             ml: '1.5rem',
                             mr: '1.5rem',
@@ -869,10 +899,10 @@ class FileExplorer extends React.Component {
                             <Notification message={""} severity={"success"} ref={this.successNot}/>
                             <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                            <FolderMenu filesystem={this} ref={this.folderMenu}/>
-                            <OcrMenu filesystem={this} ref={this.ocrMenu}/>
-                            <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-                            <FullStorageMenu filesystem={this} ref={this.storageMenu} />
+                            <FolderMenu ref={this.folderMenu} updateFiles={this.updateFiles}/>
+                            <OcrMenu ref={this.ocrMenu} updateFiles={this.updateFiles} showStorageForm={this.showStorageForm}/>
+                            <DeleteMenu ref={this.deleteMenu} updateFiles={this.updateFiles}/>
+                            <FullStorageMenu ref={this.storageMenu}/>
 
                             {
                                 this.generateTable()

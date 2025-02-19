@@ -20,11 +20,10 @@ import loadComponent from '../../../utils/loadComponents';
 
 import { Checkbox, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
-export default class LayoutMenu extends React.Component {
+class LayoutMenu extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			filesystem: props.filesystem,
 			filename: props.filename,
 			contents: [],
 			page: 1,
@@ -62,9 +61,9 @@ export default class LayoutMenu extends React.Component {
 	}
 
 	componentDidMount() {
-		const path = this.state.filesystem.state.current_folder.join("/");
-
-		fetch(process.env.REACT_APP_API_URL + 'get-layouts?path=' + path + "/" + this.state.filename, {
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+        const is_private = this.props._private ? '_private=true&' : '';
+        fetch(process.env.REACT_APP_API_URL + 'get-layouts?' + is_private + 'path=' + path, {
 			method: 'GET'
 		}).then(response => { return response.json() })
 			.then(data => {
@@ -89,7 +88,9 @@ export default class LayoutMenu extends React.Component {
 		this.interval = setInterval(() => {
 			if (!this.state.segmentLoading) return;
 
-			fetch(process.env.REACT_APP_API_URL + 'get-layouts?path=' + path + "/" + this.state.filename, {
+            const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+            const is_private = this.props._private ? '_private=true&' : '';
+            fetch(process.env.REACT_APP_API_URL + 'get-layouts?' + is_private + 'path=' + path, {
 				method: 'GET'
 			}).then(response => { return response.json() })
 				.then(data => {
@@ -358,24 +359,26 @@ export default class LayoutMenu extends React.Component {
 			this.confirmLeave.current.toggleOpen();
 		} else {
 			window.removeEventListener('beforeunload', this.preventExit);
-			this.state.filesystem.closeLayoutMenu();
+			this.props.closeLayoutMenu();
 		}
 	}
 
 	leave() {
 		window.removeEventListener('beforeunload', this.preventExit);
-		this.state.filesystem.closeLayoutMenu();
+		this.props.closeLayoutMenu();
 		this.confirmLeave.current.toggleOpen();
 	}
 
 	saveLayout(closeWindow = false) {
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
 		fetch(process.env.REACT_APP_API_URL + 'save-layouts', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
-				path: this.state.filesystem.state.current_folder.join("/") + "/" + this.state.filename,
+                _private: this.props._private,
+				path: path,
 				layouts: this.state.contents
 			})
 		}).then(response => { return response.json() })
@@ -387,7 +390,7 @@ export default class LayoutMenu extends React.Component {
 					this.successNot.current.open();
 
 					if (closeWindow) {
-						this.state.filesystem.closeLayoutMenu();
+						this.props.closeLayoutMenu();
 					}
 				} else {
 					alert("Erro inesperado ao guardar o layout.")
@@ -397,12 +400,12 @@ export default class LayoutMenu extends React.Component {
 
 	GenerateLayoutAutomatically() {
 		this.setState({ segmentLoading: true });
-		const path = this.state.filesystem.state.current_folder.join("/");
-
 		this.successNot.current.setMessage("A gerar layouts automaticamente... Por favor aguarde.");
 		this.successNot.current.open();
 
-		fetch(process.env.REACT_APP_API_URL + 'generate-automatic-layouts?path=' + path + "/" + this.state.filename, {
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+        const is_private = this.props._private ? '_private=true&' : '';
+		fetch(process.env.REACT_APP_API_URL + 'generate-automatic-layouts?' + is_private + 'path=' + path, {
 			method: 'GET'
 		}).then(response => { return response.json() })
 			.then(data => {
@@ -733,7 +736,7 @@ export default class LayoutMenu extends React.Component {
 
 	render() {
 		const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
-		const ConfirmLeave = loadComponent('EditPage', 'ConfirmLeave');
+		const ConfirmLeave = loadComponent('EditPage3', 'ConfirmLeave');
 		const Notification = loadComponent('Notification', 'Notifications');
 
 		var noCheckBoxActive = false;
@@ -867,7 +870,12 @@ export default class LayoutMenu extends React.Component {
 							{
 								this.state.contents.length === 0
 									? null
-									: <LayoutImage ref={this.image} menu={this} boxesCoords={this.state.contents[this.state.page - 1]["boxes"]} key={this.state.page - 1} pageIndex={this.state.page} image={this.state.contents[this.state.page - 1]["page_url"]} />
+									: <LayoutImage ref={this.image}
+                                                   menu={this}
+                                                   boxesCoords={this.state.contents[this.state.page - 1]["boxes"]}
+                                                   key={this.state.page - 1}
+                                                   pageIndex={this.state.page}
+                                                   image={this.state.contents[this.state.page - 1]["page_url"]} />
 							}
 						</Box>
 						<Box sx={{
@@ -1045,3 +1053,10 @@ export default class LayoutMenu extends React.Component {
 		)
 	}
 }
+
+LayoutMenu.defaultProps = {
+    _private: false,
+    sessionId: ""
+}
+
+export default LayoutMenu;

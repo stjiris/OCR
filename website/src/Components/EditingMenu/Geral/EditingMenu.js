@@ -32,11 +32,34 @@ class Word extends React.Component {
             id: props.id,
             box: props.box,
             cleanText: props.cleanText,
+            editWord: false
         }
     }
 
+    toggleEditWord() {
+      this.setState({
+        editWord: !this.state.editWord
+      })
+    }
+    handleWordChange(e) {
+      this.setState({
+        text: e.target.value
+      });
+    }
+
     render() {
-        return <p
+        return (this.state.editWord)
+      ? <input
+            autoFocus
+            className={`${this.state.cleanText}`}
+            style={{width: `${this.state.text.length}ch`}}
+            type="text"
+            value={this.state.text}
+            onBlur={e => this.toggleEditWord()}
+            onChange={e => this.handleWordChange(e)}
+            onKeyUp={e => { if (e.key === 'Enter') { this.handleWordChange(e); this.toggleEditWord()}}}
+            />
+          : <p
             id={this.state.id}
             className={`${this.state.cleanText}`}
             style={{
@@ -53,21 +76,17 @@ class Word extends React.Component {
             onMouseLeave={(e) => {
                 this.state.overlay.setState({selectedWordBox: null});
             }}
+            onClick={e=> this.toggleEditWord()}
         >
             {this.state.text}
         </p>
     }
 }
 
-export default class EditingMenu extends React.Component {
+class EditingMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            filesystem: props.filesystem,
-
-            path: "",
-            filename: props.filename,
-
             loading: true,
             contents: [],
             words_list: [],
@@ -110,15 +129,11 @@ export default class EditingMenu extends React.Component {
     }
 
     componentDidMount() {
-        const path = this.state.filesystem.state.current_folder.join("/");
-
         this.setState({
-            path: path,
-            file: path + "/" + this.state.filename,
             imageHeight: window.innerHeight - 175,
             baseImageHeight: window.innerHeight - 175,
-
             textWidth: window.innerWidth * 0.9 * 0.6 - 70,
+            loading: true
         }, this.getContents);
     }
 
@@ -127,13 +142,14 @@ export default class EditingMenu extends React.Component {
             this.confirmLeave.current.toggleOpen();
         } else {
             window.removeEventListener('beforeunload', this.preventExit);
-            this.state.filesystem.closeEditingMenu();
+            this.props.closeEditingMenu();
         }
     }
 
     getContents(page = 1) {
-        this.setState({loading: true});
-        fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + this.state.file + '&page=' + page, {
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        const is_private = this.props._private ? '_private=true&' : '';
+        fetch(process.env.REACT_APP_API_URL + 'get-file?' + is_private + 'path=' + path + '&page=' + page, {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -143,14 +159,14 @@ export default class EditingMenu extends React.Component {
             var contents = data["doc"].sort((a, b) =>
                 (a["page_number"] > b["page_number"]) ? 1 : -1
             )
-            
+
             var sortedWords = this.orderWords(data["words"]);
-    
+
             var newCorpusList = [];
             data["corpus"].forEach((item) => {
                 newCorpusList.push({"name": item, "code": item});
             });
-    
+
             this.setState({totalPages: pages, loading: false, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
         });
     }
@@ -180,9 +196,9 @@ export default class EditingMenu extends React.Component {
      * Used to zoom and change pages (text changes accordingly)
      */
     changePage(diff) {
-        
+
         this.setState({
-            currentPage: this.state.currentPage + diff, 
+            currentPage: this.state.currentPage + diff,
             selectedWord: "",
             selectedWordIndex: 0,
             selectedWordBox: null,
@@ -192,7 +208,6 @@ export default class EditingMenu extends React.Component {
     }
 
     firstPage() {
-        
         this.setState({
             currentPage: 1,
             selectedWord: "",
@@ -205,7 +220,7 @@ export default class EditingMenu extends React.Component {
 
     lastPage() {
             this.setState({
-            currentPage: this.state.totalPages, 
+            currentPage: this.state.totalPages,
             selectedWord: "",
             selectedWordIndex: 0,
             selectedWordBox: null,
@@ -215,7 +230,7 @@ export default class EditingMenu extends React.Component {
     }
 
     imageToScreenCoordinates(x, y) {
-        
+
         var image = this.image.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
@@ -231,7 +246,7 @@ export default class EditingMenu extends React.Component {
     }
 
     showImageHighlight(e, box) {
-        
+
         var topCorner = this.imageToScreenCoordinates(box[0], box[1]);
         var bottomCorner = this.imageToScreenCoordinates(box[2], box[3]);
 
@@ -246,7 +261,7 @@ export default class EditingMenu extends React.Component {
     }
 
     zoom(delta) {
-        
+
         var newHeight = this.state.imageHeight * (1 + delta * 0.4);
 
         if (newHeight < this.state.baseImageHeight) {
@@ -262,7 +277,7 @@ export default class EditingMenu extends React.Component {
      */
 
     requestSyntax() {
-        
+
         this.setState({ loadingSintax: true });
         fetch(process.env.REACT_APP_API_URL + 'check-sintax', {
             method: 'POST',
@@ -284,7 +299,7 @@ export default class EditingMenu extends React.Component {
     }
 
     updateSyntax(words) {
-        
+
         var words_list = this.state.words_list;
         Object.entries(words).forEach(([key, value]) => {
             words_list[key]["syntax"] = value;
@@ -301,7 +316,7 @@ export default class EditingMenu extends React.Component {
         /**
          * Generate all possible combinations of words
          */
-        
+
         var word = words.splice(0, 1)[0];
         var totalCombinations = [];
 
@@ -343,7 +358,7 @@ export default class EditingMenu extends React.Component {
          * Find the combination that minimizes the difference between the previous text and the new text
          */
 
-        
+
 
         // Infinite
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity?retiredLocale=pt-PT
@@ -373,7 +388,7 @@ export default class EditingMenu extends React.Component {
     }
 
     splitWordsByLines(words, coordinates) {
-        
+
         if (coordinates.length === 1) return [words];
 
         var separation = [];
@@ -388,9 +403,9 @@ export default class EditingMenu extends React.Component {
 
         return bestCombination;
     }
-    
+
     updateText(sectionIndex, lineIndex, wordIndex) {
-        
+
         var wordsList = this.state.words_list;
 
         var contents = this.state.contents;
@@ -402,7 +417,7 @@ export default class EditingMenu extends React.Component {
 
         var coordinates = line[wordIndex]["coordinates"];
         var combination = this.splitWordsByLines(words, coordinates);
-        
+
         var newWords = [];
 
         initial_text.split(" ").forEach((item) => {
@@ -474,7 +489,6 @@ export default class EditingMenu extends React.Component {
     }
 
     updateInputSize() {
-        
         var text = this.state.editingText;
         var parentNode = this.state.parentNode;
         var children = parentNode.children;
@@ -492,7 +506,6 @@ export default class EditingMenu extends React.Component {
     }
 
     getSelectedText() {
-        
         if (typeof window.getSelection !== "undefined") {
             // Get the range and make the all word selected
             if (window.getSelection().toString().length === 0) return null;
@@ -562,13 +575,13 @@ export default class EditingMenu extends React.Component {
             this.setState({contents: contents, inputSize: text.length});
         }
     }
-    
+
     /**
      * LINE FUNCTIONS
      * Add and remove new lines (\n)
      */
     addLine(sectionIndex, lineIndex, wordIndex) {
-        
+
         var contents = this.state.contents;
         var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
         var line = section[lineIndex];
@@ -583,7 +596,7 @@ export default class EditingMenu extends React.Component {
     }
 
     removeLine(sectionIndex, lineIndex) {
-        
+
         var contents = this.state.contents;
         var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
 
@@ -622,9 +635,8 @@ export default class EditingMenu extends React.Component {
     /**
      * WORD LIST FUNCTIONS
      * Handle the words list and actions
-     */  
+     */
     cleanWord(word) {
-        
         var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
         while (word !== "") {
             if (punctuation.includes(word[0])) {
@@ -646,7 +658,6 @@ export default class EditingMenu extends React.Component {
     }
 
     cleanWordSelection() {
-        
         var words = document.getElementsByClassName(this.selectedWord);
 
         for (var i = 0; i < words.length; i++) {
@@ -656,10 +667,9 @@ export default class EditingMenu extends React.Component {
     }
 
     getScrollValue(word, count = 0) {
-        
         // var words = [];
         var words = document.getElementsByClassName(word);
-    
+
         var middleHeight = window.innerHeight / 2;
 
         var wordHeight = null;
@@ -670,7 +680,7 @@ export default class EditingMenu extends React.Component {
             if (count === 0) {
                 chosenWord = wordComponent;
             }
-            
+
             count -= 1;
             wordComponent.style.backgroundColor = "#ffd700";
         }
@@ -685,12 +695,10 @@ export default class EditingMenu extends React.Component {
     }
 
     goToNextOccurrence(word) {
-        
-        
         // var word = this.state.selectedWord;
         var index = Math.max(0, this.state.selectedWordIndex);
         var pages = this.state.words_list[word]["pages"];
-        
+
         var newPage = pages[index];
         var count = pages.slice(0, index).reduce((acc, value) => value === newPage ? acc + 1 : acc, 0);
 
@@ -721,7 +729,7 @@ export default class EditingMenu extends React.Component {
      * Send to the server the new text and structure
      */
     saveChanges(remakeFiles = false) {
-        
+
         fetch(process.env.REACT_APP_API_URL + 'submit-text', {
             method: 'POST',
             headers: {
@@ -730,6 +738,7 @@ export default class EditingMenu extends React.Component {
             body: JSON.stringify({
                 "text": this.state.contents,
                 "remakeFiles": remakeFiles,
+                "_private": this.props._private
             })
         })
         .then(response => {return response.json()})
@@ -739,12 +748,12 @@ export default class EditingMenu extends React.Component {
                 // this.successNot.current.open();
                 this.setState({uncommittedChanges: false});
                 window.removeEventListener('beforeunload', this.preventExit);
-                
+
                 this.successNot.current.setMessage("Texto submetido com sucesso");
                 this.successNot.current.open();
 
                 if (remakeFiles) {
-                    this.state.filesystem.closeEditingMenu();
+                    this.props.closeEditingMenu();
                 }
             } else {
                 // this.errorNot.current.setMessage(data.error);
@@ -782,14 +791,14 @@ export default class EditingMenu extends React.Component {
                                     sx={{
                                         position: 'relative',
                                         width: `${2 * window.innerWidth / 5}px`,
-                                        overflow: 'scroll', 
+                                        overflow: 'scroll',
                                         border: '1px solid grey',
                                         height: `${this.state.baseImageHeight}px`
                                     }}
                                 >
                                     <img
                                         ref={this.image}
-                                        src={this.state.contents[this.state.currentPage - 1]["page_url"]} 
+                                        src={this.state.contents[this.state.currentPage - 1]["page_url"]}
                                         alt="Imagem da pagina"
                                         style={{
                                             display: 'block',
@@ -854,7 +863,7 @@ export default class EditingMenu extends React.Component {
                                     <span style={{margin: "0px 10px"}}>
                                         Página {this.state.currentPage} / {this.state.totalPages}
                                     </span>
-                                    
+
                                     <IconButton
                                         disabled={this.state.currentPage === this.state.totalPages}
                                         sx={{marginLeft: "10px", p: 0}}
@@ -899,7 +908,7 @@ export default class EditingMenu extends React.Component {
                                         ml: '1rem',
                                         width: this.state.wordsMode ? `${3 * window.innerWidth / 5 - 16*4 - 280}px` : `${3 * window.innerWidth / 5 - 16*4}px`,
                                         height: `${this.state.baseImageHeight}px`,
-                                        overflowY: 'scroll', 
+                                        overflowY: 'scroll',
                                         overflowX: 'wrap',
                                         border: '1px solid grey',
                                         paddingLeft: "10px",
@@ -957,7 +966,7 @@ export default class EditingMenu extends React.Component {
                                                                     return <>
                                                                         {
                                                                             this.state.addLineMode && wordIndex !== 0 && this.state.hoveredId === id
-                                                                            ? <IconButton 
+                                                                            ? <IconButton
                                                                                 sx={{p: 0.1, m: 0, backgroundColor: "#0000ff88", ml: 1, "&:hover": {backgroundColor: "#0000ffdd"}}}
                                                                                 onClick={() => this.addLine(sectionIndex, lineIndex, wordIndex)}
                                                                             >
@@ -972,13 +981,13 @@ export default class EditingMenu extends React.Component {
                                                                             overlay={this}
                                                                             text={word["text"]}
                                                                             id={id}
-                                                                            box={word["box"]}  
-                                                                            cleanText={word["clean_text"]}   
+                                                                            box={word["box"]}
+                                                                            cleanText={word["clean_text"]}
                                                                         />
 
                                                                         {
                                                                             this.state.removeLineMode && wordIndex === line.length - 1 && (lineIndex !== section.length - 1 || sectionIndex !== this.state.contents[this.state.currentPage - 1]["content"].length - 1)
-                                                                            ? <IconButton 
+                                                                            ? <IconButton
                                                                                 sx={{p: 0.1, m: 0, ml: 1, backgroundColor: "#ff000088", "&:hover": {backgroundColor: "#ff0000dd"}}}
                                                                                 onClick={() => this.removeLine(sectionIndex, lineIndex)}
                                                                             >
@@ -995,7 +1004,6 @@ export default class EditingMenu extends React.Component {
                                                 }
                                             </Box>;
                                         })
-                                        
                                     }
                                 </Box>
 
@@ -1011,10 +1019,10 @@ export default class EditingMenu extends React.Component {
                                     padding: "0px 10px"
                                 }}>
                                     <p style={{fontSize: "18px", margin: "10px 0px 0px 0px"}}><b>Palavras</b></p>
-                                    <CorpusDropdown 
-                                        ref={this.corpusSelect} 
-                                        options={this.state.corpusOptions} 
-                                        choice={this.state.corpusChoice} 
+                                    <CorpusDropdown
+                                        ref={this.corpusSelect}
+                                        options={this.state.corpusOptions}
+                                        choice={this.state.corpusChoice}
                                     />
 
                                     <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
@@ -1192,10 +1200,10 @@ export default class EditingMenu extends React.Component {
 
                                 <Button
                                     style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                    
-                                    variant="contained" 
-                                    color="success" 
-                                    onClick={() => this.saveChanges()} 
+
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => this.saveChanges()}
                                     startIcon={<SaveIcon />
                                 }>
                                     Guardar
@@ -1203,15 +1211,15 @@ export default class EditingMenu extends React.Component {
 
                                 <Button
                                     style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                    variant="contained" 
-                                    color="success" 
-                                    onClick={() => this.saveChanges(true)} 
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => this.saveChanges(true)}
                                     startIcon={<CheckRoundedIcon />
                                 }>
                                     Terminar
                                 </Button>
                             </Box>
-                        </Box> 
+                        </Box>
 
                     </Box>
                 }
@@ -1219,3 +1227,10 @@ export default class EditingMenu extends React.Component {
         )
     }
 }
+
+EditingMenu.defaultProps = {
+    _private: false,
+    sessionId: ""
+}
+
+export default EditingMenu;
