@@ -160,7 +160,7 @@ def export_pdf(path, force_recreate = False, simple=False):
             page = pdf[i]
             bitmap = page.render(150 / 72)
             pil_image = bitmap.to_pil()
-            pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
+            pil_image.save(f"{path}/{pdf_basename}_{i}$.png")
 
         pdf.close()
 
@@ -175,7 +175,7 @@ def export_pdf(path, force_recreate = False, simple=False):
         dpi_original = 200
         dpi_compressed = 150  # Adjust the DPI value for positioning and scaling
 
-        filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
+        filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.png")]
         images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
         for image in images:
             image_basename = get_file_basename(image)
@@ -245,7 +245,7 @@ def export_pdf(path, force_recreate = False, simple=False):
 
         # Delete compressed images
         for compressed_image in os.listdir(path):
-            if compressed_image.endswith("$.jpg"):
+            if compressed_image.endswith("$.png"):
                 try:
                     os.remove(os.path.join(path, compressed_image))
                 except:
@@ -483,7 +483,7 @@ def create_document_mets(path):
 
             raise ValueError("Error: Not all files are ready to be extracted")
 
-    single_files = [x for x in os.listdir(path) if os.path.isfile(path + "/" + x) and not x.endswith(".json") and not x.endswith(".zip") and not x.endswith(".xml") and not x.endswith(".jpg")]
+    single_files = [x for x in os.listdir(path) if os.path.isfile(path + "/" + x) and not x.endswith(".json") and not x.endswith(".zip") and not x.endswith(".xml") and not x.endswith(".png")]
     extensions = [x.split(".")[-1] for x in single_files]
 
     structMap = ""
@@ -493,12 +493,12 @@ def create_document_mets(path):
     for id, file in enumerate(files):
         export_alto(file)
         structMap += f'\t\t\t<div TYPE="Page" ORDER="{id+1}">' + \
-            f'\n\t\t\t\t<fptr FILEID="JPG{(id+1):05d}"/>' + \
+            f'\n\t\t\t\t<fptr FILEID="PNG{(id+1):05d}"/>' + \
             f'\n\t\t\t\t<fptr FILEID="ALTO{(id+1):05d}"/>' + \
             '\n\t\t\t</div>\n'
 
-    jpg_grp = "\n\t\t\t".join(
-        generate_file(path, f.replace("/ocr_results", "").replace(".json", ".jpg"), "IMG", id + 1, "image/jpeg")
+    png_grp = "\n\t\t\t".join(
+        generate_file(path, f.replace("/ocr_results", "").replace(".json", ".png"), "IMG", id + 1, "image/jpeg")
         for id, f in enumerate(files)
     )
 
@@ -626,7 +626,7 @@ def create_document_mets(path):
     <fileSec>
         <fileGrp ID="JPEGGRP" USE="Images">
             {
-                jpg_grp
+                PNG_grp
             }
         </fileGrp>
         <fileGrp ID="ALTOGRP" USE="Text">

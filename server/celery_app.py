@@ -110,7 +110,7 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
     # Generate the images
     try:
         prepare_file_ocr(path)
-        images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
+        images = sorted([x for x in os.listdir(path) if x.endswith(".png")])
 
         if not os.path.exists(f"{path}/ocr_results"):
             os.mkdir(f"{path}/ocr_results")
@@ -226,7 +226,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
                         box_coords = (left, top, right, bottom)
                         cropped_image = image.crop(box_coords)
-                        cropped_image.save(f"{path}/images/page{page_id}_{id+1}.jpg")
+                        cropped_image.save(f"{path}/images/page{page_id}_{id+1}.png")
 
 
             box_coordinates_list = []
@@ -327,7 +327,9 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             }
 
             update_data(data_folder, data)
+            
 
+            """
             success = get_ner_file(path)
             if success:
                 data["ner"] = {
@@ -340,7 +342,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                     "complete": False,
                     "error": True
                 }
-
+            """
 
             update_data(data_folder, data)
 
