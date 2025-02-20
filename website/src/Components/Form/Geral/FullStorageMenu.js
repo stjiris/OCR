@@ -34,7 +34,6 @@ class FullStorageMenu extends React.Component {
         super(props);
         this.state = {
             open: false,
-            filesystem: props.filesystem,
             message: ""
         }
     }

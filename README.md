@@ -57,19 +57,18 @@ http {
 ```
 
 # Running the system
-## Start the NGINX
-Go to the location where you downloaded NGINX and open `nginx.exe`.
 
-## Start the backend server
-```
-$ cd server
-$ pip install -r requirements.txt
-$ python app.py
-```
+## First-time startup
 
-## Start the website
-```
-$ cd website
-$ npm install
-$ npm start
-```
+Run the following command from the project root:
+`docker-compose -f docker-compose.yml up -d --force-recreate --build`
+
+## Shutting down
+
+Run the following command from the project root:
+`docker-compose -f docker-compose.yml down`
+
+## Restarting
+
+Run the following command from the project root:
+`docker-compose -f docker-compose.yml up -d`

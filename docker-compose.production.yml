@@ -15,16 +15,15 @@ services:
       ES_URL: http://elasticsearch:9200
     command: /app/start
     ports:
-      - "5001:5001"
+      - "5001"  # exposed only to other services
     depends_on:
       elasticsearch:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - files_data:/app/files
+      - files_data:/app/_files
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -38,11 +37,10 @@ services:
       C_FORCE_ROOT: true
     command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
     volumes:
-      - files_data:/app/files
+      - files_data:/app/_files
     depends_on:
       - redis
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -50,20 +48,19 @@ services:
     image: ocr-server
     environment:
       CELERY_BROKER_URL: redis://redis:6379
-    command: celery -A celery_app.celery flower --port=5555
+    command: celery -A celery_app.celery flower --port=5050
     ports:
-      - "5555:5555"
+      - "5050"  # exposed only to other services
     depends_on:
       - redis
     restart: unless-stopped
-
     networks:
       - ocr-network
 
   redis:
     image: redis:7.2
     ports:
-      - "6379:6379"
+      - "6379"  # exposed only to other services
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -71,9 +68,8 @@ services:
       retries: 15
       start_period: 10s
     volumes:
-      - files_data:/app/files
+      - files_data:/app/_files
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -91,7 +87,6 @@ services:
       PUBLIC_URL: /ocr/
       REACT_APP_API_URL: ./api/
     restart: unless-stopped
-
     networks:
       - ocr-network
 
@@ -100,7 +95,7 @@ services:
       context: ./compose/elasticsearch
       dockerfile: Dockerfile
     ports:
-     - "9200:9200"
+      - "9200"  # exposed only to other services
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     environment:
@@ -113,7 +108,6 @@ services:
       retries: 15
       start_period: 10s
     restart: unless-stopped
-
     networks:
       - ocr-network
 
