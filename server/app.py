@@ -3,6 +3,7 @@ import os
 import random
 import shutil
 import string
+from http import HTTPStatus
 
 from threading import Lock, Thread
 
@@ -64,7 +65,7 @@ def format_path(request_data):
     if is_private:
         private_session = request_data["path"].strip("/").split("/")[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(400)  # Bad Request
+            abort(HTTPStatus.BAD_REQUEST)
         return safe_join(PRIVATE_PATH, request_data["path"].strip("/")), True
     else:
         return safe_join(FILES_PATH, request_data["path"].strip("/")), False
@@ -79,15 +80,15 @@ def format_filesystem_path(request_data):
         path = safe_join(PRIVATE_PATH, stripped_path)
         private_session = stripped_path.split("/")[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(400)  # Bad Request
+            abort(HTTPStatus.BAD_REQUEST)
         filesystem_path = safe_join(PRIVATE_PATH, private_session)
         if filesystem_path is None:
-            abort(404)
+            abort(HTTPStatus.NOT_FOUND)
     else:
         path = safe_join(FILES_PATH, request_data["path"].strip("/"))
 
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     return path, filesystem_path, private_session, is_private
 
 
@@ -113,13 +114,13 @@ def abort_bad_request():
         view_func = app.view_functions[request.endpoint]
         if hasattr(view_func, '_requires_arg_path'):
             if "path" not in request.values or request.values["path"] == "":
-                abort(400)  # Bad Request
+                abort(HTTPStatus.BAD_REQUEST)
         elif hasattr(view_func, '_requires_json_path'):
             if "path" not in request.json or request.json["path"] == "":
-                abort(400)  # Bad Request
+                abort(HTTPStatus.BAD_REQUEST)
         elif hasattr(view_func, '_requires_form_path'):
             if "path" not in request.form or request.form["path"] == "":
-                abort(400)  # Bad Request
+                abort(HTTPStatus.BAD_REQUEST)
 
 
 #####################################
@@ -146,7 +147,7 @@ def get_file_system():
 
         return get_filesystem(path, private_session, is_private)
     except FileNotFoundError:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
 
 
 @app.route("/info", methods=["GET"])
@@ -165,7 +166,7 @@ def get_info():
             path = safe_join(FILES_PATH, path)  # TODO: alter front-end and response to get info only from current folder
             return {"info": get_structure_info(FILES_PATH)}
     except FileNotFoundError:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
 
 
 @app.route("/system-info", methods=["GET"])
@@ -186,7 +187,7 @@ def create_folder():
 
     if ("path" not in data  # empty path is valid: new top-level public session folder
         or "folder" not in data or data["folder"] == ''):
-        abort(400)  # Bad Request
+        abort(HTTPStatus.BAD_REQUEST)
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     folder = data["folder"]
@@ -220,7 +221,7 @@ def create_folder():
 def get_file():
     path, is_private = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     totalPages = len(os.listdir(path + "/_ocr_results"))
     doc, words = get_file_parsed(path, is_private)
     return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
@@ -231,7 +232,7 @@ def get_file():
 def get_txt_delimitado():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     return send_file(f"{path}/_text_delimiter.txt")
 
 
@@ -240,7 +241,7 @@ def get_txt_delimitado():
 def get_txt():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     return send_file(f"{path}/_text.txt")
 
 
@@ -249,7 +250,7 @@ def get_txt():
 def get_entities():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     return send_file(f"{path}/_entities.json")
 
 
@@ -277,7 +278,7 @@ def request_entities():
 def get_zip():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     try:
         export_file(path, "zip")
     except Exception as e:
@@ -290,7 +291,7 @@ def get_zip():
 def get_pdf():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     file = export_file(path, "pdf")
     return send_file(file)
 
@@ -300,7 +301,7 @@ def get_pdf():
 def get_pdf_simples():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     file = export_file(path, "pdf", simple=True)
     return send_file(file)
 
@@ -310,7 +311,7 @@ def get_pdf_simples():
 def get_csv():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     return send_file(f"{path}/_index.csv")
 
 
@@ -319,7 +320,7 @@ def get_csv():
 def get_images():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     file = export_file(path, "imgs")
     return send_file(file)
 
@@ -329,7 +330,7 @@ def get_images():
 def get_original():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     file_path = safe_join(path, path.split('/')[-1])  # filename == folder name
     return send_file(file_path)
 
@@ -344,12 +345,12 @@ def delete_path():
         if (os.path.samefile(FILES_PATH, path)
             or os.path.samefile(PRIVATE_PATH, path)
             or os.path.samefile(path, filesystem_path)):
-            abort(404)
+            abort(HTTPStatus.NOT_FOUND)
 
         shutil.rmtree(path)
         delete_structure(es, path)
     except FileNotFoundError:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
 
     return {
         "success": True,
@@ -362,12 +363,12 @@ def delete_path():
 def delete_private_session():
     data = request.json
     if "sessionId" not in data:
-        abort(400)  # Bad Request
+        abort(HTTPStatus.BAD_REQUEST)
     session_id = data["sessionId"]
 
     session_path = safe_join(PRIVATE_PATH, session_id)
     if session_path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
 
     shutil.rmtree(session_path)
     if session_id in private_sessions:
@@ -387,7 +388,7 @@ def set_upload_stuck():
     try:
         data = get_data(f"{path}/_data.json")
     except FileNotFoundError:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     data["upload_stuck"] = True
     update_data(f"{path}/_data.json", data)
 
@@ -449,7 +450,7 @@ def prepare_upload():
 
     data = request.json
     if "name" not in data or data["name"] == '':
-        abort(400)  # Bad Request
+        abort(HTTPStatus.BAD_REQUEST)
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     filename = data["name"]
@@ -505,7 +506,7 @@ def upload_file():
         or "name" not in request.form
         or "counter" not in request.form
         or "totalCount" not in request.form):
-        abort(400)  # Bad Request
+        abort(HTTPStatus.BAD_REQUEST)
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(request.form)
     file = request.files["file"]
@@ -524,7 +525,7 @@ def upload_file():
         try:
             prepare_file_ocr(target_path)
         except Exception:
-            abort(500)
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
         with open(f"{target_path}/_data.json", "w", encoding="utf-8") as f:
             json.dump({
@@ -608,7 +609,7 @@ def perform_ocr():
         try:
             data = get_data(f"{f}/_data.json")
         except FileNotFoundError:
-            abort(500)  # TODO: improve feedback to users on error
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR)  # TODO: improve feedback to users on error
 
         # Delete previous results
         if os.path.exists(f"{f}/_ocr_results"):
@@ -655,7 +656,7 @@ def index_doc():
     data = request.json
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     if PRIVATE_PATH in path:  # avoid indexing private sessions
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     multiple = data["multiple"]
 
     if multiple:
@@ -666,7 +667,7 @@ def index_doc():
         try:
             data_path = get_data(path + "/_data.json")
         except FileNotFoundError:
-            abort(404)
+            abort(HTTPStatus.NOT_FOUND)
         hOCR_path = path + "/_ocr_results"
         files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
 
@@ -717,7 +718,7 @@ def remove_index_doc():
     data = request.json
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     if PRIVATE_PATH in path:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     multiple = data["multiple"]
 
     if multiple:
@@ -728,7 +729,7 @@ def remove_index_doc():
         try:
             data_path = get_data(path + "/_data.json")
         except FileNotFoundError:
-            abort(404)
+            abort(HTTPStatus.NOT_FOUND)
         hOCR_path = path + "/_ocr_results"
         files = [f for f in os.listdir(hOCR_path) if f.endswith(".json")]
 
@@ -750,7 +751,7 @@ def remove_index_doc():
 def submit_text():
     data = request.json
     if "text" not in data or "remakeFiles" not in data:
-        abort(400)  # Bad Request
+        abort(HTTPStatus.BAD_REQUEST)
 
     texts = data["text"]  # estrutura com texto, nome do ficheiro e url da imagem
     remake_files = data["remakeFiles"]
@@ -765,7 +766,7 @@ def submit_text():
         data_path = path + "/_data.json"
         private_session = data_folder_list[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(400)  # Bad Request
+            abort(HTTPStatus.BAD_REQUEST)
         filesystem_path = safe_join(PRIVATE_PATH, private_session)
     else:
         path = safe_join(FILES_PATH, data_folder)
@@ -774,7 +775,7 @@ def submit_text():
     try:
         data = get_data(data_path)
     except FileNotFoundError:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
 
     for t in texts:
         text = t["content"]
@@ -784,7 +785,7 @@ def submit_text():
             filename = safe_join(FILES_PATH, t["original_file"].strip("/"))
 
         if filename is None:
-            abort(404)
+            abort(HTTPStatus.NOT_FOUND)
 
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(text, f, indent=2, ensure_ascii=False)
@@ -806,7 +807,7 @@ def submit_text():
 def check_sintax():
     if ("words" not in request.json
         or "languages" not in request.json):
-        abort(400)  # Bad Request
+        abort(HTTPStatus.BAD_REQUEST)
 
     words = request.json["words"].keys()
     languages = request.json["languages"]
@@ -862,7 +863,7 @@ def create_private_session():
 def validate_private_session():
     data = request.json
     if "sessionId" not in data:
-        abort(400)  # Bad Request
+        abort(HTTPStatus.BAD_REQUEST)
 
     session_id = data["sessionId"]
 
@@ -882,11 +883,11 @@ def validate_private_session():
 def get_layouts():
     path, is_private = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     try:
         layouts = get_file_layouts(path, is_private)
     except FileNotFoundError:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     return {"layouts": layouts}
 
 
@@ -895,16 +896,16 @@ def get_layouts():
 def save_layouts():
     data = request.json
     if ("layouts" not in data):
-        abort(400)  # Bad Request
+        abort(HTTPStatus.BAD_REQUEST)
 
     path, _ = format_path(data)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     layouts = data["layouts"]
     try:
         save_file_layouts(path, layouts)
     except FileNotFoundError:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     return {"success": True}
 
 
@@ -913,12 +914,12 @@ def save_layouts():
 def generate_automatic_layouts():
     path, _ = format_path(request.values)
     if path is None:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     try:
         parse_images(path)
         layouts = get_file_layouts(path)
     except FileNotFoundError:
-        abort(404)
+        abort(HTTPStatus.NOT_FOUND)
     return {"layouts": layouts}
 
 
