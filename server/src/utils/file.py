@@ -16,6 +16,10 @@ from src.utils.export import export_file
 from src.utils.export import json_to_text
 from string import punctuation
 
+OCR_RASTER_IMAGE_EXT = os.getenv("OCR_RASTER_IMAGE_EXT", ".png")  # Default to .png if not set
+OCR_RASTER_IMAGE_FORMAT = os.getenv("OCR_RASTER_IMAGE_FORMAT", "PNG")
+OCR_RASTER_IMAGE_SAVE_OPTIONS = json.loads(os.getenv("OCR_RASTER_IMAGE_SAVE_OPTIONS", '{"compress_level":0, "optimize":false}'))
+
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
 ##################################################
@@ -425,8 +429,8 @@ def prepare_file_ocr(path):
                 page = pdf[i]
                 bitmap = page.render(200 / 72)
                 pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/{basename}_{i}.png", compress_level=0, optimize=False)
-
+                filename = f"{path}/{basename}_{i}{OCR_RASTER_IMAGE_EXT}"
+                pil_image.save(filename, format=OCR_RASTER_IMAGE_FORMAT, **OCR_RASTER_IMAGE_SAVE_OPTIONS)
             pdf.close()
 
         elif extension in ["jpeg", "jpg", "png"]:

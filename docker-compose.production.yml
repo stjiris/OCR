@@ -13,6 +13,9 @@ services:
       FLASK_ENV: production
       FLASK_DEBUG: 0
       ES_URL: http://elasticsearch:9200
+      OCR_RASTER_IMAGE_EXT: '.png'
+      OCR_RASTER_IMAGE_FORMAT: 'PNG'
+      OCR_RASTER_IMAGE_SAVE_OPTIONS: '{"compress_level":0, "optimize":false}'
     command: /app/start
     ports:
       - "5001:5001"
@@ -36,6 +39,9 @@ services:
       CELERY_BROKER_URL: redis://redis:6379
       CELERY_RESULT_BACKEND: redis://redis:6379
       C_FORCE_ROOT: true
+      OCR_RASTER_IMAGE_EXT: '.png'
+      OCR_RASTER_IMAGE_FORMAT: 'PNG'
+      OCR_RASTER_IMAGE_SAVE_OPTIONS: '{"compress_level":0, "optimize":false}'
     command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
     volumes:
       - files_data:/app/files
