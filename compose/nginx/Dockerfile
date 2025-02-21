@@ -1,4 +1,4 @@
-FROM node:20.8.1 AS builder
+FROM node:lts AS builder
 
 COPY ./website/package* .
 
@@ -8,7 +8,7 @@ COPY ./website .
 
 RUN npm run build
 
-FROM nginx:latest
+FROM nginx:stable
 
 COPY --from=builder /build/ /usr/share/nginx/html
 
