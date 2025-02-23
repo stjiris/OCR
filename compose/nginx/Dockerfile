@@ -12,6 +12,6 @@ FROM nginx:stable
 
 COPY --from=builder /build/ /usr/share/nginx/html
 
-COPY ./compose/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./compose/nginx/nginx.conf.template /etc/nginx/templates/nginx.conf.template
 
 CMD ["nginx","-g","daemon off;"]

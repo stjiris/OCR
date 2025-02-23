@@ -84,6 +84,8 @@ services:
     volumes:
       - files_data:/usr/share/nginx/html/files
     environment:
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+      CLIENT_MAX_BODY_SIZE: 200M
       PUBLIC_URL: /ocr/
       REACT_APP_API_URL: ./api/
     restart: unless-stopped
