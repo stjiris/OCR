@@ -25,7 +25,7 @@ services:
       - files_data:/app/_files
     restart: unless-stopped
     networks:
-      - ocr-network
+      - internal-network
 
   worker:
     build:
@@ -42,7 +42,7 @@ services:
       - redis
     restart: unless-stopped
     networks:
-      - ocr-network
+      - internal-network
 
   flower:
     image: ocr-server
@@ -58,7 +58,7 @@ services:
       - redis
     restart: unless-stopped
     networks:
-      - ocr-network
+      - internal-network
 
   redis:
     image: redis:7.2
@@ -74,7 +74,7 @@ services:
       - files_data:/app/_files
     restart: unless-stopped
     networks:
-      - ocr-network
+      - internal-network
 
   nginx:
     build:
@@ -94,7 +94,8 @@ services:
       NODE_ENV: development
     restart: unless-stopped
     networks:
-      - ocr-network
+      - internal-network
+      - external-network
 
   elasticsearch:
     build:
@@ -115,8 +116,11 @@ services:
       start_period: 10s
     restart: unless-stopped
     networks:
-      - ocr-network
+      - internal-network
 
 networks:
-  ocr-network:
+  internal-network:
+    driver: bridge
+    internal: true
+  external-network:
     driver: bridge
