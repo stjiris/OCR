@@ -14,7 +14,7 @@ services:
       FLASK_DEBUG: 0
       ES_URL: http://elasticsearch:9200
     command: /app/start
-    ports:
+    expose:
       - "5001"  # exposed only to other services
     depends_on:
       elasticsearch:
@@ -49,7 +49,7 @@ services:
     environment:
       CELERY_BROKER_URL: redis://redis:6379
     command: celery -A celery_app.celery flower --port=5050
-    ports:
+    expose:
       - "5050"  # exposed only to other services
     depends_on:
       - redis
@@ -59,7 +59,7 @@ services:
 
   redis:
     image: redis:7.2
-    ports:
+    expose:
       - "6379"  # exposed only to other services
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -96,7 +96,7 @@ services:
     build:
       context: ./compose/elasticsearch
       dockerfile: Dockerfile
-    ports:
+    expose:
       - "9200"  # exposed only to other services
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
