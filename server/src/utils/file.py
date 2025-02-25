@@ -154,7 +154,7 @@ def get_file_layouts(path, is_private):
         if is_private:
             folder_url = f"/private/{path.replace(PRIVATE_PATH, '')}"
         else:
-            folder_url = f"/image/{path.replace(FILES_PATH, '')}"
+            folder_url = f"/images/{path.replace(FILES_PATH, '')}"
         page_url = IMAGE_PREFIX + folder_url + f"/{basename}_{page}.jpg"
 
         if os.path.exists(filename):
