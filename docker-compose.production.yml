@@ -43,6 +43,7 @@ services:
     restart: unless-stopped
     networks:
       - internal-network
+      - external-network
 
   flower:
     image: ocr-server
