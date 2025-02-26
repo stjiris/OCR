@@ -33,7 +33,6 @@ class ConfirmLeave extends React.Component {
         super(props);
         this.state = {
             open: false,
-            page: props.page,
         }
 
         this.textField = React.createRef();
@@ -46,7 +45,7 @@ class ConfirmLeave extends React.Component {
     }
 
     confirm() {
-        this.state.page.leave();
+        this.props.leaveFunc();
     }
 
     render() {

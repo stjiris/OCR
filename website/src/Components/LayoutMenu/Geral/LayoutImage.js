@@ -60,11 +60,8 @@ class LayoutBox extends React.Component {
     constructor(props) {
         super(props);
         this.state = {  // TODO: use props instead of state where possible
-            index: props.index,
-
             layoutImage: props.layoutImage,
             view: props.view,
-            image: props.image,  // TODO: remove this reference and use strictly necessary props
 
             top: props.top,
             left: props.left,
@@ -76,6 +73,7 @@ class LayoutBox extends React.Component {
             checked: props.checked || false,
             copyId: props.copyId,
         }
+        this.imageRef = props.imageRef;
     }
 
     componentDidMount() {
@@ -87,7 +85,7 @@ class LayoutBox extends React.Component {
     }
 
     imageToScreenCoordinates(x, y) {
-        var image = this.state.image.current;
+        const image = this.imageRef.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
         var ratioY = image.naturalHeight / image.offsetHeight;
@@ -102,7 +100,7 @@ class LayoutBox extends React.Component {
     }
 
     screenToImageCoordinates(x, y) {
-        var image = this.state.image.current;
+        const image = this.imageRef.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
         var ratioY = image.naturalHeight / image.offsetHeight;
@@ -251,8 +249,6 @@ export default class LayoutImage extends React.Component {
         super(props);
         this.state = {
             menu: props.menu,
-            image: props.image,
-            pageIndex: props.pageIndex,
             boxHeight: "450px",
             height: "450px",
 
@@ -269,7 +265,7 @@ export default class LayoutImage extends React.Component {
             ignoreRefs: [],
         }
 
-        this.image = React.createRef();
+        this.imageRef = React.createRef();
         this.view = React.createRef();
         this.preview = React.createRef();
     }
@@ -288,13 +284,13 @@ export default class LayoutImage extends React.Component {
             index={index}
             layoutImage={this}
             view={this.view}
-            image={this.image}
+            imageRef={this.imageRef}
             top={box.top}
             left={box.left}
             bottom={box.bottom}
             right={box.right}
             type={type}
-            id={box.id || type[0].toUpperCase() + this.state.pageIndex + "." + index}
+            id={box.id || type[0].toUpperCase() + this.props.pageIndex + "." + index}
             checked={box.checked || checked || false}
             copyId={box.copyId || copyId}
         />
@@ -384,13 +380,13 @@ export default class LayoutImage extends React.Component {
     }
 
     screenToImageCoordinates(x, y) {
-        var image = this.image.current;
+        const image = this.imageRef.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
         var ratioY = image.naturalHeight / image.offsetHeight;
 
-        var domX = x - this.image.current.offsetLeft;
-        var domY = y - this.image.current.offsetTop;
+        const domX = x - this.imageRef.current.offsetLeft;
+        const domY = y - this.imageRef.current.offsetTop;
 
         var imgX = domX * ratioX;
         var imgY = domY * ratioY;
@@ -455,29 +451,13 @@ export default class LayoutImage extends React.Component {
     render() {
         return (
             <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                    <IconButton disabled={this.state.currentZoom === this.state.maxZoom} onClick={() => this.zoomIn()}>
-                        <ZoomInRoundedIcon/>
-                    </IconButton>
-                    <IconButton disabled={this.state.currentZoom === 1} onClick={() => this.zoomOut()}>
-                        <ZoomOutRoundedIcon />
-                    </IconButton>
-                </Box>
-
                 <Box ref={this.view}
                     draggable
-                    sx={{
-                        position: 'relative',
-                        height: this.state.boxHeight,
-                        width: `${this.getWindowWidth()}px`,
-                        overflow: 'scroll',
-                        border: '1px solid grey'
-                    }}
-                >
+                    className="pageImage">
                     <img
-                        ref={this.image}
-                        src={this.state.image}
-                        alt={`Página de ${this.state.image}`}
+                        ref={this.imageRef}
+                        src={this.props.image}
+                        alt={`Página de ${this.props.image}`}
                         style={{
                             display: 'block',
                             marginLeft: 'auto',
@@ -510,7 +490,7 @@ export default class LayoutImage extends React.Component {
                         })
                     }
 
-                    <LayoutPreview ref={this.preview} view={this.view} image={this.image} top={100} left={50} bottom={200} right={150}/>
+                    <LayoutPreview ref={this.preview} view={this.view} image={this.imageRef} top={100} left={50} bottom={200} right={150}/>
                 </Box>
             </Box>
         )

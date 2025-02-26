@@ -34,9 +34,8 @@ class LayoutMenu extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			filename: props.filename,
 			contents: [],
-			page: 1,
+			currentPage: 1,
 
 			boxes: [],
 			uncommittedChanges: false,
@@ -63,6 +62,10 @@ class LayoutMenu extends React.Component {
 		this.textBox = React.createRef();
 		this.imageBox = React.createRef();
 		this.ignoreBox = React.createRef();
+
+        this.leave = this.leave.bind(this);
+        this.zoomIn = this.zoomIn.bind(this);
+        this.zoomOut = this.zoomOut.bind(this);
 	}
 
 	preventExit(event) {
@@ -71,7 +74,7 @@ class LayoutMenu extends React.Component {
 	}
 
 	componentDidMount() {
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
         fetch(process.env.REACT_APP_API_URL + 'get-layouts?' + is_private + 'path=' + path, {
 			method: 'GET'
@@ -81,16 +84,16 @@ class LayoutMenu extends React.Component {
 					(a["page_number"] > b["page_number"]) ? 1 : -1
 				)
 
-				for (var i = 0; i < contents.length; i++) {
-					var groups = contents[i]["boxes"];
-					for (var j = 0; j < groups.length; j++) {
+				for (let i = 0; i < contents.length; i++) {
+					const groups = contents[i]["boxes"];
+					for (let j = 0; j < groups.length; j++) {
 						groups[j]["checked"] = false;
 					}
 				}
 
 				this.setState({ contents: contents }, () => {
 					this.generateBoxes();
-					this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+					this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 					this.updateTextMode();
 				});
 			});
@@ -98,7 +101,7 @@ class LayoutMenu extends React.Component {
 		this.interval = setInterval(() => {
 			if (!this.state.segmentLoading) return;
 
-            const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+            const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
             const is_private = this.props._private ? '_private=true&' : '';
             fetch(process.env.REACT_APP_API_URL + 'get-layouts?' + is_private + 'path=' + path, {
 				method: 'GET'
@@ -110,16 +113,16 @@ class LayoutMenu extends React.Component {
 						(a["page_number"] > b["page_number"]) ? 1 : -1
 					)
 
-					for (var i = 0; i < contents.length; i++) {
-						var groups = contents[i]["boxes"];
-						for (var j = 0; j < groups.length; j++) {
+					for (let i = 0; i < contents.length; i++) {
+						const groups = contents[i]["boxes"];
+						for (let j = 0; j < groups.length; j++) {
 							groups[j]["checked"] = false;
 						}
 					}
 
 					this.setState({ contents: contents, segmentLoading: false }, () => {
 						this.generateBoxes();
-						this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+						this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 						this.updateTextMode();
 					});
 				});
@@ -129,24 +132,48 @@ class LayoutMenu extends React.Component {
 	addBoxToAllPages(box) {
 		var contents = this.state.contents;
 		for (var i = 0; i < contents.length; i++) {
-			if (this.state.page - 1 === i) continue;
+			if (this.state.currentPage - 1 === i) continue;
 			contents[i]["boxes"].push(box);
 		}
 		this.setState({ contents: contents });
 	}
 
 	changePage(increment) {
-		var boxes = this.image.current.getAllBoxes();
-		var contents = this.state.contents;
-		contents[this.state.page - 1]["boxes"] = boxes;
+		const boxes = this.image.current.getAllBoxes();
+		const contents = this.state.contents;
+		contents[this.state.currentPage - 1]["boxes"] = boxes;
 
-		var page = this.state.page + increment;
-		this.setState({ page: page, contents: contents }, () => {
+		const newCurrentPage = this.state.currentPage + increment;
+		this.setState({ currentPage: newCurrentPage, contents: contents }, () => {
 			this.generateBoxes();
 			this.image.current.loadBoxes();
 			this.updateTextMode();
 		});
 	}
+
+    firstPage() {
+        const boxes = this.image.current.getAllBoxes();
+        const contents = this.state.contents;
+        contents[this.state.currentPage - 1]["boxes"] = boxes;
+
+        this.setState({ currentPage: 1, contents: contents }, () => {
+            this.generateBoxes();
+            this.image.current.loadBoxes();
+            this.updateTextMode();
+        });
+    }
+
+    lastPage() {
+        const boxes = this.image.current.getAllBoxes();
+        const contents = this.state.contents;
+        contents[this.state.currentPage - 1]["boxes"] = boxes;
+
+        this.setState({ currentPage: this.state.contents.length, contents: contents }, () => {
+            this.generateBoxes();
+            this.image.current.loadBoxes();
+            this.updateTextMode();
+        });
+    }
 
 	updateBoxes(groups) {
 		var contents = this.state.contents;
@@ -162,7 +189,7 @@ class LayoutMenu extends React.Component {
 			}
 		}
 
-		contents[this.state.page - 1]["boxes"] = groups;
+		contents[this.state.currentPage - 1]["boxes"] = groups;
 
 		// * Code to reflect changes in copy boxes (removed as requested per Prof. Borbinha's instructions)
 		// for (i = 0; i < groups.length; i++) {
@@ -196,9 +223,8 @@ class LayoutMenu extends React.Component {
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
 			this.generateBoxes();
-			// this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			// this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
-
 
 		// this.setState({contents: contents, uncommittedChanges: true}, this.generateBoxes);
 		window.addEventListener('beforeunload', this.preventExit);
@@ -219,10 +245,10 @@ class LayoutMenu extends React.Component {
 		var boxes = this.image.current.getAllBoxes();
 		var contents = this.state.contents;
 		boxes.splice(this.typeIndexToGlobalIndex(boxes, type, index), 1);
-		contents[this.state.page - 1]["boxes"] = boxes;
+		contents[this.state.currentPage - 1]["boxes"] = boxes;
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 			this.generateBoxes();
 			window.addEventListener('beforeunload', this.preventExit);
 		});
@@ -247,9 +273,9 @@ class LayoutMenu extends React.Component {
 			pageBoxes.push(box);
 		}
 
-		contents[this.state.page - 1]["boxes"] = pageBoxes;
+		contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 			this.generateBoxes();
 			window.addEventListener('beforeunload', this.preventExit);
 		});
@@ -332,10 +358,10 @@ class LayoutMenu extends React.Component {
 		}
 
 		pageBoxes.splice(j, 0, box);
-		contents[this.state.page - 1]["boxes"] = pageBoxes;
+		contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 			this.generateBoxes();
 			window.addEventListener('beforeunload', this.preventExit);
 		});
@@ -343,7 +369,7 @@ class LayoutMenu extends React.Component {
 
 	createBoxLine(box, type, index) {
 		return {
-			id: box.id || type[0].toUpperCase() + this.state.page + "." + index,
+			id: box.id || type[0].toUpperCase() + this.state.currentPage + "." + index,
 			pxs: `${Math.round(box.right - box.left)} x ${Math.round(box.bottom - box.top)}`,
 			type: type,
 			size: box
@@ -351,8 +377,8 @@ class LayoutMenu extends React.Component {
 	}
 
 	generateBoxes() {
-		var boxes = this.state.contents[this.state.page - 1]["boxes"];
-		var newBoxes = [];
+		const boxes = this.state.contents[this.state.currentPage - 1]["boxes"];
+		const newBoxes = [];
 
 		for (var i = 0; i < boxes.length; i++) {
 			var type = boxes[i]["type"] || "text";
@@ -379,7 +405,7 @@ class LayoutMenu extends React.Component {
 	}
 
 	saveLayout(closeWindow = false) {
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
 		fetch(process.env.REACT_APP_API_URL + 'save-layouts', {
 			method: 'POST',
 			headers: {
@@ -412,7 +438,7 @@ class LayoutMenu extends React.Component {
 		this.successNot.current.setMessage("A gerar layouts automaticamente... Por favor aguarde.");
 		this.successNot.current.open();
 
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
 		fetch(process.env.REACT_APP_API_URL + 'generate-automatic-layouts?' + is_private + 'path=' + path, {
 			method: 'GET'
@@ -424,7 +450,7 @@ class LayoutMenu extends React.Component {
 
 				this.setState({ contents: contents, segmentLoading: false }, () => {
 					this.generateBoxes();
-					this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+					this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 				});
 			});
 	}
@@ -436,7 +462,7 @@ class LayoutMenu extends React.Component {
 		}
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
@@ -447,7 +473,7 @@ class LayoutMenu extends React.Component {
 
 	commitAllCheckBoxes(e) {
 		var contents = this.state.contents;
-		var boxes = contents[this.state.page - 1]["boxes"];
+		var boxes = contents[this.state.currentPage - 1]["boxes"];
 
 		for (var i = 0; i < boxes.length; i++) {
 			boxes[i]["checked"] = e.target.checked;
@@ -455,13 +481,13 @@ class LayoutMenu extends React.Component {
 
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	changeChecked(e, index) {
 		var contents = this.state.contents;
-		var boxes = contents[this.state.page - 1]["boxes"];
+		var boxes = contents[this.state.currentPage - 1]["boxes"];
 		boxes[index]["checked"] = e.target.checked;
 
 		// Get types of all boxes checked
@@ -481,16 +507,16 @@ class LayoutMenu extends React.Component {
 
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	allCheckboxesAreChecked() {
 		var contents = this.state.contents;
 		if (contents.length === 0) return false;
-		if (contents[this.state.page - 1] === undefined) return false;
+		if (contents[this.state.currentPage - 1] === undefined) return false;
 
-		var boxes = contents[this.state.page - 1]["boxes"];
+		var boxes = contents[this.state.currentPage - 1]["boxes"];
 		if (boxes.length === 0) return false;
 
 		for (var i = 0; i < boxes.length; i++) {
@@ -531,7 +557,7 @@ class LayoutMenu extends React.Component {
 
 	deleteCheckedBoxes() {
 		var contents = this.state.contents;
-		var boxes = contents[this.state.page - 1]["boxes"];
+		var boxes = contents[this.state.currentPage - 1]["boxes"];
 
 		var keeping = [];
 
@@ -541,16 +567,16 @@ class LayoutMenu extends React.Component {
 			}
 		}
 
-		contents[this.state.page - 1]["boxes"] = this.renameGroups(keeping, this.state.page);
+		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	makeBoxCopy() {
 		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		var groups = contents[this.state.currentPage - 1]["boxes"];
 
 		for (var i = 0; i < groups.length; i++) {
 			if (groups[i].checked) {
@@ -573,13 +599,13 @@ class LayoutMenu extends React.Component {
 
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	groupCheckedBoxes() {
 		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		var groups = contents[this.state.currentPage - 1]["boxes"];
 
 		var newGroups = [];
 		var joined = [];
@@ -603,16 +629,16 @@ class LayoutMenu extends React.Component {
 
 		newGroups.splice(insertIndex, 0, newGroup);
 
-		contents[this.state.page - 1]["boxes"] = this.renameGroups(newGroups, this.state.page);
+		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	splitCheckedBoxes() {
 		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		var groups = contents[this.state.currentPage - 1]["boxes"];
 
 		var newGroups = [];
 
@@ -630,11 +656,11 @@ class LayoutMenu extends React.Component {
 			}
 		}
 
-		contents[this.state.page - 1]["boxes"] = this.renameGroups(newGroups, this.state.page);
+		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
@@ -642,7 +668,7 @@ class LayoutMenu extends React.Component {
 		this.setState({ typeSelected: type });
 
 		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		var groups = contents[this.state.currentPage - 1]["boxes"];
 
 		for (var i = 0; i < groups.length; i++) {
 			if (groups[i].checked) {
@@ -650,66 +676,66 @@ class LayoutMenu extends React.Component {
 			}
 		}
 
-		contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	goUp(index) {
 		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		var groups = contents[this.state.currentPage - 1]["boxes"];
 
 		var group = groups[index];
 		groups.splice(index, 1);
 		groups.splice(index - 1, 0, group);
 
-		contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	goDown(index) {
 		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		var groups = contents[this.state.currentPage - 1]["boxes"];
 
 		var group = groups[index];
 		groups.splice(index, 1);
 		groups.splice(index + 1, 0, group);
 
-		contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	switchType(box) {
 		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		var groups = contents[this.state.currentPage - 1]["boxes"];
 
 		var group = groups[box];
 		var newType = group["type"] === "image" ? (this.state.textModeState ? "text" : "remove") : "image";
 		group["type"] = newType;
 
 		groups[box] = group;
-		contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	switchMode() {
 		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		var groups = contents[this.state.currentPage - 1]["boxes"];
 
 		for (var i = 0; i < groups.length; i++) {
 			if (groups[i]["type"] !== "image") {
@@ -717,17 +743,17 @@ class LayoutMenu extends React.Component {
 			}
 		}
 
-		contents[this.state.page - 1]["boxes"] = this.renameGroups(groups, this.state.page);
+		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents, textModeState: !this.state.textModeState }, () => {
 			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.page - 1]["boxes"]);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
 	updateTextMode() {
-		var contents = this.state.contents;
-		var groups = contents[this.state.page - 1]["boxes"];
+		const contents = this.state.contents;
+		const groups = contents[this.state.currentPage - 1]["boxes"];
 
 		var mode = true;
 		for (var i = 0; i < groups.length; i++) {
@@ -743,24 +769,37 @@ class LayoutMenu extends React.Component {
 		this.setState({ textModeState: mode });
 	}
 
-	render() {
-		var noCheckBoxActive = false;
-		if (this.state.contents.length !== 0) {
-			noCheckBoxActive = !this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"]);
-			var groupDisabled = noCheckBoxActive || this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined) ||
-				this.state.contents[this.state.page - 1]["boxes"].map(e => e["checked"]).filter(Boolean).length <= 1 ||
-				this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["type"] !== "text");
-			var separateDisabled = noCheckBoxActive || this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["squares"].length === 1 && e["copyId"] === undefined);
+    zoomIn() {
+        this.image.current.zoomIn();
+    }
 
-			var copyDisabled = noCheckBoxActive || this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["squares"].length !== 1)
-			// var typeDisabled = noCheckBoxActive || this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
+    zoomOut() {
+        this.image.current.zoomOut();
+    }
+
+	render() {
+		let noCheckBoxActive = false;
+        let groupDisabled = false;
+        let separateDisabled = false;
+        let copyDisabled = false;
+		if (this.state.contents.length !== 0) {
+			noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
+            groupDisabled = noCheckBoxActive
+                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
+                            || this.state.contents[this.state.currentPage - 1]["boxes"].map(e => e["checked"]).filter(Boolean).length <= 1
+                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["type"] !== "text");
+			separateDisabled = noCheckBoxActive
+                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["squares"].length === 1 && e["copyId"] === undefined);
+			copyDisabled = noCheckBoxActive
+                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["squares"].length !== 1)
+			// var typeDisabled = noCheckBoxActive || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
 		}
 
 		return (
 			<>
 				<Notification message={""} severity={"warning"} ref={this.warningNot} />
 				<Notification message={""} severity={"success"} ref={this.successNot} />
-				<ConfirmLeave page={this} ref={this.confirmLeave} />
+				<ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
 				<Box sx={{
 					ml: '0.5rem',
 					mr: '0.5rem',
@@ -777,7 +816,6 @@ class LayoutMenu extends React.Component {
 					borderBottom: '1px solid black',
 				}}>
 					<Button
-						disabled={this.state.buttonsDisabled}
 						variant="contained"
 						startIcon={<UndoIcon />}
 						onClick={() => this.goBack()}
@@ -796,31 +834,18 @@ class LayoutMenu extends React.Component {
 
 					<Box>
 						<Button
-							disabled={this.state.buttonsDisabled}
 							variant="contained"
+                            className="menuFunctionButton"
 							onClick={() => this.cleanAllBoxes()}
 							startIcon={<DeleteRoundedIcon />}
-							sx={{
-								border: '1px solid black',
-								mr: '1rem',
-								height: '2rem',
-								textTransform: 'none',
-								fontSize: '0.75rem',
-							}}
 						>
 							Limpar Tudo
 						</Button>
 						<Button
-							disabled={this.state.segmentLoading || this.state.buttonsDisabled}
+							disabled={this.state.segmentLoading}
 							variant="contained"
+                            className="menuFunctionButton"
 							onClick={() => this.GenerateLayoutAutomatically()}
-							sx={{
-								border: '1px solid black',
-								mr: '1rem',
-								height: '2rem',
-								textTransform: 'none',
-								fontSize: '0.75rem',
-							}}
 						>
 							Segmentar automaticamente
 							{
@@ -830,32 +855,19 @@ class LayoutMenu extends React.Component {
 							}
 						</Button>
 						<Button
-							disabled={this.state.buttonsDisabled}
 							variant="contained"
+                            className="menuFunctionButton"
 							color="success"
 							startIcon={<SaveIcon />}
-							sx={{
-								border: '1px solid black',
-								height: '2rem',
-								textTransform: 'none',
-								mr: '1rem',
-								fontSize: '0.75rem',
-							}}
 							onClick={() => this.saveLayout()}
 						>
 							Guardar
 						</Button>
 						<Button
-							disabled={this.state.buttonsDisabled}
 							variant="contained"
 							color="success"
-							startIcon={<CheckRoundedIcon />}
-							sx={{
-								border: '1px solid black',
-								height: '2rem',
-								textTransform: 'none',
-								fontSize: '0.75rem',
-							}}
+                            className="menuFunctionButton noMargin"
+                            startIcon={<CheckRoundedIcon />}
 							onClick={() => this.saveLayout(true)}
 						>
 							Terminar
@@ -864,37 +876,73 @@ class LayoutMenu extends React.Component {
 				</Box>
 
 				<Box ref={this.menu} sx={{
-					display: 'flex',
-					flexDirection: 'row',
+					display: "flex",
+					flexDirection: "row",
+                    ml: "1rem",
+                    mr: "1rem"
 				}}>
 					<Box sx={{
 						display: 'flex',
 						flexDirection: 'column',
 					}}>
-						<Box>
+						<Box sx={{display: "flex", flexDirection: "row"}}>
 							{
 								this.state.contents.length === 0
 									? null
 									: <LayoutImage ref={this.image}
                                                    menu={this}
-                                                   boxesCoords={this.state.contents[this.state.page - 1]["boxes"]}
-                                                   key={this.state.page - 1}
-                                                   pageIndex={this.state.page}
-                                                   image={this.state.contents[this.state.page - 1]["page_url"]} />
+                                                   boxesCoords={this.state.contents[this.state.currentPage - 1]["boxes"]}
+                                                   key={this.state.currentPage - 1}
+                                                   pageIndex={this.state.currentPage}
+                                                   image={this.state.contents[this.state.currentPage - 1]["page_url"]} />
 							}
 						</Box>
 						<Box sx={{
-							display: 'flex',
-							flexDirection: 'row',
-							justifyContent: 'center',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mt: '5px'
 						}}>
-							<IconButton disabled={this.state.page === 1} onClick={() => this.changePage(-1)}>
-								<ArrowBackIosRoundedIcon />
-							</IconButton>
-							<p>Page {this.state.page} / {this.state.contents.length}</p>
-							<IconButton disabled={this.state.page === this.state.contents.length} onClick={() => this.changePage(1)}>
-								<ArrowForwardIosRoundedIcon />
-							</IconButton>
+                            <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut}/>
+
+                            <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
+                                <IconButton
+                                    disabled={this.state.currentPage === 1}
+                                    sx={{marginRight: "10px", p: 0}}
+                                    onClick={() => this.firstPage()}
+                                >
+                                    <FirstPageIcon />
+                                </IconButton>
+
+                                <IconButton
+                                    disabled={this.state.currentPage === 1}
+                                    sx={{marginRight: "10px", p: 0}}
+                                    onClick={() => this.changePage(-1)}
+                                >
+                                    <KeyboardArrowLeftIcon />
+                                </IconButton>
+
+                                <span style={{margin: "0px 10px"}}>
+                                    Página {this.state.currentPage} / {this.state.contents.length}
+                                </span>
+
+                                <IconButton
+                                    disabled={this.state.currentPage === this.state.contents.length}
+                                    sx={{marginLeft: "10px", p: 0}}
+                                    onClick={() => this.changePage(1)}
+                                >
+                                    <KeyboardArrowRightIcon />
+                                </IconButton>
+
+                                <IconButton
+                                    disabled={this.state.currentPage === this.state.contents.length}
+                                    sx={{marginLeft: "10px", p: 0}}
+                                    onClick={() => this.lastPage()}
+                                >
+                                    <LastPageIcon />
+                                </IconButton>
+                            </Box>
 						</Box>
 					</Box>
 
@@ -979,10 +1027,11 @@ class LayoutMenu extends React.Component {
 								</TableHead>
 								<TableBody>
 									{
-										this.state.contents.length === 0 || this.state.contents[this.state.page - 1] === undefined
+										this.state.contents.length === 0 || this.state.contents[this.state.currentPage - 1] === undefined
 											? null
-											: this.state.contents[this.state.page - 1]["boxes"].map((group, index) => {
-												return <TableRow key={index + " " + group.checked} sx={{ borderBottom: '1px solid #aaa' }}>
+											: this.state.contents[this.state.currentPage - 1]["boxes"].map((group, index) => {
+												return (
+                                                <TableRow key={index + " " + group.checked} sx={{ borderBottom: '1px solid #aaa' }}>
 													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
 														<Checkbox checked={group.checked} sx={{ m: 0, p: 0 }} onClick={(e) => this.changeChecked(e, index)} />
 													</TableCell>
@@ -1046,7 +1095,7 @@ class LayoutMenu extends React.Component {
 														/>
 														<span>Imagem</span>
 													</TableCell>
-												</TableRow>
+												</TableRow>)
 											})
 									}
 								</TableBody>
