@@ -87,14 +87,14 @@ class LayoutBox extends React.Component {
     imageToScreenCoordinates(x, y) {
         const image = this.imageRef.current;
 
-        var ratioX = image.naturalWidth / image.offsetWidth;
-        var ratioY = image.naturalHeight / image.offsetHeight;
+        const ratioX = image.naturalWidth / image.offsetWidth;
+        const ratioY = image.naturalHeight / image.offsetHeight;
 
-        var domX = x / ratioX;
-        var domY = y / ratioY;
+        const domX = x / ratioX;
+        const domY = y / ratioY;
 
-        var screenX = domX + image.offsetLeft;
-        var screenY = domY + image.offsetTop;
+        const screenX = domX + image.offsetLeft;
+        const screenY = domY + image.offsetTop;
 
         return {x: screenX, y: screenY};
     }
@@ -102,14 +102,14 @@ class LayoutBox extends React.Component {
     screenToImageCoordinates(x, y) {
         const image = this.imageRef.current;
 
-        var ratioX = image.naturalWidth / image.offsetWidth;
-        var ratioY = image.naturalHeight / image.offsetHeight;
+        const ratioX = image.naturalWidth / image.offsetWidth;
+        const ratioY = image.naturalHeight / image.offsetHeight;
 
-        var domX = x - image.offsetLeft;
-        var domY = y - image.offsetTop;
+        const domX = x - image.offsetLeft;
+        const domY = y - image.offsetTop;
 
-        var imgX = domX * ratioX;
-        var imgY = domY * ratioY;
+        const imgX = domX * ratioX;
+        const imgY = domY * ratioY;
 
         return {x: imgX, y: imgY};
     }
@@ -297,18 +297,18 @@ export default class LayoutImage extends React.Component {
     }
 
     loadBoxes() {
-        var boxes = [];
-        var refs = [];
+        const boxes = [];
+        const refs = [];
 
         this.state.boxesCoords.forEach((group) => {
-            var type = group.type || "text";
-            var checked = group.checked || false;
-            var copyId = group.copyId || undefined;
+            const type = group.type || "text";
+            const checked = group.checked || false;
+            const copyId = group.copyId || undefined;
 
-            var groupRefs = [];
+            const groupRefs = [];
 
             group.squares.forEach((box) => {
-                var ref = React.createRef();
+                const ref = React.createRef();
                 boxes.push(this.createLayoutBox(ref, group.squares.length + 1, box, type, checked, copyId));
                 groupRefs.push(ref);
             });
@@ -349,11 +349,11 @@ export default class LayoutImage extends React.Component {
     }
 
     recreateBoxes() {
-        var boxes = [];
+        const boxes = [];
         // var imageBoxes = [];
         // var ignoreBoxes = [];
 
-        var refs = [...this.state.boxRefs];
+        const refs = [...this.state.boxRefs];
         // var imageRefs = [...this.state.imageRefs];
         // var ignoreRefs = [...this.state.ignoreRefs];
         refs.forEach((groupRefs) => {
@@ -382,14 +382,14 @@ export default class LayoutImage extends React.Component {
     screenToImageCoordinates(x, y) {
         const image = this.imageRef.current;
 
-        var ratioX = image.naturalWidth / image.offsetWidth;
-        var ratioY = image.naturalHeight / image.offsetHeight;
+        const ratioX = image.naturalWidth / image.offsetWidth;
+        const ratioY = image.naturalHeight / image.offsetHeight;
 
         const domX = x - this.imageRef.current.offsetLeft;
         const domY = y - this.imageRef.current.offsetTop;
 
-        var imgX = domX * ratioX;
-        var imgY = domY * ratioY;
+        const imgX = domX * ratioX;
+        const imgY = domY * ratioY;
 
         return {x: imgX, y: imgY};
     }

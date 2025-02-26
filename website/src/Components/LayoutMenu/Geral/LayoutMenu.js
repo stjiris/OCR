@@ -80,7 +80,7 @@ class LayoutMenu extends React.Component {
 			method: 'GET'
 		}).then(response => { return response.json() })
 			.then(data => {
-				var contents = data["layouts"].sort((a, b) =>
+				const contents = data["layouts"].sort((a, b) =>
 					(a["page_number"] > b["page_number"]) ? 1 : -1
 				)
 
@@ -109,7 +109,7 @@ class LayoutMenu extends React.Component {
 				.then(data => {
 					if (data["layouts"].some(e => !e["done"])) return;
 
-					var contents = data["layouts"].sort((a, b) =>
+					const contents = data["layouts"].sort((a, b) =>
 						(a["page_number"] > b["page_number"]) ? 1 : -1
 					)
 
@@ -176,13 +176,13 @@ class LayoutMenu extends React.Component {
     }
 
 	updateBoxes(groups) {
-		var contents = this.state.contents;
+		const contents = this.state.contents;
 
-		for (var i = 0; i < groups.length; i++) {
-			var group = groups[i];
+		for (let i = 0; i < groups.length; i++) {
+			const group = groups[i];
 
-			for (var j = 0; j < group["squares"].length; j++) {
-				var square = group["squares"][j];
+			for (let j = 0; j < group["squares"].length; j++) {
+				const square = group["squares"][j];
 				if (square.copyId) {
 					delete square.copyId;
 				}
@@ -217,7 +217,7 @@ class LayoutMenu extends React.Component {
 		//     }
 		// }
 
-		for (i = 0; i < contents.length; i++) {
+		for (let i = 0; i < contents.length; i++) {
 			contents[i]["boxes"] = this.renameGroups(contents[i]["boxes"], i + 1);
 		}
 
@@ -380,9 +380,9 @@ class LayoutMenu extends React.Component {
 		const boxes = this.state.contents[this.state.currentPage - 1]["boxes"];
 		const newBoxes = [];
 
-		for (var i = 0; i < boxes.length; i++) {
-			var type = boxes[i]["type"] || "text";
-			var box = this.createBoxLine(boxes[i], type, i + 1);
+		for (let i = 0; i < boxes.length; i++) {
+			const type = boxes[i]["type"] || "text";
+			const box = this.createBoxLine(boxes[i], type, i + 1);
 			newBoxes.push(box);
 		}
 
@@ -755,8 +755,8 @@ class LayoutMenu extends React.Component {
 		const contents = this.state.contents;
 		const groups = contents[this.state.currentPage - 1]["boxes"];
 
-		var mode = true;
-		for (var i = 0; i < groups.length; i++) {
+		let mode = true;
+		for (let i = 0; i < groups.length; i++) {
 			if (groups[i]["type"] === "text") break;
 			else if (groups[i]["type"] === "remove") {
 				mode = false;
