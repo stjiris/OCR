@@ -21,6 +21,10 @@ body {
     text-decoration: underline;
 }
 
+.MuiBox-root .pathButton:disabled {  /* overrides transparency from Mui-disabled */
+    color: black;
+}
+
 .pageImage {
     position: relative;
     height: 80vh;
