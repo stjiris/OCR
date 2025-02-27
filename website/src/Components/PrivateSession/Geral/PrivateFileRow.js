@@ -5,12 +5,26 @@ import CircularProgress from '@mui/material/CircularProgress';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
 
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 
-import loadComponent from '../../../utils/loadComponents';
+import { IconButton } from '@mui/material';
+
 import calculateEstimatedTime from '../../../utils/waitingTime';
+import loadComponent from '../../../utils/loadComponents';
+const Notification = loadComponent('Notification', 'Notifications');
+const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
+const LayoutIcon = loadComponent('CustomIcons', 'LayoutIcon');
+const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
+const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
+const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
+const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
+const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
 
 export default class FileRow extends React.Component {
     constructor(props) {
@@ -130,16 +144,6 @@ export default class FileRow extends React.Component {
     }
 
     render() {
-        const Notification = loadComponent('Notification', 'Notifications');
-        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
-        const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
-        const LayoutIcon = loadComponent('CustomIcons', 'LayoutIcon');
-        const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
-        const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
-        const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
-        const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
-        const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
-
         const buttonsDisabled = !(this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"])
 
         return (
@@ -198,7 +202,7 @@ export default class FileRow extends React.Component {
                                             </Box>
                                         </TableCell>
                                     </>
-                                    
+
                                     : this.state.info["progress"] !== 100.00
                                         ? <TableCell colSpan={4} align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
                                             <Box sx={{display: 'flex', flexDirection: 'column'}}>

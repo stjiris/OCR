@@ -24,6 +24,8 @@ import loadComponent from '../../../utils/loadComponents';
 
 import { Button } from '@mui/material';
 
+const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
+
 const style = {
     position: 'absolute',
     top: '50%',
@@ -61,8 +63,8 @@ class Word extends React.Component {
             id={this.state.id}
             className={`${this.state.cleanText}`}
             style={{
-                margin: "0px 2px", 
-                display: "inline-block", 
+                margin: "0px 2px",
+                display: "inline-block",
                 fontSize: "14px",
                 backgroundColor: (false) ? "#ffd700" : "transparent",
                 borderRadius: "5px",
@@ -140,18 +142,18 @@ class EditPagePopUp extends React.Component {
     }
 
     toggleOpen() {
-        this.setState({ 
-            open: !this.state.open, 
-            currentPage: 1, 
-            selectedWordBox: null, 
+        this.setState({
+            open: !this.state.open,
+            currentPage: 1,
+            selectedWordBox: null,
             selectedWord: "",
             selectedWordIndex: 0,
-            parentNode: null, 
-            coordinates: null, 
-            editingText: "", 
-            imageHeight: this.state.baseImageHeight, 
-            addLineMode: false, 
-            removeLineMode: false 
+            parentNode: null,
+            coordinates: null,
+            editingText: "",
+            imageHeight: this.state.baseImageHeight,
+            addLineMode: false,
+            removeLineMode: false
         });
     }
 
@@ -171,14 +173,14 @@ class EditPagePopUp extends React.Component {
             var contents = data["doc"].sort((a, b) =>
                 (a["page_number"] > b["page_number"]) ? 1 : -1
             )
-            
+
             var sortedWords = this.orderWords(data["words"]);
-    
+
             var newCorpusList = [];
             data["corpus"].forEach((item) => {
                 newCorpusList.push({"name": item, "code": item});
             });
-    
+
             this.setState({totalPages: pages, loading: false, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
         });
     }
@@ -208,9 +210,9 @@ class EditPagePopUp extends React.Component {
      * Used to zoom and change pages (text changes accordingly)
      */
     changePage(diff) {
-        
+
         this.setState({
-            currentPage: this.state.currentPage + diff, 
+            currentPage: this.state.currentPage + diff,
             selectedWord: "",
             selectedWordIndex: 0,
             selectedWordBox: null,
@@ -220,7 +222,7 @@ class EditPagePopUp extends React.Component {
     }
 
     firstPage() {
-        
+
         this.setState({
             currentPage: 1,
             selectedWord: "",
@@ -233,7 +235,7 @@ class EditPagePopUp extends React.Component {
 
     lastPage() {
             this.setState({
-            currentPage: this.state.totalPages, 
+            currentPage: this.state.totalPages,
             selectedWord: "",
             selectedWordIndex: 0,
             selectedWordBox: null,
@@ -243,7 +245,7 @@ class EditPagePopUp extends React.Component {
     }
 
     imageToScreenCoordinates(x, y) {
-        
+
         var image = this.image.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
@@ -259,7 +261,7 @@ class EditPagePopUp extends React.Component {
     }
 
     showImageHighlight(e, box) {
-        
+
         var topCorner = this.imageToScreenCoordinates(box[0], box[1]);
         var bottomCorner = this.imageToScreenCoordinates(box[2], box[3]);
 
@@ -274,7 +276,7 @@ class EditPagePopUp extends React.Component {
     }
 
     zoom(delta) {
-        
+
         var newHeight = this.state.imageHeight * (1 + delta * 0.4);
 
         if (newHeight < this.state.baseImageHeight) {
@@ -290,7 +292,7 @@ class EditPagePopUp extends React.Component {
      */
 
     requestSyntax() {
-        
+
         this.setState({ loadingSintax: true });
         fetch(process.env.REACT_APP_API_URL + 'check-sintax', {
             method: 'POST',
@@ -312,7 +314,7 @@ class EditPagePopUp extends React.Component {
     }
 
     updateSyntax(words) {
-        
+
         var words_list = this.state.words_list;
         Object.entries(words).forEach(([key, value]) => {
             words_list[key]["syntax"] = value;
@@ -329,7 +331,7 @@ class EditPagePopUp extends React.Component {
         /**
          * Generate all possible combinations of words
          */
-        
+
         var word = words.splice(0, 1)[0];
         var totalCombinations = [];
 
@@ -371,7 +373,7 @@ class EditPagePopUp extends React.Component {
          * Find the combination that minimizes the difference between the previous text and the new text
          */
 
-        
+
 
         // Infinite
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity?retiredLocale=pt-PT
@@ -401,7 +403,7 @@ class EditPagePopUp extends React.Component {
     }
 
     splitWordsByLines(words, coordinates) {
-        
+
         if (coordinates.length === 1) return [words];
 
         var separation = [];
@@ -416,9 +418,9 @@ class EditPagePopUp extends React.Component {
 
         return bestCombination;
     }
-    
+
     updateText(sectionIndex, lineIndex, wordIndex) {
-        
+
         var wordsList = this.state.words_list;
 
         var contents = this.state.contents;
@@ -430,7 +432,7 @@ class EditPagePopUp extends React.Component {
 
         var coordinates = line[wordIndex]["coordinates"];
         var combination = this.splitWordsByLines(words, coordinates);
-        
+
         var newWords = [];
 
         initial_text.split(" ").forEach((item) => {
@@ -502,7 +504,7 @@ class EditPagePopUp extends React.Component {
     }
 
     updateInputSize() {
-        
+
         var text = this.state.editingText;
         var parentNode = this.state.parentNode;
         var children = parentNode.children;
@@ -520,7 +522,7 @@ class EditPagePopUp extends React.Component {
     }
 
     getSelectedText() {
-        
+
         if (typeof window.getSelection !== "undefined") {
             // Get the range and make the all word selected
             if (window.getSelection().toString().length === 0) return null;
@@ -590,13 +592,13 @@ class EditPagePopUp extends React.Component {
             this.setState({contents: contents, inputSize: text.length});
         }
     }
-    
+
     /**
      * LINE FUNCTIONS
      * Add and remove new lines (\n)
      */
     addLine(sectionIndex, lineIndex, wordIndex) {
-        
+
         var contents = this.state.contents;
         var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
         var line = section[lineIndex];
@@ -611,7 +613,7 @@ class EditPagePopUp extends React.Component {
     }
 
     removeLine(sectionIndex, lineIndex) {
-        
+
         var contents = this.state.contents;
         var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
 
@@ -650,9 +652,9 @@ class EditPagePopUp extends React.Component {
     /**
      * WORD LIST FUNCTIONS
      * Handle the words list and actions
-     */  
+     */
     cleanWord(word) {
-        
+
         var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
         while (word !== "") {
             if (punctuation.includes(word[0])) {
@@ -674,7 +676,7 @@ class EditPagePopUp extends React.Component {
     }
 
     cleanWordSelection() {
-        
+
         var words = document.getElementsByClassName(this.selectedWord);
 
         for (var i = 0; i < words.length; i++) {
@@ -684,10 +686,10 @@ class EditPagePopUp extends React.Component {
     }
 
     getScrollValue(word, count = 0) {
-        
+
         // var words = [];
         var words = document.getElementsByClassName(word);
-    
+
         var middleHeight = window.innerHeight / 2;
 
         var wordHeight = null;
@@ -698,7 +700,7 @@ class EditPagePopUp extends React.Component {
             if (count === 0) {
                 chosenWord = wordComponent;
             }
-            
+
             count -= 1;
             wordComponent.style.backgroundColor = "#ffd700";
         }
@@ -713,12 +715,12 @@ class EditPagePopUp extends React.Component {
     }
 
     goToNextOccurrence(word) {
-        
-        
+
+
         // var word = this.state.selectedWord;
         var index = Math.max(0, this.state.selectedWordIndex);
         var pages = this.state.words_list[word]["pages"];
-        
+
         var newPage = pages[index];
         var count = pages.slice(0, index).reduce((acc, value) => value === newPage ? acc + 1 : acc, 0);
 
@@ -749,7 +751,7 @@ class EditPagePopUp extends React.Component {
      * Send to the server the new text and structure
      */
     saveChanges() {
-        
+
         fetch(process.env.REACT_APP_API_URL + 'submit-text', {
             method: 'POST',
             headers: {
@@ -778,10 +780,7 @@ class EditPagePopUp extends React.Component {
      * Render the component
      */
     render() {
-        
-        const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
-
-        var incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
+        const incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
         this.wordsIndex = {};
 
         return (
@@ -807,14 +806,14 @@ class EditPagePopUp extends React.Component {
                                             sx={{
                                                 position: 'relative',
                                                 width: `${window.innerWidth * 0.9 * 0.4}px`,
-                                                overflow: 'scroll', 
+                                                overflow: 'scroll',
                                                 border: '1px solid grey',
                                                 height: `${this.state.baseImageHeight}px`
                                             }}
                                         >
                                             <img
                                                 ref={this.image}
-                                                src={this.state.contents[this.state.currentPage - 1]["page_url"]} 
+                                                src={this.state.contents[this.state.currentPage - 1]["page_url"]}
                                                 alt="Imagem da pagina"
                                                 style={{
                                                     display: 'block',
@@ -879,7 +878,7 @@ class EditPagePopUp extends React.Component {
                                             <span style={{margin: "0px 10px"}}>
                                                 Página {this.state.currentPage} / {this.state.totalPages}
                                             </span>
-                                            
+
                                             <IconButton
                                                 disabled={this.state.currentPage === this.state.totalPages}
                                                 sx={{marginLeft: "10px", p: 0}}
@@ -924,7 +923,7 @@ class EditPagePopUp extends React.Component {
                                                 marginLeft: "10px",
                                                 width: this.state.wordsMode ? `${window.innerWidth * 0.9 * 0.6 - 352}px` : `${window.innerWidth * 0.9 * 0.6 - 70}px`,
                                                 height: `${this.state.baseImageHeight}px`,
-                                                overflowY: 'scroll', 
+                                                overflowY: 'scroll',
                                                 overflowX: 'wrap',
                                                 border: '1px solid grey',
                                                 paddingLeft: "10px",
@@ -982,7 +981,7 @@ class EditPagePopUp extends React.Component {
                                                                             return <>
                                                                                 {
                                                                                     this.state.addLineMode && wordIndex !== 0 && this.state.hoveredId === id
-                                                                                    ? <IconButton 
+                                                                                    ? <IconButton
                                                                                         sx={{p: 0.1, m: 0, backgroundColor: "#0000ff88", ml: 1, "&:hover": {backgroundColor: "#0000ffdd"}}}
                                                                                         onClick={() => this.addLine(sectionIndex, lineIndex, wordIndex)}
                                                                                     >
@@ -997,13 +996,13 @@ class EditPagePopUp extends React.Component {
                                                                                     overlay={this}
                                                                                     text={word["text"]}
                                                                                     id={id}
-                                                                                    box={word["box"]}  
-                                                                                    cleanText={word["clean_text"]}   
+                                                                                    box={word["box"]}
+                                                                                    cleanText={word["clean_text"]}
                                                                                 />
 
                                                                                 {
                                                                                     this.state.removeLineMode && wordIndex === line.length - 1 && (lineIndex !== section.length - 1 || sectionIndex !== this.state.contents[this.state.currentPage - 1]["content"].length - 1)
-                                                                                    ? <IconButton 
+                                                                                    ? <IconButton
                                                                                         sx={{p: 0.1, m: 0, ml: 1, backgroundColor: "#ff000088", "&:hover": {backgroundColor: "#ff0000dd"}}}
                                                                                         onClick={() => this.removeLine(sectionIndex, lineIndex)}
                                                                                     >
@@ -1020,7 +1019,7 @@ class EditPagePopUp extends React.Component {
                                                         }
                                                     </Box>;
                                                 })
-                                                
+
                                             }
                                         </Box>
 
@@ -1036,10 +1035,10 @@ class EditPagePopUp extends React.Component {
                                             padding: "0px 10px"
                                         }}>
                                             <p style={{fontSize: "18px", margin: "10px 0px 0px 0px"}}><b>Palavras</b></p>
-                                            <CorpusDropdown 
-                                                ref={this.corpusSelect} 
-                                                options={this.state.corpusOptions} 
-                                                choice={this.state.corpusChoice} 
+                                            <CorpusDropdown
+                                                ref={this.corpusSelect}
+                                                options={this.state.corpusOptions}
+                                                choice={this.state.corpusChoice}
                                             />
 
                                             <Box sx={{display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center"}}>
@@ -1217,20 +1216,20 @@ class EditPagePopUp extends React.Component {
 
                                         <Button
                                             style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                            
-                                            variant="contained" 
-                                            color="success" 
-                                            onClick={() => this.saveChanges()} 
+
+                                            variant="contained"
+                                            color="success"
+                                            onClick={() => this.saveChanges()}
                                             startIcon={<SaveIcon />
                                         }>
                                             Guardar
                                         </Button>
                                     </Box>
-                                </Box> 
+                                </Box>
 
                             </Box>
                         }
-                        
+
 
                         <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
                             <CloseRoundedIcon />

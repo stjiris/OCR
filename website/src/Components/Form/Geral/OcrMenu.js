@@ -7,6 +7,9 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import loadComponent from '../../../utils/loadComponents';
+const Notification = loadComponent('Notification', 'Notifications');
+const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
+const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
 
 const tesseractChoice = [{"name": "Português", "code": "por"}]
 const tesseractLangList = [
@@ -328,10 +331,6 @@ class OcrMenu extends React.Component {
     }
 
     render() {
-        const Notification = loadComponent('Notification', 'Notifications');
-        const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
-        const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
-
         return (
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>

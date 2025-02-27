@@ -17,6 +17,18 @@ import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRound
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 
 
+const Notification = loadComponent('Notification', 'Notifications');
+const VersionsMenu = loadComponent('Form', 'VersionsMenu');
+const LogsMenu = loadComponent('Form', 'LogsMenu');
+const FileExplorer = loadComponent('FileSystem', 'FileSystem');
+const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
+// const EditPage = loadComponent('EditPage', 'EditPage');
+// const EditPage2 = loadComponent('EditPage2', 'EditPage');
+// const EditPage = loadComponent('EditPage3', 'EditPage');
+const EditPagePopUp = loadComponent('EditPage3', 'EditPagePopUp');
+const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
+
+const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 
 /**
  * About Versioning:
@@ -229,16 +241,16 @@ function App() {
 
         changeFolderFromPath(folder_name) {
             var current_folder = this.state.currentFolder;
-    
+
             // Remove the last element of the path until we find folder_name
             while (current_folder[current_folder.length - 1] !== folder_name) {
                 current_folder.pop();
             }
-    
+
             this.setState({
-                currentFolder: current_folder,  
+                currentFolder: current_folder,
                 fileSystemMode: true,
-                editingMenu: false, 
+                editingMenu: false,
                 layoutMenu: false,
             });
 
@@ -265,21 +277,7 @@ function App() {
         }
 
         render() {
-            const Notification = loadComponent('Notification', 'Notifications');
-            const VersionsMenu = loadComponent('Form', 'VersionsMenu');
-            const LogsMenu = loadComponent('Form', 'LogsMenu');
-            const FileExplorer = loadComponent('FileSystem', 'FileSystem');
-            const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
-            // const EditPage = loadComponent('EditPage', 'EditPage');
-            // const EditPage2 = loadComponent('EditPage2', 'EditPage');
-            // const EditPage = loadComponent('EditPage3', 'EditPage');
-            const EditPagePopUp = loadComponent('EditPage3', 'EditPagePopUp');
-            const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
-
-            const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
-
-            var buttonsDisabled = this.getPrivateSession() !== null || !this.state.fileSystemMode || this.state.layoutMenu || this.state.editingMenu;
-
+            const buttonsDisabled = this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: '100vh'}}>
                     <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -316,7 +314,7 @@ function App() {
                             >
                                 Sessão Privada
                             </Button>
-                            
+
                             <Button
                                 disabled={buttonsDisabled}
                                 variant="contained"
@@ -348,7 +346,7 @@ function App() {
 
                                         if (!this.state.fileSystemMode && !this.state.editingMenu && index > 0)
                                             return null;
-                                        
+
                                         if (folderDepth > 3 && index === 1) {
                                             return (
                                                 <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
@@ -418,12 +416,12 @@ function App() {
                                     </Button>
                                     : null
                                 }
-                                
+
                             </Box>
                         </Box>
 
-                        
-                        
+
+
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
                             <Button
                                 disabled={buttonsDisabled}
@@ -511,7 +509,7 @@ function App() {
                                             top: "5.5rem",
                                             p: "0rem 1rem",
                                             width: "8rem",
-                                            
+
                                         }}
                                     >
                                         {

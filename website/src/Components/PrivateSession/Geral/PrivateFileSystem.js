@@ -9,13 +9,17 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { v4 as uuidv4 } from 'uuid';
+
 import loadComponent from '../../../utils/loadComponents';
+const PrivateFileRow = loadComponent('PrivateSession', 'PrivateFileRow');
+const FolderRow = loadComponent('FileSystem', 'FolderRow');
 
 const UPDATE_TIME = 15;
-const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
+const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
 
 const validExtensions = [".pdf", ".jpg", ".jpeg"];
 
@@ -81,7 +85,7 @@ class PrivateFileExplorer extends React.Component {
 
             var disabled = data[session].length !== 0;
 
-            
+
 
             this.setState({files: files, info: info, loading: false, addDisabled: disabled}, this.displayFileSystem);
         });
@@ -114,7 +118,7 @@ class PrivateFileExplorer extends React.Component {
                             const creationTime = new Date(value.creation.replace(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
                             const currentTime = new Date();
                             const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
-                        
+
                             if (timeDiffMinutes >= 10) {
                                 fetch(process.env.REACT_APP_API_URL + 'set-upload-stuck', {
                                     method: 'POST',
@@ -125,7 +129,7 @@ class PrivateFileExplorer extends React.Component {
                                         "path": path,
                                     }),
                                 })
-                                .then(response => response.json());                                
+                                .then(response => response.json());
                             }
                         }
                     }
@@ -161,7 +165,7 @@ class PrivateFileExplorer extends React.Component {
         files["files"] = data["files"]
         var info = data['info'];
 
-        
+
 
         this.setState({ files: files, info: info }, this.displayFileSystem);
     }
@@ -302,12 +306,12 @@ class PrivateFileExplorer extends React.Component {
                         // Send chunks
                         var startChunk = 0;
                         var endChunk = chunkSize;
-        
+
                         for (let i = 0; i < _totalCount; i++) {
                             var chunk = fileBlob.slice(startChunk, endChunk, fileType);
                             startChunk = endChunk;
                             endChunk = endChunk + chunkSize;
-        
+
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
                     } else {
@@ -494,9 +498,9 @@ class PrivateFileExplorer extends React.Component {
         /**
          * Get the info of the file
          */
-        
-        
-        
+
+
+
 
         return this.state.info[path];
     }
@@ -557,10 +561,7 @@ class PrivateFileExplorer extends React.Component {
         /**
          * Iterate the contents of the folder and build the components
          */
-        const PrivateFileRow = loadComponent('PrivateSession', 'PrivateFileRow');
-        const FolderRow = loadComponent('FileSystem', 'FolderRow');
-
-        var contents = this.sortContents(this.getPathContents());
+        const contents = this.sortContents(this.getPathContents());
         this.rowRefs = [];
 
         var items = [];
@@ -601,7 +602,7 @@ class PrivateFileExplorer extends React.Component {
         return (
             <TableContainer component={Paper}>
                 <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
-                <TableHead>
+                    <TableHead>
                         <TableRow>
                             <TableCell sx={{borderLeft:"1px solid #aaa"}}>
                                 <Button
@@ -682,6 +683,7 @@ class PrivateFileExplorer extends React.Component {
         this.storageMenu.current.toggleOpen();
     }
 
+    /*
     checkOCRComplete() {
         let obj = this.state.info;
 
@@ -696,6 +698,7 @@ class PrivateFileExplorer extends React.Component {
         }
         return true;
     }
+    */
 
     render() {
         const Notification = loadComponent('Notification', 'Notifications');
