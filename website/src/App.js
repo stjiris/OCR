@@ -39,7 +39,7 @@ const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "0.22.6";
+const VERSION = "1.0.0";
 const UPDATE_TIME = 30;
 
 function App() {
