@@ -64,7 +64,6 @@ class EditingMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            loading: true,
             contents: [],
             words_list: [],
             corpusOptions: [],
@@ -72,8 +71,8 @@ class EditingMenu extends React.Component {
             currentPage: 1,
             totalPages: 1,
 
-            imageHeight: 0,
-            baseImageHeight: 0,
+            imageHeight: window.innerHeight - 175,
+            baseImageHeight: window.innerHeight - 175,
 
             selectedWord: "",
             selectedWordIndex: 0,
@@ -113,8 +112,6 @@ class EditingMenu extends React.Component {
         this.setState({
             imageHeight: window.innerHeight - 175,
             baseImageHeight: window.innerHeight - 175,
-            textWidth: window.innerWidth * 0.9 * 0.6 - 70,
-            loading: true
         }, this.getContents);
     }
 
@@ -154,7 +151,9 @@ class EditingMenu extends React.Component {
                 newCorpusList.push({"name": item, "code": item});
             });
 
-            this.setState({totalPages: pages, loading: false, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
+            this.setState({totalPages: pages, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList,
+                imageHeight: window.innerHeight - 175,
+                baseImageHeight: window.innerHeight - 175,});
         });
     }
 
@@ -741,22 +740,22 @@ class EditingMenu extends React.Component {
     render() {
         const incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
         return (
+            this.state.contents.length === 0 ?
+                <Box sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center"
+                }}>
+                    <CircularProgress color="success" />
+                </Box>
+            :
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
                 {
-                    this.state.loading
-                    ? <Box sx={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "row",
-                        justifyContent: "center",
-                        alignItems: "center"
-                    }}>
-                        <CircularProgress color="success" />
-                    </Box>
-                    :
                     <>
                     <Box sx={{
                         ml: '0.5rem',
