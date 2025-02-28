@@ -15,9 +15,18 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
+const FileRow = loadComponent('FileSystem', 'FileRow');
+const FolderRow = loadComponent('FileSystem', 'FolderRow');
+const Notification = loadComponent('Notification', 'Notifications');
+const FolderMenu = loadComponent('Form', 'FolderMenu');
+const OcrMenu = loadComponent('Form', 'OcrMenu');
+const DeleteMenu = loadComponent('Form', 'DeleteMenu');
+const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
+const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
+const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
 
 const UPDATE_TIME = 15;
-const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes 
+const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
 const validExtensions = [".pdf"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
@@ -71,7 +80,7 @@ class FileExplorer extends React.Component {
         .then(data => {
             var info = data["info"];
             var files = {'files': data["files"]};
-            
+
             this.setState({files: files, info: info, loading: false}, this.displayFileSystem);
         });
 
@@ -93,7 +102,7 @@ class FileExplorer extends React.Component {
                             const creationTime = new Date(value.creation.replace(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
                             const currentTime = new Date();
                             const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
-                        
+
                             if (timeDiffMinutes >= 10) {
                                 fetch(process.env.REACT_APP_API_URL + 'set-upload-stuck', {
                                     method: 'POST',
@@ -104,7 +113,7 @@ class FileExplorer extends React.Component {
                                         "path": path,
                                     }),
                                 })
-                                .then(response => response.json());                                
+                                .then(response => response.json());
                             }
                         }
                     }
@@ -276,12 +285,12 @@ class FileExplorer extends React.Component {
                         // Send chunks
                         var startChunk = 0;
                         var endChunk = chunkSize;
-        
+
                         for (let i = 0; i < _totalCount; i++) {
                             var chunk = fileBlob.slice(startChunk, endChunk, fileType);
                             startChunk = endChunk;
                             endChunk = endChunk + chunkSize;
-        
+
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
                     } else {
@@ -408,7 +417,7 @@ class FileExplorer extends React.Component {
             if (data instanceof Blob) {
                 var a = document.createElement('a');
                 a.href = URL.createObjectURL(data);
-    
+
                 a.download = path.split('/').slice(-1)[0] + '.zip';
                 a.click();
                 a.remove();
@@ -473,7 +482,7 @@ class FileExplorer extends React.Component {
         .then(data => {
             var a = document.createElement('a');
                 a.href = URL.createObjectURL(data);
-    
+
                 a.download = path.split('/').slice(-1)[0] + '.zip';
                 a.click();
                 a.remove();
@@ -630,10 +639,7 @@ class FileExplorer extends React.Component {
         /**
          * Iterate the contents of the folder and build the components
          */
-        const FileRow = loadComponent('FileSystem', 'FileRow');
-        const FolderRow = loadComponent('FileSystem', 'FolderRow');
-
-        var contents = this.sortContents(this.getPathContents());
+        const contents = this.sortContents(this.getPathContents());
         this.rowRefs = [];
 
         var items = [];
@@ -821,7 +827,7 @@ class FileExplorer extends React.Component {
                         }
                         return (
                             <Box sx={{display: "flex", flexDirection: "row"}} key={"Box" + folder}>
-                                <Button 
+                                <Button
                                     key={folder}
                                     onClick={() => this.changeFolderFromPath(folder)}
                                     style={{

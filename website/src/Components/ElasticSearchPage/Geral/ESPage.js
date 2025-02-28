@@ -7,6 +7,8 @@ import Divider from '@mui/material/Divider';
 import InboxIcon from '@mui/icons-material/Inbox';
 
 import loadComponent from '../../../utils/loadComponents';
+const PageDisplayer = loadComponent('Displayer', 'PageDisplayer');
+const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
 
 class ESItem extends React.Component {
     // This component is used to display a single page from the ElasticSearch database
@@ -18,8 +20,6 @@ class ESItem extends React.Component {
     }
 
     render() {
-        const PageDisplayer = loadComponent('Displayer', 'PageDisplayer');
-
         return (
             <Box sx={{
                 display: 'flex',
@@ -211,7 +211,6 @@ class ESPage extends React.Component {
     }
 
     render() {
-        const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
         return (
             <Box sx={{
                 display: 'flex',

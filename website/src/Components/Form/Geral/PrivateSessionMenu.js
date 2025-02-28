@@ -9,6 +9,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import loadComponent from '../../../utils/loadComponents';
+const Notification = loadComponent('Notification', 'Notifications');
 
 const style = {
     position: 'absolute',
@@ -59,8 +60,6 @@ class PrivateSessionMenu extends React.Component {
     }
 
     render() {
-        const Notification = loadComponent('Notification', 'Notifications');
-
         return (
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
