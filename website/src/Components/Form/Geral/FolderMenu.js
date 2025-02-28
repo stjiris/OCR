@@ -7,9 +7,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-
 import loadComponent from '../../../utils/loadComponents';
-const Notification = loadComponent('Notification', 'Notifications');
 
 const style = {
     position: 'absolute',
@@ -89,6 +87,8 @@ class FolderMenu extends React.Component {
     }
 
     render() {
+        const Notification = loadComponent('Notification', 'Notifications');
+
         return (
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>

@@ -8,7 +8,6 @@ import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
 import loadComponent from '../../../utils/loadComponents';
-const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
 export default class FolderRow extends React.Component {
     constructor(props) {
@@ -39,6 +38,8 @@ export default class FolderRow extends React.Component {
     }
 
     render() {
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+
         return (
             <TableRow
                 sx={{":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}

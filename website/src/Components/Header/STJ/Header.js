@@ -10,7 +10,6 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
 import logoSTJ from '../../../static/logoSTJ.png';
 import loadComponent from '../../../utils/loadComponents';
-const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
 export default class Header extends React.Component {
     constructor(props) {
@@ -54,7 +53,9 @@ export default class Header extends React.Component {
         });
     }
 
-    render() {
+    render() {        
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+
         return (
             <Box sx={{
                 display: 'flex',
@@ -84,7 +85,7 @@ export default class Header extends React.Component {
                             underline="hover"
                         >
                             <h1 className='fancy-font'>OCR</h1>
-                        </Button>
+                        </Button>                                
                     </>
                 </Box>
 
@@ -134,7 +135,7 @@ export default class Header extends React.Component {
                                 : null
                             }
 
-                            <Button sx={{mr: '1.5rem', padding: '0rem', color: '#BA1514'}}
+                            <Button sx={{mr: '1.5rem', padding: '0rem', color: '#BA1514'}} 
                                 onClick={() => this.state.app.openLogsMenu()}
                             >
                                 <AssignmentRoundedIcon sx={{mr: '0.3rem'}} />
@@ -145,7 +146,7 @@ export default class Header extends React.Component {
                         : null
                     }
                     <p>{`Versão: ${this.state.version}`}</p>
-                    <Button sx={{ml: '1.5rem', padding: '0rem', color: '#BA1514'}}
+                    <Button sx={{ml: '1.5rem', padding: '0rem', color: '#BA1514'}} 
                             onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
                     >
                         <HelpIcon sx={{mr: '0.3rem'}}>

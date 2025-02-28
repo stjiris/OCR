@@ -17,18 +17,6 @@ import calculateEstimatedTime from '../../../utils/waitingTime';
 
 import { IconButton } from '@mui/material';
 
-const Notification = loadComponent('Notification', 'Notifications');
-const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
-const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
-const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
-const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
-const LayoutIcon = loadComponent('CustomIcons', 'LayoutIcon');
-const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
-const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
-const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
-const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
-const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
-
 export default class FileRow extends React.Component {
     constructor(props) {
         super(props);
@@ -154,6 +142,18 @@ export default class FileRow extends React.Component {
     }
 
     render() {
+        const Notification = loadComponent('Notification', 'Notifications');
+        const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
+        const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+        const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
+        const LayoutIcon = loadComponent('CustomIcons', 'LayoutIcon');
+        const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
+        const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
+        const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
+        const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
+        const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
+
         const buttonsDisabled = !(this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"])
 
         return (

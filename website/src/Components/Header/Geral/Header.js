@@ -9,7 +9,6 @@ import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownR
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import loadComponent from '../../../utils/loadComponents';
-const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
 export default class Header extends React.Component {
     constructor(props) {
@@ -53,7 +52,9 @@ export default class Header extends React.Component {
         });
     }
 
-    render() {
+    render() {        
+        const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+
         return (
             <Box sx={{
                 display: 'flex',
@@ -81,7 +82,7 @@ export default class Header extends React.Component {
                             style={{textDecoration: 'none'}}
                             onClick={() => {
                                     this.state.app.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})
-                                    this.state.app.redirectHome();
+                                    this.state.app.redirectHome();                                                
                                 }
                             }
                             underline="hover"
@@ -153,7 +154,7 @@ export default class Header extends React.Component {
                                 : null
                             }
 
-                            <Button sx={{mr: '1.5rem', padding: '0rem', color: '#1976d2'}}
+                            <Button sx={{mr: '1.5rem', padding: '0rem', color: '#1976d2'}} 
                                 onClick={() => this.state.app.openLogsMenu()}
                             >
                                 <AssignmentRoundedIcon sx={{mr: '0.3rem'}} />
@@ -164,7 +165,7 @@ export default class Header extends React.Component {
                         : null
                     }
                     <p>{`Versão: ${this.state.version}`}</p>
-                    <Button sx={{ml: '1.5rem', padding: '0rem', color: '#1976d2'}}
+                    <Button sx={{ml: '1.5rem', padding: '0rem', color: '#1976d2'}} 
                             onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
                     >
                         <HelpIcon sx={{mr: '0.3rem'}}>

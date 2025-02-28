@@ -15,20 +15,10 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
-import ZoomInIcon from "@mui/icons-material/ZoomIn";
-import ZoomOutIcon from "@mui/icons-material/ZoomOut";
-import FirstPageIcon from "@mui/icons-material/FirstPage";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import LastPageIcon from "@mui/icons-material/LastPage";
-
-import { Checkbox, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 import loadComponent from '../../../utils/loadComponents';
-const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
-const ConfirmLeave = loadComponent('EditPage3', 'ConfirmLeave');
-const Notification = loadComponent('Notification', 'Notifications');
-const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
+
+import { Checkbox, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 export default class LayoutMenu extends React.Component {
 	constructor(props) {
@@ -103,6 +93,7 @@ export default class LayoutMenu extends React.Component {
 				method: 'GET'
 			}).then(response => { return response.json() })
 				.then(data => {
+
 					if (data["layouts"].some(e => !e["done"])) return;
 
 					var contents = data["layouts"].sort((a, b) =>
@@ -741,6 +732,10 @@ export default class LayoutMenu extends React.Component {
 	}
 
 	render() {
+		const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
+		const ConfirmLeave = loadComponent('EditPage', 'ConfirmLeave');
+		const Notification = loadComponent('Notification', 'Notifications');
+
 		var noCheckBoxActive = false;
 		if (this.state.contents.length !== 0) {
 			noCheckBoxActive = !this.state.contents[this.state.page - 1]["boxes"].some(e => e["checked"]);

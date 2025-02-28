@@ -4,8 +4,6 @@ import Box from '@mui/material/Box';
 import addLine from "../../../static/addLine.svg"
 import removeLine from "../../../static/removeLine.svg"
 import loadComponent from '../../../utils/loadComponents.js';
-const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
-const PageDisplayer = loadComponent('Displayer', 'PageDisplayer');
 
 class WordItem extends React.Component {
     constructor(props) {
@@ -54,7 +52,7 @@ class WordItem extends React.Component {
             >
                 {
                     this.state.changingMode
-                    ? <input
+                    ? <input 
                         style={{
                             width: `${this.state.text.length}ch`
                         }}
@@ -69,7 +67,7 @@ class WordItem extends React.Component {
                         onBlur={() => this.afterUpdate()}
                         autoFocus
                     />
-                    : <span
+                    : <span 
                         style={{
                             padding: "0px 3px",
                             fontSize: "13px"
@@ -123,6 +121,8 @@ export default class PageItem extends React.Component {
     }
 
     buildComponents() {
+        var TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+
         var components = [];
         var refs = [];
 
@@ -154,7 +154,7 @@ export default class PageItem extends React.Component {
                             key={s + " " + l + " " + (l + 1 === section.length)}
                             padding={0}
                             icon={
-                                <img
+                                <img 
                                     style={{width: '1.2rem'}} src={l + 1 === section.length ? removeLine : addLine} alt="New Line"
                                 />
                             }
@@ -192,6 +192,8 @@ export default class PageItem extends React.Component {
     }
 
     render() {
+        const PageDisplayer = loadComponent('Displayer', 'PageDisplayer')
+
         return (
             <Box sx={{display: 'flex', flexDirection: 'row', mb: '1rem'}}>
                 <Box sx={{textAlign: 'center'}}>
