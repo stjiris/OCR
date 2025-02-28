@@ -26,7 +26,6 @@ const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
 const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
 const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
 
-import { IconButton } from '@mui/material';
 
 export default class FileRow extends React.Component {
     constructor(props) {
