@@ -36,7 +36,7 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       C_FORCE_ROOT: true
       PYTHONUNBUFFERED: true
-    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet -E --hostname=worker1@%h
+    command: celery -A celery_app.celery worker --loglevel=debug --without-gossip --without-mingle --without-heartbeat -Ofair -E --hostname=worker1@%h
     volumes:
       - files_data:/app/_files
     depends_on:
