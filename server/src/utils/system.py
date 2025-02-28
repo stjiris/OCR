@@ -2,6 +2,9 @@ import subprocess
 import os
 import psutil
 
+from src.utils.file import PRIVATE_PATH
+
+
 def get_logs(
     starting_point: int = 0,
     number_of_logs: int = 50,
@@ -46,16 +49,19 @@ def get_logs(
 def get_private_sessions():
     # Get the private sessions
     private_sessions = [
-        session for session in os.listdir("files/_private_sessions")
-        if os.path.isdir(f"files/_private_sessions/{session}") and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
+        session for session in os.listdir(PRIVATE_PATH)
+        if os.path.isdir(f"{PRIVATE_PATH}/{session}") and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
     ]
     return private_sessions
 
 def get_free_space():
     # Get the free space of the disk and its percentage
+    # UNIX usually reserves ~5% of total for root user;
+    # 'total' and 'used' are overall total and used space
+    # 'free' is space available for current user, 'percent' is user utilization
     disk_usage = psutil.disk_usage('/')
     free_space = disk_usage.free
-    total_space = disk_usage.total
+    total_space = disk_usage.used + disk_usage.free
 
     free_space_percentage = free_space / total_space * 100
 

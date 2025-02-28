@@ -29,14 +29,9 @@ class PrivateFileExplorer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            app: props.app,
             files: props.files,
-
-            info: {},
-            current_folder: props.current_folder.split('/'),
-            addDisabled: true,
-            ocrDisabled: true,
-
+            info: props.info,
+            current_folder: props.current_folder.join('/'),
             components: [],
 
             updatingRows: [],
@@ -46,10 +41,8 @@ class PrivateFileExplorer extends React.Component {
             loading: false,
 
             layoutMenu: false,
-            layoutFilename: null,
-
             editingMenu: false,
-            editingFilename: null,
+            fileOpened: null,
         }
 
         this.folderMenu = React.createRef();
@@ -63,49 +56,58 @@ class PrivateFileExplorer extends React.Component {
 
         this.interval = null;
         this.rowRefs = [];
+
+        // functions for file/folder rows
+        this.enterFolder = this.enterFolder.bind(this);
+        this.deleteItem = this.deleteItem.bind(this);
+        this.getOriginalFile = this.getOriginalFile.bind(this);
+        this.getDelimiterTxt = this.getDelimiterTxt.bind(this);
+        this.getTxt = this.getTxt.bind(this);
+        this.getEntities = this.getEntities.bind(this);
+        this.requestEntities = this.requestEntities.bind(this);
+        this.getCSV = this.getCSV.bind(this);
+        this.getImages = this.getImages.bind(this);
+        this.getPdf = this.getPdf.bind(this);
+        this.getPdfSimples = this.getPdfSimples.bind(this);
+        this.editText = this.editText.bind(this);
+        this.performOCR = this.performOCR.bind(this);
+        this.indexFile = this.indexFile.bind(this);
+        this.removeIndexFile = this.removeIndexFile.bind(this);
+        this.createLayout = this.createLayout.bind(this);
+
+        // functions for OCR menu
+        this.showStorageForm = this.showStorageForm.bind(this);
+
+        // functions for layout menu
+        this.closeLayoutMenu = this.closeLayoutMenu.bind(this);
+
+        // functions for editing menu
+        this.closeEditingMenu = this.closeEditingMenu.bind(this);
+
+        // functions for menus
+        this.updateFiles = this.updateFiles.bind(this);
     }
 
     componentDidMount() {
         /**
          * Fetch the files and info from the server
          */
-        fetch(process.env.REACT_APP_API_URL + 'files?path=' + this.state.current_folder.join("/"), {
+        fetch(process.env.REACT_APP_API_URL + 'files?_private=true&path=' + this.props.sessionId, {
             method: 'GET'
         })
         .then(response => {return response.json()})
         .then(data => {
-            var info = data["info"];
-
-            var keys = Object.keys(data);
-            keys.splice(keys.indexOf("info"), 1);
-            var session = keys[0];
-            var files = {};
-
-            files[session] = data[session];
-
-            var disabled = data[session].length !== 0;
-
-
-
-            this.setState({files: files, info: info, loading: false, addDisabled: disabled}, this.displayFileSystem);
+            const info = data["info"];
+            const files = {'files': data["files"]};
+            this.setState({files: files, info: info, loading: false});
         });
 
         // Update the info every UPDATE_TIME seconds
-        this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.join("/"), {
-                method: 'GET'
-            })
-            .then(response => {return response.json()})
-            .then(data => {
-                var info = data["info"];
-
-                this.setState({info: info, updateCount: 0}, this.updateInfo);
-            });
-        }, 1000 * UPDATE_TIME);
+        this.createUpdateInfo();
 
         // Check for stuck uploads every STUCK_UPDATE_TIME seconds
         this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?path=' + this.state.current_folder.join("/"), {
+            fetch(process.env.REACT_APP_API_URL + 'info?_private=true&path=' + this.props.sessionId, {
                 method: 'GET'
             })
             .then(response => {return response.json()})
@@ -126,7 +128,8 @@ class PrivateFileExplorer extends React.Component {
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
-                                        "path": path,
+                                        _private: true,
+                                        path: this.props.sessionId + '/' + path,
                                     }),
                                 })
                                 .then(response => response.json());
@@ -134,21 +137,43 @@ class PrivateFileExplorer extends React.Component {
                         }
                     }
                 }
-                this.setState({info: info, updateCount: 0}, this.updateInfo);
+                this.setState({info: info, updateCount: 0});
             });
         }, 1000 * STUCK_UPDATE_TIME);
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files) {
+            this.displayFileSystem();
+        } else if (this.state.info !== prevState.info || this.state.components !== prevState.components) {
+            this.updateInfo();
+        }
+    }
+
+    createUpdateInfo() {
+        this.interval = setInterval(() => {
+            fetch(process.env.REACT_APP_API_URL + 'info?_private=true&path=' + this.props.sessionId, {
+                method: 'GET'
+            })
+            .then(response => {return response.json()})
+            .then(data => {
+                var info = data["info"];
+
+                this.setState({info: info, updateCount: 0});
+            });
+        }, 1000 * UPDATE_TIME);
     }
 
     updateInfo() {
         if (this.state.layoutMenu || this.state.editingMenu) return;
         this.rowRefs.forEach(ref => {
-            var filename = this.state.current_folder.join("/") + "/" + ref.current.state.name;
+            const filename = this.state.current_folder + '/' + ref.current.props.name;
             if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
-                var rowInfo = this.getInfo(filename);
+                const rowInfo = this.getInfo(filename);
                 ref.current.updateInfo(rowInfo);
             }
         });
-        this.setState({updateCount: 0, updatingRows: []});
+        this.setState({updatingRows: []});
     }
 
     componentWillUnmount() {
@@ -156,32 +181,27 @@ class PrivateFileExplorer extends React.Component {
             clearInterval(this.interval);
     }
 
+    /**
+     * Update the files and info
+     */
     updateFiles(data) {
-        /**
-         * Update the files and info
-         */
-
-        var files = {}
-        files["files"] = data["files"]
-        var info = data['info'];
-
-
-
-        this.setState({ files: files, info: info }, this.displayFileSystem);
+        const files = {'files': data['files']}
+        const info = data['info'];
+        this.setState({ files: files, info: info });
     }
 
+    /**
+     * Open the folder menu
+     */
     createFolder() {
-        /**
-         * Open the folder menu
-         */
-        this.folderMenu.current.currentPath(this.state.current_folder.join('/'));
+        this.folderMenu.current.setPath(this.props.sessionId + '/' + this.state.current_folder);
         this.folderMenu.current.toggleOpen();
     }
 
     performOCR(multiple, file=null) {
-        var path = this.state.current_folder.join('/');
+        let path = this.props.sessionId + '/' + this.state.current_folder;
         if (file !== null) path += '/' + file;
-        this.ocrMenu.current.currentPath(path);
+        this.ocrMenu.current.setPath(path);
         this.ocrMenu.current.setMultiple(multiple);
         this.ocrMenu.current.performOCR("Tesseract", ["por"], path, multiple);
 
@@ -192,7 +212,8 @@ class PrivateFileExplorer extends React.Component {
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
         var formData = new FormData();
         formData.append('file', chunk);
-        formData.append('path', this.state.current_folder.join('/'))
+        formData.append('_private', true)
+        formData.append('path', this.props.sessionId + '/' + this.state.current_folder)
         formData.append('name', fileName);
         formData.append("fileID", _fileID);
         formData.append('counter', i+1);
@@ -210,14 +231,14 @@ class PrivateFileExplorer extends React.Component {
                     info[k] = data["info"][k];
                 }
 
-                var updatingList = this.state.updatingRows;
-                var complete_filename = this.state.current_folder.join("/") + "/" + fileName;
+                const updatingList = this.state.updatingRows;
+                const complete_filename = this.state.current_folder + '/' + fileName;
                 if (!updatingList.includes(complete_filename)) {
                     updatingList.push(complete_filename);
                 }
 
                 if (data["finished"] || this.state.updateCount === this.state.updatingRate) {
-                    this.setState({info: info, updateCount: 0, updatingRows: updatingList}, this.updateInfo);
+                    this.setState({info: info, updateCount: 0, updatingRows: updatingList});
                 } else {
                     this.setState({updateCount: this.state.updateCount + 1});
                 }
@@ -231,34 +252,15 @@ class PrivateFileExplorer extends React.Component {
         });
     }
 
-    createLayout(filename) {
-        this.state.app.setState({layoutMenu: true});
-        this.setState({layoutMenu: true, layoutFilename: filename});
-    }
-
-    closeLayoutMenu() {
-        this.state.app.setState({layoutMenu: false});
-        this.setState({layoutMenu: false, layoutFilename: null});
-    }
-
-    editText(filename) {
-        this.state.app.setState({editingMenu: true});
-        this.setState({editingMenu: true, editingFilename: filename});
-    }
-
-    closeEditingMenu() {
-        this.state.app.setState({editingMenu: false});
-        this.setState({editingMenu: false, editingFilename: null});
-    }
-
+    /**
+     * This is a hack to get around the fact that the input type="file" element
+     * cannot be accessed from the React code. This is because the element is
+     * not rendered by React, but by the browser itself.
+     *
+     * Function to select the files to be submitted
+     */
     createFile() {
-        /**
-         * This is a hack to get around the fact that the input type="file" element
-         * cannot be accessed from the React code. This is because the element is
-         * not rendered by React, but by the browser itself.
-         *
-         * Function to select the files to be submitted
-         */
+        const path = this.props.sessionId + '/' + this.state.current_folder;
 
         var el = window._protected_reference = document.createElement("INPUT");
         el.type = "file";
@@ -289,7 +291,8 @@ class PrivateFileExplorer extends React.Component {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        path: this.state.current_folder.join('/'),
+                        _private: true,
+                        path: path,
                         name: fileName,
                     })
                 }).then(response => {return response.json()})
@@ -297,10 +300,8 @@ class PrivateFileExplorer extends React.Component {
                     if (data['success']) {
                         var filesystem = data["filesystem"];
                         var info = filesystem["info"];
-                        var files = {}
-                        files["files"] = filesystem["files"];
-
-                        this.setState({files: files, info: info, addDisabled: true, ocrDisabled: false}, this.displayFileSystem);
+                        var files = {'files': filesystem["files"]};
+                        this.setState({files: files, info: info});
                         fileName = data["filename"];
 
                         // Send chunks
@@ -325,32 +326,20 @@ class PrivateFileExplorer extends React.Component {
         el.click();
     }
 
-    createPrivateSession() {
-        fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
-            method: 'GET'
-        })
-        .then(response => {return response.json()})
-        .then(data => {
-            var sessionId = data["sessionId"];
-            window.location.href = window.location.href + `${sessionId}`;
-        });
-    }
-
     getDocument(type, file, suffix="") {
         /**
          * Export the .txt or .pdf file
          */
-        var path = this.state.current_folder.join('/') + '/' + file;
-
-        fetch(process.env.REACT_APP_API_URL + "get_" + type + '?path=' + path, {
+        const path = this.props.sessionId + '/' + this.state.current_folder + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "get_" + type + '?_private=true&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
         .then(data => {
-            var a = document.createElement('a');
+            const a = document.createElement('a');
             a.href = URL.createObjectURL(data);
 
-            var basename = file.split('.').slice(0, -1).join('.');
+            const basename = file.split('.').slice(0, -1).join('.');
             a.download = basename + '_ocr' + suffix + '.' + type.split('_')[0];
             a.click();
             a.remove();
@@ -358,16 +347,16 @@ class PrivateFileExplorer extends React.Component {
     }
 
     getEntities(file) {
-        var path = this.state.current_folder.join('/') + '/' + file;
-        fetch(process.env.REACT_APP_API_URL + "get_entities?path=" + path, {
+        const path = this.props.sessionId + '/' + this.state.current_folder + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "get_entities?_private=true&path=" + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
         .then(data => {
-            var a = document.createElement('a');
+            const a = document.createElement('a');
             a.href = URL.createObjectURL(data);
 
-            var basename = file.split('.').slice(0, -1).join('.');
+            const basename = file.split('.').slice(0, -1).join('.');
             a.download = basename + '_entidades.json';
             a.click();
             a.remove();
@@ -375,31 +364,30 @@ class PrivateFileExplorer extends React.Component {
     }
 
     requestEntities(file) {
-        var path = this.state.current_folder.join('/') + '/' + file;
-        fetch(process.env.REACT_APP_API_URL + "request_entities?path=" + path, {
+        const path = this.props.sessionId + '/' + this.state.current_folder + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "request_entities?_private=true&path=" + path, {
             method: 'GET'
         })
         .then(response => {return response.json()})
         .then(data => {
             if (data.success) {
-                var filesystem = data["filesystem"];
-                var info = filesystem["info"];
-                var files = {'files': filesystem["files"]};
+                const filesystem = data["filesystem"];
+                const info = filesystem["info"];
+                const files = {'files': filesystem["files"]};
 
-                this.setState({files: files, info: info}, this.displayFileSystem);
+                this.setState({files: files, info: info});
             }
         });
     }
 
     getOriginalFile(file) {
-        var path = this.state.current_folder.join('/') + '/' + file;
-
-        fetch(process.env.REACT_APP_API_URL + "get_original?path=" + path, {
+        const path = this.props.sessionId + '/' + this.state.current_folder + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "get_original?_private=true&path=" + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
         .then(data => {
-            var a = document.createElement('a');
+            const a = document.createElement('a');
             a.href = URL.createObjectURL(data);
 
             a.download = file;
@@ -408,114 +396,146 @@ class PrivateFileExplorer extends React.Component {
         });
     }
 
+    /**
+     * Export the .txt file
+     */
     getTxt(file) {
-        /**
-         * Export the .txt file
-         */
         this.getDocument("txt", file);
     }
 
+    /**
+     * Export the .txt file
+     * with the delimiter
+     */
     getDelimiterTxt(file) {
-        /**
-         * Export the .txt file
-         * with the delimiter
-         */
         this.getDocument("txt_delimitado", file, "_delimitado");
     }
 
+    /**
+     * Export the .csv file
+     */
     getCSV(file) {
-        /**
-         * Export the .csv file
-         */
          this.getDocument("csv", file);
     }
 
+    /**
+     * Export the .zip file
+     */
+    getImages(file) {
+        const path = this.props.sessionId + '/' + this.state.current_folder + '/' + file;
+        fetch(process.env.REACT_APP_API_URL + "get_images?_private=true&path=" + path, {
+            method: 'GET'
+        })
+        .then(response => {return response.blob()})
+        .then(data => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(data);
+
+            a.download = path.split('/').slice(-1)[0] + '.zip';
+            a.click();
+            a.remove();
+        });
+    }
+
+    /**
+     * Export the .pdf file
+     */
     getPdf(file) {
-        /**
-         * Export the .pdf file
-         */
-        this.getDocument("pdf", file);
+        this.getDocument("pdf", file, "_texto_indice");
     }
 
+    /**
+     * Export the .pdf file
+     */
+    getPdfSimples(file) {
+        this.getDocument("pdf_simples", file, "_texto");
+    }
+
+    /*
     editFile(file) {
-        /**
-         * Open the file in the editor
-         */
-        var path = this.state.current_folder.join('/');
-        var filename = path + '/' + file;
-        this.state.app.editFile(path, filename);
+        const filename = this.state.current_folder + '/' + file;
+        this.state.app.editFile(this.state.current_folder, filename);
     }
+     */
 
+    /*
     viewFile(file, algorithm, config) {
         var path = this.state.current_folder.slice(1).join('/');
         file = file.split('/')[0];
         var filename = path + '/' + file;
         this.state.app.viewFile(filename, algorithm, config);
     }
+    */
 
+    /**
+     * Open the delete menu
+     */
     deleteItem(name) {
-        /**
-         * Open the delete menu
-         */
-        this.deleteMenu.current.currentPath(this.state.current_folder.join('/') + '/' + name);
+        this.deleteMenu.current.setPath(this.props.sessionId + '/' + this.state.current_folder + '/' + name);
         this.deleteMenu.current.toggleOpen();
     }
 
+    /**
+     * Enter the folder and update the path
+     */
+    enterFolder(folder) {
+        let current_folder_list = this.state.current_folder.split('/');
+        current_folder_list.push(folder);
+        this.props.setCurrentPath(current_folder_list);
+    }
+
+    /**
+     * Find the folder in the files
+     */
     findFolder(files, folder) {
-        /**
-         * Find the folder in the files
-         */
-        if ( Array.isArray(files) ) {
-            var i;
-            for (i = 0; i < files.length; i++) {
-                var dict = files[i];
+        if (Array.isArray(files)) {
+            for (let i = 0; i < files.length; i++) {
+                const dict = files[i];
                 const key = Object.keys(dict)[0];
                 if (key === folder) {
                     return dict[folder];
                 }
             }
+        } else {
+            // whole object was passed, return top-level array of folders
+            return files["files"];
         }
-        return files[folder];
     }
 
+    /**
+     * Get the contents of the current folder
+     */
     getPathContents() {
-        /**
-         * Get the contents of the current folder
-         */
+        let files = this.state.files;
+        let current_folder_list = this.state.current_folder.split('/');
 
-        var files = this.state.files;
-        var current_folder = this.state.current_folder;
-
-        for (let f in current_folder) {
-            var key = current_folder[f];
+        // if path is at top level, findFolder() is called once, returns whole list of folders and files
+        for (let f in current_folder_list) {
+            let key = current_folder_list[f];
             files = this.findFolder(files, key);
         }
 
         return files;
     }
 
+    /**
+     * Get the info of the file
+     */
     getInfo(path) {
-        /**
-         * Get the info of the file
-         */
-
-
-
-
         return this.state.info[path];
     }
 
+    /**
+     * Sorts the contents of the current folder
+     * First order by type (folder, file)
+     * Then order by name
+     */
     sortContents(contents) {
-        /**
-         * Sorts the contents of the current folder
-         * First order by type (folder, file)
-         * Then order by name
-         */
-        var folders = [];
-        var files = [];
+        let folders = [];
+        let files = [];
 
         for (let f in contents) {
-            var item = contents[f];
+            const item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
                 files.push(item);
             } else {
@@ -524,8 +544,8 @@ class PrivateFileExplorer extends React.Component {
         }
 
         folders.sort(function(d1, d2) {
-            var key1 = Object.keys(d1)[0];
-            var key2 = Object.keys(d2)[0];
+            const key1 = Object.keys(d1)[0];
+            const key2 = Object.keys(d2)[0];
             return key1.localeCompare(key2);
         });
         files.sort();
@@ -551,9 +571,9 @@ class PrivateFileExplorer extends React.Component {
         }
 
         if (isSorted(contents)) {
-            this.setState({components: contents.sort((a, b) => (b.key).localeCompare(a.key))}, this.updateInfo);
+            this.setState({components: contents.sort((a, b) => (b.key).localeCompare(a.key))});
         } else {
-            this.setState({components: contents.sort((a, b) => (a.key).localeCompare(b.key))}, this.updateInfo);
+            this.setState({components: contents.sort((a, b) => (a.key).localeCompare(b.key))});
         }
     }
 
@@ -564,38 +584,67 @@ class PrivateFileExplorer extends React.Component {
         const contents = this.sortContents(this.getPathContents());
         this.rowRefs = [];
 
-        var items = [];
+        let items = [];
 
         for (let f in contents) {
-            var ref = React.createRef();
+            let ref = React.createRef();
             this.rowRefs.push(ref);
 
-            var item = contents[f];
-
+            const item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
                 items.push(
                     <PrivateFileRow
                         ref={ref}
                         key={item}
                         name={item}
-                        info={this.getInfo(this.state.current_folder.join("/") + "/" + item)}
-                        filesystem={this}
+                        info={this.getInfo(this.state.current_folder + '/' + item)}
+                        deleteItem={this.deleteItem}
+                        getOriginalFile={this.getOriginalFile}
+                        getDelimiterTxt={this.getDelimiterTxt}
+                        getTxt={this.getTxt}
+                        getEntities={this.getEntities}
+                        requestEntities={this.requestEntities}
+                        getCSV={this.getCSV}
+                        getImages={this.getImages}
+                        getPdf={this.getPdf}
+                        getPdfSimples={this.getPdfSimples}
+                        editText={this.editText}
+                        performOCR={this.performOCR}
+                        createLayout={this.createLayout}
                     />
                 )
             } else {
-                var key = Object.keys(item)[0];
+                const key = Object.keys(item)[0];
                 items.push(
                     <FolderRow
                         ref={ref}
                         key={key}
                         name={key}
-                        info={this.getInfo(this.state.current_folder.join("/") + "/" + key)}
-                        filesystem={this}
+                        info={this.getInfo(this.state.current_folder + '/' + key)}
+                        current_folder={this.state.current_folder}
+                        enterFolder={this.enterFolder}
+                        deleteItem={this.deleteItem}
                     />
                 )
             }
         }
-        this.setState({components: items}, this.updateInfo);
+        this.setState({components: items});
+    }
+
+    createLayout(filename) {
+        this.props.enterLayoutMenu(filename);
+    }
+
+    closeLayoutMenu() {
+        this.props.exitMenus();
+    }
+
+    editText(filename) {
+        this.props.enterEditingMenu(filename);
+    }
+
+    closeEditingMenu() {
+        this.props.exitMenus();
     }
 
     generateTable() {
@@ -714,9 +763,9 @@ class PrivateFileExplorer extends React.Component {
             <>
                 {
                     this.state.layoutMenu
-                    ? <LayoutMenu filesystem={this} filename={this.state.layoutFilename} />
+                    ? <LayoutMenu _private={true} sessionId={this.props.sessionId} current_folder={this.state.current_folder} filename={this.state.fileOpened} closeLayoutMenu={this.closeLayoutMenu}/>
                     : this.state.editingMenu
-                        ? <EditingMenu filesystem={this} filename={this.state.editingFilename} />
+                        ? <EditingMenu _private={true} sessionId={this.props.sessionId} current_folder={this.state.current_folder} filename={this.state.fileOpened} closeEditingMenu={this.closeEditingMenu}/>
                         : <Box sx={{
                             ml: '1.5rem',
                             mr: '1.5rem',
@@ -725,11 +774,11 @@ class PrivateFileExplorer extends React.Component {
                             <Notification message={""} severity={"success"} ref={this.successNot}/>
                             <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                            <FolderMenu filesystem={this} ref={this.folderMenu}/>
-                            <OcrMenu filesystem={this} ref={this.ocrMenu}/>
-                            <DeleteMenu filesystem={this} ref={this.deleteMenu} />
-                            <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu} />
-                            <FullStorageMenu filesystem={this} ref={this.storageMenu} />
+                            <FolderMenu ref={this.folderMenu} _private={true} updateFiles={this.updateFiles}/>
+                            <OcrMenu ref={this.ocrMenu} _private={true} updateFiles={this.updateFiles} showStorageForm={this.showStorageForm}/>
+                            <DeleteMenu ref={this.deleteMenu} _private={true} updateFiles={this.updateFiles}/>
+                            <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu}/>
+                            <FullStorageMenu ref={this.storageMenu}/>
 
                             {
                                 this.generateTable()

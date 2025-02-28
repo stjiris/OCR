@@ -59,12 +59,12 @@ class LayoutPreview extends React.Component {
 class LayoutBox extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
+        this.state = {  // TODO: use props instead of state where possible
             index: props.index,
 
             layoutImage: props.layoutImage,
             view: props.view,
-            image: props.image,
+            image: props.image,  // TODO: remove this reference and use strictly necessary props
 
             top: props.top,
             left: props.left,
@@ -258,7 +258,7 @@ export default class LayoutImage extends React.Component {
 
             currentZoom: 1,
             maxZoom: 4,
-            
+
             boxesCoords: props.boxesCoords,
             boxes: [],
             imageBoxes: [],
@@ -333,7 +333,7 @@ export default class LayoutImage extends React.Component {
             var squares = [];
             var copyId = undefined;
             groupRefs.forEach((ref) => {
-                var details = ref.current.getBoxDetails(); 
+                var details = ref.current.getBoxDetails();
                 if (details.copyId) {
                     copyId = details.copyId;
                     delete details.copyId;
@@ -470,7 +470,7 @@ export default class LayoutImage extends React.Component {
                         position: 'relative',
                         height: this.state.boxHeight,
                         width: `${this.getWindowWidth()}px`,
-                        overflow: 'scroll', 
+                        overflow: 'scroll',
                         border: '1px solid grey'
                     }}
                 >

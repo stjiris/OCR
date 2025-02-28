@@ -10,7 +10,7 @@ class AlgoDropdown extends React.Component {
     super(props);
     this.state = {
       algorithm: 'Tesseract',
-      menu: props.menu
+      menu: props.menu  // TODO: remove this reference and use strictly necessary props
     }
   }
 

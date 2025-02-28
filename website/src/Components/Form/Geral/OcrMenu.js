@@ -249,9 +249,6 @@ class OcrMenu extends React.Component {
             open: false,
             path: "",
             multiple: false,
-
-            filesystem: props.filesystem,
-
             languageOptions: tesseractLangList,
             languageChoice: tesseractChoice
         }
@@ -266,7 +263,7 @@ class OcrMenu extends React.Component {
     }
 
     // SETTERS
-    currentPath(path) { this.setState({ path: path }) }
+    setPath(path) { this.setState({ path: path }) }
     setMultiple(multiple) { this.setState({ multiple: multiple }) }
     toggleOpen() { this.setState({ open: !this.state.open }) }
 
@@ -285,10 +282,10 @@ class OcrMenu extends React.Component {
         }
     }
 
+    /**
+     * Request OCR of the file on the given path from the backend
+     */
     performOCR(algorithm = null, config = null, path = null, multiple = null) {
-        /**
-         * Request the OCR to the backend
-         */
         if (algorithm === null) algorithm = this.algoDropdown.current.getChoice();
         if (config === null) config = this.langs.current.getChoiceList();
         if (path === null) path = this.state.path;
@@ -300,31 +297,30 @@ class OcrMenu extends React.Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                "path": path,
+                "path": path.replace(/^\//, ''),
                 "algorithm": algorithm,
                 "config": config,
-                "multiple": multiple
+                "multiple": multiple,
+                "_private": this.props._private
             }),
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                this.state.filesystem.updateFiles(data.files)
+                this.props.updateFiles(data.files)
 
                 this.successNot.current.setMessage(data.message);
                 this.successNot.current.open();
             } else {
                 if (data.error) {
-                    this.state.filesystem.showStorageForm(data.error);
+                    this.props.showStorageForm(data.error);
                 } else {
                     this.errorNot.current.setMessage(data.message);
                     this.errorNot.current.open();
                 }
             }
 
-            this.state.filesystem.updateFiles(data.files)
-
-            
+            this.props.updateFiles(data.files)
 
             this.setState({ open: false });
         });
@@ -366,6 +362,10 @@ class OcrMenu extends React.Component {
             </Box>
         )
     }
+}
+
+OcrMenu.defaultProps = {
+    _private: false
 }
 
 export default OcrMenu;

@@ -89,9 +89,9 @@ def find_lines(
 def remove_lines(image, vertical_mask, horizontal_mask):
     lines = vertical_mask + horizontal_mask
     # note this is a horizontal kernel
-    kernel = np.ones((5, 5), np.uint8)  
+    kernel = np.ones((5, 5), np.uint8)
     lines = cv2.dilate(lines, kernel, iterations=2)
-    image = cv2.adaptiveThreshold(image, 255,     
+    image = cv2.adaptiveThreshold(image, 255,
            cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
     image = cv2.bitwise_or(image, lines, mask=None)
     return image
@@ -100,11 +100,11 @@ def findCorners(image):
     """
     features from Accelerated Segment Test (FAST) Corner detection
     :parm image:
-    : retrun 
+    : retrun
     """
     pos_corners = []
     pos_corners_xy = []
-    
+
     fast = cv2.FastFeatureDetector_create()
     kp = fast.detect(image, None)
     w = 1
@@ -119,7 +119,7 @@ def merge_boxes(boxes):
         for key in boxes.keys():
             box = boxes[key]
             if len(box) > 0:
-                new_pos = [max(0, min(box[:, 0]-5)), max(0, min(box[:,   
+                new_pos = [max(0, min(box[:, 0]-5)), max(0, min(box[:,
                 1]-5)), max(box[:, 2]+5), max(box[:, 3]+5)]
                 boxes[key] = new_pos
         return boxes
@@ -146,7 +146,7 @@ def parse_image(img_path):
                     line_scale=15,
                     iterations=0,
                 )
-                
+
     horizontal_mask, horizontal_segments = find_lines(
         threshold_inv,
         regions=None,
@@ -157,38 +157,38 @@ def parse_image(img_path):
 
     image_remove_line = remove_lines(thresh1, vertical_mask, horizontal_mask)
 
-    pos_corners, pos_corners_xy, kp = findCorners(image_remove_line) 
+    pos_corners, pos_corners_xy, kp = findCorners(image_remove_line)
     thresh_inv = 255-image_remove_line
     contours, hierarchy = cv2.findContours(thresh_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
-        
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x, y])
-        
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x+w, y+h])
-        
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x+w, y])
-        
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x, y+h])
-        
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x+w/2, y+h/2])
-        
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x, y+h/2])
-        
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x+w/2, y])
-        
-        
+
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x+w, y+h/2])
-        
+
         pos_corners.append([x, y, x+w, y+h])
         pos_corners_xy.append([x+w/2, y+h])
 
@@ -214,7 +214,7 @@ def parse_image(img_path):
     # img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     # im2 = img.copy()
     # for box in mer_boxes.values():
-    #     cv2.rectangle(im2, (int(box[0]), int(box[1])), (int(box[2]),       
+    #     cv2.rectangle(im2, (int(box[0]), int(box[1])), (int(box[2]),
     #     int(box[3])),(0, 0, 255), 2)
 
     # cv2.imshow("shapes", im2)
@@ -254,7 +254,7 @@ def parse_images(path):
 
             all_layouts.append({"boxes": formatted_boxes})
 
-        layouts_path = f"{path}/layouts"
+        layouts_path = f"{path}/_layouts"
         if not os.path.isdir(layouts_path):
             os.mkdir(layouts_path)
 
@@ -271,3 +271,4 @@ def parse_images(path):
         save_file_layouts(path, sorted_all_layouts)
     else:
         log.error(f"Error in parsing images at {path}")
+        raise FileNotFoundError

@@ -1,17 +1,17 @@
-FROM node:16.18.0 as builder
+FROM node:lts AS builder
 
 COPY ./website/package* .
 
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 
 COPY ./website .
 
 RUN npm run build
 
-FROM nginx:latest
+FROM nginx:stable
 
 COPY --from=builder /build/ /usr/share/nginx/html
 
-COPY ./compose/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./compose/nginx/nginx.conf.template /etc/nginx/templates/nginx.conf.template
 
 CMD ["nginx","-g","daemon off;"]

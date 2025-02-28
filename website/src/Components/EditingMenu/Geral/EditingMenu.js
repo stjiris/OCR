@@ -37,11 +37,34 @@ class Word extends React.Component {
             id: props.id,
             box: props.box,
             cleanText: props.cleanText,
+            editWord: false
         }
     }
 
+    toggleEditWord() {
+      this.setState({
+        editWord: !this.state.editWord
+      })
+    }
+    handleWordChange(e) {
+      this.setState({
+        text: e.target.value
+      });
+    }
+
     render() {
-        return <p
+        return (this.state.editWord)
+      ? <input
+            autoFocus
+            className={`${this.state.cleanText}`}
+            style={{width: `${this.state.text.length}ch`}}
+            type="text"
+            value={this.state.text}
+            onBlur={e => this.toggleEditWord()}
+            onChange={e => this.handleWordChange(e)}
+            onKeyUp={e => { if (e.key === 'Enter') { this.handleWordChange(e); this.toggleEditWord()}}}
+            />
+          : <p
             id={this.state.id}
             className={`${this.state.cleanText}`}
             style={{
@@ -58,6 +81,7 @@ class Word extends React.Component {
             onMouseLeave={(e) => {
                 this.state.overlay.setState({selectedWordBox: null});
             }}
+            onClick={e=> this.toggleEditWord()}
         >
             {this.state.text}
         </p>
@@ -68,11 +92,6 @@ class EditingMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            filesystem: props.filesystem,
-
-            path: "",
-            filename: props.filename,
-
             loading: true,
             contents: [],
             words_list: [],
@@ -115,15 +134,11 @@ class EditingMenu extends React.Component {
     }
 
     componentDidMount() {
-        const path = this.state.filesystem.state.current_folder.join("/");
-
         this.setState({
-            path: path,
-            file: path + "/" + this.state.filename,
             imageHeight: window.innerHeight - 175,
             baseImageHeight: window.innerHeight - 175,
-
             textWidth: window.innerWidth * 0.9 * 0.6 - 70,
+            loading: true
         }, this.getContents);
     }
 
@@ -132,13 +147,14 @@ class EditingMenu extends React.Component {
             this.confirmLeave.current.toggleOpen();
         } else {
             window.removeEventListener('beforeunload', this.preventExit);
-            this.state.filesystem.closeEditingMenu();
+            this.props.closeEditingMenu();
         }
     }
 
     getContents(page = 1) {
-        this.setState({loading: true});
-        fetch(process.env.REACT_APP_API_URL + 'get-file?path=' + this.state.file + '&page=' + page, {
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        const is_private = this.props._private ? '_private=true&' : '';
+        fetch(process.env.REACT_APP_API_URL + 'get-file?' + is_private + 'path=' + path + '&page=' + page, {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -197,7 +213,6 @@ class EditingMenu extends React.Component {
     }
 
     firstPage() {
-
         this.setState({
             currentPage: 1,
             selectedWord: "",
@@ -479,7 +494,6 @@ class EditingMenu extends React.Component {
     }
 
     updateInputSize() {
-
         var text = this.state.editingText;
         var parentNode = this.state.parentNode;
         var children = parentNode.children;
@@ -497,7 +511,6 @@ class EditingMenu extends React.Component {
     }
 
     getSelectedText() {
-
         if (typeof window.getSelection !== "undefined") {
             // Get the range and make the all word selected
             if (window.getSelection().toString().length === 0) return null;
@@ -629,7 +642,6 @@ class EditingMenu extends React.Component {
      * Handle the words list and actions
      */
     cleanWord(word) {
-
         var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
         while (word !== "") {
             if (punctuation.includes(word[0])) {
@@ -651,7 +663,6 @@ class EditingMenu extends React.Component {
     }
 
     cleanWordSelection() {
-
         var words = document.getElementsByClassName(this.selectedWord);
 
         for (var i = 0; i < words.length; i++) {
@@ -661,7 +672,6 @@ class EditingMenu extends React.Component {
     }
 
     getScrollValue(word, count = 0) {
-
         // var words = [];
         var words = document.getElementsByClassName(word);
 
@@ -690,8 +700,6 @@ class EditingMenu extends React.Component {
     }
 
     goToNextOccurrence(word) {
-
-
         // var word = this.state.selectedWord;
         var index = Math.max(0, this.state.selectedWordIndex);
         var pages = this.state.words_list[word]["pages"];
@@ -735,6 +743,7 @@ class EditingMenu extends React.Component {
             body: JSON.stringify({
                 "text": this.state.contents,
                 "remakeFiles": remakeFiles,
+                "_private": this.props._private
             })
         })
         .then(response => {return response.json()})
@@ -749,7 +758,7 @@ class EditingMenu extends React.Component {
                 this.successNot.current.open();
 
                 if (remakeFiles) {
-                    this.state.filesystem.closeEditingMenu();
+                    this.props.closeEditingMenu();
                 }
             } else {
                 // this.errorNot.current.setMessage(data.error);
@@ -997,7 +1006,6 @@ class EditingMenu extends React.Component {
                                                 }
                                             </Box>;
                                         })
-
                                     }
                                 </Box>
 
@@ -1220,6 +1228,11 @@ class EditingMenu extends React.Component {
             </Box>
         )
     }
+}
+
+EditingMenu.defaultProps = {
+    _private: false,
+    sessionId: ""
 }
 
 export default EditingMenu;

@@ -2,6 +2,9 @@ import json
 import logging as log
 import os
 import random
+import re
+from json import JSONDecodeError
+
 import requests
 import uuid
 from datetime import datetime
@@ -16,8 +19,14 @@ from src.utils.export import export_file
 from src.utils.export import json_to_text
 from string import punctuation
 
+FILES_PATH = environ.get("FILES_PATH", "_files")
+PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
+
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
+
+log.basicConfig(level=log.INFO, format=f'%(asctime)s %(levelname)s : %(message)s')
+
 ##################################################
 # FILESYSTEM UTILS
 ##################################################
@@ -37,13 +46,18 @@ def get_ner_file(path):
         "https://iris.sysresearch.org/absconditus/from-text",
         files={"file": open(f"{path}/_text.txt", "rb")},
     )
+    try:
+        ner = r.json()
+    except JSONDecodeError:
+        return False
 
     if r.status_code == 200:
         with open(f"{path}/_entities.json", "w", encoding="utf-8") as f:
-            json.dump(r.json(), f, indent=2, ensure_ascii=False)
+            json.dump(ner, f, indent=2, ensure_ascii=False)
         return True
     else:
         return False
+
 
 # DONE
 def get_current_time():
@@ -55,14 +69,14 @@ def get_current_time():
     return datetime.now().astimezone(TIMEZONE).strftime("%d/%m/%Y %H:%M:%S")
 
 # TODO
-def get_file_parsed(path):
+def get_file_parsed(path, is_private):
     """
     Return the text off all the pages of the file
 
     :param path: path to the file
     :return: list with the text of each page
     """
-    path += "/ocr_results"
+    path += "/_ocr_results"
     files = [
         f"{path}/{f}"
         for f in os.listdir(path)
@@ -90,7 +104,7 @@ def get_file_parsed(path):
                                 t = t[1:]
                             else:
                                 break
-                        
+
                         while t:
                             if t[-1] in punctuation + "«»—":
                                 t = t[:-1]
@@ -109,6 +123,10 @@ def get_file_parsed(path):
                                 "pages": [id],
                                 "syntax": True
                             }
+            if is_private:
+                file = re.sub(f"^{PRIVATE_PATH}", '', file)
+            else:
+                file = re.sub(f"^{FILES_PATH}", '', file)
 
             data.append(
                 {
@@ -116,24 +134,26 @@ def get_file_parsed(path):
                     "content": hocr,
                     "page_number": int(basename.split("_")[-1]),
                     "page_url": IMAGE_PREFIX
-                    + "/images/"
+                    + ("/private/" if is_private else "/images/")  # TODO: secure private session images
                     + "/".join(file.split("/")[1:-2])
-                    + "/"
-                    + basename
-                    + ".jpg",
+                    + f"/{basename}.jpg"
                 }
             )
     return data, words
 
 # TODO
-def get_file_layouts(path):
+def get_file_layouts(path, is_private):
+    data = get_data(f"{path}/_data.json")
     layouts = []
     basename = get_file_basename(path)
-    data = get_data(f"{path}/_data.json")
 
     for page in range(data["pages"]):
-        filename = f"{path}/layouts/{basename}_{page}.json"
-        page_url = IMAGE_PREFIX + "/images/" + "/".join(path.split("/")[1:]) + f"/{basename}_{page}.jpg"
+        filename = f"{path}/_layouts/{basename}_{page}.json"
+        if is_private:
+            folder_url = f"/private/{path.replace(PRIVATE_PATH, '')}"
+        else:
+            folder_url = f"/images/{path.replace(FILES_PATH, '')}"
+        page_url = IMAGE_PREFIX + folder_url + f"/{basename}_{page}.jpg"
 
         if os.path.exists(filename):
             with open(filename, encoding="utf-8") as f:
@@ -155,17 +175,21 @@ def get_file_layouts(path):
 
 # TODO
 def save_file_layouts(path, layouts):
+    data = get_data(f"{path}/_data.json")
+    if data["type"] != "file":
+        return FileNotFoundError
+
     basename = get_file_basename(path)
-    if not os.path.isdir(f"{path}/layouts"):
-        os.mkdir(f"{path}/layouts")
+    if not os.path.isdir(f"{path}/_layouts"):
+        os.mkdir(f"{path}/_layouts")
 
     for id, page in enumerate(layouts):
         layouts = page["boxes"]
-        filename = f"{path}/layouts/{basename}_{id}.json"
+        filename = f"{path}/_layouts/{basename}_{id}.json"
 
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(layouts, f, indent=2, ensure_ascii=False)
-  
+
 # DONE
 def generate_uuid(path):
     random.seed(path)
@@ -183,8 +207,8 @@ def delete_structure(client, path):
         if data.get("indexed", False):
             files = [f"{path}/{f}" for f in os.listdir(path) if f.endswith(".txt")]
             for file in files:
-                id = generate_uuid(file)
-                client.delete_document(id)
+                file_id = generate_uuid(file)
+                client.delete_document(file_id)
 
     else:
         folders = [
@@ -193,20 +217,23 @@ def delete_structure(client, path):
         for folder in folders:
             delete_structure(client, folder)
 
+
 # TODO
-def get_filesystem(path, private_session = None):
+def get_filesystem(path, private_session=None, is_private=False):
     """
-        @@ -106,7 +101,7 @@ def get_filesystem(path):
-    @param path: path to the folder
+    :param path: path to the folder
     """
-    files = get_structure(path, private_session)
-    info = get_structure_info(path, private_session)
+    files = get_structure(path, private_session, is_private)
+    info = get_structure_info(path, private_session, is_private)
 
     if files is None:
-        files = {path: []}
-
+        if path != FILES_PATH and PRIVATE_PATH not in path:
+            files = {path: []}
+        else:
+            files = {"files": []}
 
     return {**files, "info": info}
+
 
 # TODO
 def get_ocr_size(path):
@@ -260,7 +287,7 @@ def get_size(path, path_complete=False):
         return f"{size / 1024 ** 3:.2f} GB"
 
 # TODO
-def get_folder_info(path):
+def get_folder_info(path, private_session=None):
     """
     Get the info of the folder
     :param path: path to the folder
@@ -273,36 +300,40 @@ def get_folder_info(path):
     if data["type"] == "file" and ("progress" not in data or data["progress"] == True):
         data["size"] = get_size(path)
 
+    # sanitize important paths from the info key
+    path = path.replace(f"{PRIVATE_PATH}/{private_session}", "").replace(PRIVATE_PATH, "").replace(FILES_PATH, "")
     info[path] = data
     return info
 
 # TODO
-def get_structure_info(path, private_session):
+def get_structure_info(path, private_session=None, is_private=False):
     """
     Get the info of each file/folder
-    @param files: the filesystem structure
     """
+    if not is_private and PRIVATE_PATH in path: raise FileNotFoundError
+
     info = {}
 
     for root, folders, _ in os.walk(path):
         root = root.replace("\\", "/")
         for folder in folders:
-            if private_session is None and ("_private_sessions" in root or folder == "_private_sessions"): continue
+            # ignore reserved folders
+            if folder.startswith('_'): continue
+            # ignore possible private path folders
+            if not is_private and (PRIVATE_PATH in root or folder in PRIVATE_PATH): continue
+            # if in a private session, ignore folders not from this private session
+            if is_private and not f"{PRIVATE_PATH}/{private_session}" in root: continue
 
-            if private_session is not None and \
-                not(f"files/_private_sessions/{private_session}" in f"{root}/{folder}" or \
-                    f"{root}/{folder}" in f"files/_private_sessions/{private_session}"): continue
-            
             folder_path = f"{root}/{folder}".replace("\\", "/")
 
-            folder_info = get_folder_info(folder_path)
+            folder_info = get_folder_info(folder_path, private_session)
 
             info = {**info, **folder_info}
 
     return info
 
 # TODO
-def get_structure(path, private_session):
+def get_structure(path, private_session=None, is_private=False):
     """
     Put the file system structure in a dict
     {
@@ -318,10 +349,13 @@ def get_structure(path, private_session):
 
     :param path: the path to the files
     """
-    filesystem = {}
-    name = path.split("/")[-1]
+    if not is_private and PRIVATE_PATH in path: raise FileNotFoundError
 
-    if path != name:
+    filesystem = {}
+    if path == FILES_PATH or path == f"{PRIVATE_PATH}/{private_session}":
+        name = "files"
+    else:
+        name = path.split("/")[-1]
         data = get_data(f"{path}/_data.json")
         if "type" not in data:
             return None
@@ -329,14 +363,16 @@ def get_structure(path, private_session):
             return name
 
     contents = []
-    folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}")])
+    # ignore reserved folders that start with '_'
+    folders = sorted([f for f in os.listdir(path) if os.path.isdir(f"{path}/{f}") and not f.startswith('_')])
     for folder in folders:
-        if private_session is None and folder == "_private_sessions": continue
-        if private_session is not None and \
-            not (path + "/" + folder in f"files/_private_sessions/{private_session}" or \
-                 f"files/_private_sessions/{private_session}" in path + "/" + folder): continue
+        # ignore possible private path folders
+        if not is_private and folder in PRIVATE_PATH: continue
+        # if in a private session, ignore folders not from this private session
+        if is_private and not f"{PRIVATE_PATH}/{private_session}" in f"{path}/{folder}": continue
 
-        file = get_structure(f"{path}/{folder}", private_session)
+        folder = f"{path}/{folder}"
+        file = get_structure(folder, private_session, is_private)
 
         if file is not None:
             contents.append(file)
@@ -386,7 +422,7 @@ def get_file_extension(filename):
 ##################################################
 # DONE
 def get_data(file):
-    if not os.path.exists(file): return {}
+    if not os.path.exists(file): raise FileNotFoundError
     with open(file, encoding="utf-8") as f:
         text = f.read()
         if text == "":
@@ -417,15 +453,15 @@ def prepare_file_ocr(path):
         extension = path.split(".")[-1]
         basename = get_file_basename(path)
 
-        log.info("{path}: A preparar páginas")
+        log.info(f"{path}: A preparar páginas")
 
         if extension == "pdf":
             pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
             for i in range(len(pdf)):
                 page = pdf[i]
-                bitmap = page.render(200 / 72)
+                bitmap = page.render(300 / 72)  # turn PDF page into 300 DPI bitmap
                 pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/{basename}_{i}.jpg")
+                pil_image.save(f"{path}/{basename}_{i}.jpg", dpi=(300, 300))
 
             pdf.close()
 
@@ -433,10 +469,11 @@ def prepare_file_ocr(path):
             img = Image.open(f"{path}/{basename}.{extension}")
             img.save(f"{path}/{basename}.jpg", "JPEG")
     except Exception as e:
-        
+
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"] = data.get("ocr", {})
         data["ocr"]["exceptions"] = str(e)
         update_data(data_folder, data)
         log.error(f"Error in preparing OCR for file at {path}: {e}")
+        raise e

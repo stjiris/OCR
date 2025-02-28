@@ -4,6 +4,23 @@ body {
   font-family: 'Noto Sans Serif', sans-serif;
 }
 
+.MuiBox-root .pathElement {
+    margin: 0;
+    padding: 0 10px 0 10px;
+    text-transform: none;
+    display: flex;
+    text-align: left;
+    height: 2rem;
+    align-items: center;
+    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+    font-size: 0.875rem
+}
+
+.MuiBox-root .pathButton {
+    text-transform: none;
+    text-decoration: underline;
+}
+
 .page-div {
   margin-top: 0.5rem;
   text-align: center;
