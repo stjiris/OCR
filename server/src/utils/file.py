@@ -49,7 +49,7 @@ def get_ner_file(path):
     try:
         ner = r.json()
     except JSONDecodeError:
-        raise Exception("Failed to obtain NER data.")
+        return False
 
     if r.status_code == 200:
         with open(f"{path}/_entities.json", "w", encoding="utf-8") as f:
@@ -136,9 +136,7 @@ def get_file_parsed(path, is_private):
                     "page_url": IMAGE_PREFIX
                     + ("/private/" if is_private else "/images/")  # TODO: secure private session images
                     + "/".join(file.split("/")[1:-2])
-                    + "/"
-                    + basename
-                    + ".jpg",
+                    + f"/{basename}.jpg"
                 }
             )
     return data, words
