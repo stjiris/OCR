@@ -32,9 +32,10 @@ services:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
     environment:
-      CELERY_BROKER_URL: redis://redis:6379
-      CELERY_RESULT_BACKEND: redis://redis:6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
       C_FORCE_ROOT: true
+      PYTHONUNBUFFERED: true
     command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
     volumes:
       - files_data:/app/_files
@@ -48,7 +49,7 @@ services:
   flower:
     image: ocr-server
     environment:
-      CELERY_BROKER_URL: redis://redis:6379
+      CELERY_BROKER_URL: redis://redis:6379/0
     command: celery -A celery_app.celery flower --port=5050
     expose:
       - "5050"  # exposed only to other services
