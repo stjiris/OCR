@@ -912,12 +912,12 @@ def save_layouts():
 @app.route("/generate-automatic-layouts", methods=["GET"])
 @requires_arg_path
 def generate_automatic_layouts():
-    path, _ = format_path(request.values)
+    path, is_private = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
         parse_images(path)
-        layouts = get_file_layouts(path)
+        layouts = get_file_layouts(path, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
     return {"layouts": layouts}
