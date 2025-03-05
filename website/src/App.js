@@ -83,7 +83,6 @@ function App() {
             this.editPage = React.createRef();
             this.textEditor = React.createRef();
 
-            this.sendChanges = this.sendChanges.bind(this);
             this.setCurrentPath = this.setCurrentPath.bind(this);
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
             this.enterEditingMenu = this.enterEditingMenu.bind(this);
@@ -157,18 +156,19 @@ function App() {
             );
         }
             */
-
+        /*
         updateContents(event, index) {
-            /**
-             * Update the content of the text editor
-             *
-             * @param {event} event - The event
-             * @param {int} index - The index of the text field changed
-             */
+             //
+             //Update the content of the text editor
+             //
+             //@param {event} event - The event
+             //@param {int} index - The index of the text field changed
+             //
             let contents = this.state.contents;
             contents[index]["content"] = event.target.value;
             this.setState({contents: contents});
         }
+         */
 
         redirectHome() {
             const currentURL = window.location.href;
@@ -199,10 +199,11 @@ function App() {
             this.logsMenu.current.toggleOpen();
         }
 
+        /*
         sendChanges() {
-            /**
-             * Send the changes to the server
-             */
+             //
+             //Send the changes to the server
+             //
             fetch(process.env.REACT_APP_API_URL + 'submit-text', {
                 method: 'POST',
                 headers: {
@@ -227,6 +228,7 @@ function App() {
                 }
             });
         }
+         */
 
         createPrivateSession() {
             fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
@@ -387,6 +389,7 @@ function App() {
                                                 key={"Box" + folder}
                                             >
                                                 <Button
+                                                    disabled={!this.state.searchMenu && buttonsDisabled}
                                                     key={folder}
                                                     onClick={() => {
                                                         if (index === 0 && this.state.searchMenu) {
