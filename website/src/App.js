@@ -389,7 +389,7 @@ function App() {
                                                 key={"Box" + folder}
                                             >
                                                 <Button
-                                                    disabled={buttonsDisabled}
+                                                    disabled={!this.state.searchMenu && buttonsDisabled}
                                                     key={folder}
                                                     onClick={() => {
                                                         if (index === 0 && this.state.searchMenu) {

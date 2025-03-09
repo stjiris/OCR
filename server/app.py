@@ -664,11 +664,12 @@ def index_doc():
 
         return {}
     else:
+        data_path = path + "/_data.json"
+        hOCR_path = path + "/_ocr_results"
         try:
-            data_path = get_data(path + "/_data.json")
+            data = get_data(data_path)
         except FileNotFoundError:
             abort(HTTPStatus.NOT_FOUND)
-        hOCR_path = path + "/_ocr_results"
         files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
 
         for id, file in enumerate(files):
@@ -678,7 +679,7 @@ def index_doc():
                 hocr = json.load(f)
                 text = json_to_text(hocr)
 
-            if data_path["pages"] > 1:
+            if data["pages"] > 1:
                 doc = create_document(
                     file_path,
                     "Tesseract",
@@ -726,11 +727,12 @@ def remove_index_doc():
 
         return {}
     else:
-        try:
-            data_path = get_data(path + "/_data.json")
-        except FileNotFoundError:
-            abort(HTTPStatus.NOT_FOUND)
+        data_path = path + "/_data.json"
         hOCR_path = path + "/_ocr_results"
+        # try:
+        #     data_path = get_data(path + "/_data.json")
+        # except FileNotFoundError:
+        #     abort(HTTPStatus.NOT_FOUND)
         files = [f for f in os.listdir(hOCR_path) if f.endswith(".json")]
 
         for f in files:
