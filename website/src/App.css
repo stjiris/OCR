@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 body {
-  font-family: 'Noto Sans Serif', sans-serif;
+  font-family: 'Noto Sans', 'Arial', sans-serif;
 }
 
 .MuiBox-root .pathElement {
@@ -48,7 +48,7 @@ body {
 .pageImage {
     position: relative;
     height: 80vh;
-    width: 68vw;
+    width: 100%;
     overflow: scroll;
     border: 1px solid grey;
 }

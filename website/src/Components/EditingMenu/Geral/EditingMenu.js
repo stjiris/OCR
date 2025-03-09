@@ -948,7 +948,7 @@ class EditingMenu extends React.Component {
                         <Box sx={{
                             display: "flex",
                             flexDirection: "column",
-                            width: "50vw"}}>
+                            width: "50%"}}>
                             <Box sx={{display: "flex", flexDirection: "row"}}>
                                 <Box className="pageImage">
                                     <img
@@ -1032,8 +1032,7 @@ class EditingMenu extends React.Component {
                             </Box>
                         </Box>
 
-                        <Box sx={{display: "flex", flexDirection: "column"}}>
-
+                        <Box sx={{display: "flex", flexDirection: "column", width: "50%"}}>
                             <Box sx={{display: "flex", flexDirection: "row"}}>
                                 <Box
                                     ref={this.textWindow}
@@ -1041,22 +1040,25 @@ class EditingMenu extends React.Component {
                                     sx={{
                                         position: 'relative',
                                         ml: '1rem',
-                                        width: this.state.wordsMode ? `${3 * window.innerWidth / 5 - 16*4 - 280}px` : `${3 * window.innerWidth / 5 - 16*4}px`,
-                                        height: `${this.state.baseImageHeight}px`,
+                                        //width: this.state.wordsMode ? `${3 * window.innerWidth / 5 - 16*4 - 280}px` : `${3 * window.innerWidth / 5 - 16*4}px`,
+                                        //height: `${this.state.baseImageHeight}px`,
+                                        width: "calc(100% - 20px)",
+                                        height: "80vh",
                                         overflowY: 'scroll',
                                         overflowX: 'wrap',
                                         border: '1px solid grey',
                                         paddingLeft: "10px",
+                                        paddingRight: "10px",
                                         scrollBehavior: "smooth",
                                     }}
                                     onMouseUp={() => this.getSelectedText()}
                                 >
                                     {
                                         this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
-                                            return <Box key={`section${sectionIndex}`} className="section" sx={{display: "flex", flexDirection: "column"}}>
+                                            return <Box key={`section${sectionIndex}`} className="section" sx={{display: "flex", flexDirection: "column", maxWidth: "100%"}}>
                                                 {
                                                     section.map((line, lineIndex) => {
-                                                        return <Box key={`line${lineIndex} section${sectionIndex}`} style={{marginBottom: "0px", marginTop: "10px"}}>
+                                                        return <Box key={`line${lineIndex} section${sectionIndex}`} style={{marginBottom: "0px", marginTop: "10px", maxWidth: "100%"}}>
                                                             {
                                                                 line.map((word, wordIndex) => {
                                                                     if ("input" in word) {
@@ -1095,8 +1097,8 @@ class EditingMenu extends React.Component {
 
                                                                     if (word["text"] === "") return null;
 
-                                                                    let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
-                                                                    var ref = React.createRef();
+                                                                    const id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
+                                                                    const ref = React.createRef();
 
                                                                     return <>
                                                                         {
