@@ -20,7 +20,7 @@ import AddLineIcon from '../../../static/addLine.svg';
 import RemoveLineIcon from '../../../static/removeLine.svg';
 
 import loadComponent from '../../../utils/loadComponents';
-import { CircularProgress } from '@mui/material';
+import {CircularProgress, TextareaAutosize} from '@mui/material';
 
 const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 const Notification = loadComponent('Notification', 'Notifications');
@@ -79,7 +79,6 @@ class EditingMenu extends React.Component {
             selectedWordBox: null,
             parentNode: null,
             coordinates: null,
-            editingText: "",
 
             uncommittedChanges: false,
 
@@ -395,21 +394,28 @@ class EditingMenu extends React.Component {
         return bestCombination;
     }
 
+    editWord(newText, sectionIndex, lineIndex, wordIndex) {
+        const newContents = this.state.contents.slice(0);
+        const line = newContents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+        line[wordIndex]["text"] = newText;
+        this.setState({contents: newContents, uncommittedChanges: true}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
+    }
+
     updateText(sectionIndex, lineIndex, wordIndex) {
+        const wordsList = this.state.words_list;
 
-        var wordsList = this.state.words_list;
+        const contents = this.state.contents;
+        const lineData = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+        const wordData = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex][wordIndex];
 
-        var contents = this.state.contents;
-        var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+        const initial_text = wordData["initial_text"];
+        const text = wordData["text"];
+        const words = text.split(" ");
 
-        var initial_text = line[wordIndex]["initial_text"];
-        var text = line[wordIndex]["text"];
-        var words = text.split(" ");
+        const coordinates = wordData["coordinates"];
+        const combination = this.splitWordsByLines(words, coordinates);
 
-        var coordinates = line[wordIndex]["coordinates"];
-        var combination = this.splitWordsByLines(words, coordinates);
-
-        var newWords = [];
+        const newWords = [];
 
         initial_text.split(" ").forEach((item) => {
             item = this.cleanWord(item.toLowerCase());
@@ -425,8 +431,6 @@ class EditingMenu extends React.Component {
                 // Remove the page from the pages list
                 const pages = info["pages"];
                 pages.splice(pages.indexOf(this.state.currentPage - 1), 1);
-
-                wordsList[item]["pages"] = pages;
             }
         })
 
@@ -464,8 +468,7 @@ class EditingMenu extends React.Component {
             }
         }
 
-        line.splice(wordIndex, 1, ...newWords);
-        contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
+        lineData.splice(wordIndex, 1, ...newWords);
 
         window.addEventListener('beforeunload', this.preventExit);
         if (this.state.selectedWord !== "" && !(this.state.selectedWord in wordsList)) {
@@ -477,7 +480,6 @@ class EditingMenu extends React.Component {
             this.setState({contents: contents, words_list: this.orderWords(wordsList)});
         }
     }
-
 
     updateInputSize(text) {
         const textField = document.getElementById("textfield");
@@ -1024,22 +1026,11 @@ class EditingMenu extends React.Component {
                                                                             onChange={(e) => {
                                                                                 this.updateInputSize(e.target.value);
                                                                             }}
-                                                                            onBlur={(e) => {
-                                                                                var contents = [...this.state.contents];
-                                                                                var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
-                                                                                line[wordIndex]["text"] = e.target.value;
-                                                                                contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
-                                                                                this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
-                                                                            }}
+                                                                            onBlur={(e) => {this.editWord(e.target.value, sectionIndex, lineIndex, wordIndex);}}
                                                                             onKeyDown={(e) => {
                                                                                 if (e.key === "Enter") {
                                                                                     e.preventDefault();
-
-                                                                                    var contents = [...this.state.contents];
-                                                                                    var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
-                                                                                    line[wordIndex]["text"] = e.target.value;
-                                                                                    contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
-                                                                                    this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
+                                                                                    this.editWord(e.target.value, sectionIndex, lineIndex, wordIndex);
                                                                                 }
                                                                             }}
                                                                         />
