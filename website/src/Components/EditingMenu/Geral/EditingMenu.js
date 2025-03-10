@@ -468,33 +468,21 @@ class EditingMenu extends React.Component {
         line.splice(wordIndex, 1, ...newWords);
         contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
 
-        wordsList = this.orderWords(wordsList);
-
+        window.addEventListener('beforeunload', this.preventExit);
         if (this.state.selectedWord !== "" && !(this.state.selectedWord in wordsList)) {
-            this.setState({contents: contents, words_list: wordsList, selectedWord: "", selectedWordIndex: 0});
+            this.setState({contents: contents, words_list: this.orderWords(wordsList), selectedWord: "", selectedWordIndex: 0});
         }
         else if (this.state.selectedWord !== "" && this.state.selectedWordIndex === this.state.words_list[this.state.selectedWord]["pages"].length) {
-            this.setState({contents: contents, words_list: wordsList, selectedWordIndex: 0}, this.goToNextOccurrence);
+            this.setState({contents: contents, words_list: this.orderWords(wordsList), selectedWordIndex: 0}, this.goToNextOccurrence);
         } else {
-            this.setState({contents: contents, words_list: wordsList});
+            this.setState({contents: contents, words_list: this.orderWords(wordsList)});
         }
     }
 
-    updateInputSize() {
-        var text = this.state.editingText;
-        var parentNode = this.state.parentNode;
-        var children = parentNode.children;
 
-        // Find the input element
-        for (var i = 0; i < children.length; i++) {
-            if (children[i].tagName === "INPUT") {
-                children[i].style.width = `${text.length * 1.5}ch`;
-                break;
-            }
-        }
-
-        // Replace the parent node children with the new children
-        parentNode.replaceChildren(...children);
+    updateInputSize(text) {
+        const textField = document.getElementById("textfield");
+        textField.style.width = text.length+'ch';
     }
 
     getSelectedText() {
@@ -504,9 +492,9 @@ class EditingMenu extends React.Component {
 
             const selection = window.getSelection();
 
-            var firstSpan = selection.baseNode.parentNode;
-            var lastSpan = selection.extentNode.parentNode;
-            var parentNode = firstSpan.parentNode;
+            const firstSpan = selection.anchorNode.parentNode;
+            const lastSpan = selection.focusNode.parentNode;
+            const parentNode = firstSpan.parentNode;
 
             const firstSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, firstSpan);
             const lastSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, lastSpan);
@@ -562,9 +550,7 @@ class EditingMenu extends React.Component {
             document.getSelection().removeAllRanges();
 
             line.splice(firstSpanInfo[6], elements.length, textField);
-            contents[this.state.currentPage - 1]["content"][firstSpanInfo[4]][firstSpanInfo[5]] = line;
-
-            this.setState({contents: contents, inputSize: text.length});
+            this.setState({contents: newContents}, () => this.updateInputSize(text));
         }
     }
 
@@ -1037,7 +1023,7 @@ class EditingMenu extends React.Component {
                                                                             inputProps={{style: {fontSize: "14px", padding: "0px 5px"}}}
                                                                             autoFocus={true}
                                                                             onChange={(e) => {
-                                                                                this.setState({inputSize: e.target.value.length});
+                                                                                this.updateInputSize(e.target.value);
                                                                             }}
                                                                             onBlur={(e) => {
                                                                                 var contents = [...this.state.contents];
@@ -1154,12 +1140,13 @@ class EditingMenu extends React.Component {
                                                     sx={{':hover': {cursor: "pointer", textDecoration: 'underline'}}}
                                                     onClick={() => {
                                                         this.cleanWordSelection();
-                                                        this.setState({selectedWordIndex: 0});
-                                                        if (this.selectedWord === key) {
-                                                            this.selectedWord = "";
-                                                        } else {
-                                                            this.goToNextOccurrence(key);
-                                                        }
+                                                        this.setState({selectedWordIndex: 0}, () => {
+                                                            if (this.selectedWord === key) {
+                                                                this.selectedWord = "";
+                                                            } else {
+                                                                this.goToNextOccurrence(key);
+                                                            }
+                                                        });
                                                     }}
                                                 >
                                                     <span
