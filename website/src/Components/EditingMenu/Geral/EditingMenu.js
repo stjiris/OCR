@@ -1015,13 +1015,15 @@ class EditingMenu extends React.Component {
                                                             {
                                                                 line.map((word, wordIndex) => {
                                                                     if ("input" in word) {
-                                                                        return <TextField
+                                                                        return <TextareaAutosize
+                                                                            id={"textfield"}
                                                                             key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
                                                                             variant='outlined'
                                                                             defaultValue={word["text"]}
                                                                             size="small"
-                                                                            style={{margin: "0px 2px", width: `${(this.state.inputSize + 1) * 9}px`}}
-                                                                            inputProps={{style: {fontSize: "14px", padding: "0px 5px"}}}
+                                                                            style={{margin: "0px 2px", fontFamily: "inherit", fontSize: "14px", padding: "0px 5px",
+                                                                                width: word["text"].length+'ch', maxWidth: '100%',
+                                                                                overflowWrap: "break-word", resize: "none"}}
                                                                             autoFocus={true}
                                                                             onChange={(e) => {
                                                                                 this.updateInputSize(e.target.value);
