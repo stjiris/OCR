@@ -443,7 +443,7 @@ class EditingMenu extends React.Component {
                 const word = combination[i][j];
                 const cleanedWord = this.cleanWord(word.toLowerCase());
                 newWords.push({
-                    "b": 0,
+                    "b": wordData["b"],  // b -> key used in server for text Y offset
                     "box": [box[0] + charsPassed * widthPerChar, box[1], box[0] + (charsPassed + word.length) * widthPerChar, box[3]],
                     "text": word,
                     "clean_text": cleanedWord,
