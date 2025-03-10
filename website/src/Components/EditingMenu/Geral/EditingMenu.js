@@ -406,7 +406,7 @@ class EditingMenu extends React.Component {
 
         const contents = this.state.contents;
         const lineData = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
-        const wordData = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex][wordIndex];
+        const wordData = lineData[wordIndex];
 
         const initial_text = wordData["initial_text"];
         const text = wordData["text"];
@@ -514,6 +514,7 @@ class EditingMenu extends React.Component {
             const elements = line.slice(firstSpanInfo[6], lastSpanInfo[6] + 1);
             const words = [];
             const coordinates = [];
+            const bs = [];  // array for y offsets of the baselines, to average for the selected text
             let totalChars = 0;
 
             let initialCoords = null;
@@ -521,6 +522,7 @@ class EditingMenu extends React.Component {
 
             for (let i = 0; i < elements.length; i++) {
                 words.push(elements[i]["text"]);
+                bs.push(elements[i]["b"]);
 
                 const box = elements[i]["box"];
 
@@ -545,8 +547,8 @@ class EditingMenu extends React.Component {
             coordinates.push(rowCoords);
 
             const text = words.join(" ");
-
-            const textField = {"input": true, "text": text, "initial_text": text, "coordinates": coordinates};
+            const avg_b = bs.reduce((b1, b2) => b1 + b2, 0) / elements.length;
+            const textField = {"input": true, "text": text, "initial_text": text, "coordinates": coordinates, "b": avg_b};
 
             document.getSelection().removeAllRanges();
 
