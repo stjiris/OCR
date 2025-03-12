@@ -16,6 +16,7 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
+import UndoIcon from "@mui/icons-material/Undo";
 
 import AddLineIcon from '../../../static/addLine.svg';
 import RemoveLineIcon from '../../../static/removeLine.svg';
@@ -123,9 +124,14 @@ class EditingMenu extends React.Component {
         this.textWindow = React.createRef();
 
         this.successNot = React.createRef();
+        this.confirmLeave = React.createRef();
 
         this.selectedWord = "";
         this.wordsIndex = {};
+
+        this.leave = this.leave.bind(this);
+        this.zoomIn = this.zoomIn.bind(this);
+        this.zoomOut = this.zoomOut.bind(this);
     }
 
     preventExit(event) {
@@ -149,6 +155,12 @@ class EditingMenu extends React.Component {
             window.removeEventListener('beforeunload', this.preventExit);
             this.props.closeEditingMenu();
         }
+    }
+
+    leave() {
+        window.removeEventListener('beforeunload', this.preventExit);
+        this.props.closeEditingMenu();
+        this.confirmLeave.current.toggleOpen();
     }
 
     getContents(page = 1) {
@@ -265,14 +277,19 @@ class EditingMenu extends React.Component {
         });
     }
 
+    zoomIn() {
+        this.zoom(1);
+    }
+
+    zoomOut() {
+        this.zoom(-1);
+    }
+
     zoom(delta) {
-
-        var newHeight = this.state.imageHeight * (1 + delta * 0.4);
-
+        let newHeight = this.state.imageHeight * (1 + delta * 0.4);
         if (newHeight < this.state.baseImageHeight) {
             newHeight = this.state.baseImageHeight;
         }
-
         this.setState({imageHeight: newHeight});
     }
 
@@ -597,7 +614,7 @@ class EditingMenu extends React.Component {
         section.splice(lineIndex, 1, firstPart, secondPart);
         contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
 
-        this.setState({contents: contents});
+        this.setState({contents: contents, uncommittedChanges: true});
     }
 
     removeLine(sectionIndex, lineIndex) {
@@ -621,7 +638,7 @@ class EditingMenu extends React.Component {
             section.splice(lineIndex, 2, newLine);
             contents[this.state.currentPage - 1]["content"].splice(sectionIndex, 2, section);
 
-            this.setState({contents: contents});
+            this.setState({contents: contents, uncommittedChanges: true});
 
         } else {
             // Just join lines
@@ -633,7 +650,7 @@ class EditingMenu extends React.Component {
             section.splice(lineIndex, 2, newLine);
 
             contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
-            this.setState({contents: contents});
+            this.setState({contents: contents, uncommittedChanges: true});
         }
     }
 
@@ -774,6 +791,7 @@ class EditingMenu extends React.Component {
         return (
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
+                <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
                 {
                     this.state.loading
                     ? <Box sx={{
@@ -786,18 +804,153 @@ class EditingMenu extends React.Component {
                     }}>
                         <CircularProgress color="success" />
                     </Box>
-                    : <Box sx={{display: "flex", flexDirection: "row", ml: '1rem'}}>
-                        <Box sx={{display: "flex", flexDirection: "column", width: `${2 * window.innerWidth / 5}px`}}>
-                            <Box sx={{display: "flex", flexDirection: "row"}}>
-                                <Box
-                                    sx={{
-                                        position: 'relative',
-                                        width: `${2 * window.innerWidth / 5}px`,
-                                        overflow: 'scroll',
-                                        border: '1px solid grey',
-                                        height: `${this.state.baseImageHeight}px`
-                                    }}
+                    :
+                    <>
+                    <Box sx={{
+                        ml: '0.5rem',
+                        mr: '0.5rem',
+                        display: "flex",
+                        flexDirection: "row",
+                        flexWrap: 'wrap',
+                        justifyContent: 'space-between',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 100,
+                        backgroundColor: '#fff',
+                        paddingBottom: '1rem',
+                        marginBottom: '0.5rem',
+                        borderBottom: '1px solid black'
+                    }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<UndoIcon />}
+                            onClick={() => this.goBack()}
+                            sx={{
+                                border: '1px solid black',
+                                height: '2rem',
+                                textTransform: 'none',
+                                fontSize: '0.75rem',
+                                backgroundColor: '#ffffff',
+                                color: '#000000',
+                                ':hover': { bgcolor: '#ddd' }
+                            }}
+                        >
+                            Voltar
+                        </Button>
+
+                        <Box>
+                            {
+                            this.state.addLineMode
+                                ? <Button
+                                    color="error"
+                                    variant="contained"
+                                    className="menuFunctionButton"
+                                    onClick={() => {this.setState({addLineMode: false, hoveredId: null})}}
+                                    startIcon={<CloseRoundedIcon />}
                                 >
+                                    Cancelar
+                                </Button>
+
+                                : <Button
+                                    variant="contained"
+                                    className="menuFunctionButton"
+                                    onClick={() => {this.setState({addLineMode: true, removeLineMode: false})}}
+                                    startIcon={<img style={{width: '1.2rem'}} alt="newLine" src={AddLineIcon} />}
+                                >
+                                    Adicionar Linhas
+                                </Button>
+                            }
+
+                            {
+                            this.state.removeLineMode
+                                ? <Button
+                                    color="error"
+                                    variant="contained"
+                                    className="menuFunctionButton"
+                                    onClick={() => {this.setState({removeLineMode: false})}}
+                                    startIcon={<CloseRoundedIcon />}
+                                >
+                                    Cancelar
+                                </Button>
+
+                                : <Button
+                                    variant="contained"
+                                    className="menuFunctionButton"
+                                    onClick={() => {this.setState({removeLineMode: true, addLineMode: false})}}
+                                    startIcon={<img style={{width: '1.2rem'}} alt="deleteLine" src={RemoveLineIcon} />}
+                                >
+                                    Remover Linhas
+                                </Button>
+                            }
+
+                            {
+                            this.state.wordsMode
+                                ? <Button
+                                    color="error"
+                                    variant="contained"
+                                    className="menuFunctionButton"
+                                    onClick={() => {this.cleanWordSelection(); this.setState({wordsMode: false})}}
+                                    startIcon={<CloseRoundedIcon />}
+                                >
+                                    Fechar
+                                    {
+                                        incorrectSyntax.length > 0
+                                            ? <span style={{marginLeft: "15px"}}>
+                                            {incorrectSyntax.length} ⚠️
+                                        </span>
+                                            : null
+                                    }
+                                </Button>
+                                : <Button
+                                    variant="contained"
+                                    className="menuFunctionButton"
+                                    onClick={() => {this.setState({wordsMode: true})}}
+                                    startIcon={<SpellcheckIcon />}
+                                >
+                                    Ortografia
+                                    {
+                                        incorrectSyntax.length > 0
+                                            ? <span style={{marginLeft: "15px"}}>
+                                            {incorrectSyntax.length} ⚠️
+                                        </span>
+                                            : null
+                                    }
+                                </Button>
+                            }
+
+                            <Button
+                                color="success"
+                                variant="contained"
+                                className="menuFunctionButton"
+                                onClick={() => this.saveChanges()}
+                                startIcon={<SaveIcon />
+                                }>
+                                Guardar
+                            </Button>
+
+                            <Button
+                                variant="contained"
+                                color="success"
+                                className="menuFunctionButton noMargin"
+                                onClick={() => this.saveChanges(true)}
+                                startIcon={<CheckRoundedIcon />
+                                }>
+                                Terminar
+                            </Button>
+                        </Box>
+                    </Box>
+
+                    <Box sx={{
+                        display: "flex",
+                        flexDirection: "row",
+                        ml: "1rem",
+                        mr: "1rem"}}>
+                        <Box sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            width: "50%"}}>
+                            <Box sx={{display: "flex", flexDirection: "row"}}>
+                                <Box className="pageImage">
                                     <img
                                         ref={this.image}
                                         src={this.state.contents[this.state.currentPage - 1]["page_url"]}
@@ -830,22 +983,16 @@ class EditingMenu extends React.Component {
                                 </Box>
                             </Box>
 
-                            <Box sx={{display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", mt: "5px"}}>
-                                <Box>
-                                    <IconButton
-                                        sx={{marginRight: "10px", p: 0}}
-                                        onClick={() => this.zoom(1)}
-                                    >
-                                        <ZoomInIcon />
-                                    </IconButton>
-                                    <IconButton
-                                        sx={{marginRight: "10px", p: 0}}
-                                        onClick={() => this.zoom(-1)}
-                                    >
-                                        <ZoomOutIcon />
-                                    </IconButton>
-                                </Box>
-                                <Box>
+                            <Box sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                mt: "5px"
+                            }}>
+                                <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut}/>
+
+                                <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
                                     <IconButton
                                         disabled={this.state.currentPage === 1}
                                         sx={{marginRight: "10px", p: 0}}
@@ -882,25 +1029,10 @@ class EditingMenu extends React.Component {
                                         <LastPageIcon />
                                     </IconButton>
                                 </Box>
-                                <Box>
-                                    <IconButton
-                                        disabled
-                                        sx={{marginRight: "10px", p: 0}}
-                                    >
-                                        <ZoomInIcon sx={{color: "white"}} />
-                                    </IconButton>
-                                    <IconButton
-                                        disabled
-                                        sx={{marginRight: "10px", p: 0}}
-                                    >
-                                        <ZoomOutIcon sx={{color: "white"}} />
-                                    </IconButton>
-                                </Box>
                             </Box>
                         </Box>
 
-                        <Box sx={{display: "flex", flexDirection: "column"}}>
-
+                        <Box sx={{display: "flex", flexDirection: "column", width: "50%"}}>
                             <Box sx={{display: "flex", flexDirection: "row"}}>
                                 <Box
                                     ref={this.textWindow}
@@ -908,22 +1040,25 @@ class EditingMenu extends React.Component {
                                     sx={{
                                         position: 'relative',
                                         ml: '1rem',
-                                        width: this.state.wordsMode ? `${3 * window.innerWidth / 5 - 16*4 - 280}px` : `${3 * window.innerWidth / 5 - 16*4}px`,
-                                        height: `${this.state.baseImageHeight}px`,
+                                        //width: this.state.wordsMode ? `${3 * window.innerWidth / 5 - 16*4 - 280}px` : `${3 * window.innerWidth / 5 - 16*4}px`,
+                                        //height: `${this.state.baseImageHeight}px`,
+                                        width: "calc(100% - 20px)",
+                                        height: "80vh",
                                         overflowY: 'scroll',
                                         overflowX: 'wrap',
                                         border: '1px solid grey',
                                         paddingLeft: "10px",
+                                        paddingRight: "10px",
                                         scrollBehavior: "smooth",
                                     }}
                                     onMouseUp={() => this.getSelectedText()}
                                 >
                                     {
                                         this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
-                                            return <Box key={`section${sectionIndex}`} className="section" sx={{display: "flex", flexDirection: "column"}}>
+                                            return <Box key={`section${sectionIndex}`} className="section" sx={{display: "flex", flexDirection: "column", maxWidth: "100%"}}>
                                                 {
                                                     section.map((line, lineIndex) => {
-                                                        return <Box key={`line${lineIndex} section${sectionIndex}`} style={{marginBottom: "0px", marginTop: "10px"}}>
+                                                        return <Box key={`line${lineIndex} section${sectionIndex}`} style={{marginBottom: "0px", marginTop: "10px", maxWidth: "100%"}}>
                                                             {
                                                                 line.map((word, wordIndex) => {
                                                                     if ("input" in word) {
@@ -962,8 +1097,8 @@ class EditingMenu extends React.Component {
 
                                                                     if (word["text"] === "") return null;
 
-                                                                    let id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
-                                                                    var ref = React.createRef();
+                                                                    const id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
+                                                                    const ref = React.createRef();
 
                                                                     return <>
                                                                         {
@@ -1118,112 +1253,10 @@ class EditingMenu extends React.Component {
                                     }
                                 </Box>
                             </Box>
-
-                            <Box sx={{display: "flex", flexDirection: "row", justifyContent: "flex-end", mt: "5px"}}>
-                                {
-                                    this.state.addLineMode
-                                    ? <Button
-                                        style={{border: '1px solid black', height: "25px", marginLeft: "10px"}}
-                                        color="error"
-                                        variant="contained"
-                                        onClick={() => {this.setState({addLineMode: false, hoveredId: null})}}
-                                        startIcon={<CloseRoundedIcon />}
-                                    >
-                                        Cancelar
-                                    </Button>
-
-                                    : <Button
-                                        style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                        variant="contained"
-                                        onClick={() => {this.setState({addLineMode: true, removeLineMode: false})}}
-                                        startIcon={<img style={{width: '1.2rem'}} alt="newLine" src={AddLineIcon} />}
-                                    >
-                                        Adicionar Linhas
-                                    </Button>
-                                }
-
-
-                                {
-                                    this.state.removeLineMode
-                                    ? <Button
-                                        style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                        color="error"
-                                        variant="contained"
-                                        onClick={() => {this.setState({removeLineMode: false})}}
-                                        startIcon={<CloseRoundedIcon />}
-                                    >
-                                        Cancelar
-                                    </Button>
-
-                                    : <Button
-                                        style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                        variant="contained"
-                                        onClick={() => {this.setState({removeLineMode: true, addLineMode: false})}}
-                                        startIcon={<img style={{width: '1.2rem'}} alt="deleteLine" src={RemoveLineIcon} />}
-                                    >
-                                        Remover Linhas
-                                    </Button>
-                                }
-
-                                {
-                                    this.state.wordsMode
-                                    ? <Button
-                                        style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                        color="error"
-                                        variant="contained"
-                                        onClick={() => {this.cleanWordSelection(); this.setState({wordsMode: false})}}
-                                        startIcon={<CloseRoundedIcon />}
-                                    >
-                                        Fechar
-                                        {
-                                            incorrectSyntax.length > 0
-                                            ? <span style={{marginLeft: "15px"}}>
-                                                {incorrectSyntax.length} ⚠️
-                                            </span>
-                                            : null
-                                        }
-                                    </Button>
-                                    : <Button
-                                        style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                        variant="contained"
-                                        onClick={() => {this.setState({wordsMode: true})}}
-                                        startIcon={<SpellcheckIcon />}
-                                    >
-                                        Ortografia
-                                        {
-                                            incorrectSyntax.length > 0
-                                            ? <span style={{marginLeft: "15px"}}>
-                                                {incorrectSyntax.length} ⚠️
-                                            </span>
-                                            : null
-                                        }
-                                    </Button>
-                                }
-
-                                <Button
-                                    style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-
-                                    variant="contained"
-                                    color="success"
-                                    onClick={() => this.saveChanges()}
-                                    startIcon={<SaveIcon />
-                                }>
-                                    Guardar
-                                </Button>
-
-                                <Button
-                                    style={{border: '1px solid black', height: "25px", marginLeft: "10px", textTransform: "none"}}
-                                    variant="contained"
-                                    color="success"
-                                    onClick={() => this.saveChanges(true)}
-                                    startIcon={<CheckRoundedIcon />
-                                }>
-                                    Terminar
-                                </Button>
-                            </Box>
                         </Box>
 
                     </Box>
+                    </>
                 }
             </Box>
         )

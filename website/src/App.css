@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 body {
-  font-family: 'Noto Sans Serif', sans-serif;
+  font-family: 'Noto Sans', 'Arial', sans-serif;
 }
 
 .MuiBox-root .pathElement {
@@ -19,6 +19,50 @@ body {
 .MuiBox-root .pathButton {
     text-transform: none;
     text-decoration: underline;
+}
+
+.MuiBox-root .pathButton:disabled {  /* overrides transparency from Mui-disabled */
+    color: black;
+}
+
+.pageImage {
+    position: relative;
+    height: 80vh;
+    width: 68vw;
+    overflow: scroll;
+    border: 1px solid grey;
+}
+
+.MuiButton-contained.menuFunctionButton {
+    border: 1px solid black;
+    height: 2rem;
+    text-transform: none;
+    margin-right: 1rem;
+    font-size: 0.75rem;
+}
+
+.menuFunctionButton.noMargin {
+    margin-right: 0
+}
+
+.pageImage {
+    position: relative;
+    height: 80vh;
+    width: 100%;
+    overflow: scroll;
+    border: 1px solid grey;
+}
+
+.MuiButton-contained.menuFunctionButton {
+    border: 1px solid black;
+    height: 2rem;
+    text-transform: none;
+    margin-right: 1rem;
+    font-size: 0.75rem;
+}
+
+.menuFunctionButton.noMargin {
+    margin-right: 0
 }
 
 .page-div {
