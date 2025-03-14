@@ -181,7 +181,7 @@ export default class FileRow extends React.Component {
 
                             <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
                             {
-                                this.state.info["progress"] === undefined || this.state.info["progress"] === true
+                                this.state.info["stored"] === undefined || this.state.info["stored"] === true
                                 ? <Button
                                     onClick={(e) => this.getOriginalFile(e)}
                                     style={{
@@ -199,7 +199,7 @@ export default class FileRow extends React.Component {
                     </TableCell>
 
                     {
-                        this.state.info["progress"] !== undefined && this.state.info["progress"] !== true
+                        this.state.info["stored"] !== undefined && this.state.info["stored"] !== true
                         ? <>
                             {
                                 this.state.info["upload_stuck"] === true
@@ -222,12 +222,12 @@ export default class FileRow extends React.Component {
                                         </TableCell>
                                     </>
 
-                                    : this.state.info["progress"] !== 100.00
+                                    : this.state.info["stored"] !== 100.00
                                         ? <TableCell colSpan={4} align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
                                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                                 <span>Carregamento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
-                                                    <span>{this.state.info["progress"]}%</span>
+                                                    <span>{this.state.info["stored"]}%</span>
                                                     <CircularProgress sx={{ml: '1rem'}} size='0.8rem' />
                                                 </Box>
                                             </Box>

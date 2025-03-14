@@ -20,7 +20,10 @@ from src.utils.export import json_to_text
 from string import punctuation
 
 FILES_PATH = environ.get("FILES_PATH", "_files")
+TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
 PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
+
+ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png'}
 
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
@@ -297,7 +300,7 @@ def get_folder_info(path, private_session=None):
     if "type" not in data:
         return {}
 
-    if data["type"] == "file" and ("progress" not in data or data["progress"] == True):
+    if data["type"] == "file" and ("stored" not in data or data["stored"] == True):
         data["size"] = get_size(path)
 
     # sanitize important paths from the info key
@@ -394,7 +397,7 @@ def get_page_count(filename):
         with open(filename, "rb") as f:
             return len(pdfium.PdfDocument(f))
             # return len(PdfReader(f).pages)
-    elif extension in ["jpg", "jpeg"]:
+    elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
         return 1
 
 # DONE

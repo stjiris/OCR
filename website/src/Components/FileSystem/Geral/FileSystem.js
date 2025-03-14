@@ -122,7 +122,7 @@ class FileExplorer extends React.Component {
                 // Find if a upload is stuck
                 for (const [path, value] of Object.entries(info)) {
                     if (value.type === "file") {
-                        if ("progress" in value && value["progress"] !== true) {
+                        if ("stored" in value && value["stored"] !== true) {
                             const creationTime = new Date(value.creation.replace(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
                             const currentTime = new Date();
                             const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
