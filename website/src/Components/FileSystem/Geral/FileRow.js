@@ -43,10 +43,12 @@ export default class FileRow extends React.Component {
 
     updateInfo(info) {
         // Auto-expand file row if OCR status was not performed/concluded and became concluded
-        const auto_expand =
-            (this.state.info === undefined || this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] < this.state.info["pages"])
-            && (info !== undefined && info["ocr"] !== undefined && info["ocr"]["progress"] >= info["pages"]);
-        this.setState({info: info, expanded: auto_expand});
+        if ((this.state.info === undefined || this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] < this.state.info["pages"])
+            && (info !== undefined && info["ocr"] !== undefined && info["ocr"]["progress"] >= info["pages"])) {
+            this.setState({info: info, expanded: true});
+        } else {
+            this.setState({info: info});
+        }
     }
 
     fileClicked() {
