@@ -182,8 +182,6 @@ def export_pdf(path, force_recreate = False, simple=False):
 
         words = {}
 
-        load_invisible_font()  # TODO: can it be loaded once at startup of the OCR worker?
-
         pdf = Canvas(target, pageCompression=1, pagesize=letter)
         pdf.setCreator("hocr-tools")
         pdf.setTitle(target)
@@ -199,7 +197,7 @@ def export_pdf(path, force_recreate = False, simple=False):
             im = Image.open(f"{path}/{image}")
             w, h = im.size
             pdf.setPageSize((w, h))
-            pdf.drawImage(im, 0, 0, width=w, height=h)
+            pdf.drawImage(f"{path}/{image}", 0, 0, width=w, height=h)
 
             new_words = add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
 

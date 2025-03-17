@@ -12,7 +12,7 @@ import json
 from src.algorithms import tesseract
 from src.algorithms import easy_ocr
 
-from src.utils.export import export_file
+from src.utils.export import export_file, load_invisible_font
 from src.utils.file import get_current_time
 from src.utils.file import get_size
 from src.utils.file import update_data
@@ -29,6 +29,8 @@ CORS(app)
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://ocr-redis-1:6379'),
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://ocr-redis-1:6379')
 celery = Celery("celery_app", broker=CELERY_BROKER_URL)
+
+load_invisible_font()  # TODO: can it be loaded once at startup of the OCR worker?
 
 @celery.task(name="changes")
 def make_changes(data_folder, data):
