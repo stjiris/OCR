@@ -565,7 +565,6 @@ function App() {
                                 ? this.getPrivateSession() == null
                                     ? <FileExplorer ref={this.fileSystem}
                                                     current_folder={this.state.currentFolderPathList}
-                                                    files={{"files": []}}
                                                     setCurrentPath={this.setCurrentPath}
                                                     enterLayoutMenu={this.enterLayoutMenu}
                                                     enterEditingMenu={this.enterEditingMenu}
@@ -573,7 +572,6 @@ function App() {
                                     : <PrivateFileExplorer ref={this.fileSystem}
                                                            sessionId={this.state.sessionId}
                                                            current_folder={this.state.currentFolderPathList}
-                                                           files={{"files": []}}
                                                            setCurrentPath={this.setCurrentPath}
                                                            enterLayoutMenu={this.enterLayoutMenu}
                                                            enterEditingMenu={this.enterEditingMenu}

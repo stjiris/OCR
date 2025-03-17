@@ -21,6 +21,7 @@ const Notification = loadComponent('Notification', 'Notifications');
 const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
 const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
 const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+const FileIcon = loadComponent('CustomIcons', 'FileIcon');
 const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
 const LayoutIcon = loadComponent('CustomIcons', 'LayoutIcon');
 const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
@@ -181,7 +182,7 @@ export default class FileRow extends React.Component {
                                 </IconButton>
                             }
 
-                            <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
+                            <FileIcon extension={this.state.info["extension"]} sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
                             {
                                 this.state.info["stored"] === undefined || this.state.info["stored"] === true
                                 ? <Button

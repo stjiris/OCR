@@ -179,7 +179,7 @@ def export_pdf(path, force_recreate = False, simple=False):
         pdf.setCreator("hocr-tools")
         pdf.setTitle(target)
 
-        filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
+        filenames_asterisk = [x for x in os.listdir(path) if x.endswith(f"$.{page_extension}")]
         images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
         for image in images:
             image_basename = get_file_basename(image)

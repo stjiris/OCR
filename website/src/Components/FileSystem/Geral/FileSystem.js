@@ -28,7 +28,7 @@ const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
 
-const validExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
+const validExtensions = ["application/pdf", "image/jpeg", "image/png", "image/tiff", "image/bmp", "image/gif", "image/webp", "image/x-portable-anymap", "image/jp2"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
@@ -36,8 +36,8 @@ class FileExplorer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            files: props.files,
-            info: props.info,
+            files: null,
+            info: null,
             current_folder: props.current_folder.join('/'),
             components: [],
 
@@ -148,7 +148,7 @@ class FileExplorer extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files) {
+        if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files || this.state.fileOpened !== prevState.fileOpened) {
             this.displayFileSystem();
         } else if (this.state.info !== prevState.info || this.state.components !== prevState.components) {
             this.updateInfo();
@@ -620,7 +620,7 @@ class FileExplorer extends React.Component {
         return folders.concat(files);
     }
 
-    sortByName(contents) {
+    sortByName(contents) {  // TODO: sort folders separately from files, like in operating system file explorers
         /**
          * Order 'Nome' column
          * by A-Z or Z-A when
