@@ -531,8 +531,10 @@ def upload_file():
     file_path = safe_join(target_path, filename)  # file stored as "path/filename/filename"
 
     with open(f"{target_path}/_data.json", "w", encoding="utf-8") as f:
+        extension = filename.split(".")[-1].lower()
         json.dump({
             "type": "file",
+            "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
             "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
         }, f, indent=2, ensure_ascii=False)
 

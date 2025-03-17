@@ -160,20 +160,29 @@ def export_pdf(path, force_recreate = False, simple=False):
         return target
 
     else:
-        pdf_basename = get_file_basename(path)
+        original_extension = path.split('.')[-1].lower()
 
-        pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
-        for i in range(len(pdf)):
-            page = pdf[i]
-            bitmap = page.render(150 / 72)
-            pil_image = bitmap.to_pil()
-            pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
+        if original_extension == 'pdf':
+            page_extension = "jpg"
+            pdf_basename = get_file_basename(path)
 
-        pdf.close()
+            pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
+            for i in range(len(pdf)):
+                page = pdf[i]
+                bitmap = page.render(dpi_compressed / 72)
+                pil_image = bitmap.to_pil()
+                pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
+
+            pdf.close()
+        else:
+            page_extension = original_extension
+            img_basename = get_file_basename(path)
+            im = Image.open(f"{path}/{img_basename}.{original_extension}")
+            im.save(f"{path}/{img_basename}_0$.{page_extension}")
 
         words = {}
 
-        load_invisible_font()
+        load_invisible_font()  # TODO: can it be loaded once at startup of the OCR worker?
 
         pdf = Canvas(target, pageCompression=1, pagesize=letter)
         pdf.setCreator("hocr-tools")
@@ -249,7 +258,7 @@ def export_pdf(path, force_recreate = False, simple=False):
 
         # Delete compressed images
         for compressed_image in os.listdir(path):
-            if compressed_image.endswith("$.jpg"):
+            if compressed_image.endswith(f"$.{original_extension}"):
                 try:
                     os.remove(os.path.join(path, compressed_image))
                 except:
