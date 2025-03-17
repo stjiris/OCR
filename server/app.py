@@ -358,8 +358,8 @@ def delete_path():
             or os.path.samefile(path, filesystem_path)):
             abort(HTTPStatus.NOT_FOUND)
 
-        shutil.rmtree(path)
         delete_structure(es, path)
+        shutil.rmtree(path)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
