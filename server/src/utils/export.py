@@ -29,6 +29,7 @@ from reportlab.lib.pagesizes import letter
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
 PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
 
+OUT_DEFAULT_DPI = 150
 
 def json_to_text(json_d):
     """
@@ -150,6 +151,9 @@ def export_pdf(path, force_recreate = False, simple=False):
     simple_filename = f"{path}/_simple.pdf"
     filename_csv = f"{path}/_index.csv"
 
+    dpi_original = 300
+    dpi_compressed = OUT_DEFAULT_DPI  # TODO: variable output DPI
+
     target = filename if not simple else simple_filename
 
     if os.path.exists(target) and os.path.exists(filename_csv) and not force_recreate:
@@ -175,9 +179,6 @@ def export_pdf(path, force_recreate = False, simple=False):
         pdf.setCreator("hocr-tools")
         pdf.setTitle(target)
 
-        dpi_original = 200
-        dpi_compressed = 150  # Adjust the DPI value for positioning and scaling
-
         filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
         images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
         for image in images:
@@ -189,7 +190,7 @@ def export_pdf(path, force_recreate = False, simple=False):
             im = Image.open(f"{path}/{image}")
             w, h = im.size
             pdf.setPageSize((w, h))
-            pdf.drawImage(f"{path}/{image}", 0, 0, width=w, height=h)
+            pdf.drawImage(im, 0, 0, width=w, height=h)
 
             new_words = add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
 
@@ -211,7 +212,7 @@ def export_pdf(path, force_recreate = False, simple=False):
             word_count = len(words)
 
             for id in range(0, word_count, rows * cols):
-                pdf.setPageSize((w, h))
+                pdf.setPageSize((w, h))  # TODO: store page sizes and use for each page; PDFs can have variable size pages
 
                 x, y = margin, h - margin
 
