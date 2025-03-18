@@ -318,7 +318,11 @@ def get_folder_info(path, private_session=None):
     :param path: path to the folder
     """
     info = {}
-    data = get_data(f"{path}/_data.json")
+    try:
+        data = get_data(f"{path}/_data.json")
+    except FileNotFoundError:
+        return {}
+
     if "type" not in data:
         return {}
 
@@ -381,7 +385,12 @@ def get_structure(path, private_session=None, is_private=False):
         name = "files"
     else:
         name = path.split("/")[-1]
-        data = get_data(f"{path}/_data.json")
+
+        try:
+            data = get_data(f"{path}/_data.json")
+        except FileNotFoundError:
+            return {}
+
         if "type" not in data:
             return None
         if data["type"] == "file":
