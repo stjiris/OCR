@@ -1,6 +1,14 @@
 import React from 'react';
 import SvgIcon from '@mui/material/SvgIcon';
-import {BsFileImage, BsFiletypeBmp, BsFiletypeGif, BsFiletypeJpg, BsFiletypePng, BsFiletypeTiff} from "react-icons/bs";
+import {
+    BsFileImage,
+    BsFiletypeBmp,
+    BsFiletypeGif,
+    BsFiletypeJpg,
+    BsFiletypePng,
+    BsFiletypeTiff,
+    BsFileZip
+} from "react-icons/bs";
 
 export default function FileIcon(props) {
     switch (props.extension) {
@@ -110,6 +118,13 @@ export default function FileIcon(props) {
                         </g>
                     </g>
                 </SvgIcon>
+            );
+
+        case "zip":
+            return (
+                <BsFileZip
+                    {...props.sx}
+                />
             );
     }
 }

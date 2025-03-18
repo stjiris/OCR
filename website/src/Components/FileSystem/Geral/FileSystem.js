@@ -28,7 +28,16 @@ const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
 
-const validExtensions = ["application/pdf", "image/jpeg", "image/png", "image/tiff", "image/bmp", "image/gif", "image/webp", "image/x-portable-anymap", "image/jp2"];
+const validExtensions = ["application/pdf",
+                                "image/jpeg",
+                                "image/png",
+                                "image/tiff",
+                                "image/bmp",
+                                "image/gif",
+                                "image/webp",
+                                "image/x-portable-anymap",
+                                "image/jp2",
+                                "application/zip"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
