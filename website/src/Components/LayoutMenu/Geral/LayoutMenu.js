@@ -82,6 +82,7 @@ class LayoutMenu extends React.Component {
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
         this.zoomOut = this.zoomOut.bind(this);
+        this.zoomReset = this.zoomReset.bind(this);
 	}
 
 	preventExit(event) {
@@ -793,6 +794,10 @@ class LayoutMenu extends React.Component {
         this.image.current.zoomOut();
     }
 
+    zoomReset() {
+        this.image.current.zoomReset();
+    }
+
 	render() {
 		let noCheckBoxActive = false;
         let groupDisabled = false;
@@ -926,7 +931,7 @@ class LayoutMenu extends React.Component {
                             alignItems: 'center',
                             mt: '5px'
 						}}>
-                            <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut}/>
+                            <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut} zoomResetFunc={this.zoomReset}/>
 
                             <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
                                 <IconButton

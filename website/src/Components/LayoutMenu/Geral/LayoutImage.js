@@ -376,6 +376,13 @@ class LayoutImage extends React.Component {
         }, this.recreateBoxes)
     }
 
+    zoomReset() {
+        this.setState({
+            currentZoom: 1,
+            height: `${window.innerHeight - 160}px`,
+        }, this.recreateBoxes)
+    }
+
     screenToImageCoordinates(x, y) {
         const image = this.imageRef.current;
 
