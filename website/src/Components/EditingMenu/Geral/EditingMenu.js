@@ -70,8 +70,9 @@ class EditingMenu extends React.Component {
             currentPage: 1,
             totalPages: 1,
 
-            imageHeight: window.innerHeight - 175,
-            baseImageHeight: window.innerHeight - 175,
+            imageZoom: 100,
+            minImageZoom: 20,
+            maxImageZoom: 600,
 
             selectedWord: "",
             selectedWordIndex: 0,
@@ -107,10 +108,7 @@ class EditingMenu extends React.Component {
     }
 
     componentDidMount() {
-        this.setState({
-            imageHeight: window.innerHeight - 175,
-            baseImageHeight: window.innerHeight - 175,
-        }, this.getContents);
+        this.getContents();
     }
 
     goBack() {
@@ -149,9 +147,7 @@ class EditingMenu extends React.Component {
                 newCorpusList.push({"name": item, "code": item});
             });
 
-            this.setState({totalPages: pages, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList,
-                imageHeight: window.innerHeight - 175,
-                baseImageHeight: window.innerHeight - 175,});
+            this.setState({totalPages: pages, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
         });
     }
 
@@ -253,11 +249,9 @@ class EditingMenu extends React.Component {
     }
 
     zoom(delta) {
-        let newHeight = this.state.imageHeight * (1 + delta * 0.4);
-        if (newHeight < this.state.baseImageHeight) {
-            newHeight = this.state.baseImageHeight;
-        }
-        this.setState({imageHeight: newHeight});
+        let newZoom = Math.max(this.state.imageZoom + (20 * delta), this.state.minImageZoom);
+        newZoom = Math.min(newZoom, this.state.maxImageZoom);
+        this.setState({imageZoom: newZoom});
     }
 
     /**
@@ -914,8 +908,9 @@ class EditingMenu extends React.Component {
                                             marginLeft: 'auto',
                                             marginRight: 'auto',
                                             border: '1px solid black',
-                                            maxHeight: `${this.state.imageHeight}px`,
-                                            height: `${this.state.imageHeight}px`,
+                                            maxWidth: `${this.state.imageZoom}%`,
+                                            maxHeight: `${this.state.imageZoom}%`,
+                                            objectFit: 'contain'
                                         }}
                                     />
 
@@ -1090,12 +1085,12 @@ class EditingMenu extends React.Component {
 
                                 <Box sx={{
                                     display: this.state.wordsMode ? "block" : "none",
-                                    overflowY: 'scroll',
-                                    overflowX: 'wrap',
+                                    overflowY: "scroll",
+                                    overflowX: "wrap",
                                     marginLeft: "10px",
-                                    width: "250px",
-                                    height: `${this.state.baseImageHeight}px`,
-                                    border: '1px solid grey',
+                                    width: "25vw",
+                                    height: "80vh",
+                                    border: "1px solid grey",
                                     backgroundColor: "#f0f0f0",
                                     padding: "0px 10px"
                                 }}>

@@ -25,14 +25,6 @@ body {
     color: black;
 }
 
-.pageImage {
-    position: relative;
-    height: 80vh;
-    width: 68vw;
-    overflow: scroll;
-    border: 1px solid grey;
-}
-
 .MuiButton-contained.menuFunctionButton {
     border: 1px solid black;
     height: 2rem;
