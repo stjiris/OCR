@@ -174,11 +174,19 @@ def export_pdf(path, force_recreate = False, simple=False):
                 pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
 
             pdf.close()
-        else:
+
+        elif original_extension == 'zip':
+            page_extension = "png"  # TODO: compress images taken from zips when creating pdf
+            img_basename = get_file_basename(path)
+            pages_list = [p for p in os.listdir(f"{path}/_pages") if os.path.isfile(os.path.join(f"{path}/_pages", p))]
+            pages_list.sort(key=lambda s: (s.casefold(), s))
+            for i, page in enumerate(pages_list):
+                os.link(f"{path}/_pages/{page}", f"{path}/{img_basename}_{i}$.{page_extension}")
+
+        else:  # TODO: compress images when creating pdf
             page_extension = original_extension
             img_basename = get_file_basename(path)
-            im = Image.open(f"{path}/{img_basename}.{original_extension}")
-            im.save(f"{path}/{img_basename}_0$.{page_extension}")
+            os.link(f"{path}/{img_basename}.{original_extension}", f"{path}/{img_basename}_0$.{page_extension}")
 
         words = {}
 
