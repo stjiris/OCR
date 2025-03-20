@@ -12,11 +12,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 
-import loadComponent from '../../../utils/loadComponents';
-import calculateEstimatedTime from '../../../utils/waitingTime';
-
 import { IconButton } from '@mui/material';
 
+import calculateEstimatedTime from '../../../utils/waitingTime';
+import loadComponent from '../../../utils/loadComponents';
 const Notification = loadComponent('Notification', 'Notifications');
 const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
 const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
@@ -182,7 +181,7 @@ export default class FileRow extends React.Component {
                                 </IconButton>
                             }
 
-                            <FileIcon extension={this.state.info["extension"]} sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
+                            <FileIcon extension={this.state.info["extension"]} sx={{ fontSize: '25px', m: "0.5rem 0.5rem 0.5rem 0.2rem"  /* 0.2rem left */ }} />
                             {
                                 this.state.info["stored"] === undefined || this.state.info["stored"] === true
                                 ? <Button

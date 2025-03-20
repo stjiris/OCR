@@ -28,52 +28,66 @@ export default function FileIcon(props) {
         case "pjpeg":
         case "pjp":
             return (
-                <BsFiletypeJpg
-                    {...props.sx}
-                />
+                <div className="fileIcon">
+                    <BsFiletypeJpg
+                        {...props.sx}
+                    />
+                </div>
             );
 
         case "png":
             return (
-                <BsFiletypePng
-                    {...props.sx}
-                />
+                <div className="fileIcon">
+                    <BsFiletypePng
+                        {...props.sx}
+                    />
+                </div>
             );
 
         case "tiff":
         case "tif":
             return (
-                <BsFiletypeTiff
-                    {...props.sx}
-                />
+                <div className="fileIcon">
+                    <BsFiletypeTiff
+                        {...props.sx}
+                    />
+                </div>
             );
 
         case "bmp":
             return (
-                <BsFiletypeBmp
-                    {...props.sx}
-                />
+                <div className="fileIcon">
+                    <BsFiletypeBmp
+                        {...props.sx}
+                    />
+                </div>
             );
 
         case "gif":
             return (
-                <BsFiletypeGif
-                    {...props.sx}
-                />
+                <div className="fileIcon">
+                    <BsFiletypeGif
+                        {...props.sx}
+                    />
+                </div>
             );
 
         case "webp":
             return (
-                <BsFileImage
-                    {...props.sx}
-                />
+                <div className="fileIcon">
+                    <BsFileImage
+                        {...props.sx}
+                    />
+                </div>
             );
 
         case "pnm":  // image/x-portable-anymap
             return (
-                <BsFileImage
-                    {...props.sx}
-                />
+                <div className="fileIcon">
+                    <BsFileImage
+                        {...props.sx}
+                    />
+                </div>
             );
 
         case "jp2":  // JPEG 2000, logo from JPEG branding page at https://jpeg.org/contact.html
@@ -122,9 +136,11 @@ export default function FileIcon(props) {
 
         case "zip":
             return (
-                <BsFileZip
-                    {...props.sx}
-                />
+                <div className="fileIcon">
+                    <BsFileZip
+                        {...props.sx}
+                    />
+                </div>
             );
     }
 }
