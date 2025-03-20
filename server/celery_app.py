@@ -305,7 +305,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 "complete": True,
                 "size": get_size(f"{path}/_search.pdf", path_complete=True),
                 "creation": creation_date,
-                "pages": get_page_count(f"{path}/_search.pdf"),
+                "pages": get_page_count(path, f"{path}/_search.pdf"),
             }
             data["csv"] = {
                 "complete": True,
@@ -319,7 +319,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 "complete": True,
                 "size": get_size(f"{path}/_simple.pdf", path_complete=True),
                 "creation": creation_date,
-                "pages": get_page_count(f"{path}/_simple.pdf"),
+                "pages": get_page_count(path, f"{path}/_simple.pdf"),
             }
 
             update_data(data_folder, data)

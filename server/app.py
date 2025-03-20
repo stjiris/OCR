@@ -498,7 +498,7 @@ def join_chunks(target_path, file_path, filename, total_count, temp_file_path):
     prepare_file_ocr(target_path)
 
     update_data(f"{target_path}/_data.json", {
-        "pages": get_page_count(file_path),
+        "pages": get_page_count(target_path, file_path),
         "stored": True,
         "creation": get_current_time()
     })
