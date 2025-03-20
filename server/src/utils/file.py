@@ -517,6 +517,10 @@ def prepare_file_ocr(path):
                 if os.path.isfile(os.path.join(temp_folder_name, file))
             ]
 
+            # sort pages alphabetically, case-insensitive
+            # casefold for better internationalization, original string appended as fallback
+            page_paths.sort(key=lambda s: (s.casefold(), s))
+
             for i, page in enumerate(page_paths):
                 im = Image.open(page)
                 im.save(f"{path}/_pages/{basename}_{i}.png", format="PNG")  # using PNG to keep RGBA
@@ -525,7 +529,7 @@ def prepare_file_ocr(path):
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
             link_path = f"{path}/_pages/{basename}_0.{extension}"
-            if not os.path.exists(link_path):  # may fail if symlink exists but is broken (e.g. original file moved)
+            if not os.path.exists(link_path):
                 os.link(original_path, link_path)
 
     except Exception as e:
