@@ -264,7 +264,7 @@ def export_pdf(path, force_recreate = False, simple=False):
 
         # Delete compressed images
         for compressed_image in os.listdir(path):
-            if compressed_image.endswith(f"$.{original_extension}"):
+            if compressed_image.endswith(f"$.{page_extension}"):
                 try:
                     os.remove(os.path.join(path, compressed_image))
                 except:
