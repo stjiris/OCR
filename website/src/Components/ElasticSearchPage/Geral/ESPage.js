@@ -14,9 +14,6 @@ class ESItem extends React.Component {
     // This component is used to display a single page from the ElasticSearch database
     constructor(props) {
         super(props);
-        this.state = {
-            page: props.page,
-        }
     }
 
     render() {
@@ -30,24 +27,24 @@ class ESItem extends React.Component {
                 <Divider color="success" orientation='vertical' flexItem sx={{mr: '0.5rem'}} />
                 <Box>
                     <PageDisplayer
-                        path={this.state.page['_source']['Page Image']}
+                        path={this.props.page['_source']['Page Image']}
                     />
                 </Box>
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
                 }}>
-                    <span><b>Localização</b> {this.state.page['_source']['Path'].split('/').slice(1,-2).join('/')}</span>
-                    <span><b>Documento:</b> {this.state.page['_source']['Document']}</span>
+                    <span><b>Localização</b> {this.props.page['_source']['Path'].split('/').slice(1,-2).join('/')}</span>
+                    <span><b>Documento:</b> {this.props.page['_source']['Document']}</span>
                     {
-                        this.state.page['_source']['Page'] !== undefined
-                        ? <span><b>Página:</b> {this.state.page['_source']['Page']}</span>
+                        this.props.page['_source']['Page'] !== undefined
+                        ? <span><b>Página:</b> {this.props.page['_source']['Page']}</span>
                         : null
                     }
-                    {/* <span><b>Algoritmo:</b> {this.state.page['_source']['Algorithm']}</span>
-                    <span><b>Configuração:</b> {this.state.page['_source']['Config']}</span> */}
+                    {/* <span><b>Algoritmo:</b> {this.props.page['_source']['Algorithm']}</span>
+                    <span><b>Configuração:</b> {this.props.page['_source']['Config']}</span> */}
                     <br/>
-                    <span><b>Texto:</b><br/>{this.state.page['_source']['Text']}</span>
+                    <span><b>Texto:</b><br/>{this.props.page['_source']['Text']}</span>
                 </Box>
             </Box>
         )
@@ -61,8 +58,6 @@ class ESPage extends React.Component {
             pages: [],
             showing: [],
             freeText: "",
-
-            app: props.app,  // TODO: remove this reference and use strictly necessary props
             loading: true
         }
 
@@ -157,13 +152,13 @@ class ESPage extends React.Component {
             }
 
             if (this.journal.current !== null)
-                this.journal.current.setState({options: journals, choice: this.state.app.state.filesChoice});
+                this.journal.current.setState({options: journals, choice: this.props.filesChoice});
             if (this.fileType.current !== null)
                 this.fileType.current.setState({options: fileTypes});
             if (this.algorithm.current !== null)
-                this.algorithm.current.setState({options: algorithms, choice: this.state.app.state.algorithmChoice});
+                this.algorithm.current.setState({options: algorithms, choice: this.props.algorithmChoice});
             if (this.config.current !== null)
-                this.config.current.setState({options: configs, choice: this.state.app.state.configChoice});
+                this.config.current.setState({options: configs, choice: this.props.configChoice});
             this.setState({pages: data, showing: data, loading: false}, this.filterPages);
         });
     }
@@ -279,6 +274,16 @@ class ESPage extends React.Component {
             </Box>
         )
     }
+}
+
+ESItem.defaultProps = {
+    page: null
+}
+
+ESPage.defaultProps = {
+    filesChoice: null,
+    algorithmChoice: null,
+    configChoice: null
 }
 
 export default ESPage;

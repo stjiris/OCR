@@ -194,21 +194,19 @@ class FileExplorer extends React.Component {
             clearInterval(this.interval);
     }
 
+    /**
+     * Update the files and info
+     */
     updateFiles(data) {
-        /**
-         * Update the files and info
-         */
-
         const files = {'files': data['files']}
         const info = data['info'];
-
         this.setState({ files: files, info: info });
     }
 
+    /**
+     * Open the folder menu
+     */
     createFolder() {
-        /**
-         * Open the folder menu
-         */
         this.folderMenu.current.setPath(this.state.current_folder.replace(/^\//, ''));
         this.folderMenu.current.toggleOpen();
     }
@@ -270,15 +268,14 @@ class FileExplorer extends React.Component {
         });
     }
 
+    /**
+     * This is a hack to get around the fact that the input type="file" element
+     * cannot be accessed from the React code. This is because the element is
+     * not rendered by React, but by the browser itself.
+     *
+     * Function to select the files to be submitted
+     */
     createFile() {
-        /**
-         * This is a hack to get around the fact that the input type="file" element
-         * cannot be accessed from the React code. This is because the element is
-         * not rendered by React, but by the browser itself.
-         *
-         * Function to select the files to be submitted
-         */
-
         var el = window._protected_reference = document.createElement("INPUT");
         el.type = "file";
         el.accept = validExtensions.join(',');
@@ -479,11 +476,11 @@ class FileExplorer extends React.Component {
         this.getDocument("txt", file);
     }
 
+    /**
+     * Export the .txt file
+     * with the delimiter
+     */
     getDelimiterTxt(file) {
-        /**
-         * Export the .txt file
-         * with the delimiter
-         */
         this.getDocument("txt_delimitado", file, "_delimitado");
     }
 
@@ -673,6 +670,7 @@ class FileExplorer extends React.Component {
                         ref={ref}
                         key={item}
                         name={item}
+                        _private={this.props._private}
                         info={this.getInfo(this.state.current_folder + '/' + item)}
                         deleteItem={this.deleteItem}
                         getOriginalFile={this.getOriginalFile}
@@ -887,9 +885,17 @@ class FileExplorer extends React.Component {
             <>
                 {
                     this.state.layoutMenu
-                    ? <LayoutMenu current_folder={this.state.current_folder} filename={this.state.fileOpened} closeLayoutMenu={this.closeLayoutMenu}/>
+                    ? <LayoutMenu _private={this.props._private}
+                                  sessionId={this.props._private ? this.props.sessionId : null}
+                                  current_folder={this.state.current_folder}
+                                  filename={this.state.fileOpened}
+                                  closeLayoutMenu={this.closeLayoutMenu}/>
                     : this.state.editingMenu
-                        ? <EditingMenu current_folder={this.state.current_folder} filename={this.state.fileOpened} closeEditingMenu={this.closeEditingMenu}/>
+                        ? <EditingMenu _private={this.props._private}
+                                       sessionId={this.props._private ? this.props.sessionId : null}
+                                       current_folder={this.state.current_folder}
+                                       filename={this.state.fileOpened}
+                                       closeEditingMenu={this.closeEditingMenu}/>
                         : <Box sx={{
                             ml: '1.5rem',
                             mr: '1.5rem',
@@ -898,9 +904,9 @@ class FileExplorer extends React.Component {
                             <Notification message={""} severity={"success"} ref={this.successNot}/>
                             <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                            <FolderMenu ref={this.folderMenu} updateFiles={this.updateFiles}/>
-                            <OcrMenu ref={this.ocrMenu} updateFiles={this.updateFiles} showStorageForm={this.showStorageForm}/>
-                            <DeleteMenu ref={this.deleteMenu} updateFiles={this.updateFiles}/>
+                            <FolderMenu ref={this.folderMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
+                            <OcrMenu ref={this.ocrMenu} _private={this.props._private} updateFiles={this.updateFiles} showStorageForm={this.showStorageForm}/>
+                            <DeleteMenu ref={this.deleteMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
                             <FullStorageMenu ref={this.storageMenu}/>
 
                             {
@@ -911,6 +917,17 @@ class FileExplorer extends React.Component {
             </>
         );
     }
+}
+
+FileExplorer.defaultProps = {
+    _private: false,
+    sessionId: "",
+    current_folder: null,
+    // functions:
+    setCurrentPath: null,
+    enterLayoutMenu: null,
+    enterEditingMenu: null,
+    exitMenus: null
 }
 
 export default FileExplorer;

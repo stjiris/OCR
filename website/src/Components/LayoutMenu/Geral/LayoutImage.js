@@ -15,10 +15,6 @@ class LayoutPreview extends React.Component {
         super(props);
         this.state = {
             visible: false,
-
-            view: props.view,
-            image: props.image,
-
             top: props.top,
             left: props.left,
             bottom: props.bottom,
@@ -60,27 +56,22 @@ class LayoutBox extends React.Component {
     constructor(props) {
         super(props);
         this.state = {  // TODO: use props instead of state where possible
-            layoutImage: props.layoutImage,
-            view: props.view,
-
             top: props.top,
             left: props.left,
             bottom: props.bottom,
             right: props.right,
 
-            type: props.type || "text",
-            id: props.id,
-            checked: props.checked || false,
-            copyId: props.copyId,
+            mainColor: null,
+            backColor: null
         }
+        this.viewRef = props.viewRef;
         this.imageRef = props.imageRef;
     }
 
     componentDidMount() {
         this.setState({
-            mainColor: this.state.type === "text" ? "#0000ff" : this.state.type === "image" ? '#08A045' : '#F05E16',
-            numberColor: this.state.type === "text" ? "#0000ff" : this.state.type === "image" ? '#08A045' : '#F05E16',
-            backColor: this.state.type === "text" ? "#0000ff22" : this.state.type === "image" ? '#08A04526' : '#F05E1626',
+            mainColor: this.props.type === "text" ? "#0000ff" : this.props.type === "image" ? '#08A045' : '#F05E16',
+            backColor: this.props.type === "text" ? "#0000ff22" : this.props.type === "image" ? '#08A04526' : '#F05E1626',
         })
     }
 
@@ -120,19 +111,19 @@ class LayoutBox extends React.Component {
             left: this.state.left,
             bottom: this.state.bottom,
             right: this.state.right,
-            type: this.state.type,
-            id: this.state.id,
-            checked: this.state.checked,
-            copyId: this.state.copyId,
+            type: this.props.type,
+            id: this.props.id,
+            checked: this.props.checked,
+            copyId: this.props.copyId,
         }
     }
 
     processDrag(e, corner) {
-        var shiftX = this.state.view.current.offsetLeft;
-        var shiftY = this.state.view.current.offsetTop;
+        var shiftX = this.viewRef.current.offsetLeft;
+        var shiftY = this.viewRef.current.offsetTop;
 
-        var mouseX = e.clientX - shiftX + this.state.view.current.scrollLeft;
-        var mouseY = e.clientY - shiftY + this.state.view.current.scrollTop + window.scrollY;
+        var mouseX = e.clientX - shiftX + this.viewRef.current.scrollLeft;
+        var mouseY = e.clientY - shiftY + this.viewRef.current.scrollTop + window.scrollY;
 
         if (
             mouseX <= 0 || mouseY <= 0
@@ -157,7 +148,7 @@ class LayoutBox extends React.Component {
         var initialCoords = this.imageToScreenCoordinates(this.state.left, this.state.top);
         var finalCoords = this.imageToScreenCoordinates(this.state.right, this.state.bottom);
 
-        var mainColor = this.state.checked ? `${this.state.mainColor}` : `${this.state.mainColor}80`
+        var mainColor = this.props.checked ? `${this.state.mainColor}` : `${this.state.mainColor}80`
 
         return (
             <Box
@@ -185,7 +176,7 @@ class LayoutBox extends React.Component {
                             top: `${(finalCoords.y - initialCoords.y)/2 - 8}px`
                         }}
                     >
-                        <span><b>{this.state.id}</b></span>
+                        <span><b>{this.props.id}</b></span>
                         {
                             this.state.copyId
                             ? <ContentCopyIcon sx={{fontSize: 15, ml: "10px"}}/>
@@ -201,7 +192,7 @@ class LayoutBox extends React.Component {
                             zIndex: 100
                         }}
                         onDrag={(e) => this.processDrag(e, 0)}
-                        onDragEnd={() => this.state.layoutImage.updateMenu()}
+                        onDragEnd={() => this.props.updateMenu()}
 
                     />
 
@@ -213,7 +204,7 @@ class LayoutBox extends React.Component {
                             zIndex: 100
                         }}
                         onDrag={(e) => this.processDrag(e, 1)}
-                        onDragEnd={() => this.state.layoutImage.updateMenu()}
+                        onDragEnd={() => this.props.updateMenu()}
                     />
 
                     <Box draggable
@@ -224,7 +215,7 @@ class LayoutBox extends React.Component {
                             zIndex: 100
                         }}
                         onDrag={(e) => this.processDrag(e, 2)}
-                        onDragEnd={() => this.state.layoutImage.updateMenu()}
+                        onDragEnd={() => this.props.updateMenu()}
                     />
 
                     <Box draggable
@@ -235,7 +226,7 @@ class LayoutBox extends React.Component {
                             zIndex: 100
                         }}
                         onDrag={(e) => this.processDrag(e, 3)}
-                        onDragEnd={() => this.state.layoutImage.updateMenu()}
+                        onDragEnd={() => this.props.updateMenu()}
                     />
                 </Box>
 
@@ -244,7 +235,7 @@ class LayoutBox extends React.Component {
     }
 }
 
-export default class LayoutImage extends React.Component {
+class LayoutImage extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -266,8 +257,10 @@ export default class LayoutImage extends React.Component {
         }
 
         this.imageRef = React.createRef();
-        this.view = React.createRef();
-        this.preview = React.createRef();
+        this.viewRef = React.createRef();
+        this.previewRef = React.createRef();
+
+        this.updateMenu = this.updateMenu.bind(this);
     }
 
     componentDidMount() {
@@ -282,8 +275,7 @@ export default class LayoutImage extends React.Component {
             ref={ref}
             key={index + " " + box.top + " " + box.left + " " + box.bottom + " " + box.right + " " + box.checked + " " + checked + " " + box.id + " " + box.copyId}
             index={index}
-            layoutImage={this}
-            view={this.view}
+            viewRef={this.viewRef}
             imageRef={this.imageRef}
             top={box.top}
             left={box.left}
@@ -293,6 +285,7 @@ export default class LayoutImage extends React.Component {
             id={box.id || type[0].toUpperCase() + this.props.pageIndex + "." + index}
             checked={box.checked || checked || false}
             copyId={box.copyId || copyId}
+            updateMenu={this.updateMenu}
         />
     }
 
@@ -399,11 +392,11 @@ export default class LayoutImage extends React.Component {
 
         if (this.state.menu.state.segmentLoading) return;
 
-        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX;
-        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY;
+        var x = e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX;
+        var y = e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY;
 
-        this.preview.current.toggleVisibility();
-        this.preview.current.setInitialCoordinates(y, x);
+        this.previewRef.current.toggleVisibility();
+        this.previewRef.current.setInitialCoordinates(y, x);
 
         this.setState(
             {
@@ -416,10 +409,10 @@ export default class LayoutImage extends React.Component {
     duringDrag(e) {
         if (!this.state.dragging) return;
 
-        var x = e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX;
-        var y = e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY;
+        var x = e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX;
+        var y = e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY;
 
-        this.preview.current.updateCoordinates(y, x);
+        this.previewRef.current.updateCoordinates(y, x);
     }
 
     updateMenu() {
@@ -430,7 +423,7 @@ export default class LayoutImage extends React.Component {
         if (!this.state.dragging) return;
 
         var initialCoords = this.screenToImageCoordinates(this.state.initialCoords.x, this.state.initialCoords.y);
-        var finalCoords = this.screenToImageCoordinates(e.clientX - this.view.current.offsetLeft + this.view.current.scrollLeft + window.scrollX, e.clientY - this.view.current.offsetTop + this.view.current.scrollTop + window.scrollY);
+        var finalCoords = this.screenToImageCoordinates(e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX, e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY);
 
         if (finalCoords.x - initialCoords.x < 150 && finalCoords.y - initialCoords.y < 150) {
             finalCoords.x = Math.max(finalCoords.x, initialCoords.x + 150);
@@ -444,20 +437,20 @@ export default class LayoutImage extends React.Component {
         boxes.push(this.createLayoutBox(ref, refs.length + 1, coords, this.state.menu.state.textModeState ? "text" : "remove"));
         refs.push([ref]);
 
-        this.preview.current.toggleVisibility();
+        this.previewRef.current.toggleVisibility();
         this.setState({dragging: false, boxes: boxes, boxRefs: refs}, this.updateMenu);
     }
 
     render() {
         return (
             <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                <Box ref={this.view}
+                <Box ref={this.viewRef}
                     draggable
                     className="pageImage">
                     <img
                         ref={this.imageRef}
-                        src={this.props.image}
-                        alt={`Página de ${this.props.image}`}
+                        src={this.props.imageURL}
+                        alt={`Página de ${this.props.imageURL}`}
                         style={{
                             display: 'block',
                             marginLeft: 'auto',
@@ -490,9 +483,43 @@ export default class LayoutImage extends React.Component {
                         })
                     }
 
-                    <LayoutPreview ref={this.preview} view={this.view} image={this.imageRef} top={100} left={50} bottom={200} right={150}/>
+                    <LayoutPreview ref={this.previewRef} top={100} left={50} bottom={200} right={150}/>
                 </Box>
             </Box>
         )
     }
 }
+
+LayoutPreview.defaultProps = {
+    top: null,
+    left: null,
+    bottom: null,
+    right: null
+}
+
+LayoutBox.defaultProps = {
+    view: null,
+    imageRef: null,
+
+    top: null,
+    left: null,
+    bottom: null,
+    right: null,
+
+    id: null,
+    copyId: null,
+    type: "text",
+    checked: false,
+
+    // functions:
+    updateMenu: null
+}
+
+LayoutImage.defaultProps = {
+    menu: null,
+    boxesCoords: null,
+    pageIndex: null,
+    imageURL: null
+}
+
+export default LayoutImage;

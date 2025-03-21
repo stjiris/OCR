@@ -121,7 +121,9 @@ class DeleteMenu extends React.Component {
 }
 
 DeleteMenu.defaultProps = {
-    _private: false
+    _private: false,
+    // functions:
+    updateFiles: null
 }
 
 export default DeleteMenu;

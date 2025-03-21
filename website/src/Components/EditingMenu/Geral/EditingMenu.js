@@ -1203,7 +1203,11 @@ class EditingMenu extends React.Component {
 
 EditingMenu.defaultProps = {
     _private: false,
-    sessionId: ""
+    sessionId: "",
+    current_folder: null,
+    filename: null,
+    // functions:
+    closeEditingMenu: null
 }
 
 export default EditingMenu;

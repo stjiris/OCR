@@ -894,7 +894,7 @@ class LayoutMenu extends React.Component {
                                                    boxesCoords={this.state.contents[this.state.currentPage - 1]["boxes"]}
                                                    key={this.state.currentPage - 1}
                                                    pageIndex={this.state.currentPage}
-                                                   image={this.state.contents[this.state.currentPage - 1]["page_url"]} />
+                                                   imageURL={this.state.contents[this.state.currentPage - 1]["page_url"]} />
 							}
 						</Box>
 						<Box sx={{
@@ -1110,7 +1110,11 @@ class LayoutMenu extends React.Component {
 
 LayoutMenu.defaultProps = {
     _private: false,
-    sessionId: ""
+    sessionId: "",
+    current_folder: null,
+    filename: null,
+    // functions:
+    closeLayoutMenu: null
 }
 
 export default LayoutMenu;

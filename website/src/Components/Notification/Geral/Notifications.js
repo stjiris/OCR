@@ -11,7 +11,6 @@ class Notification extends React.Component {
         super(props);
         this.state = {
             message: props.message,
-            severity: props.severity,
             open: false
         }
     }
@@ -40,12 +39,17 @@ class Notification extends React.Component {
                 open={this.state.open}
                 onClose={() => this.close()}
             >
-                <Alert onClose={() => this.close()} severity={this.state.severity} sx={{ width: '100%' }}>
+                <Alert onClose={() => this.close()} severity={this.props.severity} sx={{ width: '100%' }}>
                     {this.state.message}
                 </Alert>
             </Snackbar>
         )
     }
+}
+
+Notification.defaultProps = {
+    message: null,
+    severity: null,
 }
 
 export default Notification;

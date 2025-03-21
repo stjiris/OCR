@@ -10,12 +10,11 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import loadComponent from '../../../utils/loadComponents';
 const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
-export default class FolderRow extends React.Component {
+class FolderRow extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             info: props.info,
-            current_folder: props.current_folder,
         }
     }
 
@@ -70,3 +69,13 @@ export default class FolderRow extends React.Component {
         )
     }
 }
+
+FolderRow.defaultProps = {
+    info: null,
+    name: null,
+    // functions:
+    enterFolder: null,
+    deleteItem: null
+}
+
+export default FolderRow;
