@@ -1,9 +1,9 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 
-import addLine from "../../../static/addLine.svg"
-import removeLine from "../../../static/removeLine.svg"
-import loadComponent from '../../../utils/loadComponents.js';
+import addLine from "../../../website/src/static/addLine.svg"
+import removeLine from "../../../website/src/static/removeLine.svg"
+import loadComponent from '../../../website/src/utils/loadComponents.js';
 const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 const PageDisplayer = loadComponent('Displayer', 'PageDisplayer');
 
