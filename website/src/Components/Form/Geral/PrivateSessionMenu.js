@@ -91,20 +91,17 @@ class PrivateSessionMenu extends React.Component {
                             Caso perca o link, não conseguirá aceder novamente a esta sessão privada.
                         </Typography>
                         <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
-                            {this.checkHasFile() ?
-                                <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
-                                    <CloseRoundedIcon/>
-                                </IconButton>
-                                :
-                                <Button
-                                    disabled={this.checkHasFile()}
-                                    variant="contained"
-                                    sx={{border: '1px solid black'}}
-                                    onClick={() => this.createPrivateSession()}
-                                >
-                                    Adicionar documento
-                                </Button>
-                            }
+                            <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                                <CloseRoundedIcon/>
+                            </IconButton>
+                            <Button
+                                disabled={this.checkHasFile()}
+                                variant="contained"
+                                sx={{border: '1px solid black'}}
+                                onClick={() => this.createPrivateSession()}
+                            >
+                                Adicionar documento
+                            </Button>
                         </Box>
                     </Box>
                 </Modal>
