@@ -58,7 +58,6 @@ class PrivateSessionMenu extends React.Component {
         this.props.createFile();
     }
 
-    // TODO: render welcome screen only on first entering private session
     render() {
         return (
             <Box>
@@ -117,7 +116,7 @@ class PrivateSessionMenu extends React.Component {
 PrivateSessionMenu.defaultProps = {
     rowRefsLength: null,
     // functions:
-    createFile: null,
+    createFile: null
 }
 
 export default PrivateSessionMenu;
