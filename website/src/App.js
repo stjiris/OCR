@@ -564,7 +564,7 @@ function App() {
                             !this.state.searchMenu
                             ? <FileExplorer ref={this.fileSystem}
                                             _private={this.getPrivateSession() !== null}
-                                            sessionId={this.state.sessionId}
+                                            sessionId={this.state.sessionId || ""}  // sessionId or empty str if null
                                             current_folder={this.state.currentFolderPathList}
                                             setCurrentPath={this.setCurrentPath}
                                             enterLayoutMenu={this.enterLayoutMenu}
