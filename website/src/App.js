@@ -22,7 +22,6 @@ const Notification = loadComponent('Notification', 'Notifications');
 const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 const LogsMenu = loadComponent('Form', 'LogsMenu');
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
-const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
@@ -563,20 +562,14 @@ function App() {
                     <Box>
                         {
                             !this.state.searchMenu
-                                ? this.getPrivateSession() == null
-                                    ? <FileExplorer ref={this.fileSystem}
-                                                    current_folder={this.state.currentFolderPathList}
-                                                    setCurrentPath={this.setCurrentPath}
-                                                    enterLayoutMenu={this.enterLayoutMenu}
-                                                    enterEditingMenu={this.enterEditingMenu}
-                                                    exitMenus={this.exitMenus}/>
-                                    : <PrivateFileExplorer ref={this.fileSystem}
-                                                           sessionId={this.state.sessionId}
-                                                           current_folder={this.state.currentFolderPathList}
-                                                           setCurrentPath={this.setCurrentPath}
-                                                           enterLayoutMenu={this.enterLayoutMenu}
-                                                           enterEditingMenu={this.enterEditingMenu}
-                                                           exitMenus={this.exitMenus}/>
+                            ? <FileExplorer ref={this.fileSystem}
+                                            _private={this.getPrivateSession() !== null}
+                                            sessionId={this.state.sessionId}
+                                            current_folder={this.state.currentFolderPathList}
+                                            setCurrentPath={this.setCurrentPath}
+                                            enterLayoutMenu={this.enterLayoutMenu}
+                                            enterEditingMenu={this.enterEditingMenu}
+                                            exitMenus={this.exitMenus}/>
                             : <ESPage filesChoice={this.state.filesChoice}
                                       algorithmChoice={this.state.algorithmChoice}
                                       configChoice={this.state.configChoice}/>
