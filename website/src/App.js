@@ -237,8 +237,9 @@ function App() {
         }
 
         setCurrentPath(new_path_list) {
+            // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
             this.setState({...fileSystemState, currentFolderPathList: new_path_list},
-                () => this.fileSystem.current.setState({...closeFileSystemMenus, current_folder: new_path_list.join('/')})
+                () => this.fileSystem.current.setState({...closeFileSystemMenus, current_folder: new_path_list.join('/').replace(/^\//, '')})
             );
         }
 

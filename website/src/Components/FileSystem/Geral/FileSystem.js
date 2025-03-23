@@ -47,7 +47,8 @@ class FileExplorer extends React.Component {
         this.state = {
             files: null,
             info: null,
-            current_folder: props.current_folder.join('/'),
+            // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
+            current_folder: props.current_folder.join('/').replace(/^\//, ''),
             components: [],
 
             updatingRows: [],
