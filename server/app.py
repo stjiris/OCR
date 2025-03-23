@@ -553,7 +553,7 @@ def upload_file():
             "creation": get_current_time()
         })
 
-        return {"success": True, "finished": True, "info": get_folder_info(target_path)}
+        return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
 
     # Create a Lock to process the file
     if temp_filename not in lock_system:
@@ -588,9 +588,9 @@ def upload_file():
                 args=(target_path, file_path, filename, total_count, temp_file_path)
             ).start()
 
-            return {"success": True, "finished": True, "info": get_folder_info(target_path)}
+            return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
 
-    return {"success": True, "finished": False, "info": get_folder_info(target_path)}
+    return {"success": True, "finished": False, "info": get_folder_info(target_path, private_session)}
 
 
 @app.route("/perform-ocr", methods=["POST"])
