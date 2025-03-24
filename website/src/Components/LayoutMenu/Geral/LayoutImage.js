@@ -261,13 +261,16 @@ class LayoutImage extends React.Component {
         this.previewRef = React.createRef();
 
         this.updateMenu = this.updateMenu.bind(this);
+        this.recreateBoxes = this.recreateBoxes.bind(this);
     }
 
     componentDidMount() {
-        this.setState({
-            boxHeight: `${window.innerHeight - 160}px`,
-            height: `${window.innerHeight - 160}px`,
-        }, this.loadBoxes);
+        window.addEventListener('resize', this.recreateBoxes);
+        this.loadBoxes();
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('resize', this.recreateBoxes);
     }
 
     createLayoutBox(ref, index, box, type, checked = false, copyId = undefined) {
