@@ -898,19 +898,15 @@ class EditingMenu extends React.Component {
                             flexDirection: "column",
                             width: "50%"}}>
                             <Box sx={{display: "flex", flexDirection: "row"}}>
-                                <Box className="pageImage">
+                                <Box className="pageImageContainer">
                                     <img
                                         ref={this.image}
                                         src={this.state.contents[this.state.currentPage - 1]["page_url"]}
                                         alt="Imagem da pagina"
+                                        className={"pageImage"}
                                         style={{
-                                            display: 'block',
-                                            marginLeft: 'auto',
-                                            marginRight: 'auto',
-                                            border: '1px solid black',
                                             maxWidth: `${this.state.imageZoom}%`,
                                             maxHeight: `${this.state.imageZoom}%`,
-                                            objectFit: 'contain'
                                         }}
                                     />
 
