@@ -3,6 +3,8 @@ import logging as log
 import os
 import random
 import re
+import shutil
+import zipfile
 from json import JSONDecodeError
 
 import requests
@@ -20,7 +22,20 @@ from src.utils.export import json_to_text
 from string import punctuation
 
 FILES_PATH = environ.get("FILES_PATH", "_files")
+TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
 PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
+
+ALLOWED_EXTENSIONS = {'pdf',
+                      'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp',  # JPEG
+                      'png',
+                      'tiff', 'tif',  # TIFF
+                      'bmp',
+                      'gif',
+                      'webp',
+                      'pnm',  # image/x-portable-anymap
+                      'jp2',  # JPEG 2000
+                      'zip',
+                      }
 
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
@@ -76,6 +91,10 @@ def get_file_parsed(path, is_private):
     :param path: path to the file
     :return: list with the text of each page
     """
+    extension = path.split(".")[-1].lower()
+    page_extension = ".jpg" if extension == "pdf" else ".png" if extension == "zip" else f".{extension}"
+    url_prefix = IMAGE_PREFIX + ("/private/" if is_private else "/images/")  # TODO: secure private session images
+
     path += "/_ocr_results"
     files = [
         f"{path}/{f}"
@@ -133,10 +152,10 @@ def get_file_parsed(path, is_private):
                     "original_file": file,
                     "content": hocr,
                     "page_number": int(basename.split("_")[-1]),
-                    "page_url": IMAGE_PREFIX
-                    + ("/private/" if is_private else "/images/")  # TODO: secure private session images
+                    "page_url": url_prefix
                     + "/".join(file.split("/")[1:-2])
-                    + f"/{basename}.jpg"
+                    + f"/_pages/{basename}"
+                    + page_extension
                 }
             )
     return data, words
@@ -146,14 +165,17 @@ def get_file_layouts(path, is_private):
     data = get_data(f"{path}/_data.json")
     layouts = []
     basename = get_file_basename(path)
+    extension = path.split(".")[-1].lower()
+    page_extension = ".jpg" if extension == "pdf" else ".png" if extension == "zip" else f".{extension}"
+    url_prefix = (IMAGE_PREFIX
+                  + (f"/private/{path.replace(PRIVATE_PATH, '')}" if is_private
+                    else f"/images/{path.replace(FILES_PATH, '')}"))
 
     for page in range(data["pages"]):
         filename = f"{path}/_layouts/{basename}_{page}.json"
-        if is_private:
-            folder_url = f"/private/{path.replace(PRIVATE_PATH, '')}"
-        else:
-            folder_url = f"/images/{path.replace(FILES_PATH, '')}"
-        page_url = IMAGE_PREFIX + folder_url + f"/{basename}_{page}.jpg"
+        page_url = (url_prefix
+                    + f"/_pages/{basename}_{page}"
+                    + page_extension)
 
         if os.path.exists(filename):
             with open(filename, encoding="utf-8") as f:
@@ -196,6 +218,9 @@ def generate_uuid(path):
     return str(
         uuid.UUID(bytes=bytes(random.getrandbits(8) for _ in range(16)), version=4)
     )
+
+def generate_random_uuid():
+    return uuid.uuid4().hex
 
 # TODO
 def delete_structure(client, path):
@@ -293,11 +318,15 @@ def get_folder_info(path, private_session=None):
     :param path: path to the folder
     """
     info = {}
-    data = get_data(f"{path}/_data.json")
+    try:
+        data = get_data(f"{path}/_data.json")
+    except FileNotFoundError:
+        return {}
+
     if "type" not in data:
         return {}
 
-    if data["type"] == "file" and ("progress" not in data or data["progress"] == True):
+    if data["type"] == "file" and ("stored" not in data or data["stored"] == True):
         data["size"] = get_size(path)
 
     # sanitize important paths from the info key
@@ -356,7 +385,12 @@ def get_structure(path, private_session=None, is_private=False):
         name = "files"
     else:
         name = path.split("/")[-1]
-        data = get_data(f"{path}/_data.json")
+
+        try:
+            data = get_data(f"{path}/_data.json")
+        except FileNotFoundError:
+            return {}
+
         if "type" not in data:
             return None
         if data["type"] == "file":
@@ -384,17 +418,19 @@ def get_structure(path, private_session=None, is_private=False):
 # FILES UTILS
 ##################################################
 # DONE
-def get_page_count(filename):
+def get_page_count(target_path, file_path):
     """
     Get the number of pages of a file
     """
 
-    extension = filename.split(".")[-1]
+    extension = file_path.split(".")[-1]
     if extension == "pdf":
-        with open(filename, "rb") as f:
+        with open(file_path, "rb") as f:
             return len(pdfium.PdfDocument(f))
             # return len(PdfReader(f).pages)
-    elif extension in ["jpg", "jpeg"]:
+    elif extension == "zip":
+        return len(os.listdir(f"{target_path}/_pages"))
+    elif extension in ALLOWED_EXTENSIONS:  # some other than pdf or zip
         return 1
 
 # DONE
@@ -450,7 +486,10 @@ def prepare_file_ocr(path):
     @param ocr_folder: folder to save the results
     """
     try:
-        extension = path.split(".")[-1]
+        if not os.path.exists(f"{path}/_pages"):
+            os.mkdir(f"{path}/_pages")
+
+        extension = path.split(".")[-1].lower()
         basename = get_file_basename(path)
 
         log.info(f"{path}: A preparar páginas")
@@ -461,15 +500,39 @@ def prepare_file_ocr(path):
                 page = pdf[i]
                 bitmap = page.render(300 / 72)  # turn PDF page into 300 DPI bitmap
                 pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/{basename}_{i}.jpg", dpi=(300, 300))
+                pil_image.save(f"{path}/_pages/{basename}_{i}.jpg", quality=95, dpi=(300, 300))
 
             pdf.close()
 
-        elif extension in ["jpeg", "jpg"]:
-            img = Image.open(f"{path}/{basename}.{extension}")
-            img.save(f"{path}/{basename}.jpg", "JPEG")
-    except Exception as e:
+        elif extension == "zip":
+            temp_folder_name = f"{path}/{generate_random_uuid()}"
+            os.mkdir(temp_folder_name)
 
+            with zipfile.ZipFile(f"{path}/{basename}.zip", 'r') as zip_ref:
+                zip_ref.extractall(temp_folder_name)
+
+            page_paths = [
+                f"{temp_folder_name}/{file}"
+                for file in os.listdir(temp_folder_name)
+                if os.path.isfile(os.path.join(temp_folder_name, file))
+            ]
+
+            # sort pages alphabetically, case-insensitive
+            # casefold for better internationalization, original string appended as fallback
+            page_paths.sort(key=lambda s: (s.casefold(), s))
+
+            for i, page in enumerate(page_paths):
+                im = Image.open(page)
+                im.save(f"{path}/_pages/{basename}_{i}.png", format="PNG")  # using PNG to keep RGBA
+            shutil.rmtree(temp_folder_name)
+
+        elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
+            original_path = f"{path}/{basename}.{extension}"
+            link_path = f"{path}/_pages/{basename}_0.{extension}"
+            if not os.path.exists(link_path):
+                os.link(original_path, link_path)
+
+    except Exception as e:
         data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"] = data.get("ocr", {})

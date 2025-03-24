@@ -12,7 +12,7 @@ import json
 from src.algorithms import tesseract
 from src.algorithms import easy_ocr
 
-from src.utils.export import export_file
+from src.utils.export import export_file, load_invisible_font
 from src.utils.file import get_current_time
 from src.utils.file import get_size
 from src.utils.file import update_data
@@ -29,6 +29,8 @@ CORS(app)
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://ocr-redis-1:6379'),
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://ocr-redis-1:6379')
 celery = Celery("celery_app", broker=CELERY_BROKER_URL)
+
+load_invisible_font()  # TODO: can it be loaded once at startup of the OCR worker?
 
 @celery.task(name="changes")
 def make_changes(data_folder, data):
@@ -106,11 +108,12 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
 
     # Generate the images
     try:
-        prepare_file_ocr(path)
-        images = sorted([x for x in os.listdir(path) if x.endswith(".jpg")])
-
         if not os.path.exists(f"{path}/_ocr_results"):
             os.mkdir(f"{path}/_ocr_results")
+
+        prepare_file_ocr(path)
+        pages_path = f"{path}/_pages"
+        images = sorted([x for x in os.listdir(pages_path)])
 
         log.info("{path}: A começar OCR")
 
@@ -163,7 +166,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                     segment_ocr_flag = True
 
         if not segment_ocr_flag:
-            image = Image.open(f"{path}/{filename}")
+            image = Image.open(f"{path}/_pages/{filename}")
 
             for item in [x for x in parsed_json if x["type"] == "remove"]:
                 for sq in item["squares"]:
@@ -188,7 +191,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             image_groups = [x for x in parsed_json if x["type"] == "image"]
             ignore_groups = [x for x in parsed_json if x["type"] == "remove"]
 
-            image = Image.open(f"{path}/{filename}")
+            image = Image.open(f"{path}/_pages/{filename}")
             basename = get_file_basename(filename)
             page_id = int(basename.split("_")[-1]) + 1
 
@@ -218,7 +221,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
                         box_coords = (left, top, right, bottom)
                         cropped_image = image.crop(box_coords)
-                        cropped_image.save(f"{path}/_images/page{page_id}_{id+1}.jpg")
+                        cropped_image.save(f"{path}/_images/page{page_id}_{id+1}.{filename.split('.')[-1].lower()}")
 
 
             box_coordinates_list = []
@@ -260,11 +263,11 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
             creation_date = get_current_time()
 
-            data["ocr"] = {
+            data["ocr"].update({
                 "progress": len(files),
                 "size": get_ocr_size(f"{path}/_ocr_results"),
                 "creation": creation_date,
-            }
+            })
 
             update_data(data_folder, data)
 
@@ -302,7 +305,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 "complete": True,
                 "size": get_size(f"{path}/_search.pdf", path_complete=True),
                 "creation": creation_date,
-                "pages": get_page_count(f"{path}/_search.pdf"),
+                "pages": get_page_count(path, f"{path}/_search.pdf"),
             }
             data["csv"] = {
                 "complete": True,
@@ -316,7 +319,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 "complete": True,
                 "size": get_size(f"{path}/_simple.pdf", path_complete=True),
                 "creation": creation_date,
-                "pages": get_page_count(f"{path}/_simple.pdf"),
+                "pages": get_page_count(path, f"{path}/_simple.pdf"),
             }
 
             update_data(data_folder, data)

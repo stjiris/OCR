@@ -29,6 +29,7 @@ from reportlab.lib.pagesizes import letter
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
 PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
 
+OUT_DEFAULT_DPI = 150
 
 def json_to_text(json_d):
     """
@@ -150,35 +151,50 @@ def export_pdf(path, force_recreate = False, simple=False):
     simple_filename = f"{path}/_simple.pdf"
     filename_csv = f"{path}/_index.csv"
 
+    dpi_original = 300
+    dpi_compressed = OUT_DEFAULT_DPI  # TODO: variable output DPI
+
     target = filename if not simple else simple_filename
 
     if os.path.exists(target) and os.path.exists(filename_csv) and not force_recreate:
         return target
 
     else:
-        pdf_basename = get_file_basename(path)
+        original_extension = path.split('.')[-1].lower()
 
-        pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
-        for i in range(len(pdf)):
-            page = pdf[i]
-            bitmap = page.render(150 / 72)
-            pil_image = bitmap.to_pil()
-            pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
+        if original_extension == 'pdf':
+            page_extension = "jpg"
+            pdf_basename = get_file_basename(path)
 
-        pdf.close()
+            pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
+            for i in range(len(pdf)):
+                page = pdf[i]
+                bitmap = page.render(dpi_compressed / 72)
+                pil_image = bitmap.to_pil()
+                pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
+
+            pdf.close()
+
+        elif original_extension == 'zip':
+            page_extension = "png"  # TODO: compress images taken from zips when creating pdf
+            img_basename = get_file_basename(path)
+            pages_list = [p for p in os.listdir(f"{path}/_pages") if os.path.isfile(os.path.join(f"{path}/_pages", p))]
+            pages_list.sort(key=lambda s: (s.casefold(), s))
+            for i, page in enumerate(pages_list):
+                os.link(f"{path}/_pages/{page}", f"{path}/{img_basename}_{i}$.{page_extension}")
+
+        else:  # TODO: compress images when creating pdf
+            page_extension = original_extension
+            img_basename = get_file_basename(path)
+            os.link(f"{path}/{img_basename}.{original_extension}", f"{path}/{img_basename}_0$.{page_extension}")
 
         words = {}
-
-        load_invisible_font()
 
         pdf = Canvas(target, pageCompression=1, pagesize=letter)
         pdf.setCreator("hocr-tools")
         pdf.setTitle(target)
 
-        dpi_original = 200
-        dpi_compressed = 150  # Adjust the DPI value for positioning and scaling
-
-        filenames_asterisk = [x for x in os.listdir(path) if x.endswith("$.jpg")]
+        filenames_asterisk = [x for x in os.listdir(path) if x.endswith(f"$.{page_extension}")]
         images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
         for image in images:
             image_basename = get_file_basename(image)
@@ -211,7 +227,7 @@ def export_pdf(path, force_recreate = False, simple=False):
             word_count = len(words)
 
             for id in range(0, word_count, rows * cols):
-                pdf.setPageSize((w, h))
+                pdf.setPageSize((w, h))  # TODO: store page sizes and use for each page; PDFs can have variable size pages
 
                 x, y = margin, h - margin
 
@@ -248,7 +264,7 @@ def export_pdf(path, force_recreate = False, simple=False):
 
         # Delete compressed images
         for compressed_image in os.listdir(path):
-            if compressed_image.endswith("$.jpg"):
+            if compressed_image.endswith(f"$.{page_extension}"):
                 try:
                     os.remove(os.path.join(path, compressed_image))
                 except:

@@ -12,15 +12,15 @@ import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 
-import loadComponent from '../../../utils/loadComponents';
-import calculateEstimatedTime from '../../../utils/waitingTime';
-
 import { IconButton } from '@mui/material';
 
+import calculateEstimatedTime from '../../../utils/waitingTime';
+import loadComponent from '../../../utils/loadComponents';
 const Notification = loadComponent('Notification', 'Notifications');
 const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
 const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
 const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+const FileIcon = loadComponent('CustomIcons', 'FileIcon');
 const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
 const LayoutIcon = loadComponent('CustomIcons', 'LayoutIcon');
 const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
@@ -42,13 +42,13 @@ export default class FileRow extends React.Component {
     }
 
     updateInfo(info) {
-        if (
-            (this.state.info === undefined || this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] < this.state.info["pages"]) &&
-            (info !== undefined && info["ocr"] !== undefined && info["ocr"]["progress"] >= info["pages"])
-        ) {
-            this.setState({expanded: true});
+        // Auto-expand file row if OCR status was not performed/concluded and became concluded
+        if ((this.state.info === undefined || this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] < this.state.info["pages"])
+            && (info !== undefined && info["ocr"] !== undefined && info["ocr"]["progress"] >= info["pages"])) {
+            this.setState({info: info, expanded: true});
+        } else {
+            this.setState({info: info});
         }
-        this.setState({info: info});
     }
 
     fileClicked() {
@@ -181,9 +181,9 @@ export default class FileRow extends React.Component {
                                 </IconButton>
                             }
 
-                            <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
+                            <FileIcon extension={this.state.info["extension"]} sx={{ fontSize: '25px', m: "0.5rem 0.5rem 0.5rem 0.2rem"  /* 0.2rem left */ }} />
                             {
-                                this.state.info["progress"] === undefined || this.state.info["progress"] === true
+                                this.state.info["stored"] === undefined || this.state.info["stored"] === true
                                 ? <Button
                                     onClick={(e) => this.getOriginalFile(e)}
                                     style={{
@@ -201,7 +201,7 @@ export default class FileRow extends React.Component {
                     </TableCell>
 
                     {
-                        this.state.info["progress"] !== undefined && this.state.info["progress"] !== true
+                        this.state.info["stored"] !== undefined && this.state.info["stored"] !== true
                         ? <>
                             {
                                 this.state.info["upload_stuck"] === true
@@ -224,12 +224,12 @@ export default class FileRow extends React.Component {
                                         </TableCell>
                                     </>
 
-                                    : this.state.info["progress"] !== 100.00
+                                    : this.state.info["stored"] !== 100.00
                                         ? <TableCell colSpan={4} align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
                                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                                 <span>Carregamento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
-                                                    <span>{this.state.info["progress"]}%</span>
+                                                    <span>{this.state.info["stored"]}%</span>
                                                     <CircularProgress sx={{ml: '1rem'}} size='0.8rem' />
                                                 </Box>
                                             </Box>

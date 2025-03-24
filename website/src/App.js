@@ -23,10 +23,6 @@ const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 const LogsMenu = loadComponent('Form', 'LogsMenu');
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
 const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
-// const EditPage = loadComponent('EditPage', 'EditPage');
-// const EditPage2 = loadComponent('EditPage2', 'EditPage');
-// const EditPage = loadComponent('EditPage3', 'EditPage');
-const EditPagePopUp = loadComponent('EditPage3', 'EditPagePopUp');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
@@ -68,9 +64,6 @@ function App() {
                 freeSpacePercentage: props.freeSpacePercentage || 0,
             }
 
-            this.saveButton = React.createRef();
-            this.textEditor = React.createRef();
-            this.pageDisplayer = React.createRef();
             this.header = React.createRef();
 
             this.successNot = React.createRef();
@@ -80,8 +73,6 @@ function App() {
             this.logsMenu = React.createRef();
 
             this.fileSystem = React.createRef();
-            this.editPage = React.createRef();
-            this.textEditor = React.createRef();
 
             this.setCurrentPath = this.setCurrentPath.bind(this);
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
@@ -307,9 +298,6 @@ function App() {
 
                     <VersionsMenu ref={this.versionsMenu}/>
                     <LogsMenu ref={this.logsMenu}/>
-
-                    <EditPagePopUp ref={this.textEditor}/>
-
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -577,7 +565,6 @@ function App() {
                                 ? this.getPrivateSession() == null
                                     ? <FileExplorer ref={this.fileSystem}
                                                     current_folder={this.state.currentFolderPathList}
-                                                    files={{"files": []}}
                                                     setCurrentPath={this.setCurrentPath}
                                                     enterLayoutMenu={this.enterLayoutMenu}
                                                     enterEditingMenu={this.enterEditingMenu}
@@ -585,7 +572,6 @@ function App() {
                                     : <PrivateFileExplorer ref={this.fileSystem}
                                                            sessionId={this.state.sessionId}
                                                            current_folder={this.state.currentFolderPathList}
-                                                           files={{"files": []}}
                                                            setCurrentPath={this.setCurrentPath}
                                                            enterLayoutMenu={this.enterLayoutMenu}
                                                            enterEditingMenu={this.enterEditingMenu}

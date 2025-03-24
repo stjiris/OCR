@@ -45,6 +45,11 @@ body {
     margin-right: 0
 }
 
+.fileIcon {
+    font-size: 25px;
+    margin: 0.5rem 0.5rem 0.5rem 0.2rem;  /* 0.2rem left */
+}
+
 .pageImage {
     position: relative;
     height: 80vh;

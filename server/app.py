@@ -36,7 +36,7 @@ from src.utils.file import prepare_file_ocr
 from src.utils.file import update_data
 from src.utils.file import save_file_layouts
 
-from src.utils.file import FILES_PATH, PRIVATE_PATH
+from src.utils.file import FILES_PATH, TEMP_PATH, PRIVATE_PATH, ALLOWED_EXTENSIONS
 
 from src.utils.image import parse_images
 
@@ -104,7 +104,12 @@ def requires_json_path(func):
 
 # Endpoint requires a non-empty 'path' form value
 def requires_form_path(func):
-    func.requires_form_path = True  # value unimportant
+    func._requires_form_path = True  # value unimportant
+    return func
+
+# Endpoint requires an allowed file type
+def requires_allowed_file(func):
+    func._requires_allowed_file = True  # value unimportant
     return func
 
 
@@ -121,6 +126,12 @@ def abort_bad_request():
         elif hasattr(view_func, '_requires_form_path'):
             if "path" not in request.form or request.form["path"] == "":
                 abort(HTTPStatus.BAD_REQUEST)
+        elif hasattr(view_func, '_requires_allowed_file'):
+            if "name" not in request.form:
+                abort(HTTPStatus.BAD_REQUEST)
+            if request.form["name"].split(".")[-1].lower() not in ALLOWED_EXTENSIONS:
+                abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+
 
 
 #####################################
@@ -347,8 +358,8 @@ def delete_path():
             or os.path.samefile(path, filesystem_path)):
             abort(HTTPStatus.NOT_FOUND)
 
-        shutil.rmtree(path)
         delete_structure(es, path)
+        shutil.rmtree(path)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
@@ -467,8 +478,7 @@ def prepare_upload():
         json.dump(
             {
                 "type": "file",
-                "progress": 0.00,
-                "creation": get_current_time(),
+                "stored": 0.00,
             },
             f,
             indent=2,
@@ -478,26 +488,28 @@ def prepare_upload():
     return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private), "filename": filename}
 
 
-def join_chunks(target_path, file_path, filename, total_count, complete_filename):
+def join_chunks(target_path, file_path, filename, total_count, temp_file_path):
     # Save the file
     with open(f"{target_path}/{filename}", "wb") as f:
         for i in range(total_count):
-            with open(f"pending-files/{complete_filename}/{i+1}", "rb") as chunk:
+            with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
 
     prepare_file_ocr(target_path)
 
     update_data(f"{target_path}/_data.json", {
-        "pages": get_page_count(file_path),
-        "progress": True
+        "pages": get_page_count(target_path, file_path),
+        "stored": True,
+        "creation": get_current_time()
     })
 
-    shutil.rmtree(f"pending-files/{complete_filename}")
+    shutil.rmtree(temp_file_path)
     log.info(f"Finished uploading file {filename}")
 
 
 @app.route("/upload-file", methods=["POST"])
 @requires_form_path
+@requires_allowed_file
 def upload_file():
     if float(get_free_space()[1]) < 10:
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
@@ -514,9 +526,17 @@ def upload_file():
     counter = int(request.form["counter"])
     total_count = int(request.form["totalCount"])
 
-    complete_filename = safe_join(path.replace("/", "_"),  f"_{filename}")
+    temp_filename = safe_join(path,  f"_{filename}").replace("/", "_")
     target_path = safe_join(path, filename)  # path for document data is "path/filename"
     file_path = safe_join(target_path, filename)  # file stored as "path/filename/filename"
+
+    with open(f"{target_path}/_data.json", "w", encoding="utf-8") as f:
+        extension = filename.split(".")[-1].lower()
+        json.dump({
+            "type": "file",
+            "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
+            "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
+        }, f, indent=2, ensure_ascii=False)
 
     # If only one chunk, save the file directly
     if total_count == 1:
@@ -527,50 +547,50 @@ def upload_file():
         except Exception:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        with open(f"{target_path}/_data.json", "w", encoding="utf-8") as f:
-            json.dump({
-                "type": "file",
-                "pages": get_page_count(file_path),
-                "creation": get_current_time()
-            }, f, indent=2, ensure_ascii=False)
+        update_data(f"{target_path}/_data.json",{
+            "pages": get_page_count(target_path, file_path),
+            "stored": True,
+            "creation": get_current_time()
+        })
 
-        return {"success": True, "finished": True, "info": get_folder_info(f"{path}/{filename}")}
+        return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
 
     # Create a Lock to process the file
-    if complete_filename not in lock_system:
-        lock_system[complete_filename] = Lock()
+    if temp_filename not in lock_system:
+        lock_system[temp_filename] = Lock()
 
     # If multiple chunks, save the chunk and wait for the other chunks
     file = file.read()
 
     # Create the folder to save the chunks
-    if not os.path.exists(f"pending-files/{complete_filename}"):
-        os.mkdir(f"pending-files/{complete_filename}")
+    temp_file_path = safe_join(TEMP_PATH, temp_filename)
+    if not os.path.exists(temp_file_path):
+        os.mkdir(temp_file_path)
 
-    with lock_system[complete_filename]:
+    with lock_system[temp_filename]:
         # Save the chunk
-        with open(f"pending-files/{complete_filename}/{counter}", "wb") as f:
+        with open(f"{temp_file_path}/{counter}", "wb") as f:
             f.write(file)
 
         # Number of chunks saved
-        chunks_saved = len(os.listdir(f"pending-files/{complete_filename}"))
-        progress = round(100 * chunks_saved/total_count, 2)
+        chunks_saved = len(os.listdir(f"{temp_file_path}"))
+        stored = round(100 * chunks_saved/total_count, 2)
 
-        log.info(f"Uploading file {filename} ({counter}/{total_count}) - {progress}%")
+        log.info(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
 
-        update_data(f"{target_path}/_data.json", {"progress": progress})
+        update_data(f"{target_path}/_data.json", {"stored": stored})
 
         if chunks_saved == total_count:
-            del lock_system[complete_filename]
+            del lock_system[temp_filename]
 
             Thread(
                 target=join_chunks,
-                args=(target_path, file_path, filename, total_count, complete_filename)
+                args=(target_path, file_path, filename, total_count, temp_file_path)
             ).start()
 
-            return {"success": True, "finished": True, "info": get_folder_info(target_path)}
+            return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
 
-    return {"success": True, "finished": False, "info": get_folder_info(target_path)}
+    return {"success": True, "finished": False, "info": get_folder_info(target_path, private_session)}
 
 
 @app.route("/perform-ocr", methods=["POST"])
@@ -931,8 +951,8 @@ def generate_automatic_layouts():
 if not os.path.exists(f"./{FILES_PATH}/"):
     os.mkdir(f"./{FILES_PATH}/")
 
-if not os.path.exists("./pending-files/"):
-    os.mkdir("./pending-files/")
+if not os.path.exists(f"./{TEMP_PATH}/"):
+    os.mkdir(f"./{TEMP_PATH}/")
 
 if not os.path.exists(f"./{PRIVATE_PATH}/"):
     os.mkdir(f"./{PRIVATE_PATH}/")

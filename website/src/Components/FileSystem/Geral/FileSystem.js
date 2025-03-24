@@ -27,7 +27,17 @@ const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
 
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
-const validExtensions = [".pdf"];
+
+const validExtensions = ["application/pdf",
+                                "image/jpeg",
+                                "image/png",
+                                "image/tiff",
+                                "image/bmp",
+                                "image/gif",
+                                "image/webp",
+                                "image/x-portable-anymap",
+                                "image/jp2",
+                                "application/zip"];
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
@@ -35,8 +45,8 @@ class FileExplorer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            files: props.files,
-            info: props.info,
+            files: null,
+            info: null,
             current_folder: props.current_folder.join('/'),
             components: [],
 
@@ -117,11 +127,11 @@ class FileExplorer extends React.Component {
             })
             .then(response => {return response.json()})
             .then(data => {
-                var info = data["info"];
+                const info = data["info"];
                 // Find if a upload is stuck
                 for (const [path, value] of Object.entries(info)) {
                     if (value.type === "file") {
-                        if ("progress" in value && value["progress"] !== true) {
+                        if ("stored" in value && value["stored"] !== true) {
                             const creationTime = new Date(value.creation.replace(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
                             const currentTime = new Date();
                             const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
@@ -147,7 +157,7 @@ class FileExplorer extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files) {
+        if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files || this.state.fileOpened !== prevState.fileOpened) {
             this.displayFileSystem();
         } else if (this.state.info !== prevState.info || this.state.components !== prevState.components) {
             this.updateInfo();
@@ -161,8 +171,7 @@ class FileExplorer extends React.Component {
             })
             .then(response => {return response.json()})
             .then(data => {
-                var info = data["info"];
-
+                const info = data["info"];
                 this.setState({info: info, updateCount: 0});
             });
         }, 1000 * UPDATE_TIME);
@@ -223,7 +232,7 @@ class FileExplorer extends React.Component {
     }
 
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
-        var formData = new FormData();
+        const formData = new FormData();
         formData.append('file', chunk);
         formData.append('path', this.state.current_folder.replace(/^\//, ''));
         formData.append('name', fileName);
@@ -237,14 +246,10 @@ class FileExplorer extends React.Component {
         }).then(response => {return response.json()})
         .then(data => {
             if (data['success']) {
-                var info = this.state.info;
-
-                for (var k in data["info"]) {
-                    info[k] = data["info"][k];
-                }
+                const info = data["info"];
 
                 const updatingList = this.state.updatingRows;
-                const complete_filename = (this.state.current_folder + '/' + fileName).replace(/^\//, '');;
+                const complete_filename = (this.state.current_folder + '/' + fileName).replace(/^\//, '');
                 if (!updatingList.includes(complete_filename)) {
                     updatingList.push(complete_filename);
                 }
@@ -260,6 +265,7 @@ class FileExplorer extends React.Component {
             }
         })
         .catch(error => {
+            // TODO: give feedback to user on communication error
             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
         });
     }
@@ -623,7 +629,7 @@ class FileExplorer extends React.Component {
         return folders.concat(files);
     }
 
-    sortByName(contents) {
+    sortByName(contents) {  // TODO: sort folders separately from files, like in operating system file explorers
         /**
          * Order 'Nome' column
          * by A-Z or Z-A when
@@ -877,14 +883,6 @@ class FileExplorer extends React.Component {
      */
 
     render() {
-        const Notification = loadComponent('Notification', 'Notifications');
-        const FolderMenu = loadComponent('Form', 'FolderMenu');
-        const OcrMenu = loadComponent('Form', 'OcrMenu');
-        const DeleteMenu = loadComponent('Form', 'DeleteMenu');
-        const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
-        const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
-        const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
-
         return (
             <>
                 {

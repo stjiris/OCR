@@ -16,7 +16,15 @@ import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
 const PrivateFileRow = loadComponent('PrivateSession', 'PrivateFileRow');
+const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
 const FolderRow = loadComponent('FileSystem', 'FolderRow');
+const Notification = loadComponent('Notification', 'Notifications');
+const FolderMenu = loadComponent('Form', 'FolderMenu');
+const OcrMenu = loadComponent('Form', 'OcrMenu');
+const DeleteMenu = loadComponent('Form', 'DeleteMenu');
+const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
+const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
+const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
 
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
@@ -750,15 +758,6 @@ class PrivateFileExplorer extends React.Component {
     */
 
     render() {
-        const Notification = loadComponent('Notification', 'Notifications');
-        const FolderMenu = loadComponent('Form', 'FolderMenu');
-        const OcrMenu = loadComponent('Form', 'OcrMenu');
-        const DeleteMenu = loadComponent('Form', 'DeleteMenu');
-        const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
-        const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
-        const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
-        const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
-
         return (
             <>
                 {

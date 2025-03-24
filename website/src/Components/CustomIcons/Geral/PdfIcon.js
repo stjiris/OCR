@@ -1,7 +1,7 @@
 import React from 'react';
 import SvgIcon from '@mui/material/SvgIcon';
 
-export default function LayoutIcon(props) {
+export default function PdfIcon(props) {
     return (
         <SvgIcon
             {...props}
