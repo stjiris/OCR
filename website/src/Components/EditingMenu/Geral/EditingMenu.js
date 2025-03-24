@@ -88,7 +88,7 @@ class EditingMenu extends React.Component {
             corpusChoice: [{"name": "Português", "code": "Português"}]
         }
 
-        this.image = React.createRef();
+        this.imageRef = React.createRef();
         this.corpusSelect = React.createRef();
         this.textWindow = React.createRef();
 
@@ -211,7 +211,7 @@ class EditingMenu extends React.Component {
 
     imageToScreenCoordinates(x, y) {
 
-        var image = this.image.current;
+        var image = this.imageRef.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
         var ratioY = image.naturalHeight / image.offsetHeight;
@@ -892,15 +892,17 @@ class EditingMenu extends React.Component {
                         display: "flex",
                         flexDirection: "row",
                         ml: "1rem",
-                        mr: "1rem"}}>
+                        mr: "1rem"
+                    }}>
                         <Box sx={{
                             display: "flex",
                             flexDirection: "column",
-                            width: "50%"}}>
+                            width: "50%"
+                        }}>
                             <Box sx={{display: "flex", flexDirection: "row"}}>
                                 <Box className="pageImageContainer">
                                     <img
-                                        ref={this.image}
+                                        ref={this.imageRef}
                                         src={this.state.contents[this.state.currentPage - 1]["page_url"]}
                                         alt="Imagem da pagina"
                                         className={"pageImage"}
