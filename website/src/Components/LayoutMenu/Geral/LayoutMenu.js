@@ -26,7 +26,7 @@ import { Checkbox, CircularProgress, Table, TableBody, TableCell, TableContainer
 
 import loadComponent from '../../../utils/loadComponents';
 const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
-const ConfirmLeave = loadComponent('EditPage3', 'ConfirmLeave');
+const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
 const Notification = loadComponent('Notification', 'Notifications');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 
