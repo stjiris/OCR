@@ -4,9 +4,6 @@ import Box from '@mui/material/Box';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 
-const height = window.innerHeight;
-const heightReduction = 250;
-
 class LayoutPreview extends React.Component {
     constructor(props) {
         super(props);
@@ -244,11 +241,10 @@ class LayoutImage extends React.Component {
         super(props);
         this.state = {
             menu: props.menu,
-            boxHeight: "450px",
-            height: "450px",
 
-            currentZoom: 1,
-            maxZoom: 4,
+            imageZoom: 100,
+            minImageZoom: 20,
+            maxImageZoom: 600,
 
             boxesCoords: props.boxesCoords,
             boxes: [],
@@ -363,24 +359,21 @@ class LayoutImage extends React.Component {
     }
 
     zoomIn() {
-        this.setState({
-            currentZoom: this.state.currentZoom + 1,
-            height: `${(height - heightReduction) * (this.state.currentZoom + 1)}px`,
-        }, this.recreateBoxes)
+        this.zoom(1);
     }
 
     zoomOut() {
-        this.setState({
-            currentZoom: this.state.currentZoom - 1,
-            height: `${(height - heightReduction) * (this.state.currentZoom - 1)}px`
-        }, this.recreateBoxes)
+        this.zoom(-1);
     }
 
     zoomReset() {
-        this.setState({
-            currentZoom: 1,
-            height: `${window.innerHeight - 160}px`,
-        }, this.recreateBoxes)
+        this.setState({imageZoom: 100}, this.recreateBoxes);
+    }
+
+    zoom(delta) {
+        let newZoom = Math.max(this.state.imageZoom + (20 * delta), this.state.minImageZoom);
+        newZoom = Math.min(newZoom, this.state.maxImageZoom);
+        this.setState({imageZoom: newZoom}, this.recreateBoxes);
     }
 
     screenToImageCoordinates(x, y) {
@@ -454,48 +447,44 @@ class LayoutImage extends React.Component {
 
     render() {
         return (
-            <Box sx={{display: 'flex', flexDirection: 'row'}}>
-                <Box ref={this.viewRef}
-                    draggable
-                    className="pageImage">
-                    <img
-                        ref={this.imageRef}
-                        src={this.props.imageURL}
-                        alt={`Página de ${this.props.imageURL}`}
-                        style={{
-                            display: 'block',
-                            marginLeft: 'auto',
-                            marginRight: 'auto',
-                            border: '1px solid black',
-                            maxHeight: `${this.state.height}`,
-                        }}
+            <Box ref={this.viewRef}
+                draggable
+                className="pageImageContainer">
+                <img
+                    ref={this.imageRef}
+                    src={this.props.imageURL}
+                    alt={`Página de ${this.props.imageURL}`}
+                    className={"pageImage"}
+                    style={{
+                        maxWidth: `${this.state.imageZoom}%`,
+                        maxHeight: `${this.state.imageZoom}%`,
+                    }}
 
-                        onDragStart={(e) => this.dragStart(e)}
-                        onDrag={(e) => this.duringDrag(e)}
-                        onDragEnd={(e) => this.dragEnd(e)}
-                        onLoad={() => this.loadBoxes()}
-                    />
+                    onDragStart={(e) => this.dragStart(e)}
+                    onDrag={(e) => this.duringDrag(e)}
+                    onDragEnd={(e) => this.dragEnd(e)}
+                    onLoad={() => this.loadBoxes()}
+                />
 
-                    {
-                        this.state.boxes.map((box) => {
-                            return box;
-                        })
-                    }
+                {
+                    this.state.boxes.map((box) => {
+                        return box;
+                    })
+                }
 
-                    {
-                        this.state.imageBoxes.map((box) => {
-                            return box;
-                        })
-                    }
+                {
+                    this.state.imageBoxes.map((box) => {
+                        return box;
+                    })
+                }
 
-                    {
-                        this.state.ignoreBoxes.map((box) => {
-                            return box;
-                        })
-                    }
+                {
+                    this.state.ignoreBoxes.map((box) => {
+                        return box;
+                    })
+                }
 
-                    <LayoutPreview ref={this.previewRef} top={100} left={50} bottom={200} right={150}/>
-                </Box>
+                <LayoutPreview ref={this.previewRef} top={100} left={50} bottom={200} right={150}/>
             </Box>
         )
     }
