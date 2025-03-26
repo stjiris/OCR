@@ -422,7 +422,7 @@ function App() {
 
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
                             <Button
-                                disabled={buttonsDisabled}
+                                disabled={buttonsDisabled || this.getPrivateSession() !== null}
                                 variant="text"
                                 onClick={() => {
                                     this.setState(searchMenuState)
