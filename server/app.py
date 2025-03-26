@@ -674,7 +674,7 @@ def index_doc():
     @param multiple: if it is a folder or not
     """
     data = request.json
-    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
+    path, filesystem_path, private_session, _ = format_filesystem_path(data)
     if PRIVATE_PATH in path:  # avoid indexing private sessions
         abort(HTTPStatus.NOT_FOUND)
     multiple = data["multiple"]
@@ -692,6 +692,7 @@ def index_doc():
             abort(HTTPStatus.NOT_FOUND)
         files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
 
+        extension = data["extension"]
         for id, file in enumerate(files):
             file_path = f"{hOCR_path}/{file}"
 
@@ -705,6 +706,7 @@ def index_doc():
                     "Tesseract",
                     "pt",
                     text,
+                    extension,
                     id + 1,
                 )
             else:
@@ -713,6 +715,7 @@ def index_doc():
                     "Tesseract",
                     "pt",
                     text,
+                    extension
                 )
 
             id = generate_uuid(file_path)
@@ -724,7 +727,7 @@ def index_doc():
         return {
             "success": True,
             "message": "Documento indexado",
-            "files": get_filesystem(filesystem_path, private_session, is_private),
+            "files": get_filesystem(filesystem_path, private_session, False),
         }
 
 
@@ -737,7 +740,7 @@ def remove_index_doc():
     @param multiple: if it is a folder or not
     """
     data = request.json
-    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
+    path, filesystem_path, private_session, _ = format_filesystem_path(data)
     if PRIVATE_PATH in path:
         abort(HTTPStatus.NOT_FOUND)
     multiple = data["multiple"]
@@ -765,7 +768,7 @@ def remove_index_doc():
         return {
             "success": True,
             "message": "Documento removido",
-            "files": get_filesystem(filesystem_path, private_session, is_private),
+            "files": get_filesystem(filesystem_path, private_session, False),
         }
 
 
