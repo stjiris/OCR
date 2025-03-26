@@ -2,6 +2,7 @@ from os import environ
 
 from elasticsearch import Elasticsearch
 from src.utils.file import get_file_basename
+from src.utils.file import FILES_PATH
 
 ES_URL = environ.get("ES_URL", "http://localhost:9200/")
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
@@ -118,16 +119,15 @@ class ElasticSearchClient:
         )
 
 
-def create_document(path, algorithm, config, text, page=None):
+def create_document(path, algorithm, config, text, extension="pdf", page=None):
     basename = get_file_basename(path)
-    image = (
-        IMAGE_PREFIX
-        + "/images/"
-        + "/".join(path.split("/")[1:-2])
-        + "/"
-        + basename
-        + ".jpg"
-    )
+    page_extension = ".jpg" if extension == "pdf" else ".png" if extension == "zip" else f".{extension}"
+
+    page_url = (IMAGE_PREFIX
+                + "/images/"
+                + "/".join(path.split('/')[1:-2])
+                + f"/_pages/{basename}"
+                + page_extension)
 
     if page is None:
         return {
@@ -135,7 +135,7 @@ def create_document(path, algorithm, config, text, page=None):
             "Algorithm": algorithm,
             "Config": config,
             "Document": path.split("/")[-3],
-            "Page Image": image,
+            "Page Image": page_url,
             "Text": text,
         }
     else:
@@ -145,6 +145,6 @@ def create_document(path, algorithm, config, text, page=None):
             "Config": config,
             "Document": path.split("/")[-3],
             "Page": page,
-            "Page Image": image,
+            "Page Image": page_url,
             "Text": text,
         }
