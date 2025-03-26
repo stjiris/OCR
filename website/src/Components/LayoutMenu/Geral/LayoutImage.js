@@ -3,6 +3,9 @@ import Box from '@mui/material/Box';
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
+const transparentPixel = new Image();
+transparentPixel.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=";
+
 
 class LayoutPreview extends React.Component {
     constructor(props) {
@@ -49,7 +52,7 @@ class LayoutPreview extends React.Component {
 class LayoutBox extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {  // TODO: use props instead of state where possible
+        this.state = {
             top: props.top,
             left: props.left,
             bottom: props.bottom,
@@ -416,8 +419,8 @@ class LayoutImage extends React.Component {
     duringDrag(e) {
         if (!this.state.dragging) return;
 
-        var x = e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX;
-        var y = e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY;
+        const x = e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX;
+        const y = e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY;
 
         this.previewRef.current.updateCoordinates(y, x);
     }
@@ -451,7 +454,6 @@ class LayoutImage extends React.Component {
     render() {
         return (
             <Box ref={this.viewRef}
-                draggable
                 className="pageImageContainer">
                 <img
                     ref={this.imageRef}
@@ -463,8 +465,11 @@ class LayoutImage extends React.Component {
                         maxHeight: `${this.state.imageZoom}%`,
                     }}
 
-                    onDragStart={(e) => this.dragStart(e)}
-                    onDrag={(e) => this.duringDrag(e)}
+                    onDragStart={(e) => {
+                        e.dataTransfer.setDragImage(transparentPixel, 0, 0);
+                        this.dragStart(e);
+                    }}
+                    onDragOver={(e) => this.duringDrag(e)}
                     onDragEnd={(e) => this.dragEnd(e)}
                     onLoad={() => this.loadBoxes()}
                 />
