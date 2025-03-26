@@ -25,14 +25,6 @@ body {
     color: black;
 }
 
-.pageImage {
-    position: relative;
-    height: 80vh;
-    width: 68vw;
-    overflow: scroll;
-    border: 1px solid grey;
-}
-
 .MuiButton-contained.menuFunctionButton {
     border: 1px solid black;
     height: 2rem;
@@ -50,12 +42,20 @@ body {
     margin: 0.5rem 0.5rem 0.5rem 0.2rem;  /* 0.2rem left */
 }
 
-.pageImage {
+.pageImageContainer {
+    display: flex;
     position: relative;
     height: 80vh;
     width: 100%;
     overflow: scroll;
     border: 1px solid grey;
+}
+
+.pageImageContainer .pageImage {  /* pageImage within a pageImageContainer */
+    display: block;
+    margin: auto;
+    border: 1px solid black;
+    object-fit: contain;
 }
 
 .MuiButton-contained.menuFunctionButton {

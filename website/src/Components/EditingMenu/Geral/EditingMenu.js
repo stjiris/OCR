@@ -4,7 +4,6 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import SaveIcon from '@mui/icons-material/Save';
-import TextField from '@mui/material/TextField';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
@@ -12,8 +11,6 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
 import UndoIcon from "@mui/icons-material/Undo";
@@ -22,52 +19,26 @@ import AddLineIcon from '../../../static/addLine.svg';
 import RemoveLineIcon from '../../../static/removeLine.svg';
 
 import loadComponent from '../../../utils/loadComponents';
-import { CircularProgress } from '@mui/material';
+import {CircularProgress, TextareaAutosize} from '@mui/material';
 
 const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 const Notification = loadComponent('Notification', 'Notifications');
-const ConfirmLeave = loadComponent('EditPage3', 'ConfirmLeave');
+const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 
+/**
+ * Expected props:
+ * - id
+ * - text
+ * - cleanText
+ * - box
+ * - overlay
+ */
 class Word extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            overlay: props.overlay,
-            text: props.text,
-            id: props.id,
-            box: props.box,
-            cleanText: props.cleanText,
-            editWord: false
-        }
-    }
-
-    toggleEditWord() {
-      this.setState({
-        editWord: !this.state.editWord
-      })
-    }
-    handleWordChange(e) {
-      this.setState({
-        text: e.target.value
-      });
-    }
-
     render() {
-        return (this.state.editWord)
-      ? <input
-            autoFocus
-            className={`${this.state.cleanText}`}
-            style={{width: `${this.state.text.length}ch`}}
-            type="text"
-            value={this.state.text}
-            onBlur={e => this.toggleEditWord()}
-            onChange={e => this.handleWordChange(e)}
-            onKeyUp={e => { if (e.key === 'Enter') { this.handleWordChange(e); this.toggleEditWord()}}}
-            />
-          : <p
-            id={this.state.id}
-            className={`${this.state.cleanText}`}
+        return <p
+            id={this.props.id}
+            className={`${this.props.cleanText}`}
             style={{
                 margin: "0px 2px",
                 display: "inline-block",
@@ -76,15 +47,14 @@ class Word extends React.Component {
                 borderRadius: "5px",
             }}
             onMouseEnter={(e) => {
-                this.state.overlay.setState({hoveredId: this.state.id});
-                this.state.overlay.showImageHighlight(e, this.state.box);
+                this.props.overlay.setState({hoveredId: this.props.id});
+                this.props.overlay.showImageHighlight(e, this.props.box);
             }}
             onMouseLeave={(e) => {
-                this.state.overlay.setState({selectedWordBox: null});
+                this.props.overlay.setState({selectedWordBox: null});
             }}
-            onClick={e=> this.toggleEditWord()}
         >
-            {this.state.text}
+            {this.props.text}
         </p>
     }
 }
@@ -93,7 +63,6 @@ class EditingMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            loading: true,
             contents: [],
             words_list: [],
             corpusOptions: [],
@@ -101,15 +70,15 @@ class EditingMenu extends React.Component {
             currentPage: 1,
             totalPages: 1,
 
-            imageHeight: 0,
-            baseImageHeight: 0,
+            imageZoom: 100,
+            minImageZoom: 20,
+            maxImageZoom: 600,
 
             selectedWord: "",
             selectedWordIndex: 0,
             selectedWordBox: null,
             parentNode: null,
             coordinates: null,
-            editingText: "",
 
             uncommittedChanges: false,
 
@@ -119,7 +88,7 @@ class EditingMenu extends React.Component {
             corpusChoice: [{"name": "Português", "code": "Português"}]
         }
 
-        this.image = React.createRef();
+        this.imageRef = React.createRef();
         this.corpusSelect = React.createRef();
         this.textWindow = React.createRef();
 
@@ -127,7 +96,6 @@ class EditingMenu extends React.Component {
         this.confirmLeave = React.createRef();
 
         this.selectedWord = "";
-        this.wordsIndex = {};
 
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
@@ -140,12 +108,7 @@ class EditingMenu extends React.Component {
     }
 
     componentDidMount() {
-        this.setState({
-            imageHeight: window.innerHeight - 175,
-            baseImageHeight: window.innerHeight - 175,
-            textWidth: window.innerWidth * 0.9 * 0.6 - 70,
-            loading: true
-        }, this.getContents);
+        this.getContents();
     }
 
     goBack() {
@@ -171,20 +134,20 @@ class EditingMenu extends React.Component {
         })
         .then(response => {return response.json()})
         .then(data => {
-            var pages = parseInt(data["pages"]);
+            const pages = parseInt(data["pages"]);
 
-            var contents = data["doc"].sort((a, b) =>
+            const contents = data["doc"].sort((a, b) =>
                 (a["page_number"] > b["page_number"]) ? 1 : -1
             )
 
-            var sortedWords = this.orderWords(data["words"]);
+            const sortedWords = this.orderWords(data["words"]);
 
-            var newCorpusList = [];
+            const newCorpusList = [];
             data["corpus"].forEach((item) => {
                 newCorpusList.push({"name": item, "code": item});
             });
 
-            this.setState({totalPages: pages, loading: false, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
+            this.setState({totalPages: pages, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
         });
     }
 
@@ -248,7 +211,7 @@ class EditingMenu extends React.Component {
 
     imageToScreenCoordinates(x, y) {
 
-        var image = this.image.current;
+        var image = this.imageRef.current;
 
         var ratioX = image.naturalWidth / image.offsetWidth;
         var ratioY = image.naturalHeight / image.offsetHeight;
@@ -286,11 +249,9 @@ class EditingMenu extends React.Component {
     }
 
     zoom(delta) {
-        let newHeight = this.state.imageHeight * (1 + delta * 0.4);
-        if (newHeight < this.state.baseImageHeight) {
-            newHeight = this.state.baseImageHeight;
-        }
-        this.setState({imageHeight: newHeight});
+        let newZoom = Math.max(this.state.imageZoom + (20 * delta), this.state.minImageZoom);
+        newZoom = Math.min(newZoom, this.state.maxImageZoom);
+        this.setState({imageZoom: newZoom});
     }
 
     /**
@@ -426,51 +387,56 @@ class EditingMenu extends React.Component {
         return bestCombination;
     }
 
+    editWord(newText, sectionIndex, lineIndex, wordIndex) {
+        const newContents = this.state.contents.slice(0);
+        const line = newContents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+        line[wordIndex]["text"] = newText;
+        this.setState({contents: newContents, uncommittedChanges: true}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
+    }
+
     updateText(sectionIndex, lineIndex, wordIndex) {
+        const wordsList = this.state.words_list;
 
-        var wordsList = this.state.words_list;
+        const contents = this.state.contents;
+        const lineData = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+        const wordData = lineData[wordIndex];
 
-        var contents = this.state.contents;
-        var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+        const initial_text = wordData["initial_text"];
+        const text = wordData["text"];
+        const words = text.split(" ");
 
-        var initial_text = line[wordIndex]["initial_text"];
-        var text = line[wordIndex]["text"];
-        var words = text.split(" ");
+        const coordinates = wordData["coordinates"];
+        const combination = this.splitWordsByLines(words, coordinates);
 
-        var coordinates = line[wordIndex]["coordinates"];
-        var combination = this.splitWordsByLines(words, coordinates);
-
-        var newWords = [];
+        const newWords = [];
 
         initial_text.split(" ").forEach((item) => {
             item = this.cleanWord(item.toLowerCase());
 
             if (item === "") return;
 
-            var info = wordsList[item];
+            const info = wordsList[item];
 
             if (info["pages"].length === 1) {
                 // Remove the word from the wordsList dictionary
                 delete wordsList[item];
             } else {
                 // Remove the page from the pages list
-                var pages = info["pages"];
+                const pages = info["pages"];
                 pages.splice(pages.indexOf(this.state.currentPage - 1), 1);
-
-                wordsList[item]["pages"] = pages;
             }
         })
 
-        for (var i = 0; i < combination.length; i++) {
-            var box = coordinates[i].slice(0, 4);
-            var widthPerChar = (box[2] - box[0]) / (combination[i].reduce((a, b) => a + b.length, 0) + combination[i].length - 1);
-            var charsPassed = 0;
+        for (let i = 0; i < combination.length; i++) {
+            const box = coordinates[i].slice(0, 4);
+            const widthPerChar = (box[2] - box[0]) / (combination[i].reduce((a, b) => a + b.length, 0) + combination[i].length - 1);
+            let charsPassed = 0;
 
-            for (var j = 0; j < combination[i].length; j++) {
-                var word = combination[i][j];
-                var cleanedWord = this.cleanWord(word.toLowerCase());
+            for (let j = 0; j < combination[i].length; j++) {
+                const word = combination[i][j];
+                const cleanedWord = this.cleanWord(word.toLowerCase());
                 newWords.push({
-                    "b": 0,
+                    "b": wordData["b"],  // b -> key used in server for text Y offset
                     "box": [box[0] + charsPassed * widthPerChar, box[1], box[0] + (charsPassed + word.length) * widthPerChar, box[3]],
                     "text": word,
                     "clean_text": cleanedWord,
@@ -481,7 +447,7 @@ class EditingMenu extends React.Component {
 
                 // Update the words list
                 if (cleanedWord in wordsList) {
-                    var pages = wordsList[cleanedWord]["pages"];
+                    const pages = wordsList[cleanedWord]["pages"];
                     pages.push(this.state.currentPage - 1);
 
                     // Sort the list
@@ -495,36 +461,22 @@ class EditingMenu extends React.Component {
             }
         }
 
-        line.splice(wordIndex, 1, ...newWords);
-        contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
+        lineData.splice(wordIndex, 1, ...newWords);
 
-        wordsList = this.orderWords(wordsList);
-
+        window.addEventListener('beforeunload', this.preventExit);
         if (this.state.selectedWord !== "" && !(this.state.selectedWord in wordsList)) {
-            this.setState({contents: contents, words_list: wordsList, selectedWord: "", selectedWordIndex: 0});
+            this.setState({contents: contents, words_list: this.orderWords(wordsList), selectedWord: "", selectedWordIndex: 0});
         }
         else if (this.state.selectedWord !== "" && this.state.selectedWordIndex === this.state.words_list[this.state.selectedWord]["pages"].length) {
-            this.setState({contents: contents, words_list: wordsList, selectedWordIndex: 0}, this.goToNextOccurrence);
+            this.setState({contents: contents, words_list: this.orderWords(wordsList), selectedWordIndex: 0}, this.goToNextOccurrence);
         } else {
-            this.setState({contents: contents, words_list: wordsList});
+            this.setState({contents: contents, words_list: this.orderWords(wordsList)});
         }
     }
 
-    updateInputSize() {
-        var text = this.state.editingText;
-        var parentNode = this.state.parentNode;
-        var children = parentNode.children;
-
-        // Find the input element
-        for (var i = 0; i < children.length; i++) {
-            if (children[i].tagName === "INPUT") {
-                children[i].style.width = `${text.length * 1.5}ch`;
-                break;
-            }
-        }
-
-        // Replace the parent node children with the new children
-        parentNode.replaceChildren(...children);
+    updateInputSize(text) {
+        const textField = document.getElementById("textfield");
+        textField.style.width = text.length+'ch';
     }
 
     getSelectedText() {
@@ -532,38 +484,40 @@ class EditingMenu extends React.Component {
             // Get the range and make the all word selected
             if (window.getSelection().toString().length === 0) return null;
 
-            var selection = window.getSelection();
+            const selection = window.getSelection();
 
-            var firstSpan = selection.baseNode.parentNode;
-            var lastSpan = selection.extentNode.parentNode;
-            var parentNode = firstSpan.parentNode;
+            const firstSpan = selection.anchorNode.parentNode;
+            const lastSpan = selection.focusNode.parentNode;
+            const parentNode = firstSpan.parentNode;
 
-            var firstSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, firstSpan);
-            var lastSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, lastSpan);
+            const firstSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, firstSpan);
+            const lastSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, lastSpan);
 
-            let range = new Range();
+            const range = new Range();
             range.setStart(parentNode, firstSpanIndex);
             range.setEnd(parentNode, lastSpanIndex + 1);
             // Selection end here
 
-            var firstSpanInfo = firstSpan.id.split(" ").map((item) => parseInt(item));
-            var lastSpanInfo = lastSpan.id.split(" ").map((item) => parseInt(item));
+            const firstSpanInfo = firstSpan.id.split(" ").map((item) => parseInt(item));
+            const lastSpanInfo = lastSpan.id.split(" ").map((item) => parseInt(item));
 
-            var contents = [...this.state.contents];
-            var line = contents[this.state.currentPage - 1]["content"][firstSpanInfo[4]][firstSpanInfo[5]];
+            const newContents = this.state.contents.slice(0);
+            const line = newContents[this.state.currentPage - 1]["content"][firstSpanInfo[4]][firstSpanInfo[5]];
 
-            var elements = line.slice(firstSpanInfo[6], lastSpanInfo[6] + 1)
-            var words = [];
-            var coordinates = [];
-            var totalChars = 0;
+            const elements = line.slice(firstSpanInfo[6], lastSpanInfo[6] + 1);
+            const words = [];
+            const coordinates = [];
+            const bs = [];  // array for y offsets of the baselines, to average for the selected text
+            let totalChars = 0;
 
-            var initialCoords = null;
-            var rowCoords = null;
+            let initialCoords = null;
+            let rowCoords = null;
 
-            for (var i = 0; i < elements.length; i++) {
+            for (let i = 0; i < elements.length; i++) {
                 words.push(elements[i]["text"]);
+                bs.push(elements[i]["b"]);
 
-                var box = elements[i]["box"];
+                const box = elements[i]["box"];
 
                 if (rowCoords === null || (initialCoords !== null && box[0] < initialCoords[0])) {
                     if (rowCoords !== null) {
@@ -585,16 +539,14 @@ class EditingMenu extends React.Component {
             rowCoords.push(totalChars);
             coordinates.push(rowCoords);
 
-            var text = words.join(" ");
-
-            var textField = {"input": true, "text": text, "initial_text": text, "coordinates": coordinates};
+            const text = words.join(" ");
+            const avg_b = bs.reduce((b1, b2) => b1 + b2, 0) / elements.length;
+            const textField = {"input": true, "text": text, "initial_text": text, "coordinates": coordinates, "b": avg_b};
 
             document.getSelection().removeAllRanges();
 
             line.splice(firstSpanInfo[6], elements.length, textField);
-            contents[this.state.currentPage - 1]["content"][firstSpanInfo[4]][firstSpanInfo[5]] = line;
-
-            this.setState({contents: contents, inputSize: text.length});
+            this.setState({contents: newContents}, () => this.updateInputSize(text));
         }
     }
 
@@ -712,8 +664,7 @@ class EditingMenu extends React.Component {
             wordHeight = chosenWord.offsetTop;
         }
 
-        var scrollValue = wordHeight - middleHeight;
-        return scrollValue;
+        return wordHeight - middleHeight;
     }
 
     goToNextOccurrence(word) {
@@ -728,21 +679,20 @@ class EditingMenu extends React.Component {
 
         this.selectedWord = word;
 
-        this.setState({selectedWordIndex: index});
-
         if (page !== this.state.currentPage) {
             this.setState({
+                selectedWordIndex: index,
                 currentPage: page,
                 selectedWordBox: null,
                 addLineMode: false,
                 removeLineMode: false
             }, () => {
-                var scrollValue = this.getScrollValue(word, count);
-                this.textWindow.current.scrollTop = scrollValue;
-            })
+                this.textWindow.current.scrollTop = this.getScrollValue(word, count);
+            });
         } else {
-            var scrollValue = this.getScrollValue(word, count);
-            this.textWindow.current.scrollTop = scrollValue;
+            this.setState({selectedWordIndex: index}, () => {
+                this.textWindow.current.scrollTop = this.getScrollValue(word, count);
+            });
         }
     }
 
@@ -786,25 +736,23 @@ class EditingMenu extends React.Component {
 
     render() {
         const incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
-        this.wordsIndex = {};
-
         return (
+            this.state.contents.length === 0 ?
+                <Box sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center"
+                }}>
+                    <CircularProgress color="success" />
+                </Box>
+            :
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
                 {
-                    this.state.loading
-                    ? <Box sx={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "row",
-                        justifyContent: "center",
-                        alignItems: "center"
-                    }}>
-                        <CircularProgress color="success" />
-                    </Box>
-                    :
                     <>
                     <Box sx={{
                         ml: '0.5rem',
@@ -944,24 +892,23 @@ class EditingMenu extends React.Component {
                         display: "flex",
                         flexDirection: "row",
                         ml: "1rem",
-                        mr: "1rem"}}>
+                        mr: "1rem"
+                    }}>
                         <Box sx={{
                             display: "flex",
                             flexDirection: "column",
-                            width: "50%"}}>
+                            width: "50%"
+                        }}>
                             <Box sx={{display: "flex", flexDirection: "row"}}>
-                                <Box className="pageImage">
+                                <Box className="pageImageContainer">
                                     <img
-                                        ref={this.image}
+                                        ref={this.imageRef}
                                         src={this.state.contents[this.state.currentPage - 1]["page_url"]}
                                         alt="Imagem da pagina"
+                                        className={"pageImage"}
                                         style={{
-                                            display: 'block',
-                                            marginLeft: 'auto',
-                                            marginRight: 'auto',
-                                            border: '1px solid black',
-                                            maxHeight: `${this.state.imageHeight}px`,
-                                            height: `${this.state.imageHeight}px`,
+                                            maxWidth: `${this.state.imageZoom}%`,
+                                            maxHeight: `${this.state.imageZoom}%`,
                                         }}
                                     />
 
@@ -1062,38 +1009,28 @@ class EditingMenu extends React.Component {
                                                             {
                                                                 line.map((word, wordIndex) => {
                                                                     if ("input" in word) {
-                                                                        return <TextField
+                                                                        return <TextareaAutosize
+                                                                            id={"textfield"}
                                                                             key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
                                                                             variant='outlined'
                                                                             defaultValue={word["text"]}
                                                                             size="small"
-                                                                            style={{margin: "0px 2px", width: `${(this.state.inputSize + 1) * 9}px`}}
-                                                                            inputProps={{style: {fontSize: "14px", padding: "0px 5px"}}}
+                                                                            style={{margin: "0px 2px", fontFamily: "inherit", fontSize: "14px", padding: "0px 5px",
+                                                                                width: word["text"].length+'ch', maxWidth: '100%',
+                                                                                overflowWrap: "break-word", resize: "none"}}
                                                                             autoFocus={true}
                                                                             onChange={(e) => {
-                                                                                this.setState({inputSize: e.target.value.length});
+                                                                                this.updateInputSize(e.target.value);
                                                                             }}
-                                                                            onBlur={(e) => {
-                                                                                var contents = [...this.state.contents];
-                                                                                var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
-                                                                                line[wordIndex]["text"] = e.target.value;
-                                                                                contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
-                                                                                this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
-                                                                            }}
+                                                                            onBlur={(e) => {this.editWord(e.target.value, sectionIndex, lineIndex, wordIndex);}}
                                                                             onKeyDown={(e) => {
                                                                                 if (e.key === "Enter") {
                                                                                     e.preventDefault();
-
-                                                                                    var contents = [...this.state.contents];
-                                                                                    var line = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
-                                                                                    line[wordIndex]["text"] = e.target.value;
-                                                                                    contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex] = line;
-                                                                                    this.setState({contents: contents}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
+                                                                                    this.editWord(e.target.value, sectionIndex, lineIndex, wordIndex);
                                                                                 }
                                                                             }}
                                                                         />
                                                                     }
-
 
                                                                     if (word["text"] === "") return null;
 
@@ -1146,12 +1083,12 @@ class EditingMenu extends React.Component {
 
                                 <Box sx={{
                                     display: this.state.wordsMode ? "block" : "none",
-                                    overflowY: 'scroll',
-                                    overflowX: 'wrap',
+                                    overflowY: "scroll",
+                                    overflowX: "wrap",
                                     marginLeft: "10px",
-                                    width: "250px",
-                                    height: `${this.state.baseImageHeight}px`,
-                                    border: '1px solid grey',
+                                    width: "25vw",
+                                    height: "80vh",
+                                    border: "1px solid grey",
                                     backgroundColor: "#f0f0f0",
                                     padding: "0px 10px"
                                 }}>
@@ -1189,12 +1126,13 @@ class EditingMenu extends React.Component {
                                                     sx={{':hover': {cursor: "pointer", textDecoration: 'underline'}}}
                                                     onClick={() => {
                                                         this.cleanWordSelection();
-                                                        this.setState({selectedWordIndex: 0});
-                                                        if (this.selectedWord === key) {
-                                                            this.selectedWord = "";
-                                                        } else {
-                                                            this.goToNextOccurrence(key);
-                                                        }
+                                                        this.setState({selectedWordIndex: 0}, () => {
+                                                            if (this.selectedWord === key) {
+                                                                this.selectedWord = "";
+                                                            } else {
+                                                                this.goToNextOccurrence(key);
+                                                            }
+                                                        });
                                                     }}
                                                 >
                                                     <span
