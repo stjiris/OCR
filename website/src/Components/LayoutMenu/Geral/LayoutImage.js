@@ -1,9 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 
-import ZoomInRoundedIcon from '@mui/icons-material/ZoomInRounded';
-import ZoomOutRoundedIcon from '@mui/icons-material/ZoomOutRounded';
-import { IconButton } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 
@@ -142,6 +139,13 @@ class LayoutBox extends React.Component {
         } else if (corner === 3) {
             this.setState({ bottom: mouseY, right: mouseX })
         }
+    }
+
+    dragEnd(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!this.state.dragging) return;
+        this.setState({dragging: false}, this.props.updateMenu());
     }
 
     render() {
@@ -390,7 +394,7 @@ class LayoutImage extends React.Component {
     dragStart(e) {
         e.stopPropagation();
 
-        if (this.state.menu.state.segmentLoading) return;
+        if (this.props.segmentLoading) return;
 
         var x = e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX;
         var y = e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY;
@@ -416,7 +420,7 @@ class LayoutImage extends React.Component {
     }
 
     updateMenu() {
-        this.state.menu.updateBoxes(this.getAllBoxes());
+        this.props.updateBoxes(this.getAllBoxes());
     }
 
     dragEnd(e) {
@@ -434,7 +438,7 @@ class LayoutImage extends React.Component {
         var refs = [...this.state.boxRefs];
         var ref = React.createRef();
         var coords = {top: initialCoords.y, left: initialCoords.x, bottom: finalCoords.y, right: finalCoords.x};
-        boxes.push(this.createLayoutBox(ref, refs.length + 1, coords, this.state.menu.state.textModeState ? "text" : "remove"));
+        boxes.push(this.createLayoutBox(ref, refs.length + 1, coords, this.props.textModeState ? "text" : "remove"));
         refs.push([ref]);
 
         this.previewRef.current.toggleVisibility();
@@ -516,10 +520,15 @@ LayoutBox.defaultProps = {
 }
 
 LayoutImage.defaultProps = {
-    menu: null,
+    segmentLoading: null,
+    textModeState: null,
+
     boxesCoords: null,
     pageIndex: null,
-    imageURL: null
+    imageURL: null,
+
+    // functions:
+    updateBoxes: null,
 }
 
 export default LayoutImage;
