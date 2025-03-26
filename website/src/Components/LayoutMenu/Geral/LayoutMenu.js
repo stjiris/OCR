@@ -105,7 +105,6 @@ class LayoutMenu extends React.Component {
 				}
 
 				this.setState({ contents: contents }, () => {
-					this.generateBoxes();
 					this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 					this.updateTextMode();
 				});
@@ -134,7 +133,6 @@ class LayoutMenu extends React.Component {
 					}
 
 					this.setState({ contents: contents, segmentLoading: false }, () => {
-						this.generateBoxes();
 						this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 						this.updateTextMode();
 					});
@@ -158,7 +156,6 @@ class LayoutMenu extends React.Component {
 
 		const newCurrentPage = this.state.currentPage + increment;
 		this.setState({ currentPage: newCurrentPage, contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.loadBoxes();
 			this.updateTextMode();
 		});
@@ -170,7 +167,6 @@ class LayoutMenu extends React.Component {
         contents[this.state.currentPage - 1]["boxes"] = boxes;
 
         this.setState({ currentPage: 1, contents: contents }, () => {
-            this.generateBoxes();
             this.image.current.loadBoxes();
             this.updateTextMode();
         });
@@ -182,7 +178,6 @@ class LayoutMenu extends React.Component {
         contents[this.state.currentPage - 1]["boxes"] = boxes;
 
         this.setState({ currentPage: this.state.contents.length, contents: contents }, () => {
-            this.generateBoxes();
             this.image.current.loadBoxes();
             this.updateTextMode();
         });
@@ -235,13 +230,10 @@ class LayoutMenu extends React.Component {
 		}
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
-			this.generateBoxes();
-			// this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
+            window.addEventListener('beforeunload', this.preventExit);
+			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
-
-		// this.setState({contents: contents, uncommittedChanges: true}, this.generateBoxes);
-		window.addEventListener('beforeunload', this.preventExit);
-	}
+    }
 
 	typeIndexToGlobalIndex(boxes, type, index) {
 		for (var i = 0; i < boxes.length; i++) {
@@ -261,9 +253,8 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = boxes;
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-			this.generateBoxes();
-			window.addEventListener('beforeunload', this.preventExit);
+            window.addEventListener('beforeunload', this.preventExit);
+            this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
@@ -288,9 +279,8 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
+            window.addEventListener('beforeunload', this.preventExit);
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-			this.generateBoxes();
-			window.addEventListener('beforeunload', this.preventExit);
 		});
 	}
 
@@ -374,9 +364,8 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
+            window.addEventListener('beforeunload', this.preventExit);
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-			this.generateBoxes();
-			window.addEventListener('beforeunload', this.preventExit);
 		});
 	}
 
@@ -389,6 +378,7 @@ class LayoutMenu extends React.Component {
 		}
 	}
 
+    /*
 	generateBoxes() {
 		const boxes = this.state.contents[this.state.currentPage - 1]["boxes"];
 		const newBoxes = [];
@@ -401,6 +391,7 @@ class LayoutMenu extends React.Component {
 
 		this.setState({ boxes: newBoxes });
 	}
+    */
 
 	goBack() {
 		if (this.state.uncommittedChanges) {
@@ -432,7 +423,8 @@ class LayoutMenu extends React.Component {
 		}).then(response => { return response.json() })
 			.then(data => {
 				if (data["success"]) {
-					this.setState({ uncommittedChanges: false });
+                    window.removeEventListener('beforeunload', this.preventExit);
+                    this.setState({ uncommittedChanges: false });
 
 					this.successNot.current.setMessage("Layout guardado com sucesso.");
 					this.successNot.current.open();
@@ -462,7 +454,6 @@ class LayoutMenu extends React.Component {
 				)
 
 				this.setState({ contents: contents, segmentLoading: false }, () => {
-					this.generateBoxes();
 					this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 				});
 			});
@@ -474,7 +465,6 @@ class LayoutMenu extends React.Component {
 			contents[i]["boxes"] = [];
 		}
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -493,7 +483,6 @@ class LayoutMenu extends React.Component {
 		}
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -519,7 +508,6 @@ class LayoutMenu extends React.Component {
 
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -582,7 +570,6 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -611,7 +598,6 @@ class LayoutMenu extends React.Component {
 		}
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -644,7 +630,6 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -672,7 +657,6 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -692,7 +676,6 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -708,7 +691,6 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -724,7 +706,6 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -741,7 +722,6 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -759,7 +739,6 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents, textModeState: !this.state.textModeState }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
