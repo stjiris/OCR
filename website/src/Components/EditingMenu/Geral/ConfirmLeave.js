@@ -66,7 +66,6 @@ class ConfirmLeave extends React.Component {
                             flexDirection: 'row'
                         }}>
                             <Button
-                                disabled={this.state.buttonDisabled}
                                 color="error"
                                 variant="contained"
                                 sx={{border: '1px solid black', mt: '0.5rem'}}
@@ -76,7 +75,7 @@ class ConfirmLeave extends React.Component {
                             </Button>
                         </Box>
 
-                        <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
                             <CloseRoundedIcon />
                         </IconButton>
                     </Box>
@@ -84,6 +83,11 @@ class ConfirmLeave extends React.Component {
             </Box>
         )
     }
+}
+
+ConfirmLeave.defaultProps = {
+    // functions:
+    leaveFunc: null
 }
 
 export default ConfirmLeave;

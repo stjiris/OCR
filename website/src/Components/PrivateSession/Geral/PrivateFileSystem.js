@@ -92,6 +92,9 @@ class PrivateFileExplorer extends React.Component {
         // functions for editing menu
         this.closeEditingMenu = this.closeEditingMenu.bind(this);
 
+        // functions for private session menu
+        this.createFile = this.createFile.bind(this);
+
         // functions for menus
         this.updateFiles = this.updateFiles.bind(this);
     }
@@ -776,7 +779,7 @@ class PrivateFileExplorer extends React.Component {
                             <FolderMenu ref={this.folderMenu} _private={true} updateFiles={this.updateFiles}/>
                             <OcrMenu ref={this.ocrMenu} _private={true} updateFiles={this.updateFiles} showStorageForm={this.showStorageForm}/>
                             <DeleteMenu ref={this.deleteMenu} _private={true} updateFiles={this.updateFiles}/>
-                            <PrivateSessionMenu filesystem={this} ref={this.privateSessionMenu}/>
+                            <PrivateSessionMenu ref={this.privateSessionMenu} rowRefsLength={this.rowRefs.length} createFile={this.createFile}/>
                             <FullStorageMenu ref={this.storageMenu}/>
 
                             {

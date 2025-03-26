@@ -6,15 +6,9 @@ class PageDisplayer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            path: props.path,
-            maxWidth: props.width || '150px',
-            width: props.width || '150px',
-            sliderOn: props.sliderOn || false
+            width: props.maxWidth  || '150px',
+            sliderOn: props.sliderOn || false  // not used
         }
-    }
-
-    updatePath(path) {
-        this.setState({path: path});
     }
 
     handleChange(value) {
@@ -29,7 +23,7 @@ class PageDisplayer extends React.Component {
                 mr: '1rem',
                 pt: '1rem'
             }}>
-                <Box sx={{maxWidth: `${this.state.maxWidth}`}}>
+                <Box sx={{maxWidth: `${this.props.maxWidth}`}}>
                     <Slider
                         size="small"
                         defaultValue={0}
@@ -43,13 +37,13 @@ class PageDisplayer extends React.Component {
                 >
 
                     <a
-                        href={this.state.path}
+                        href={this.props.imgPath}
                         target="_blank"
                         rel="noreferrer"
                     >
                         <img
-                            src={this.state.path}
-                            alt={`Página de ${this.state.path}`}
+                            src={this.props.imgPath}
+                            alt={`Página de ${this.props.imgPath}`}
                             style={{maxWidth: `${this.state.width}`}}
                         />
                     </a>
@@ -57,6 +51,12 @@ class PageDisplayer extends React.Component {
             </Box>
         );
     }
+}
+
+PageDisplayer.defaultProps = {
+    imgPath: null,
+    maxWidth: '150px',
+    sliderOn: false,  // not used
 }
 
 export default PageDisplayer;

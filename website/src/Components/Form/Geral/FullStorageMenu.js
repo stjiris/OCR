@@ -56,7 +56,7 @@ class FullStorageMenu extends React.Component {
                             {this.state.message}
                         </Typography>
 
-                        <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
                             <CloseRoundedIcon />
                         </IconButton>
                     </Box>

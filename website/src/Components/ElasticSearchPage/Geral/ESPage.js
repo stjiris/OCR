@@ -27,7 +27,7 @@ class ESItem extends React.Component {
                 <Divider color="success" orientation='vertical' flexItem sx={{mr: '0.5rem'}} />
                 <Box>
                     <PageDisplayer
-                        path={this.props.page['_source']['Page Image']}
+                        imgPath={this.props.page['_source']['Page Image']}
                     />
                 </Box>
                 <Box sx={{
