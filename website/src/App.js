@@ -576,7 +576,9 @@ function App() {
                                                            enterLayoutMenu={this.enterLayoutMenu}
                                                            enterEditingMenu={this.enterEditingMenu}
                                                            exitMenus={this.exitMenus}/>
-                            : <ESPage app={this}/>
+                            : <ESPage filesChoice={this.state.filesChoice}
+                                      algorithmChoice={this.state.algorithmChoice}
+                                      configChoice={this.state.configChoice}/>
                         }
                     </Box>
                     <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>

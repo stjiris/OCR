@@ -35,7 +35,6 @@ class PrivateSessionMenu extends React.Component {
         super(props);
         this.state = {
             open: true,
-            filesystem: props.filesystem,  // TODO: remove this reference and use strictly necessary props
             buttonDisabled: false
         }
 
@@ -44,7 +43,7 @@ class PrivateSessionMenu extends React.Component {
     }
 
     checkHasFile() {
-        if (this.state.filesystem.rowRefs.length !== 0){
+        if (this.props.rowRefsLength !== 0){
             return true;
         }
         return false;
@@ -56,7 +55,7 @@ class PrivateSessionMenu extends React.Component {
 
     createPrivateSession() {
         this.setState({ buttonDisabled: true, open: false });
-        this.state.filesystem.createFile();
+        this.props.createFile();
     }
 
     // TODO: render welcome screen only on first entering private session
@@ -113,6 +112,12 @@ class PrivateSessionMenu extends React.Component {
             </Box>
         )
     }
+}
+
+PrivateSessionMenu.defaultProps = {
+    rowRefsLength: null,
+    // functions:
+    createFile: null,
 }
 
 export default PrivateSessionMenu;

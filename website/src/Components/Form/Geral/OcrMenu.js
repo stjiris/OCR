@@ -365,7 +365,10 @@ class OcrMenu extends React.Component {
 }
 
 OcrMenu.defaultProps = {
-    _private: false
+    _private: false,
+    // functions:
+    updateFiles: null,
+    showStorageForm: null
 }
 
 export default OcrMenu;

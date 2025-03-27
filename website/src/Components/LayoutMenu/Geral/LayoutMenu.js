@@ -63,6 +63,8 @@ class LayoutMenu extends React.Component {
 		this.imageBox = React.createRef();
 		this.ignoreBox = React.createRef();
 
+        this.updateBoxes = this.updateBoxes.bind(this);
+
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
         this.zoomOut = this.zoomOut.bind(this);
@@ -890,11 +892,13 @@ class LayoutMenu extends React.Component {
 								this.state.contents.length === 0
 									? null
 									: <LayoutImage ref={this.image}
-                                                   menu={this}
+                                                   segmentLoading={this.state.segmentLoading}
+                                                   textModeState={this.state.textModeState}
                                                    boxesCoords={this.state.contents[this.state.currentPage - 1]["boxes"]}
                                                    key={this.state.currentPage - 1}
                                                    pageIndex={this.state.currentPage}
-                                                   image={this.state.contents[this.state.currentPage - 1]["page_url"]} />
+                                                   imageURL={this.state.contents[this.state.currentPage - 1]["page_url"]}
+                                                   updateBoxes={this.updateBoxes}/>
 							}
 						</Box>
 						<Box sx={{
@@ -1110,7 +1114,11 @@ class LayoutMenu extends React.Component {
 
 LayoutMenu.defaultProps = {
     _private: false,
-    sessionId: ""
+    sessionId: "",
+    current_folder: null,
+    filename: null,
+    // functions:
+    closeLayoutMenu: null
 }
 
 export default LayoutMenu;

@@ -29,11 +29,11 @@ const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
 const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
 const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
 
-export default class FileRow extends React.Component {
+
+class FileRow extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            name: props.name,
             info: props.info,
             expanded: false,
         }
@@ -57,95 +57,95 @@ export default class FileRow extends React.Component {
 
     getOriginalFile(e) {
         e.stopPropagation();
-        this.props.getOriginalFile(this.state.name);
+        this.props.getOriginalFile(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getDelimiterTxt(e) {
         e.stopPropagation();
-        this.props.getDelimiterTxt(this.state.name);
+        this.props.getDelimiterTxt(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getTxt(e) {
         e.stopPropagation();
-        this.props.getTxt(this.state.name);
+        this.props.getTxt(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getEntities(e) {
         e.stopPropagation();
-        this.props.getEntities(this.state.name);
+        this.props.getEntities(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     requestEntities(e) {
         e.stopPropagation();
-        this.props.requestEntities(this.state.name);
+        this.props.requestEntities(this.props.name);
         this.successNot.current.setMessage("A obter entidades, por favor aguarde");
         this.successNot.current.open();
     }
 
     getCSV(e) {
         e.stopPropagation();
-        this.props.getCSV(this.state.name);
+        this.props.getCSV(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getImages(e) {
         e.stopPropagation();
-        this.props.getImages(this.state.name);
+        this.props.getImages(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getPdf(e) {
         e.stopPropagation();
-        this.props.getPdf(this.state.name);
+        this.props.getPdf(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     getPdfSimples(e) {
         e.stopPropagation();
-        this.props.getPdfSimples(this.state.name);
+        this.props.getPdfSimples(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
     delete(e) {
         e.stopPropagation();
-        this.props.deleteItem(this.state.name);
+        this.props.deleteItem(this.props.name);
     }
 
     editFile(e) {
         e.stopPropagation();
-        this.props.editText(this.state.name);
+        this.props.editText(this.props.name);
     }
 
     performOCR(e) {
         e.stopPropagation();
-        this.props.performOCR(false, this.state.name);
+        this.props.performOCR(false, this.props.name);
     }
 
     indexFile(e) {
         e.stopPropagation();
-        this.props.indexFile(this.state.name, false);
+        this.props.indexFile(this.props.name, false);
     }
 
     removeIndex(e) {
         e.stopPropagation();
-        this.props.removeIndexFile(this.state.name, false);
+        this.props.removeIndexFile(this.props.name, false);
     }
 
     createLayout(e) {
         e.stopPropagation();
-        this.props.createLayout(this.state.name);
+        this.props.createLayout(this.props.name);
     }
 
     render() {
@@ -193,9 +193,9 @@ export default class FileRow extends React.Component {
                                         textAlign: "left",
                                     }}
                                 >
-                                    {this.state.name}
+                                    {this.props.name}
                                 </Button>
-                                : <span>{this.state.name}</span>
+                                : <span>{this.props.name}</span>
                             }
                         </Box>
                     </TableCell>
@@ -604,3 +604,27 @@ export default class FileRow extends React.Component {
         )
     }
 }
+
+FileRow.defaultProps = {
+    _private: false,
+    info: null,
+    name: null,
+    // functions:
+    getOriginalFile: null,
+    getDelimiterTxt: null,
+    getTxt: null,
+    getEntities: null,
+    requestEntities: null,
+    getCSV: null,
+    getImages: null,
+    getPdf: null,
+    getPdfSimples: null,
+    deleteItem: null,
+    editText: null,
+    performOCR: null,
+    indexFile: null,
+    removeIndexFile: null,
+    createLayout: null
+}
+
+export default FileRow;

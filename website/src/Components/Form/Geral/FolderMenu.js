@@ -119,7 +119,9 @@ class FolderMenu extends React.Component {
 }
 
 FolderMenu.defaultProps = {
-    _private: false
+    _private: false,
+    // functions:
+    updateFiles: null
 }
 
 export default FolderMenu;

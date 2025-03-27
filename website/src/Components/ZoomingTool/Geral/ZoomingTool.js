@@ -29,4 +29,10 @@ class ZoomingTool extends React.Component {
     }
 }
 
+ZoomingTool.defaultProps = {
+    // functions:
+    zoomInFunc: null,
+    zoomOutFunc: null
+}
+
 export default ZoomingTool;

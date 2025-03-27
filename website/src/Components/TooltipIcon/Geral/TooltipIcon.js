@@ -1,18 +1,11 @@
 import { Box, IconButton } from '@mui/material';
 import React from 'react';
 
-export default class TooltipIcon extends React.Component {
+class TooltipIcon extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             showTooltip: false,
-
-            color: props.color || 'black',
-            padding: props.padding,
-            disabled: props.disabled || false,
-            icon: props.icon,
-            message: props.message || "",
-            clickFunction: props.clickFunction
         }
     }
 
@@ -20,7 +13,7 @@ export default class TooltipIcon extends React.Component {
         return (
             <Box sx={{position: "relative"}}>
                 {
-                    this.state.showTooltip && !this.state.disabled
+                    this.state.showTooltip && !this.props.disabled
                     ? <>
                         <Box sx={{
                             position: "absolute",
@@ -31,12 +24,12 @@ export default class TooltipIcon extends React.Component {
                             left: "50%",
                             transform: "translate(-50%, -100%)",
                             borderRadius: "3px",
-                            border: `1px solid ${this.state.color}`,
+                            border: `1px solid ${this.props.color}`,
                             backgroundColor: '#f5f5f5',
                             padding: "2px 2px",
 
                         }}>
-                            <span style={{fontSize: "9px"}}>{this.state.message}</span>
+                            <span style={{fontSize: "9px"}}>{this.props.message}</span>
                         </Box>
                         <Box sx={{
                             position: 'absolute',
@@ -45,22 +38,32 @@ export default class TooltipIcon extends React.Component {
                             marginLeft: "-5px",
                             borderWidth: "5px",
                             borderStyle: "solid",
-                            borderColor: `${this.state.color} transparent transparent transparent`,
+                            borderColor: `${this.props.color} transparent transparent transparent`,
                         }}></Box>
-                    </>                        
+                    </>
                     : null
                 }
-                <IconButton disabled={this.state.disabled} sx={{
-                    color: this.state.color,
-                    padding: this.state.padding
+                <IconButton disabled={this.props.disabled} sx={{
+                    color: this.props.color,
                 }}
-                    onClick={this.state.clickFunction}
+                    onClick={this.props.clickFunction}
                     onMouseEnter={() => this.setState({ showTooltip: true })}
                     onMouseLeave={() => this.setState({ showTooltip: false })}
                 >
-                    {this.state.icon}
+                    {this.props.icon}
                 </IconButton>
             </Box>
         )
     }
 }
+
+TooltipIcon.defaultProps = {
+    message: "",
+    color: 'black',
+    icon: null,
+    disabled: false,
+    // functions:
+    clickFunction: null,
+}
+
+export default TooltipIcon;

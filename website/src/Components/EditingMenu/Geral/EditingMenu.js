@@ -26,14 +26,6 @@ const Notification = loadComponent('Notification', 'Notifications');
 const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 
-/**
- * Expected props:
- * - id
- * - text
- * - cleanText
- * - box
- * - overlay
- */
 class Word extends React.Component {
     render() {
         return <p
@@ -47,11 +39,11 @@ class Word extends React.Component {
                 borderRadius: "5px",
             }}
             onMouseEnter={(e) => {
-                this.props.overlay.setState({hoveredId: this.props.id});
-                this.props.overlay.showImageHighlight(e, this.props.box);
+                this.props.hoverWord(this.props.id);
+                this.props.highlightWord(e, this.props.box);
             }}
             onMouseLeave={(e) => {
-                this.props.overlay.setState({selectedWordBox: null});
+                this.props.removeHighlightWord();
             }}
         >
             {this.props.text}
@@ -100,6 +92,9 @@ class EditingMenu extends React.Component {
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
         this.zoomOut = this.zoomOut.bind(this);
+        this.hoverWord = this.hoverWord.bind(this);
+        this.showImageHighlight = this.showImageHighlight.bind(this)
+        this.hideImageHighlight = this.hideImageHighlight.bind(this)
     }
 
     preventExit(event) {
@@ -238,6 +233,10 @@ class EditingMenu extends React.Component {
                 bottomCorner[1] - topCorner[1]
             ]
         });
+    }
+
+    hideImageHighlight() {
+        this.setState({selectedWordBox: null});
     }
 
     zoomIn() {
@@ -477,6 +476,10 @@ class EditingMenu extends React.Component {
     updateInputSize(text) {
         const textField = document.getElementById("textfield");
         textField.style.width = text.length+'ch';
+    }
+
+    hoverWord(wordId) {
+        this.setState({hoveredId: wordId});
     }
 
     getSelectedText() {
@@ -1052,11 +1055,13 @@ class EditingMenu extends React.Component {
                                                                         <Word
                                                                             ref = {ref}
                                                                             key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
-                                                                            overlay={this}
                                                                             text={word["text"]}
                                                                             id={id}
                                                                             box={word["box"]}
                                                                             cleanText={word["clean_text"]}
+                                                                            hoverWord={this.hoverWord}
+                                                                            highlightWord={this.showImageHighlight}
+                                                                            removeHighlightWord={this.hideImageHighlight}
                                                                         />
 
                                                                         {
@@ -1201,9 +1206,25 @@ class EditingMenu extends React.Component {
     }
 }
 
+Word.defaultProps = {
+    id: null,
+    text: null,
+    cleanText: null,
+    box: null,
+    overlay: null,
+    // functions:
+    hoverWord: null,
+    highlightWord: null,
+    removeHighlightWord: null
+}
+
 EditingMenu.defaultProps = {
     _private: false,
-    sessionId: ""
+    sessionId: "",
+    current_folder: null,
+    filename: null,
+    // functions:
+    closeEditingMenu: null
 }
 
 export default EditingMenu;
