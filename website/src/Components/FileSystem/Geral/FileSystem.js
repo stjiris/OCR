@@ -886,13 +886,13 @@ class FileExplorer extends React.Component {
                 {
                     this.state.layoutMenu
                     ? <LayoutMenu _private={this.props._private}
-                                  sessionId={this.props._private ? this.props.sessionId : null}
+                                  sessionId={this.props._private ? this.props.sessionId : ""}
                                   current_folder={this.state.current_folder}
                                   filename={this.state.fileOpened}
                                   closeLayoutMenu={this.closeLayoutMenu}/>
                     : this.state.editingMenu
                         ? <EditingMenu _private={this.props._private}
-                                       sessionId={this.props._private ? this.props.sessionId : null}
+                                       sessionId={this.props._private ? this.props.sessionId : ""}
                                        current_folder={this.state.current_folder}
                                        filename={this.state.fileOpened}
                                        closeEditingMenu={this.closeEditingMenu}/>
