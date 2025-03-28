@@ -221,12 +221,13 @@ def parse_image(img_path):
     # cv2.waitKey(0)
 
 def parse_images(path):
-    pdf_basename = get_file_basename(path)
-    filename = f"{path}/{pdf_basename}_0.jpg"
+    extension = path.split(".")[-1].lower()
+    page_extension = ".jpg" if extension == "pdf" else ".png" if extension == "zip" else f".{extension}"
+    basename = get_file_basename(path)
 
-    if os.path.exists(filename):
+    if os.path.exists(f"{path}/_pages"):
         # Grab all the images already in the folder
-        images = [x for x in glob.glob(f"{path}/{pdf_basename}_*.jpg") if x[-5] != "$"]
+        images = [x for x in glob.glob(f"{path}/_pages/{basename}_*{page_extension}") if x[-5] != "$"]
         sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))
 
         all_layouts = []
