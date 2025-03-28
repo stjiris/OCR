@@ -330,7 +330,7 @@ def get_folder_info(path, private_session=None):
         data["size"] = get_size(path)
 
     # sanitize important paths from the info key
-    path = path.replace(f"{PRIVATE_PATH}/{private_session}", "").replace(PRIVATE_PATH, "").replace(FILES_PATH, "")
+    path = path.replace(f"{PRIVATE_PATH}/{private_session}", "").replace(PRIVATE_PATH, "").replace(FILES_PATH, "").strip('/')
     info[path] = data
     return info
 

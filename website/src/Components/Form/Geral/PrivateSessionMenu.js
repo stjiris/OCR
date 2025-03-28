@@ -58,7 +58,6 @@ class PrivateSessionMenu extends React.Component {
         this.props.createFile();
     }
 
-    // TODO: render welcome screen only on first entering private session
     render() {
         return (
             <Box>
@@ -92,20 +91,17 @@ class PrivateSessionMenu extends React.Component {
                             Caso perca o link, não conseguirá aceder novamente a esta sessão privada.
                         </Typography>
                         <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
-                            {this.checkHasFile() ?
-                                <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
-                                    <CloseRoundedIcon/>
-                                </IconButton>
-                                :
-                                <Button
-                                    disabled={this.checkHasFile()}
-                                    variant="contained"
-                                    sx={{border: '1px solid black'}}
-                                    onClick={() => this.createPrivateSession()}
-                                >
-                                    Adicionar documento
-                                </Button>
-                            }
+                            <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                                <CloseRoundedIcon/>
+                            </IconButton>
+                            <Button
+                                disabled={this.checkHasFile()}
+                                variant="contained"
+                                sx={{border: '1px solid black'}}
+                                onClick={() => this.createPrivateSession()}
+                            >
+                                Adicionar documento
+                            </Button>
                         </Box>
                     </Box>
                 </Modal>
@@ -117,7 +113,7 @@ class PrivateSessionMenu extends React.Component {
 PrivateSessionMenu.defaultProps = {
     rowRefsLength: null,
     // functions:
-    createFile: null,
+    createFile: null
 }
 
 export default PrivateSessionMenu;

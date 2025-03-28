@@ -22,7 +22,6 @@ const Notification = loadComponent('Notification', 'Notifications');
 const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 const LogsMenu = loadComponent('Form', 'LogsMenu');
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
-const PrivateFileExplorer = loadComponent('PrivateSession', 'PrivateFileSystem');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
@@ -237,8 +236,9 @@ function App() {
         }
 
         setCurrentPath(new_path_list) {
+            // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
             this.setState({...fileSystemState, currentFolderPathList: new_path_list},
-                () => this.fileSystem.current.setState({...closeFileSystemMenus, current_folder: new_path_list.join('/')})
+                () => this.fileSystem.current.setState({...closeFileSystemMenus, current_folder: new_path_list.join('/').replace(/^\//, '')})
             );
         }
 
@@ -422,7 +422,7 @@ function App() {
 
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
                             <Button
-                                disabled={buttonsDisabled}
+                                disabled={buttonsDisabled || this.getPrivateSession() !== null}
                                 variant="text"
                                 onClick={() => {
                                     this.setState(searchMenuState)
@@ -562,20 +562,14 @@ function App() {
                     <Box>
                         {
                             !this.state.searchMenu
-                                ? this.getPrivateSession() == null
-                                    ? <FileExplorer ref={this.fileSystem}
-                                                    current_folder={this.state.currentFolderPathList}
-                                                    setCurrentPath={this.setCurrentPath}
-                                                    enterLayoutMenu={this.enterLayoutMenu}
-                                                    enterEditingMenu={this.enterEditingMenu}
-                                                    exitMenus={this.exitMenus}/>
-                                    : <PrivateFileExplorer ref={this.fileSystem}
-                                                           sessionId={this.state.sessionId}
-                                                           current_folder={this.state.currentFolderPathList}
-                                                           setCurrentPath={this.setCurrentPath}
-                                                           enterLayoutMenu={this.enterLayoutMenu}
-                                                           enterEditingMenu={this.enterEditingMenu}
-                                                           exitMenus={this.exitMenus}/>
+                            ? <FileExplorer ref={this.fileSystem}
+                                            _private={this.getPrivateSession() !== null}
+                                            sessionId={this.state.sessionId || ""}  // sessionId or empty str if null
+                                            current_folder={this.state.currentFolderPathList}
+                                            setCurrentPath={this.setCurrentPath}
+                                            enterLayoutMenu={this.enterLayoutMenu}
+                                            enterEditingMenu={this.enterEditingMenu}
+                                            exitMenus={this.exitMenus}/>
                             : <ESPage filesChoice={this.state.filesChoice}
                                       algorithmChoice={this.state.algorithmChoice}
                                       configChoice={this.state.configChoice}/>

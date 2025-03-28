@@ -294,7 +294,9 @@ class FileRow extends React.Component {
                                     />
 
                                     {
-                                        this.state.info["indexed"]
+                                        this.props._private ?
+                                            null
+                                        : (this.state.info["indexed"]
                                             ? <TooltipIcon
                                                 key={"remove " + (buttonsDisabled || this.state.info["ocr"] === undefined)}
                                                 color="#f00"
@@ -311,7 +313,7 @@ class FileRow extends React.Component {
                                                 disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
                                                 clickFunction={(e) => this.indexFile(e)}
                                                 icon={<IconDatabaseImport/>}
-                                            />
+                                            />)
                                     }
 
                                     <TooltipIcon
