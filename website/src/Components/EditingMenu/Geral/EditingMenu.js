@@ -90,11 +90,13 @@ class EditingMenu extends React.Component {
         this.selectedWord = "";
 
         this.leave = this.leave.bind(this);
-        this.zoomIn = this.zoomIn.bind(this);
-        this.zoomOut = this.zoomOut.bind(this);
         this.hoverWord = this.hoverWord.bind(this);
         this.showImageHighlight = this.showImageHighlight.bind(this)
         this.hideImageHighlight = this.hideImageHighlight.bind(this)
+
+        this.zoomIn = this.zoomIn.bind(this);
+        this.zoomOut = this.zoomOut.bind(this);
+        this.zoomReset = this.zoomReset.bind(this);
     }
 
     preventExit(event) {
@@ -245,6 +247,10 @@ class EditingMenu extends React.Component {
 
     zoomOut() {
         this.zoom(-1);
+    }
+
+    zoomReset() {
+        this.setState({imageZoom: 100});
     }
 
     zoom(delta) {
@@ -940,7 +946,7 @@ class EditingMenu extends React.Component {
                                 alignItems: "center",
                                 mt: "5px"
                             }}>
-                                <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut}/>
+                                <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut} zoomResetFunc={this.zoomReset}/>
 
                                 <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
                                     <IconButton

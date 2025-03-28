@@ -9,14 +9,10 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Switch from '@mui/material/Switch';
 
-import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
-import ArrowBackIosRoundedIcon from '@mui/icons-material/ArrowBackIosRounded';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
-import ZoomInIcon from "@mui/icons-material/ZoomIn";
-import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -82,6 +78,7 @@ class LayoutMenu extends React.Component {
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
         this.zoomOut = this.zoomOut.bind(this);
+        this.zoomReset = this.zoomReset.bind(this);
 	}
 
 	preventExit(event) {
@@ -793,6 +790,10 @@ class LayoutMenu extends React.Component {
         this.image.current.zoomOut();
     }
 
+    zoomReset() {
+        this.image.current.zoomReset();
+    }
+
 	render() {
 		let noCheckBoxActive = false;
         let groupDisabled = false;
@@ -904,6 +905,7 @@ class LayoutMenu extends React.Component {
 					<Box sx={{
 						display: 'flex',
 						flexDirection: 'column',
+                        width: '70%'
 					}}>
 						<Box sx={{display: "flex", flexDirection: "row"}}>
 							{
@@ -919,6 +921,7 @@ class LayoutMenu extends React.Component {
                                                    updateBoxes={this.updateBoxes}/>
 							}
 						</Box>
+
 						<Box sx={{
                             display: 'flex',
                             flexDirection: 'row',
@@ -926,7 +929,7 @@ class LayoutMenu extends React.Component {
                             alignItems: 'center',
                             mt: '5px'
 						}}>
-                            <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut}/>
+                            <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut} zoomResetFunc={this.zoomReset}/>
 
                             <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
                                 <IconButton
@@ -968,7 +971,7 @@ class LayoutMenu extends React.Component {
 						</Box>
 					</Box>
 
-					<Box sx={{ display: "flex", flexDirection: "column", width: "100%", ml: '0.5rem', mr: '0.5rem' }}>
+					<Box sx={{ display: "flex", flexDirection: "column", width: "30%", ml: "1rem" }}>
 						<Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-evenly", alignItems: "center" }}>
 							<Button
 								disabled={copyDisabled}
