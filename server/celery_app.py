@@ -1,14 +1,20 @@
 import json
 import logging as log
 import os
+import shutil
 import traceback
+import zipfile
 
 from celery import Celery
 from PIL import Image
 from PIL import ImageDraw
+import pypdfium2 as pdfium
 
-from src.algorithms import tesseract
-from src.utils.export import export_file, load_invisible_font
+from src.utils.export import export_file
+from src.utils.export import load_invisible_font
+
+from src.utils.file import ALLOWED_EXTENSIONS
+from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_file_basename
@@ -16,14 +22,27 @@ from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
 from src.utils.file import get_size
-from src.utils.file import prepare_file_ocr
 from src.utils.file import update_data
 
-CELERY_BROKER_URL = (os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0"),)
+from src.utils.image import parse_images
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
-celery = Celery("celery_app", broker=CELERY_BROKER_URL)
+#TODO: define also result backend
+celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
 
 load_invisible_font()  # TODO: can it be loaded once at startup of the OCR worker?
+
+
+@celery.task(name="auto_segment")
+def auto_segment(path):
+    return parse_images(path)
+
+
+@celery.task(name="export_file")
+def export_file(path, filetype, delimiter=False, force_recreate = False, simple = False):
+    return export_file(path, filetype, delimiter, force_recreate, simple)
+
 
 @celery.task(name="changes")
 def make_changes(data_folder, data):
@@ -64,6 +83,72 @@ def make_changes(data_folder, data):
         data["ner"] = {"complete": False, "error": True}
 
     return {"status": "success"}
+
+
+@celery.task(name="prepare_file")
+def prepare_file_ocr(path):
+    try:
+        if not os.path.exists(f"{path}/_pages"):
+            os.mkdir(f"{path}/_pages")
+
+        extension = path.split(".")[-1].lower()
+        basename = get_file_basename(path)
+
+        log.info(f"{path}: A preparar páginas")
+
+        if extension == "pdf":
+            pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
+            for i in range(len(pdf)):
+                page = pdf[i]
+                bitmap = page.render(300 / 72)  # turn PDF page into 300 DPI bitmap
+                pil_image = bitmap.to_pil()
+                pil_image.save(f"{path}/_pages/{basename}_{i}.jpg", quality=95, dpi=(300, 300))
+
+            pdf.close()
+
+        elif extension == "zip":
+            temp_folder_name = f"{path}/{generate_random_uuid()}"
+            os.mkdir(temp_folder_name)
+
+            with zipfile.ZipFile(f"{path}/{basename}.zip", 'r') as zip_ref:
+                zip_ref.extractall(temp_folder_name)
+
+            page_paths = [
+                f"{temp_folder_name}/{file}"
+                for file in os.listdir(temp_folder_name)
+                if os.path.isfile(os.path.join(temp_folder_name, file))
+            ]
+
+            # sort pages alphabetically, case-insensitive
+            # casefold for better internationalization, original string appended as fallback
+            page_paths.sort(key=lambda s: (s.casefold(), s))
+
+            for i, page in enumerate(page_paths):
+                im = Image.open(page)
+                im.save(f"{path}/_pages/{basename}_{i}.png", format="PNG")  # using PNG to keep RGBA
+            shutil.rmtree(temp_folder_name)
+
+        elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
+            original_path = f"{path}/{basename}.{extension}"
+            link_path = f"{path}/_pages/{basename}_0.{extension}"
+            if not os.path.exists(link_path):
+                os.link(original_path, link_path)
+
+
+        update_data(f"{path}/_data.json", {
+            "pages": get_page_count(path, extension),
+            "stored": True,
+            "creation": get_current_time()
+        })
+
+    except Exception as e:
+        data_folder = f"{path}/_data.json"
+        data = get_data(data_folder)
+        data["ocr"] = data.get("ocr", {})
+        data["ocr"]["exceptions"] = str(e)
+        update_data(data_folder, data)
+        log.error(f"Error in preparing OCR for file at {path}: {e}")
+        raise e
 
 
 @celery.task(name="request_ner")
@@ -294,7 +379,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 "complete": True,
                 "size": get_size(f"{path}/_search.pdf", path_complete=True),
                 "creation": creation_date,
-                "pages": get_page_count(path, f"{path}/_search.pdf"),
+                "pages": get_page_count(path, "pdf"),
             }
             data["csv"] = {
                 "complete": True,
@@ -308,7 +393,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 "complete": True,
                 "size": get_size(f"{path}/_simple.pdf", path_complete=True),
                 "creation": creation_date,
-                "pages": get_page_count(path, f"{path}/_simple.pdf"),
+                "pages": get_page_count(path, "pdf"),
             }
 
             update_data(data_folder, data)

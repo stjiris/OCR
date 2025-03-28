@@ -26,22 +26,13 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter
 
+from src.utils.file import json_to_text
+
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
 PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
 
 OUT_DEFAULT_DPI = 150
 
-def json_to_text(json_d):
-    """
-    Convert json to text
-    :param json_d: json with the hOCR data
-    :return: text
-    """
-    lines = []
-    for section in json_d:
-        l = [w["text"] for l in section for w in l]
-        lines.append(" ".join(l))
-    return "\n".join(lines).strip()
 
 def get_file_basename(filename):
     """
@@ -55,7 +46,7 @@ def get_file_basename(filename):
 ####################################################
 # GENERAL FUNCTION
 ####################################################
-def export_file(path, filetype, delimiter=False, force_recreate = False, simple = False):
+def export_file(path, filetype, simple = False, delimiter=False, force_recreate = False):
     """
     Direct to the correct function based on the filetype
 
