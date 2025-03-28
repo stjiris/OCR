@@ -30,6 +30,20 @@ const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
 const Notification = loadComponent('Notification', 'Notifications');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 
+const cannotAutoSegment = new Set(["gif"]);
+/*
+files currently accepted by the platform that can be automatically segmented:
+application/pdf
+image/jpeg
+image/png
+image/tiff
+image/bmp
+image/webp (not listed in CV2 doc but accepted)
+image/x-portable-anymap
+image/jp2
+application/zip (pages are stored as PNG)
+*/
+
 class LayoutMenu extends React.Component {
 	constructor(props) {
 		super(props);
@@ -844,9 +858,13 @@ class LayoutMenu extends React.Component {
 							Limpar Tudo
 						</Button>
 						<Button
-							disabled={this.state.segmentLoading}
+							disabled={this.state.segmentLoading
+                                || cannotAutoSegment.has(this.props.filename.split('.').pop())}
+                            title={cannotAutoSegment.has(this.props.filename.split('.').pop())
+                                    ? "Não é possível segmentar automaticamente este formato de ficheiro." : ""}
 							variant="contained"
                             className="menuFunctionButton"
+                            style={{pointerEvents: "auto"}  /* ensures disabled button can show title */}
 							onClick={() => this.GenerateLayoutAutomatically()}
 						>
 							Segmentar automaticamente
