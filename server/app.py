@@ -645,7 +645,7 @@ def perform_ocr():
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        celery.send_task('task_file_ocr', (f, config, ocr_algorithm))
+        celery.send_task('file_ocr', (f, config, ocr_algorithm))
         # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         # task_file_ocr(f, config, ocr_algorithm, True)
 

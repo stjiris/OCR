@@ -10,6 +10,7 @@ from PIL import Image
 from PIL import ImageDraw
 import pypdfium2 as pdfium
 
+from src.algorithms import tesseract
 from src.utils.export import export_file
 from src.utils.export import load_invisible_font
 
