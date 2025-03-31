@@ -29,10 +29,9 @@ from src.utils.image import parse_images
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
-#TODO: define also result backend
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
 
-load_invisible_font()  # TODO: can it be loaded once at startup of the OCR worker?
+load_invisible_font()
 
 
 @celery.task(name="auto_segment")
@@ -41,22 +40,20 @@ def auto_segment(path):
 
 
 @celery.task(name="export_file")
-def export(path, filetype, delimiter=False, force_recreate = False, simple = False):
+def task_export(path, filetype, delimiter=False, force_recreate = False, simple = False):
     return export_file(path, filetype, delimiter, force_recreate, simple)
 
 
-@celery.task(name="changes")
-def make_changes(data_folder, data):
-    current_date = get_current_time()
-
+@celery.task(name="make_changes")
+def task_make_changes(data_folder, data):
     export_file(data_folder, "txt", force_recreate=True)
     data["txt"]["complete"] = True
-    data["txt"]["creation"] = current_date
+    data["txt"]["creation"] = get_current_time()
     data["txt"]["size"] = get_size(data_folder + "/_text.txt", path_complete=True)
 
     export_file(data_folder, "txt", delimiter=True, force_recreate=True)
     data["delimiter_txt"]["complete"] = True
-    data["delimiter_txt"]["creation"] = current_date
+    data["delimiter_txt"]["creation"] = get_current_time()
     data["delimiter_txt"]["size"] = get_size(data_folder + "/_text_delimiter.txt", path_complete=True)
 
     update_data(data_folder + "/_data.json", data)
@@ -64,21 +61,21 @@ def make_changes(data_folder, data):
     os.remove(data_folder + "/_search.pdf")
     export_file(data_folder, "pdf", force_recreate=True)
     data["pdf"]["complete"] = True
-    data["pdf"]["creation"] = current_date
+    data["pdf"]["creation"] = get_current_time()
     data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
 
     os.remove(data_folder + "/_simple.pdf")
     export_file(data_folder, "pdf", force_recreate=True, simple=True)
     data["pdf_simples"]["complete"] = True
-    data["pdf_simples"]["creation"] = current_date
+    data["pdf_simples"]["creation"] = get_current_time()
     data["pdf_simples"]["size"] = get_size(data_folder + "/_simple.pdf", path_complete=True)
 
     data["csv"]["complete"] = True
-    data["csv"]["creation"] = current_date
+    data["csv"]["creation"] = get_current_time()
     data["csv"]["size"] = get_size(data_folder + "/_index.csv", path_complete=True)
 
     try:
-        request_ner(data_folder)
+        task_request_ner(data_folder)
     except Exception as e:
         print(e)
         data["ner"] = {"complete": False, "error": True}
@@ -87,7 +84,7 @@ def make_changes(data_folder, data):
 
 
 @celery.task(name="prepare_file")
-def prepare_file_ocr(path):
+def task_prepare_file_ocr(path):
     try:
         if not os.path.exists(f"{path}/_pages"):
             os.mkdir(f"{path}/_pages")
@@ -153,18 +150,17 @@ def prepare_file_ocr(path):
 
 
 @celery.task(name="request_ner")
-def request_ner(data_folder):
+def task_request_ner(data_folder):
     data = get_data(data_folder + "/_data.json")
-
-    current_date = get_current_time()
 
     os.remove(data_folder + "/_entities.json")
     success = get_ner_file(data_folder)
+    creation_date = get_current_time()
     if success:
         data["ner"] = {
             "complete": True,
             "size": get_size(f"{data_folder}/_entities.json", path_complete=True),
-            "creation": current_date,
+            "creation": creation_date
         }
     else:
         data["ner"] = {"complete": False, "error": True}
@@ -186,7 +182,8 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
         if not os.path.exists(f"{path}/_ocr_results"):
             os.mkdir(f"{path}/_ocr_results")
 
-        prepare_file_ocr(path)
+        #TODO: remove this possible duplicate generation of files for OCR?
+        task_prepare_file_ocr(path)
         pages_path = f"{path}/_pages"
         images = sorted([x for x in os.listdir(pages_path)])
 
@@ -335,7 +332,6 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
 
         if data["pages"] == len(files):
             log.info(f"{path}: Acabei OCR")
-
             creation_date = get_current_time()
 
             data["ocr"].update({
@@ -400,6 +396,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
             update_data(data_folder, data)
 
             success = get_ner_file(path)
+            creation_date = get_current_time()
             if success:
                 data["ner"] = {
                     "complete": True,

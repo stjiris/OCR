@@ -279,7 +279,7 @@ def request_entities():
 
     update_data(f"{path}/_data.json", data)
 
-    celery.send_task('request_ner', (path))
+    celery.send_task('request_ner', kwargs={'data_folder': path})
     # Thread(target=request_ner, args=(path,)).start()
     return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private)}
 
@@ -292,7 +292,7 @@ def get_zip():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
-        celery.send_task('export_file', (path, "zip")).get()
+        celery.send_task('export_file', kwargs={'path': path, 'filetype': "zip"}).get()
     except Exception as e:
         return {"success": False, "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde"}
     return send_file(safe_join(path, f"{path.split('/')[-1]}.zip"))  # filename == folder name
@@ -304,7 +304,7 @@ def get_pdf():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    promise = celery.send_task('export_file', (path, "pdf"))
+    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "pdf"})
     file = promise.get()
     return send_file(file)
 
@@ -316,7 +316,7 @@ def get_pdf_simples():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    promise = celery.send_task('export_file', kwargs={'path':path, 'filetype':"pdf", 'simple':True})
+    promise = celery.send_task('export_file', kwargs={'path':path, 'filetype': "pdf", 'simple': True})
     file = promise.get()
     return send_file(file)
 
@@ -337,7 +337,7 @@ def get_images():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    promise = celery.send_task('export_file', (path, "imgs"))
+    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "imgs"})
     file = promise.get()
     return send_file(file)
 
@@ -494,14 +494,14 @@ def prepare_upload():
     return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private), "filename": filename}
 
 
-def join_chunks(target_path, file_path, filename, total_count, temp_file_path):
+def join_chunks(target_path, filename, total_count, temp_file_path):
     # Save the file
     with open(f"{target_path}/{filename}", "wb") as f:
         for i in range(total_count):
             with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
 
-    celery.send_task('prepare_file_ocr', (target_path))
+    celery.send_task('prepare_file_ocr', kwargs={'path': target_path})
 
     shutil.rmtree(temp_file_path)
     log.info(f"Finished uploading file {filename}")
@@ -542,7 +542,7 @@ def upload_file():
     if total_count == 1:
         file.save(file_path)
 
-        celery.send_task('prepare_file_ocr', (target_path))
+        celery.send_task('prepare_file_ocr', kwargs={'path': target_path})
 
         return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
 
@@ -576,7 +576,7 @@ def upload_file():
 
             Thread(
                 target=join_chunks,
-                args=(target_path, file_path, filename, total_count, temp_file_path)
+                args=(target_path, filename, total_count, temp_file_path)
             ).start()
 
             return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
@@ -645,7 +645,7 @@ def perform_ocr():
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        celery.send_task('file_ocr', (f, config, ocr_algorithm))
+        celery.send_task('file_ocr', kwargs={'path': f, 'config': config, 'ocr_algorithm': ocr_algorithm})
         # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         # task_file_ocr(f, config, ocr_algorithm, True)
 
@@ -812,7 +812,7 @@ def submit_text():
             {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
         )
 
-        celery.send_task('make_changes', (path, data))
+        celery.send_task('make_changes', kwargs={'data_folder': path,  'data': data})
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
 
@@ -911,7 +911,7 @@ def get_layouts():
 @requires_json_path
 def save_layouts():
     data = request.json
-    if ("layouts" not in data):
+    if "layouts" not in data:
         abort(HTTPStatus.BAD_REQUEST)
 
     path, _ = format_path(data)
@@ -932,7 +932,7 @@ def generate_automatic_layouts():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
-        celery.send_task('auto_segment', [path]).get()
+        celery.send_task('auto_segment', kwargs={'path': path}).get()
         layouts = get_file_layouts(path, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
