@@ -289,7 +289,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
                 "creation": creation_date,
             }
 
-            if os.path.exists(f"{path}/_images") and os.listdir(f"{path}/images"):
+            if os.path.exists(f"{path}/_images") and os.listdir(f"{path}/_images"):
                 export_file(path, "imgs")
                 data["zip"] = {
                     "complete": True,
