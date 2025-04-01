@@ -501,7 +501,7 @@ def join_chunks(target_path, filename, total_count, temp_file_path):
             with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
 
-    celery.send_task('prepare_file_ocr', kwargs={'path': target_path})
+    celery.send_task('prepare_file', kwargs={'path': target_path})
 
     shutil.rmtree(temp_file_path)
     log.info(f"Finished uploading file {filename}")
@@ -542,7 +542,7 @@ def upload_file():
     if total_count == 1:
         file.save(file_path)
 
-        celery.send_task('prepare_file_ocr', kwargs={'path': target_path})
+        celery.send_task('prepare_file', kwargs={'path': target_path})
 
         return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
 

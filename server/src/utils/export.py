@@ -46,7 +46,7 @@ def get_file_basename(filename):
 ####################################################
 # GENERAL FUNCTION
 ####################################################
-def export_file(path, filetype, simple = False, delimiter=False, force_recreate = False):
+def export_file(path, filetype, delimiter=False, force_recreate=False, simple=False):
     """
     Direct to the correct function based on the filetype
 
@@ -67,7 +67,7 @@ def export_file(path, filetype, simple = False, delimiter=False, force_recreate 
 ####################################################
 # EXPORT TXT FUNCTIONS
 ####################################################
-def export_imgs(path, force_recreate = False):
+def export_imgs(path, force_recreate=False):
     """
     Export the images as a .zip file
 
@@ -83,7 +83,7 @@ def export_imgs(path, force_recreate = False):
     shutil.make_archive(f"{path}/_images", "zip", path, base_dir="images")
     return filename
 
-def export_txt(path, delimiter=False, force_recreate = False):
+def export_txt(path, delimiter=False, force_recreate=False):
     """
     Export the file as a .txt file
 
@@ -134,7 +134,7 @@ def export_csv(filename_csv, index_data):
 ####################################################
 # EXPORT PDF FUNCTIONS
 ####################################################
-def export_pdf(path, force_recreate = False, simple=False):
+def export_pdf(path, force_recreate=False, simple=False):
     """
     Export the file as a .pdf file
     """

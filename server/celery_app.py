@@ -40,7 +40,7 @@ def auto_segment(path):
 
 
 @celery.task(name="export_file")
-def task_export(path, filetype, delimiter=False, force_recreate = False, simple = False):
+def task_export(path, filetype, delimiter=False, force_recreate=False, simple=False):
     return export_file(path, filetype, delimiter, force_recreate, simple)
 
 
