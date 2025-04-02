@@ -26,22 +26,13 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter
 
+from src.utils.file import json_to_text
+
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
 PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
 
 OUT_DEFAULT_DPI = 150
 
-def json_to_text(json_d):
-    """
-    Convert json to text
-    :param json_d: json with the hOCR data
-    :return: text
-    """
-    lines = []
-    for section in json_d:
-        l = [w["text"] for l in section for w in l]
-        lines.append(" ".join(l))
-    return "\n".join(lines).strip()
 
 def get_file_basename(filename):
     """
@@ -55,7 +46,7 @@ def get_file_basename(filename):
 ####################################################
 # GENERAL FUNCTION
 ####################################################
-def export_file(path, filetype, delimiter=False, force_recreate = False, simple = False):
+def export_file(path, filetype, delimiter=False, force_recreate=False, simple=False):
     """
     Direct to the correct function based on the filetype
 
@@ -76,7 +67,7 @@ def export_file(path, filetype, delimiter=False, force_recreate = False, simple 
 ####################################################
 # EXPORT TXT FUNCTIONS
 ####################################################
-def export_imgs(path, force_recreate = False):
+def export_imgs(path, force_recreate=False):
     """
     Export the images as a .zip file
 
@@ -92,7 +83,7 @@ def export_imgs(path, force_recreate = False):
     shutil.make_archive(f"{path}/_images", "zip", path, base_dir="_images")
     return filename
 
-def export_txt(path, delimiter=False, force_recreate = False):
+def export_txt(path, delimiter=False, force_recreate=False):
     """
     Export the file as a .txt file
 
@@ -143,7 +134,7 @@ def export_csv(filename_csv, index_data):
 ####################################################
 # EXPORT PDF FUNCTIONS
 ####################################################
-def export_pdf(path, force_recreate = False, simple=False):
+def export_pdf(path, force_recreate=False, simple=False):
     """
     Export the file as a .pdf file
     """

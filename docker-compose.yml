@@ -30,7 +30,8 @@ services:
   worker:
     build:
       context: ./server
-      dockerfile: ../compose/server/Dockerfile
+      dockerfile: ../compose/worker/Dockerfile
+    image: ocr-worker
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
@@ -47,7 +48,7 @@ services:
       - external-network
 
   flower:
-    image: ocr-server
+    image: ocr-worker
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
