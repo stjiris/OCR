@@ -1080,17 +1080,18 @@ class LayoutMenu extends React.Component {
 													</TableCell>
 													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
 														{
-															this.state.textModeState
+															this.state.textModeState || group.squares.length > 1
 																? <span>Texto</span>
 																: <span>Remover</span>
 														}
 														<Switch
 															size="small"
+                                                            disabled={group.squares.length > 1}  // disable type change for grouped boxes; can only group text
 															checked={group.type === "image"}
 															onChange={() => this.switchType(index)}
 															sx={{
 																"& .MuiSwitch-switchBase": {
-																	color: this.state.textModeState ? "#00f" : "#f05e16",
+																	color: group.squares.length > 1 ? "#808080" : (this.state.textModeState ? "#00f" : "#f05e16"),
 																	'&.Mui-checked': {
 																		color: "#08A045",
 																	}
