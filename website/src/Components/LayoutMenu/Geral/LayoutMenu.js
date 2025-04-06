@@ -460,11 +460,12 @@ class LayoutMenu extends React.Component {
 	}
 
 	cleanAllBoxes() {
-		var contents = this.state.contents;
-		for (var i = 0; i < contents.length; i++) {
+		const contents = [...this.state.contents];
+		for (let i in contents) {
 			contents[i]["boxes"] = [];
 		}
-		this.setState({ contents: contents }, () => {
+		this.setState({ contents: contents,  uncommittedChanges: true  }, () => {
+            window.addEventListener('beforeunload', this.preventExit);
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
