@@ -104,9 +104,9 @@ class ESPage extends React.Component {
 
     componentDidMount() {
         /**
-         * When the component is mounted, get the data from the ElasticSearch database
+         * When the component is mounted, get the list of indexed documents from the database
          */
-        fetch(process.env.REACT_APP_API_URL + "get_elasticsearch", {
+        fetch(process.env.REACT_APP_API_URL + "get-docs-list", {
             method: 'GET'
         })
         .then(response => {return response.json()})

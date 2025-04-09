@@ -8,6 +8,7 @@ from http import HTTPStatus
 from threading import Lock, Thread
 
 from flask import abort
+from flask import jsonify
 from flask import request
 from flask import send_file
 from werkzeug.utils import safe_join
@@ -693,7 +694,7 @@ def index_doc():
         files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
 
         extension = data["extension"]
-        for id, file in enumerate(files):
+        for i, file in enumerate(files):
             file_path = f"{hOCR_path}/{file}"
 
             with open(file_path, encoding="utf-8") as f:
@@ -707,7 +708,7 @@ def index_doc():
                     "pt",
                     text,
                     extension,
-                    id + 1,
+                    i + 1,
                 )
             else:
                 doc = create_document(
@@ -718,9 +719,9 @@ def index_doc():
                     extension
                 )
 
-            id = generate_uuid(file_path)
+            doc_id = generate_uuid(file_path)
 
-            es.add_document(id, doc)
+            es.add_document(doc_id, doc)
 
         update_data(data_path, {"indexed": True})
 
@@ -843,9 +844,27 @@ def check_sintax():
 #####################################
 # ELASTICSEARCH
 #####################################
-@app.route("/get_elasticsearch", methods=["GET"])
-def get_elasticsearch():
-    return es.get_docs()
+@app.route("/get-docs-list", methods=["GET"])
+def get_docs_list():
+    return es.get_all_docs_names()
+
+@app.route("/search", methods=["POST"])
+def search():
+    data = request.json
+    if "query" not in data:
+        abort(HTTPStatus.BAD_REQUEST)
+
+    query = data["query"]
+    docs = None
+
+    if "docs" in data and len(data["docs"]):
+        docs = data["docs"]
+
+    # for empty query with doc list, get all content of those docs
+    if docs and query == "":
+        return jsonify(es.get_docs(docs))
+    else:
+        return jsonify(es.search(query, docs))
 
 #####################################
 # PRIVATE SESSIONS
