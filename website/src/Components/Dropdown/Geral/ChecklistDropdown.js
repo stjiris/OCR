@@ -19,15 +19,13 @@ const MenuProps = {
   },
 };
 
-export default class ChecklistDropdown extends React.Component {
+class ChecklistDropdown extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             visible: true,
-            options: props.options,
             choice: props.choice,
             default: props.choice,
-            label: props.label,
             parentfunc: props.parentfunc
         }
 
@@ -57,7 +55,15 @@ export default class ChecklistDropdown extends React.Component {
         return this.state.choice.map((x) => x.code);
     }
 
+    getSelectedNames() {
+        return this.state.choice.map((x) => x.name);
+    }
+
     handleChange(event) {
+        this.setState({choice: event.target.value});
+    }
+
+    handleChange2(event) {
         /**
          * If an option is selected or disabled, update the choice list
          */
@@ -90,21 +96,25 @@ export default class ChecklistDropdown extends React.Component {
         return (
             <div>
                 {
-                    this.state.visible && <FormControl open={this.state.visible} sx={{mb: '0.3rem', mt: '0.5rem', width: '100%'}}>
-                        <InputLabel sx={{mt: '-0.45rem'}}>{this.state.label}</InputLabel>
+                    this.state.visible
+                    && <FormControl
+                        open={this.state.visible}
+                        sx={{mb: '0.3rem', mt: '0.5rem', width: '100%'}}>
+                        <InputLabel id="checklist-label" sx={{mt: '-0.45rem'}}>{this.props.label}</InputLabel>
                         <Select
                             multiple
+                            labelId="checklist-label"
                             value={this.state.choice}
                             onChange={(e) => this.handleChange(e)}
-                            input={<OutlinedInput label={this.state.label} />}
+                            onClose={this.props.onCloseFunc}
                             renderValue={(selected) => selected.map((x) => x.code).join(', ')}
                             MenuProps={MenuProps}
                             sx={{height: '2.5rem'}}
                         >
                             {
-                                this.state.options.map((variant) => (
+                                this.props.options.map((variant) => (
                                     <MenuItem key={variant.name} value={variant} sx={{height: '2.5rem'}}>
-                                        <Checkbox checked={this.state.choice.findIndex((item) => item.name === variant.name) >= 0} />
+                                        <Checkbox checked={this.state.choice.includes(variant)} />
                                         <ListItemText primary={variant.name} />
                                     </MenuItem>
                                 ))
@@ -116,3 +126,14 @@ export default class ChecklistDropdown extends React.Component {
         );
     }
 }
+
+ChecklistDropdown.defaultProps = {
+    options: [],
+    choice: [],
+    label: null,
+    // functions:
+    onCloseFunc: null,
+    parentFunc: null
+}
+
+export default ChecklistDropdown;
