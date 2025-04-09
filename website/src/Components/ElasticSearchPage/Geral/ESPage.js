@@ -59,12 +59,12 @@ class ESPage extends React.Component {
             documentList: [],
             pages: [],
             showing: [],
-            freeText: "",
+            query: "",
             documentOptions: []
         }
 
         // Filters
-        this.freeText = React.createRef();
+        this.searchBox = React.createRef();
         this.document = React.createRef();
         this.fileType = React.createRef();
         this.algorithm = React.createRef();
@@ -179,23 +179,27 @@ class ESPage extends React.Component {
         */
     }
 
+    /*
     changeText(event) {
-        /**
-         * Handle the change in the text field
-         */
-        this.setState({freeText: event.target.value}, this.search);
+        //
+        //Handle the change in the text field
+        //
+        this.setState({freeText: event.target.value});
     }
+     */
 
     search() {
         const filteredDocs = this.document.current.getSelectedNames();
-        // TODO: search com POST para mais params
+        // Cancel empty search request
+        if (this.state.query === "" && filteredDocs.length === 0) return;
+
         fetch(process.env.REACT_APP_API_URL + "search", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                'query': this.state.freeText,
+                'query': this.state.query,
                 'docs': filteredDocs
             })
         })
@@ -207,10 +211,11 @@ class ESPage extends React.Component {
         });
     }
 
+    /*
     filterPages() {
-        /**
-         * Filter the pages based on the filters
-         */
+        //
+        //Filter the pages based on the filters
+        //
         var current_showing = [];
 
         var freeText = this.state.freeText;
@@ -241,6 +246,7 @@ class ESPage extends React.Component {
 
         this.setState({showing: current_showing});
     }
+    */
 
     render() {
         return (
@@ -265,14 +271,26 @@ class ESPage extends React.Component {
                         </Icon>
                         <p style={{fontSize: '15px'}}><b>{this.state.showing.length} Pages</b></p>
                     </Box>
-                    <TextField onChange={(e) => this.changeText(e)} ref={this.freeText} label="Pesquisar" variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
+                    <TextField sx={{width: '100%', mb: '0.3rem'}}
+                               ref={this.searchBox}
+                               label="Pesquisar"
+                               variant='outlined'
+                               size="small"
+                               onChange={(e) => this.setState({query: e.target.value})}
+                               onBlur={() => {this.search()}}
+                               onKeyDown={(e) => {
+                                   if (e.key === "Enter") {
+                                       e.preventDefault();
+                                       this.search();
+                                   }
+                               }}
+                    />
                     <ChecklistDropdown
                         ref={this.document}
                         label={"Documento"}
                         options={this.state.documentList}
                         choice={[]}
-                        onCloseFunc={this.search}
-                        parentfunc={() => this.filterPages()}/>
+                        onCloseFunc={() => this.search()}/>
                     {/* <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"Tipo de Ficheiro"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.algorithm} label={"Algoritmo"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.config} label={"Configuração"} options={[]} choice={[]} /> */}
