@@ -244,6 +244,7 @@ def parse_images(path):
                     "type": "text",
                     "squares": [
                         {
+                            "id": "temp",
                             "top": top,
                             "left": left,
                             "bottom": bottom,

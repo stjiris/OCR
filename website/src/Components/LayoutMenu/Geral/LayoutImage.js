@@ -249,14 +249,8 @@ class LayoutImage extends React.Component {
             minImageZoom: 20,
             maxImageZoom: 600,
 
-            boxesCoords: props.boxesCoords,
-            boxes: [],
-            imageBoxes: [],
-            ignoreBoxes: [],
-
-            boxRefs: [],
-            imageRefs: [],
-            ignoreRefs: [],
+            boxes: [],  // LayoutBox components
+            boxRefs: [],  // refs for LayoutBox components
         }
 
         this.imageRef = React.createRef();
@@ -274,6 +268,12 @@ class LayoutImage extends React.Component {
 
     componentWillUnmount() {
         window.removeEventListener('resize', this.recreateBoxes);
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevProps.boxesCoords !== this.props.boxesCoords) {
+            this.loadBoxes();
+        }
     }
 
     createLayoutBox(ref, index, box, type, checked = false, copyId = undefined) {
@@ -295,11 +295,14 @@ class LayoutImage extends React.Component {
         />
     }
 
+    /*
+    Create box components using prop data.
+     */
     loadBoxes() {
         const boxes = [];
         const refs = [];
 
-        this.state.boxesCoords.forEach((group) => {
+        this.props.boxesCoords.forEach((group) => {
             const type = group.type || "text";
             const checked = group.checked || false;
             const copyId = group.copyId || undefined;
@@ -322,22 +325,22 @@ class LayoutImage extends React.Component {
         this.setState({boxesCoords: boxes}, this.loadBoxes);
     }
 
-    getAllBoxes() {
-        var coords = [];
+    getPageBoxes() {
+        const groupsData = [];
         this.state.boxRefs.forEach((groupRefs) => {
-            var squares = [];
-            var copyId = undefined;
+            const squares = [];
+            let copyId = undefined;
             groupRefs.forEach((ref) => {
-                var details = ref.current.getBoxDetails();
+                const details = ref.current.getBoxDetails();
                 if (details.copyId) {
                     copyId = details.copyId;
                     delete details.copyId;
                 }
                 squares.push(details);
             });
-            coords.push({squares: squares, type: squares[0].type, checked: squares[0].checked, copyId: copyId});
+            groupsData.push({checked: false, type: squares[0].type, squares: squares, copyId: copyId});
         })
-        return coords;
+        return groupsData;
     }
 
     getWindowWidth() {
@@ -347,14 +350,12 @@ class LayoutImage extends React.Component {
         return width - widthReduction;
     }
 
+    /*
+    Recreate box components without changes, e.g. when the window is resized and boxes must be re-rendered in new positions.
+     */
     recreateBoxes() {
         const boxes = [];
-        // var imageBoxes = [];
-        // var ignoreBoxes = [];
-
         const refs = [...this.state.boxRefs];
-        // var imageRefs = [...this.state.imageRefs];
-        // var ignoreRefs = [...this.state.ignoreRefs];
         refs.forEach((groupRefs) => {
             groupRefs.forEach((ref) => {
                 boxes.push(this.createLayoutBox(ref, boxes.length + 1, ref.current.getBoxDetails(), "text"));
@@ -426,29 +427,37 @@ class LayoutImage extends React.Component {
     }
 
     updateMenu() {
-        this.props.updateBoxes(this.getAllBoxes());
+        this.props.updateBoxes(this.getPageBoxes());
     }
 
     dragEnd(e) {
         if (!this.state.dragging) return;
 
-        var initialCoords = this.screenToImageCoordinates(this.state.initialCoords.x, this.state.initialCoords.y);
-        var finalCoords = this.screenToImageCoordinates(e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX, e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY);
+        const initialCoords = this.screenToImageCoordinates(this.state.initialCoords.x, this.state.initialCoords.y);
+        const finalCoords = this.screenToImageCoordinates(e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX, e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY);
 
         if (finalCoords.x - initialCoords.x < 150 && finalCoords.y - initialCoords.y < 150) {
             finalCoords.x = Math.max(finalCoords.x, initialCoords.x + 150);
             finalCoords.y = Math.max(finalCoords.y, initialCoords.y + 150);
         }
 
-        var boxes = [...this.state.boxes];
-        var refs = [...this.state.boxRefs];
-        var ref = React.createRef();
-        var coords = {top: initialCoords.y, left: initialCoords.x, bottom: finalCoords.y, right: finalCoords.x};
-        boxes.push(this.createLayoutBox(ref, refs.length + 1, coords, this.props.textModeState ? "text" : "remove"));
-        refs.push([ref]);
+        const newGroupData = {
+            checked: false,
+            type: this.props.textModeState ? "text" : "remove",
+            squares: [{
+                        id: this.props.pageIndex + "." + (this.state.boxRefs.length + 1),
+                        top: initialCoords.y,
+                        left: initialCoords.x,
+                        bottom: finalCoords.y,
+                        right: finalCoords.x,
+                    }],
+            copyId: undefined
+        }
 
         this.previewRef.current.toggleVisibility();
-        this.setState({dragging: false, boxes: boxes, boxRefs: refs}, this.updateMenu);
+        this.setState({ dragging: false }, () => {
+            this.props.newGroup(newGroupData);
+        });
     }
 
     render() {
@@ -476,18 +485,6 @@ class LayoutImage extends React.Component {
 
                 {
                     this.state.boxes.map((box) => {
-                        return box;
-                    })
-                }
-
-                {
-                    this.state.imageBoxes.map((box) => {
-                        return box;
-                    })
-                }
-
-                {
-                    this.state.ignoreBoxes.map((box) => {
                         return box;
                     })
                 }
@@ -533,6 +530,7 @@ LayoutImage.defaultProps = {
 
     // functions:
     updateBoxes: null,
+    newGroup: null
 }
 
 export default LayoutImage;

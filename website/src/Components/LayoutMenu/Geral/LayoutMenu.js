@@ -74,6 +74,7 @@ class LayoutMenu extends React.Component {
 		this.ignoreBox = React.createRef();
 
         this.updateBoxes = this.updateBoxes.bind(this);
+        this.newGroup = this.newGroup.bind(this);
 
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
@@ -105,7 +106,6 @@ class LayoutMenu extends React.Component {
 				}
 
 				this.setState({ contents: contents }, () => {
-					this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 					this.updateTextMode();
 				});
 			});
@@ -133,13 +133,13 @@ class LayoutMenu extends React.Component {
 					}
 
 					this.setState({ contents: contents, segmentLoading: false }, () => {
-						this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 						this.updateTextMode();
 					});
 				});
 		}, 1000);
 	}
 
+    /*
 	addBoxToAllPages(box) {
 		var contents = this.state.contents;
 		for (var i = 0; i < contents.length; i++) {
@@ -148,55 +148,41 @@ class LayoutMenu extends React.Component {
 		}
 		this.setState({ contents: contents });
 	}
+     */
 
 	changePage(increment) {
-		const boxes = this.image.current.getAllBoxes();
+		const boxes = this.image.current.getPageBoxes();
 		const contents = this.state.contents;
 		contents[this.state.currentPage - 1]["boxes"] = boxes;
 
 		const newCurrentPage = this.state.currentPage + increment;
 		this.setState({ currentPage: newCurrentPage, contents: contents }, () => {
-			this.image.current.loadBoxes();
 			this.updateTextMode();
 		});
 	}
 
     firstPage() {
-        const boxes = this.image.current.getAllBoxes();
+        const boxes = this.image.current.getPageBoxes();
         const contents = this.state.contents;
         contents[this.state.currentPage - 1]["boxes"] = boxes;
 
         this.setState({ currentPage: 1, contents: contents }, () => {
-            this.image.current.loadBoxes();
             this.updateTextMode();
         });
     }
 
     lastPage() {
-        const boxes = this.image.current.getAllBoxes();
+        const boxes = this.image.current.getPageBoxes();
         const contents = this.state.contents;
         contents[this.state.currentPage - 1]["boxes"] = boxes;
 
         this.setState({ currentPage: this.state.contents.length, contents: contents }, () => {
-            this.image.current.loadBoxes();
             this.updateTextMode();
         });
     }
 
 	updateBoxes(groups) {
 		const contents = this.state.contents;
-
-		for (let i = 0; i < groups.length; i++) {
-			const group = groups[i];
-
-			for (let j = 0; j < group["squares"].length; j++) {
-				const square = group["squares"][j];
-				if (square.copyId) {
-					delete square.copyId;
-				}
-			}
-		}
-
 		contents[this.state.currentPage - 1]["boxes"] = groups;
 
 		// * Code to reflect changes in copy boxes (removed as requested per Prof. Borbinha's instructions)
@@ -225,13 +211,14 @@ class LayoutMenu extends React.Component {
 		//     }
 		// }
 
+        /*
 		for (let i = 0; i < contents.length; i++) {
 			contents[i]["boxes"] = this.renameGroups(contents[i]["boxes"], i + 1);
 		}
+         */
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
             window.addEventListener('beforeunload', this.preventExit);
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
     }
 
@@ -246,6 +233,7 @@ class LayoutMenu extends React.Component {
 		}
 	}
 
+    /*
 	deleteBox(type, index) {
 		var boxes = this.image.current.getAllBoxes();
 		var contents = this.state.contents;
@@ -378,7 +366,6 @@ class LayoutMenu extends React.Component {
 		}
 	}
 
-    /*
 	generateBoxes() {
 		const boxes = this.state.contents[this.state.currentPage - 1]["boxes"];
 		const newBoxes = [];
@@ -453,9 +440,7 @@ class LayoutMenu extends React.Component {
 					(a["page_number"] > b["page_number"]) ? 1 : -1
 				)
 
-				this.setState({ contents: contents, segmentLoading: false }, () => {
-					this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-				});
+				this.setState({ contents: contents, segmentLoading: false });
 			});
 	}
 
@@ -466,7 +451,6 @@ class LayoutMenu extends React.Component {
 		}
 		this.setState({ contents: contents,  uncommittedChanges: true  }, () => {
             window.addEventListener('beforeunload', this.preventExit);
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
@@ -483,18 +467,16 @@ class LayoutMenu extends React.Component {
 			boxes[i]["checked"] = e.target.checked;
 		}
 
-		this.setState({ contents: contents }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	changeChecked(e, index) {
-		var contents = this.state.contents;
-		var boxes = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const boxes = contents[this.state.currentPage - 1]["boxes"];
 		boxes[index]["checked"] = e.target.checked;
-
+        /*
 		// Get types of all boxes checked
-		var types = [];
+		const types = [];
 		for (var i = 0; i < boxes.length; i++) {
 			if (boxes[i]["checked"] && !types.includes(boxes[i]["type"])) {
 				types.push(boxes[i]["type"]);
@@ -506,11 +488,9 @@ class LayoutMenu extends React.Component {
 		} else {
 			this.setState({ typeSelected: "" });
 		}
+         */
 
-
-		this.setState({ contents: contents }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	allCheckboxesAreChecked() {
@@ -570,9 +550,7 @@ class LayoutMenu extends React.Component {
 		}
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
-		this.setState({ contents: contents }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	makeBoxCopy() {
@@ -598,10 +576,16 @@ class LayoutMenu extends React.Component {
 			}
 		}
 
-		this.setState({ contents: contents }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
+
+    newGroup(newGroupData) {
+        const contents = this.state.contents;
+        const pageBoxes = [...contents[this.state.currentPage - 1]["boxes"]];
+        pageBoxes.push(newGroupData);
+        contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
+        this.setState({ contents: contents });
+    }
 
 	groupCheckedBoxes() {
 		var contents = this.state.contents;
@@ -630,9 +614,7 @@ class LayoutMenu extends React.Component {
 		newGroups.splice(insertIndex, 0, newGroup);
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
-		this.setState({ contents: contents }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	splitCheckedBoxes() {
@@ -657,11 +639,10 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
 
-		this.setState({ contents: contents }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
+    /*
 	updateCheckBoxType(type) {
 		this.setState({ typeSelected: type });
 
@@ -695,6 +676,7 @@ class LayoutMenu extends React.Component {
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
+    */
 
 	goDown(index) {
 		var contents = this.state.contents;
@@ -706,25 +688,21 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
-		this.setState({ contents: contents }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	switchType(box) {
-		var contents = this.state.contents;
-		var groups = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const groups = contents[this.state.currentPage - 1]["boxes"];
 
-		var group = groups[box];
-		var newType = group["type"] === "image" ? (this.state.textModeState ? "text" : "remove") : "image";
+		const group = groups[box];
+		const newType = group["type"] === "image" ? (this.state.textModeState ? "text" : "remove") : "image";
 		group["type"] = newType;
 
 		groups[box] = group;
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
-		this.setState({ contents: contents }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	switchMode() {
@@ -739,9 +717,7 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
-		this.setState({ contents: contents, textModeState: !this.state.textModeState }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents, textModeState: !this.state.textModeState });
 	}
 
 	updateTextMode() {
@@ -898,7 +874,8 @@ class LayoutMenu extends React.Component {
                                                    key={this.state.currentPage - 1}
                                                    pageIndex={this.state.currentPage}
                                                    imageURL={this.state.contents[this.state.currentPage - 1]["page_url"]}
-                                                   updateBoxes={this.updateBoxes}/>
+                                                   updateBoxes={this.updateBoxes}
+                                                   newGroup={this.newGroup}/>
 							}
 						</Box>
 

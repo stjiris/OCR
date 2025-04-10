@@ -920,7 +920,7 @@ def get_layouts():
 @requires_json_path
 def save_layouts():
     data = request.json
-    if ("layouts" not in data):
+    if "layouts" not in data:
         abort(HTTPStatus.BAD_REQUEST)
 
     path, _ = format_path(data)
@@ -941,6 +941,7 @@ def generate_automatic_layouts():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
+        # TODO: make automatic parsing a celery task?
         parse_images(path)
         layouts = get_file_layouts(path, is_private)
     except FileNotFoundError:
