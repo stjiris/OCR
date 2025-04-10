@@ -58,18 +58,24 @@ class LayoutBox extends React.Component {
             bottom: props.bottom,
             right: props.right,
 
-            mainColor: null,
-            backColor: null
+            mainColor: this.props.type === "text" ? "#0000ff" : this.props.type === "image" ? '#08A045' : '#F05E16',
+            backColor: this.props.type === "text" ? "#0000ff22" : this.props.type === "image" ? '#08A04526' : '#F05E1626',
         }
         this.viewRef = props.viewRef;
         this.imageRef = props.imageRef;
     }
 
-    componentDidMount() {
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevProps.type !== this.props.type) {
+            this.updateColor();
+        }
+    }
+
+    updateColor() {
         this.setState({
             mainColor: this.props.type === "text" ? "#0000ff" : this.props.type === "image" ? '#08A045' : '#F05E16',
             backColor: this.props.type === "text" ? "#0000ff22" : this.props.type === "image" ? '#08A04526' : '#F05E1626',
-        })
+        });
     }
 
     imageToScreenCoordinates(x, y) {
@@ -180,7 +186,13 @@ class LayoutBox extends React.Component {
                             top: `${(finalCoords.y - initialCoords.y)/2 - 8}px`
                         }}
                     >
-                        <span><b>{this.props.id}</b></span>
+                        <span><b>{
+                            (this.props.type === "text"
+                                ? "T"
+                                : (this.props.type === "image"
+                                ? "I"
+                                : "R")) + this.props.id
+                        }</b></span>
                         {
                             this.state.copyId
                             ? <ContentCopyIcon sx={{fontSize: 15, ml: "10px"}}/>

@@ -472,8 +472,9 @@ class LayoutMenu extends React.Component {
 
 	changeChecked(e, index) {
 		const contents = this.state.contents;
-		const boxes = contents[this.state.currentPage - 1]["boxes"];
+		const boxes = [...contents[this.state.currentPage - 1]["boxes"]];
 		boxes[index]["checked"] = e.target.checked;
+        contents[this.state.currentPage - 1]["boxes"] = boxes;
         /*
 		// Get types of all boxes checked
 		const types = [];
@@ -522,18 +523,15 @@ class LayoutMenu extends React.Component {
 				for (var j = 0; j < boxes.length; j++) {
 					let id;
 					if (boxes.length === 1) {
-						id = l[i].type[0].toUpperCase() + (page) + "." + (i + 1);
+						id = page + "." + (i + 1);
 					} else {
-						id = l[i].type[0].toUpperCase() + (page) + "." + (i + 1) + "." + (j + 1);
+						id = page + "." + (i + 1) + "." + (j + 1);
 					}
 					boxes[j]["id"] = id;
 				}
 			}
 		}
-
-
 		groups = textGroups.concat(imageGroups).concat(ignoreGroups);
-
 		return groups;
 	}
 
@@ -1034,8 +1032,13 @@ class LayoutMenu extends React.Component {
 																				alignItems: 'center',
 																			}}
 																		>
-																			{box.id}
-
+																			{
+                                                                            (group.type === "text"
+                                                                                ? "T"
+                                                                                : (group.type === "image"
+                                                                                    ? "I"
+                                                                                    : "R")) + box.id
+                                                                            }
 																			{
 																				group["copyId"]
 																					? <ContentCopyIcon sx={{ fontSize: 15, ml: "10px" }} />
