@@ -300,7 +300,7 @@ class LayoutImage extends React.Component {
             bottom={box.bottom}
             right={box.right}
             type={type}
-            id={box.id || type[0].toUpperCase() + this.props.pageIndex + "." + index}
+            id={box.id || this.props.pageIndex + "." + index}
             checked={box.checked || checked || false}
             copyId={box.copyId || copyId}
             updateMenu={this.updateMenu}

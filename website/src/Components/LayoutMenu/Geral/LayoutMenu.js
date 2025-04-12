@@ -512,26 +512,18 @@ class LayoutMenu extends React.Component {
 	}
 
 	renameGroups(groups, page) {
-		var textGroups = groups.filter(e => e["type"] === "text");
-		var imageGroups = groups.filter(e => e["type"] === "image");
-		var ignoreGroups = groups.filter(e => e["type"] === "remove");
-
-		for (var l_id in [textGroups, imageGroups, ignoreGroups]) {
-			var l = [textGroups, imageGroups, ignoreGroups][l_id];
-			for (var i = 0; i < l.length; i++) {
-				var boxes = l[i]["squares"];
-				for (var j = 0; j < boxes.length; j++) {
-					let id;
-					if (boxes.length === 1) {
-						id = page + "." + (i + 1);
-					} else {
-						id = page + "." + (i + 1) + "." + (j + 1);
-					}
-					boxes[j]["id"] = id;
-				}
-			}
+		for (let i = 0; i < groups.length; i++) {
+            const boxes = groups[i]["squares"];
+            for (let j = 0; j < boxes.length; j++) {
+                let id;
+                if (boxes.length === 1) {
+                    id = page + "." + (i + 1);
+                } else {
+                    id = page + "." + (i + 1) + "." + (j + 1);
+                }
+                boxes[j]["id"] = id;
+            }
 		}
-		groups = textGroups.concat(imageGroups).concat(ignoreGroups);
 		return groups;
 	}
 
@@ -691,23 +683,21 @@ class LayoutMenu extends React.Component {
 
 	switchType(box) {
 		const contents = this.state.contents;
-		const groups = contents[this.state.currentPage - 1]["boxes"];
+		const groups = [...contents[this.state.currentPage - 1]["boxes"]];
 
 		const group = groups[box];
 		const newType = group["type"] === "image" ? (this.state.textModeState ? "text" : "remove") : "image";
 		group["type"] = newType;
 
-		groups[box] = group;
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
-
 		this.setState({ contents: contents });
 	}
 
 	switchMode() {
-		var contents = this.state.contents;
-		var groups = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const groups = [...contents[this.state.currentPage - 1]["boxes"]];
 
-		for (var i = 0; i < groups.length; i++) {
+		for (let i in groups) {
 			if (groups[i]["type"] !== "image") {
 				groups[i]["type"] = this.state.textModeState ? "remove" : "text";
 			}
