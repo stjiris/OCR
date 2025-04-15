@@ -18,10 +18,11 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 
-import { Checkbox, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 
 import loadComponent from '../../../utils/loadComponents';
 const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
+const LayoutTable = loadComponent('LayoutMenu', 'LayoutTable');
 const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
 const Notification = loadComponent('Notification', 'Notifications');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
@@ -59,22 +60,21 @@ class LayoutMenu extends React.Component {
 			textModeState: true,
 		}
 
-		this.boxRefs = [];
-		this.imageRefs = [];
-		this.ignoreRefs = [];
-
 		this.image = React.createRef();
 		this.menu = React.createRef();
 		this.confirmLeave = React.createRef();
 
 		this.warningNot = React.createRef();
 		this.successNot = React.createRef();
-		this.textBox = React.createRef();
-		this.imageBox = React.createRef();
-		this.ignoreBox = React.createRef();
 
         this.updateBoxes = this.updateBoxes.bind(this);
         this.newGroup = this.newGroup.bind(this);
+
+        this.allCheckboxesAreChecked = this.allCheckboxesAreChecked.bind(this);
+        this.commitAllCheckBoxes = this.commitAllCheckBoxes.bind(this);
+        this.changeChecked = this.changeChecked.bind(this);
+        this.switchType = this.switchType.bind(this);
+        this.reorderBoxes = this.reorderBoxes.bind(this);
 
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
@@ -511,6 +511,7 @@ class LayoutMenu extends React.Component {
 
 	renameGroups(groups, page) {
 		for (let i = 0; i < groups.length; i++) {
+            groups[i]["groupId"] = page + "." + (i + 1);
             const boxes = groups[i]["squares"];
             for (let j = 0; j < boxes.length; j++) {
                 let id;
@@ -524,6 +525,19 @@ class LayoutMenu extends React.Component {
 		}
 		return groups;
 	}
+
+    reorderBoxes(old_index, new_index) {
+        const contents = this.state.contents;
+        // create new array with box removed
+        const pageContents = [...contents[this.state.currentPage - 1]["boxes"]];
+        const elementToMove = pageContents[old_index];
+        pageContents.splice(old_index, 1);
+        // place box in new location
+        pageContents.splice(new_index, 0, elementToMove);
+        // recalculate IDs and replace page data
+        contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(pageContents, this.state.currentPage);
+        this.setState({ contents: contents, uncommittedChanges: true });
+    }
 
 	deleteCheckedBoxes() {
 		var contents = this.state.contents;
@@ -734,12 +748,17 @@ class LayoutMenu extends React.Component {
     }
 
 	render() {
+        let tableData = [];
+
 		let noCheckBoxActive = false;
         let groupDisabled = false;
         let separateDisabled = false;
         let copyDisabled = false;
+
 		if (this.state.contents.length !== 0) {
-			noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
+            tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
+
+            noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
             groupDisabled = noCheckBoxActive
                             || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
                             || this.state.contents[this.state.currentPage - 1]["boxes"].map(e => e["checked"]).filter(Boolean).length <= 1
@@ -978,100 +997,14 @@ class LayoutMenu extends React.Component {
 							<span>Ignorar/Extrair OCR</span>
 						</Box>
 
-						<TableContainer sx={{ width: "100%", maxHeight: `${window.innerHeight - 217}px`, border: '1px solid #aaa' }}>
-							<Table stickyHeader>
-								<TableHead>
-									<TableRow>
-										<TableCell align='center' sx={{ borderBottom: '1px solid #aaa' }}>
-											<Checkbox checked={this.allCheckboxesAreChecked()} sx={{ m: 0, p: 0 }} onChange={(e) => this.commitAllCheckBoxes(e)} />
-										</TableCell>
-										<TableCell align='center' sx={{ borderBottom: '1px solid #aaa' }}><b>ID</b></TableCell>
-										<TableCell align='center' sx={{ borderBottom: '1px solid #aaa' }}><b>Pixels</b></TableCell>
-										<TableCell align='center' sx={{ borderBottom: '1px solid #aaa' }}><b>Tipo</b></TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{
-										this.state.contents.length === 0 || this.state.contents[this.state.currentPage - 1] === undefined
-											? null
-											: this.state.contents[this.state.currentPage - 1]["boxes"].map((group, index) => {
-												return (
-                                                <TableRow key={index + " " + group.checked} sx={{ borderBottom: '1px solid #aaa' }}>
-													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
-														<Checkbox checked={group.checked} sx={{ m: 0, p: 0 }} onClick={(e) => this.changeChecked(e, index)} />
-													</TableCell>
-													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
-														<Box>
-															{
-																group["squares"].map((box, _index) => {
-																	return (
-																		<Box
-																			key={box.id + " " + group["copyId"]}
-																			sx={{
-																				backgroundColor: group.type === "text" ? "#0000ff" : group.type === "image" ? '#08A045' : '#F05E16',
-																				borderRadius: '10px',
-																				justifyContent: 'center',
-																				display: 'flex',
-																				color: '#fff',
-																				margin: '0.25rem',
-																				alignItems: 'center',
-																			}}
-																		>
-																			{
-                                                                            (group.type === "text"
-                                                                                ? "T"
-                                                                                : (group.type === "image"
-                                                                                    ? "I"
-                                                                                    : "R")) + box.id
-                                                                            }
-																			{
-																				group["copyId"]
-																					? <ContentCopyIcon sx={{ fontSize: 15, ml: "10px" }} />
-																					: null
-																			}
-																		</Box>
-																	);
-																})
-															}
-														</Box>
-													</TableCell>
-													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
-														<Box sx={{ display: "flex", flexDirection: "column" }}>
-															{
-																group.squares.map((box, _index) => {
-																	return (<span>{Math.ceil(box.bottom - box.top)} x {Math.ceil(box.right - box.left)}</span>);
-																})
-															}
-														</Box>
-													</TableCell>
-													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
-														{
-															this.state.textModeState || group.squares.length > 1
-																? <span>Texto</span>
-																: <span>Remover</span>
-														}
-														<Switch
-															size="small"
-                                                            disabled={group.squares.length > 1}  // disable type change for grouped boxes; can only group text
-															checked={group.type === "image"}
-															onChange={() => this.switchType(index)}
-															sx={{
-																"& .MuiSwitch-switchBase": {
-																	color: group.squares.length > 1 ? "#808080" : (this.state.textModeState ? "#00f" : "#f05e16"),
-																	'&.Mui-checked': {
-																		color: "#08A045",
-																	}
-																}
-															}}
-														/>
-														<span>Imagem</span>
-													</TableCell>
-												</TableRow>)
-											})
-									}
-								</TableBody>
-							</Table>
-						</TableContainer>
+                        <LayoutTable data={tableData}
+                                     reorderBoxes={this.reorderBoxes}
+                                     textModeState={this.state.textModeState}
+                                     confirmAllChecked={this.allCheckboxesAreChecked}
+                                     commitAllCheckBoxes={this.commitAllCheckBoxes}
+                                     changeChecked={this.changeChecked}
+                                     switchType={this.switchType}
+                        />
 					</Box>
 				</Box>
 			</>

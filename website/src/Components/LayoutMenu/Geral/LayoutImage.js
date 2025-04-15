@@ -117,7 +117,6 @@ class LayoutBox extends React.Component {
             type: this.props.type,
             id: this.props.id,
             checked: this.props.checked,
-            copyId: this.props.copyId,
         }
     }
 
@@ -262,7 +261,7 @@ class LayoutImage extends React.Component {
             maxImageZoom: 600,
 
             boxes: [],  // LayoutBox components
-            boxRefs: [],  // refs for LayoutBox components
+            groups: [],  // info for groups with the refs of their LayoutBox components
         }
 
         this.imageRef = React.createRef();
@@ -288,11 +287,11 @@ class LayoutImage extends React.Component {
         }
     }
 
-    createLayoutBox(ref, index, box, type, checked = false, copyId = undefined) {
+    createLayoutBox(ref, box, type, checked = false) {
         return <LayoutBox
             ref={ref}
-            key={index + " " + box.top + " " + box.left + " " + box.bottom + " " + box.right + " " + box.checked + " " + checked + " " + box.id + " " + box.copyId}
-            index={index}
+            key={box.id + box.top + box.left + box.bottom + box.right}  // hack to force re-render on prop changes that don't trigger state changes
+            index={box.id}
             viewRef={this.viewRef}
             imageRef={this.imageRef}
             top={box.top}
@@ -300,9 +299,8 @@ class LayoutImage extends React.Component {
             bottom={box.bottom}
             right={box.right}
             type={type}
-            id={box.id || this.props.pageIndex + "." + index}
+            id={box.id}
             checked={box.checked || checked || false}
-            copyId={box.copyId || copyId}
             updateMenu={this.updateMenu}
         />
     }
@@ -312,46 +310,48 @@ class LayoutImage extends React.Component {
      */
     loadBoxes() {
         const boxes = [];
-        const refs = [];
+        const groups = [];
 
         this.props.boxesCoords.forEach((group) => {
-            const type = group.type || "text";
-            const checked = group.checked || false;
-            const copyId = group.copyId || undefined;
+            const groupInfo = {
+                ...group,
+                squareRefs: []
+            }
 
-            const groupRefs = [];
-
-            group.squares.forEach((box) => {
+            groupInfo.squares.forEach((box) => {
                 const ref = React.createRef();
-                boxes.push(this.createLayoutBox(ref, group.squares.length + 1, box, type, checked, copyId));
-                groupRefs.push(ref);
+                boxes.push(this.createLayoutBox(ref, box, groupInfo.type, groupInfo.checked));
+                groupInfo.squareRefs.push(ref);
             });
 
-            refs.push(groupRefs);
+            groups.push(groupInfo);
         })
 
-        this.setState({boxes: boxes, boxRefs: refs});
+        this.setState({boxes: boxes, groups: groups});
     }
 
     updateBoxes(boxes) {
         this.setState({boxesCoords: boxes}, this.loadBoxes);
     }
 
+    /*
+    Get the list of groups of boxes in the current page, with updated coordinates for the squares
+     */
     getPageBoxes() {
         const groupsData = [];
-        this.state.boxRefs.forEach((groupRefs) => {
+        this.state.groups.forEach((group) => {
             const squares = [];
-            let copyId = undefined;
-            groupRefs.forEach((ref) => {
+            group.squareRefs.forEach((ref) => {
                 const details = ref.current.getBoxDetails();
-                if (details.copyId) {
-                    copyId = details.copyId;
-                    delete details.copyId;
-                }
                 squares.push(details);
             });
-            groupsData.push({checked: false, type: squares[0].type, squares: squares, copyId: copyId});
-        })
+            const updatedGroup = {
+                ...group,
+                squares: squares,
+            }
+            delete updatedGroup.squareRefs;
+            groupsData.push(updatedGroup);
+        });
         return groupsData;
     }
 
@@ -366,15 +366,11 @@ class LayoutImage extends React.Component {
     Recreate box components without changes, e.g. when the window is resized and boxes must be re-rendered in new positions.
      */
     recreateBoxes() {
-        const boxes = [];
-        const refs = [...this.state.boxRefs];
-        refs.forEach((groupRefs) => {
-            groupRefs.forEach((ref) => {
-                boxes.push(this.createLayoutBox(ref, boxes.length + 1, ref.current.getBoxDetails(), "text"));
+        this.state.groups.forEach((group) => {
+            group.squareRefs.forEach((ref) => {
+                ref.current.forceUpdate();
             });
         });
-
-        this.setState({boxes: boxes});
     }
 
     zoomIn() {
@@ -454,10 +450,12 @@ class LayoutImage extends React.Component {
         }
 
         const newGroupData = {
+            _uniq_id: Date.now().toString(36) + Math.random().toString(36),  // each line in the sortable list must have a constant unique ID
+            groupId: this.props.pageIndex + "." + (this.state.groups.length + 1),
             checked: false,
             type: this.props.textModeState ? "text" : "remove",
             squares: [{
-                        id: this.props.pageIndex + "." + (this.state.boxRefs.length + 1),
+                        id: this.props.pageIndex + "." + (this.state.groups.length + 1),
                         top: initialCoords.y,
                         left: initialCoords.x,
                         bottom: finalCoords.y,
@@ -473,6 +471,7 @@ class LayoutImage extends React.Component {
     }
 
     render() {
+        console.log("Rerendering image");
         return (
             <Box ref={this.viewRef}
                 className="pageImageContainer">
@@ -524,7 +523,6 @@ LayoutBox.defaultProps = {
     right: null,
 
     id: null,
-    copyId: null,
     type: "text",
     checked: false,
 
