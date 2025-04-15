@@ -139,6 +139,14 @@ class LayoutMenu extends React.Component {
 		}, 1000);
 	}
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (!prevState.uncommittedChanges && this.state.uncommittedChanges) {
+            window.addEventListener('beforeunload', this.preventExit);
+        } else if (prevState.uncommittedChanges && !this.state.uncommittedChanges) {
+            window.removeEventListener('beforeunload', this.preventExit);
+        }
+    }
+
     /*
 	addBoxToAllPages(box) {
 		var contents = this.state.contents;
@@ -151,12 +159,7 @@ class LayoutMenu extends React.Component {
      */
 
 	changePage(increment) {
-		const boxes = this.image.current.getPageBoxes();
-		const contents = this.state.contents;
-		contents[this.state.currentPage - 1]["boxes"] = boxes;
-
-		const newCurrentPage = this.state.currentPage + increment;
-		this.setState({ currentPage: newCurrentPage, contents: contents }, () => {
+		this.setState({ currentPage: this.state.currentPage + increment }, () => {
 			this.updateTextMode();
 		});
 	}
@@ -217,9 +220,7 @@ class LayoutMenu extends React.Component {
 		}
          */
 
-		this.setState({ contents: contents, uncommittedChanges: true }, () => {
-            window.addEventListener('beforeunload', this.preventExit);
-		});
+		this.setState({ contents: contents, uncommittedChanges: true });
     }
 
 	typeIndexToGlobalIndex(boxes, type, index) {
@@ -410,7 +411,6 @@ class LayoutMenu extends React.Component {
 		}).then(response => { return response.json() })
 			.then(data => {
 				if (data["success"]) {
-                    window.removeEventListener('beforeunload', this.preventExit);
                     this.setState({ uncommittedChanges: false });
 
 					this.successNot.current.setMessage("Layout guardado com sucesso.");
@@ -449,9 +449,7 @@ class LayoutMenu extends React.Component {
 		for (let i in contents) {
 			contents[i]["boxes"] = [];
 		}
-		this.setState({ contents: contents,  uncommittedChanges: true  }, () => {
-            window.addEventListener('beforeunload', this.preventExit);
-		});
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	showWarningNotification(message) {
@@ -540,7 +538,7 @@ class LayoutMenu extends React.Component {
 		}
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
-		this.setState({ contents: contents });
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	makeBoxCopy() {
@@ -566,7 +564,7 @@ class LayoutMenu extends React.Component {
 			}
 		}
 
-		this.setState({ contents: contents });
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
     newGroup(newGroupData) {
@@ -720,9 +718,6 @@ class LayoutMenu extends React.Component {
 				break;
 			}
 		}
-
-		console.log(mode);
-
 		this.setState({ textModeState: mode });
 	}
 
