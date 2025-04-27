@@ -116,7 +116,10 @@ def get_file_parsed(path, is_private):
             for sectionId, s in enumerate(hocr):
                 for lineId, l in enumerate(s):
                     for wordId, w in enumerate(l):
-                        t = w["text"].lower().strip()
+                        t = w["text"] #.lower().strip()
+                        """
+                        # ignoring isolated punctuation and digits affects the editing interface,
+                        # since they get excluded from the "words" array and won't appear when looked for
 
                         while t:
                             if t[0] in punctuation + "«»—":
@@ -132,6 +135,7 @@ def get_file_parsed(path, is_private):
 
                         if t == "" or t.isdigit():
                             continue
+                        """
 
                         hocr[sectionId][lineId][wordId]["clean_text"] = t
 

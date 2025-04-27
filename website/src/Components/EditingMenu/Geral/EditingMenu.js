@@ -27,10 +27,32 @@ const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 
 class Word extends React.Component {
+    /*
+    cleanWord(word) {
+        const punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
+        while (word !== "") {
+            if (punctuation.includes(word[0])) {
+                word = word.slice(1);
+            } else {
+                break;
+            }
+        }
+        while (word !== "") {
+            if (punctuation.includes(word[word.length - 1])) {
+                word = word.slice(0, word.length - 1);
+            } else {
+                break;
+            }
+        }
+        return word.toLowerCase();
+    }
+     */
+
     render() {
+        //const cleanedWord = this.cleanWord(this.props.text.toLowerCase());
         return <p
             id={this.props.id}
-            className={`${this.props.cleanText}`}
+            className={`${this.props.text}`}
             style={{
                 margin: "0px 2px",
                 display: "inline-block",
@@ -416,7 +438,7 @@ class EditingMenu extends React.Component {
         const newWords = [];
 
         initial_text.split(" ").forEach((item) => {
-            item = this.cleanWord(item.toLowerCase());
+            //item = this.cleanWord(item.toLowerCase());  // this cleanup removes ability to edit text with special signs
 
             if (item === "") return;
 
@@ -439,28 +461,28 @@ class EditingMenu extends React.Component {
 
             for (let j = 0; j < combination[i].length; j++) {
                 const word = combination[i][j];
-                const cleanedWord = this.cleanWord(word.toLowerCase());
+                //const cleanedWord = this.cleanWord(word.toLowerCase());
                 newWords.push({
                     "b": wordData["b"],  // b -> key used in server for text Y offset
                     "box": [box[0] + charsPassed * widthPerChar, box[1], box[0] + (charsPassed + word.length) * widthPerChar, box[3]],
                     "text": word,
-                    "clean_text": cleanedWord,
+                    //"clean_text": cleanedWord,
                 });
                 charsPassed += word.length + 1;
 
-                if (cleanedWord === "") continue;
+                if (word === "") continue;
 
                 // Update the words list
-                if (cleanedWord in wordsList) {
-                    const pages = wordsList[cleanedWord]["pages"];
+                if (word in wordsList) {
+                    const pages = wordsList[word]["pages"];
                     pages.push(this.state.currentPage - 1);
 
                     // Sort the list
                     pages.sort((a, b) => a - b);
 
-                    wordsList[cleanedWord]["pages"] = pages;
+                    wordsList[word]["pages"] = pages;
                 } else {
-                    wordsList[cleanedWord] = {"pages": [this.state.currentPage - 1], "syntax": true};
+                    wordsList[word] = {"pages": [this.state.currentPage - 1], "syntax": true};
                 }
 
             }
@@ -619,6 +641,7 @@ class EditingMenu extends React.Component {
      * WORD LIST FUNCTIONS
      * Handle the words list and actions
      */
+    /*
     cleanWord(word) {
         var punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
         while (word !== "") {
@@ -639,6 +662,7 @@ class EditingMenu extends React.Component {
 
         return word.toLowerCase();
     }
+     */
 
     cleanWordSelection() {
         var words = document.getElementsByClassName(this.selectedWord);
@@ -1064,7 +1088,7 @@ class EditingMenu extends React.Component {
                                                                             text={word["text"]}
                                                                             id={id}
                                                                             box={word["box"]}
-                                                                            cleanText={word["clean_text"]}
+                                                                            //cleanText={word["clean_text"]}
                                                                             hoverWord={this.hoverWord}
                                                                             highlightWord={this.showImageHighlight}
                                                                             removeHighlightWord={this.hideImageHighlight}
@@ -1215,7 +1239,6 @@ class EditingMenu extends React.Component {
 Word.defaultProps = {
     id: null,
     text: null,
-    cleanText: null,
     box: null,
     overlay: null,
     // functions:
