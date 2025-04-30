@@ -33,6 +33,17 @@ from src.utils.file import update_data
 
 from src.utils.image import parse_images
 
+OCR_ENGINES = {
+    0: "tesseract",
+    1: "tesserOCR"
+}
+
+DEFAULT_OCR_ENGINE = os.environ.get('DEFAULT_OCR_ENGINE', "tesseract")
+DEFAULT_OCR_LANG = os.environ.get('DEFAULT_OCR_LANG', "por")
+DEFAULT_OCR_ENGINE_MODE = int(os.environ.get('DEFAULT_OCR_', '3'))
+DEFAULT_OCR_SEGMENTATION_MODE = int(os.environ.get('DEFAULT_OCR_DEFAULT_OCR_SEGMENTATION_MODE', '3'))
+DEFAULT_OCR_THRESHOLDING_METHOD = int(os.environ.get('DEFAULT_OCR_THRESHOLDING_METHOD', '0'))
+
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
@@ -175,16 +186,52 @@ def task_request_ner(data_folder):
 
 
 @celery.task(name="file_ocr")
-def task_file_ocr(path, config, ocr_algorithm, testing=False):
+def task_file_ocr(path: str, config: dict, testing=False):
     """
     Prepare the OCR of a file
-    @param path: path to the file
-    @param config: config to use
-    @param ocr_algorithm: algorithm to use
+    :param path: path to the file
+    :param config: config to use
     """
-
-    # Generate the images
+    data_folder = f"{path}/_data.json"
     try:
+        # Build string with Tesseract run configuration
+        if "engine" in config:
+            if config["engine"] not in OCR_ENGINES.keys():
+                raise ValueError("Invalid OCR engine value", config["engine"])
+            config["engineName"] = OCR_ENGINES[config["engine"]]
+        else:
+            config["engineName"] = DEFAULT_OCR_ENGINE
+        if "lang" not in config:
+            config["lang"] = DEFAULT_OCR_LANG
+        if "engineMode" not in config:
+            config["engineMode"] = DEFAULT_OCR_ENGINE_MODE
+        if "segmentMode" not in config:
+            config["segmentMode"] = DEFAULT_OCR_SEGMENTATION_MODE
+        if "thresholdMethod" not in config:
+            config["thresholdMethod"] = DEFAULT_OCR_THRESHOLDING_METHOD
+
+        config_str = f'-l {config["lang"]}'
+        if "dpi" in config:
+            ' '.join([config_str, f'--dpi {config["dpi"]}'])
+
+        ' '.join([config_str,
+                 f'--oem {config["engineMode"]}',
+                 f'--psm {config["segmentMode"]}',
+                 f'-c thresholding_method={config["thresholdMethod"]}',
+                 ])
+
+        if "otherParams" in config:
+            ' '.join([config_str, config["otherParams"]])
+
+        # Update the information related to the OCR
+        data = get_data(data_folder)
+        data["ocr"] = {
+            "config": config,
+            "progress": 0,
+        }
+        update_data(data_folder, data)
+
+        # Generate the images
         """
         metrics = {}
 
@@ -231,9 +278,9 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
 
         for image in images:
             if testing:
-                task_page_ocr(path, image, config, ocr_algorithm)
+                task_page_ocr(path, image, config["engineName"], config["lang"], config_str)
             else:
-                task_page_ocr.delay(path, image, config, ocr_algorithm)
+                task_page_ocr.delay(path, image, config["engineName"], config["lang"], config_str)
 
         return {"status": "success"}
 
@@ -382,14 +429,15 @@ def task_ocr_complete(results, path, start_time, initial_metrics):
 
 
 @celery.task(name="page_ocr")
-def task_page_ocr(path, filename, config, ocr_algorithm):
+def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'por', config_str: str = ''):
     """
     Perform the page OCR
 
     :param path: path to the file
     :param filename: filename of the page
-    :param config: config to use
-    :param ocr_algorithm: algorithm to use
+    :param config_str: config string to use
+    :param lang: string of languages to use
+    :param ocr_engine_name: name of the OCR module to use
     """
 
     if filename.split(".")[0][-1] == "$": return
@@ -404,7 +452,7 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         """
 
         # Convert the ocr_algorithm to the correct class
-        ocr_algorithm = globals()[ocr_algorithm]
+        ocr_engine = globals()[ocr_engine_name]
 
         layout_path = f"{path}/_layouts/{get_file_basename(filename)}.json"
         segment_ocr_flag = False

@@ -601,12 +601,9 @@ def perform_ocr():
 
     data = request.json
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
-    algorithm = data["algorithm"]
-    config = data["config"]
-    multiple = data["multiple"]
 
-    # ocr_algorithm = "tesserOCR"
-    ocr_algorithm = "tesseract"
+    config = data["config"] if "config" in data else {}
+    multiple = data["multiple"] if "multiple" in data else False
 
     if multiple:
         files = [
@@ -628,12 +625,6 @@ def perform_ocr():
             shutil.rmtree(f"{f}/_ocr_results")
         os.mkdir(f"{f}/_ocr_results")
 
-        # Update the information related to the OCR
-        data["ocr"] = {
-            "algorithm": algorithm,
-            "config": "_".join(config),
-            "progress": 0,
-        }
         data["txt"] = {"complete": False}
         data["delimiter_txt"] = {"complete": False}
         data["pdf"] = {"complete": False}
@@ -646,9 +637,7 @@ def perform_ocr():
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        celery.send_task('file_ocr', kwargs={'path': f, 'config': config, 'ocr_algorithm': ocr_algorithm})
-        # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
-        # task_file_ocr(f, config, ocr_algorithm, True)
+        celery.send_task('file_ocr', kwargs={'path': f, 'config': config})
 
     return {
         "success": True,

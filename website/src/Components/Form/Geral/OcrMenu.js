@@ -6,136 +6,70 @@ import Modal from '@mui/material/Modal';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import Collapse from "@mui/material/Collapse";
+import {ExpandLess, ExpandMore} from "@mui/icons-material";
+import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import InputLabel from "@mui/material/InputLabel";
+import FormControl from "@mui/material/FormControl";
+
 import loadComponent from '../../../utils/loadComponents';
 const Notification = loadComponent('Notification', 'Notifications');
-const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
+//const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
 const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
 
-const tesseractChoice = [{"name": "Português", "code": "por"}]
+const defaultLangIndex = 6;  // Português
 const tesseractLangList = [
-    {"name": "Africanês", "code": "afr"},
-    {"name": "Albanês", "code": "sqi"},
     {"name": "Alemão", "code": "deu"},
-    {"name": "Alemão - Fraktur", "code": "frk"},
-    {"name": "Amárico", "code": "amh"},
-    {"name": "Árabe", "code": "ara"},
-    {"name": "Armênio", "code": "hye"},
-    {"name": "Assamês", "code": "asm"},
-    {"name": "Azerbaijão - Cirílico", "code": "aze_cyrl"},
-    {"name": "Azerbaijão", "code": "aze"},
-    {"name": "Basco", "code": "eus"},
-    {"name": "Bengalês", "code": "ben"},
-    {"name": "Bielorrusso", "code": "bel"},
-    {"name": "Birmanês", "code": "mya"},
-    {"name": "Breton", "code": "bre"},
-    {"name": "Bósnio", "code": "bos"},
-    {"name": "Búlgaro", "code": "bul"},
-    {"name": "Catalão; Valenciano", "code": "cat"},
-    {"name": "Cazaque", "code": "kaz"},
-    {"name": "Cebuana Cebuano", "code": "ceb"},
-    {"name": "Cherokee", "code": "chr"},
-    {"name": "Chinês Simplificado", "code": "chi_sim"},
-    {"name": "Chinês Tradicional", "code": "chi_tra"},
-    {"name": "Coreano", "code": "kor"},
-    {"name": "Coreano (vertical)", "code": "kor_vert"},
-    {"name": "Córsega", "code": "cos"},
-    {"name": "Crioulo Haitiano", "code": "hat"},
-    {"name": "Croata", "code": "hrv"},
-    {"name": "Dinamarquês", "code": "dan"},
-    {"name": "Dzongkha", "code": "dzo"},
-    {"name": "Pashto", "code": "pus"},
-    {"name": "Eslovaco", "code": "slk"},
-    {"name": "Esloveno", "code": "slv"},
     {"name": "Espanhol Castelhano", "code": "spa"},
-    {"name": "Espanhol Castelhano - velho", "code": "spa_old"},
-    {"name": "Esperanto", "code": "epo"},
-    {"name": "Estoniano", "code": "est"},
-    {"name": "Faroese", "code": "fao"},
-    {"name": "Filipino (velho - tagalo)", "code": "fil"},
-    {"name": "Finlandês", "code": "fin"},
     {"name": "Francês", "code": "fra"},
-    {"name": "Francês (ca.1400-1600)", "code": "frm"},
-    {"name": "Frísico ocidental", "code": "fry"},
-    {"name": "Galego", "code": "glg"},
-    {"name": "Gaélico Escocês", "code": "gla"},
-    {"name": "Galês", "code": "cym"},
-    {"name": "Georgiano", "code": "kat"},
-    {"name": "Georgiano - velho", "code": "kat_old"},
-    {"name": "Grego antigo (para 1453)", "code": "grc"},
-    {"name": "Grego moderno (1453-)", "code": "ell"},
-    {"name": "Guzerate", "code": "guj"},
-    {"name": "Hebraico", "code": "heb"},
-    {"name": "Hindi", "code": "hin"},
-    {"name": "Holandês", "code": "nld"},
-    {"name": "Húngaro", "code": "hun"},
-    {"name": "Iídiche", "code": "yid"},
-    {"name": "Indonésio", "code": "ind"},
     {"name": "Inglês", "code": "eng"},
-    {"name": "Inglês (1100-1500)", "code": "enm"},
-    {"name": "Inuktitut", "code": "iku"},
-    {"name": "Ioruba", "code": "yor"},
-    {"name": "Irlandês", "code": "gle"},
-    {"name": "Islandês", "code": "isl"},
-    {"name": "Italiano", "code": "ita"},
-    {"name": "Italiano - velho", "code": "ita_old"},
-    {"name": "Japonês", "code": "jpn"},
-    {"name": "Javanês", "code": "jav"},
-    {"name": "Kannada", "code": "kan"},
-    {"name": "Khmer central", "code": "khm"},
-    {"name": "Kyrgyz", "code": "kir"},
-    {"name": "Kurmanji (curdo - script latino)", "code": "kmr"},
-    {"name": "Laos", "code": "lao"},
-    {"name": "Latim", "code": "lat"},
-    {"name": "Letão", "code": "lav"},
-    {"name": "Lituano", "code": "lit"},
-    {"name": "Luxemburgo", "code": "ltz"},
-    {"name": "Macedónio", "code": "mkd"},
-    {"name": "Malaio", "code": "msa"},
-    {"name": "Malaiala", "code": "mal"},
-    {"name": "Maltês", "code": "mlt"},
-    {"name": "Maori", "code": "mri"},
-    {"name": "Marathi", "code": "mar"},
     {"name": "Módulo de detecção de matemática / equações", "code": "equ"},
     {"name": "Módulo de orientação e detecção de scripts", "code": "osd"},
-    {"name": "Mongol", "code": "mon"},
-    {"name": "Nepalês", "code": "nep"},
-    {"name": "Norueguês", "code": "nor"},
-    {"name": "Occitan (Após 1500)", "code": "oci"},
-    {"name": "Oriya", "code": "ori"},
-    {"name": "Persa", "code": "fas"},
-    {"name": "Polonês", "code": "pol"},
     {"name": "Português", "code": "por"},
-    {"name": "Punjabi", "code": "pan"},
-    {"name": "Quechua", "code": "que"},
-    {"name": "Romena", "code": "ron"},
-    {"name": "Russo", "code": "rus"},
-    {"name": "Sindhi", "code": "snd"},
-    {"name": "Sinhala", "code": "sin"},
-    {"name": "Siríaco", "code": "syr"},
-    {"name": "Suaíli", "code": "swa"},
-    {"name": "Sueco", "code": "swe"},
-    {"name": "Sundanês", "code": "sun"},
-    {"name": "Sânscrito", "code": "san"},
-    {"name": "Sérvio", "code": "srp"},
-    {"name": "Sérvio - latim", "code": "srp_latn"},
-    {"name": "Tailandês", "code": "tha"},
-    {"name": "Tajique", "code": "tgk"},
-    {"name": "Tâmil", "code": "tam"},
-    {"name": "Tatar", "code": "tat"},
-    {"name": "Tcheco", "code": "ces"},
-    {"name": "Telugu", "code": "tel"},
-    {"name": "Tibetano", "code": "bod"},
-    {"name": "Tigrinya", "code": "tir"},
-    {"name": "Tonga", "code": "ton"},
-    {"name": "Turco", "code": "tur"},
-    {"name": "Ucraniano", "code": "ukr"},
-    {"name": "Uigur", "code": "uig"},
-    {"name": "Urdu", "code": "urd"},
-    {"name": "Uzbek", "code": "uzb"},
-    {"name": "Uzbek - Cirílico", "code": "uzb_cyrl"},
-    {"name": "Vietnamita", "code": "vie"}
-  ]
+]
 
+const defaultEngine = 0;
+const engineList = [
+    { value: 0, description: "PyTesseract"},
+    { value: 1, description: "TesserOCR"},
+]
+
+const defaultEngineMode = 3;
+const tesseractModeList = [
+    { value: 0, description: "Tesseract Original"},
+    { value: 1, description: "Tesseract LSTM"},
+    { value: 2, description: "Tesseract LSTM + Original combinado"},
+    { value: 3, description: "Modo disponível por defeito"},
+]
+
+const defaultSegmentationMode = 3;
+const tesseractSegmentList = [
+    { value: 0, description: "Apenas Orientation and Script Detection (OSD)"},
+    { value: 1, description: "OCR com segmentação automática de página e OSD"},
+    //{ value: 2, description: "Segmentação automática de página sem OSD nem OCR"},
+    { value: 3, description: "(Por defeito) OCR com segmentação automática, sem OSD"},
+    { value: 4, description: "Coluna de texto com linhas de tamanho variável"},
+    { value: 5, description: "Bloco uniforme de texto, alinhado verticalmente"},
+    { value: 6, description: "Bloco uniforme de texto"},
+    { value: 7, description: "Imagem com apenas uma linha de texto"},
+    { value: 8, description: "Imagem com apenas uma palavra"},
+    { value: 9, description: "Imagem com apenas uma palavra num círculo"},
+    { value: 10, description: "Imagem com apenas um caracter"},
+    { value: 11, description: "Texto disperso; procurar o máximo de texto sem ordem particular"},
+    { value: 12, description: "Texto disperso com OSD"},
+    { value: 13, description: "Contornando truques específicos do Tesseract, tratar imagem como apenas uma linha de texto"},
+]
+
+const defaultThresholding = 0;
+const tesseractThreshList = [
+    { value: 0, description: "Otsu (por defeito)"},
+    { value: 1, description: "LeptonicaOtsu"},
+    { value: 2, description: "Sauvola"},
+]
+
+/*
 const easyOCRChoice = [{"name": "Português","code": "pt"}]
 const easyOCRLangList = [
     {"name": "Abaza","code": "abq"},
@@ -222,6 +156,7 @@ const easyOCRLangList = [
     {"name": "Usbeque","code": "uz"},
     {"name": "Vietnamita","code": "vi"}
   ]
+*/
 
 const style = {
     position: 'absolute',
@@ -250,28 +185,83 @@ class OcrMenu extends React.Component {
             path: "",
             multiple: false,
             languageOptions: tesseractLangList,
-            languageChoice: tesseractChoice
+            languageChoice: [tesseractLangList[defaultLangIndex]],
+
+            advancedOpen: false,
+            dpiVal: null,
+            engineOptions: engineList,
+            engine: defaultEngine,
+            engineModeOptions: tesseractModeList,
+            engineMode: defaultEngineMode,
+            segmentModeOptions: tesseractSegmentList,
+            segmentMode: defaultSegmentationMode,
+            thresholdMethodOptions: tesseractThreshList,
+            thresholdMethod: defaultThresholding,
+            otherParams: null,
         }
 
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
-        this.algoDropdown = React.createRef();
+        //this.algoDropdown = React.createRef();
 
         this.storageMenu = React.createRef();
 
         this.langs = React.createRef();
+        this.dpiField = React.createRef();
+        this.moreParams = React.createRef();
     }
 
-    // SETTERS
-    setPath(path) { this.setState({ path: path }) }
-    setMultiple(multiple) { this.setState({ multiple: multiple }) }
     toggleOpen() { this.setState({ open: !this.state.open }) }
 
+    toggleAdvanced() {
+        this.setState({ advancedOpen: !this.state.advancedOpen });
+    }
+
+    getConfig() {
+        return {
+            engine: this.state.engine,
+            lang: this.langs.current.getChoiceList().join('+'),
+            engineMode: this.state.engineMode,
+            segmentMode: this.state.segmentMode,
+            thresholdMethod: this.state.thresholdMethod,
+        }
+    }
+
+    changeDpi(value) {
+        if (isNaN(value)) {
+            this.errorNot.current.setMessage("O valor de DPI deve ser um número inteiro!");
+            this.errorNot.current.open();
+        } else {
+            this.setState({dpiVal: Number(value)});
+        }
+    }
+
+    changeEngine(value) {
+        this.setState({ engine: value });
+    }
+
+    changeEngineMode(value) {
+        this.setState({ engineMode: value });
+    }
+
+    changeSegmentationMode(value) {
+        this.setState({ segmentMode: value });
+    }
+
+    changeThresholdingMethod(value) {
+        this.setState({ thresholdMethod: value });
+    }
+
+    changeAdditionalParams(value) {
+        this.setState({ otherParams: value });
+    }
+
     // PROCESS FUNCTIONS
+    /*
     changeAlgorithm(algorithm) {
-        /**
-         * Change the interface when the algorithm is changed
-         */
+        //
+        //Change the interface when the algorithm is changed
+        //
 
         if (algorithm === "Tesseract") {
             this.langs.current.setChoice(tesseractChoice);
@@ -281,13 +271,22 @@ class OcrMenu extends React.Component {
             this.langs.current.setOptions(easyOCRLangList);
         }
     }
+    */
 
     /**
      * Request OCR of the file on the given path from the backend
      */
     performOCR(algorithm = null, config = null, path = null, multiple = null) {
-        if (algorithm === null) algorithm = this.algoDropdown.current.getChoice();
-        if (config === null) config = this.langs.current.getChoiceList();
+        //if (algorithm === null) algorithm = this.algoDropdown.current.getChoice();
+        if (config === null) config = this.getConfig();
+        console.log(this.state.dpiVal);
+        if (this.state.dpiVal && this.state.dpiVal != "") {
+            config.dpi = this.state.dpiVal;
+        }
+        if (this.state.otherParams && this.state.otherParams != "") {
+            config.otherParams = this.state.otherParams;
+        }
+
         if (path === null) path = this.state.path;
         if (multiple === null) multiple = this.state.multiple;
 
@@ -298,7 +297,6 @@ class OcrMenu extends React.Component {
             },
             body: JSON.stringify({
                 "path": path.replace(/^\//, ''),
-                "algorithm": algorithm,
                 "config": config,
                 "multiple": multiple,
                 "_private": this.props._private
@@ -340,16 +338,107 @@ class OcrMenu extends React.Component {
 
                         <p style={{color: 'red'}}><b>Se já fez o OCR antes, irá perder todas as alterações anteriormente feitas</b></p>
 
-                        <AlgoDropdown ref={this.algoDropdown} menu={this}/>
+                        {
+                        //<AlgoDropdown ref={this.algoDropdown} menu={this}/>
+                        }
 
-                        <ChecklistDropdown ref={this.langs} label={"Língua"} options={tesseractLangList} choice={tesseractChoice}/>
+                        <ChecklistDropdown ref={this.langs}
+                                           label={"Língua"}
+                                           helperText={"Para melhores resultados, selecione por ordem de relevância"}
+                                           options={tesseractLangList}
+                                           defaultChoice={[tesseractLangList[defaultLangIndex]]}/>
+
+                        <Button onClick={() => this.toggleAdvanced()}>
+                            Opções avançadas
+                            {this.state.advancedOpen ? <ExpandLess/> : <ExpandMore/>}
+                        </Button>
+                        <Collapse sx={{display: 'flex', flexDirection: 'column'}} in={this.state.advancedOpen}>
+
+                            <TextField ref={this.dpiField}
+                                       label="DPI (Dots Per Inch)"
+                                       inputProps={{ inputMode: "numeric", pattern: "[1-9][0-9]*" }}
+                                       onChange={(e) => this.changeDpi(e.target.value)}
+                                       variant='outlined'
+                                       size="small"
+                                       sx={{
+                                           width: '100%',
+                                           mb: '0.3rem',
+                                           "& input:focus:invalid + fieldset": {borderColor: "red", borderWidth: 2}
+                                        }}
+                            />
+
+                            <FormControl className="simpleDropdown">
+                                <InputLabel>Motor de OCR</InputLabel>
+                                <Select
+                                    label={"Motor de OCR"}
+                                    value={this.state.engine}
+                                    onChange={(e) => this.changeEngine(e.target.value)}>
+                                    {
+                                        this.state.engineOptions.map((item) => (
+                                            <MenuItem value={item.value}>
+                                                {item.description}
+                                            </MenuItem>
+                                        ))
+                                    }
+                                </Select>
+                            </FormControl>
+
+                            <FormControl className="simpleDropdown">
+                                <InputLabel>Modo do motor</InputLabel>
+                                <Select
+                                    label={"Modo do motor"}
+                                    value={this.state.engineMode}
+                                    onChange={(e) => this.changeEngineMode(e.target.value)}>
+                                    {
+                                        this.state.engineModeOptions.map((item) => (
+                                            <MenuItem value={item.value}>
+                                                {item.description}
+                                            </MenuItem>
+                                        ))
+                                    }
+                                </Select>
+                            </FormControl>
+
+                            <FormControl className="simpleDropdown">
+                                <InputLabel>Segmentação</InputLabel>
+                                <Select
+                                    label={"Segmentação"}
+                                    value={this.state.segmentMode}
+                                    onChange={(e) => this.changeSegmentationMode(e.target.value)}>
+                                    {
+                                        this.state.segmentModeOptions.map((item) => (
+                                            <MenuItem value={item.value}>
+                                                {item.description}
+                                            </MenuItem>
+                                        ))
+                                    }
+                                </Select>
+                            </FormControl>
+
+                            <FormControl className="simpleDropdown">
+                                <InputLabel>Thresholding</InputLabel>
+                                <Select
+                                    label={"Thresholding"}
+                                    value={this.state.thresholdMethod}
+                                    onChange={(e) => this.changeThresholdingMethod(e.target.value)}>
+                                    {
+                                        this.state.thresholdMethodOptions.map((item) => (
+                                            <MenuItem value={item.value}>
+                                                {item.description}
+                                            </MenuItem>
+                                        ))
+                                    }
+                                </Select>
+                            </FormControl>
+
+                            <TextField ref={this.moreParams}
+                                       label="Parâmetros adicionais"
+                                       onChange={(e) => this.changeAdditionalParams(e.target.value)}
+                                       variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
+                        </Collapse>
 
                         <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
-                            <Button
-                                variant="contained"
-                                sx={{border: '1px solid black', mr: '1rem', backgroundColor: '#e5de00', color: '#000', ':hover': {bgcolor: '#e6cc00'}}}
-                                onClick={() => this.performOCR()}
-                            >
+                            <Button variant="contained" onClick={() => this.performOCR()}>
                                 Começar
                             </Button>
                         </Box>

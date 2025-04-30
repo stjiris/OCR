@@ -70,6 +70,12 @@ body {
     margin-right: 0
 }
 
+.MuiFormControl-root.simpleDropdown {
+    margin-bottom: 0.3rem;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
 .page-div {
   margin-top: 0.5rem;
   text-align: center;
