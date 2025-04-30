@@ -8,8 +8,8 @@ from flask_cors import CORS
 import logging as log
 from PIL import Image, ImageDraw
 
-from src.algorithms import tesseract
-from src.algorithms import easy_ocr
+from src.engines import tesseract
+from src.engines import easy_ocr
 
 from src.utils.export import export_file, load_invisible_font
 from src.utils.file import get_current_time
@@ -226,7 +226,7 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
                     img_draw = ImageDraw.Draw(image)
                     img_draw.rectangle(box_coords, fill="white")
 
-            json_d = ocr_algorithm.get_structure(image, config)
+            json_d = ocr_engine.get_structure(image, lang, config_str)
             json_d = [[x] for x in json_d]
             with open(f"{path}/_ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
                 json.dump(json_d, f, indent=2, ensure_ascii=False)
@@ -285,7 +285,7 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
 
             all_jsons = []
             for box in box_coordinates_list:
-                json_d = ocr_algorithm.get_structure(image, config, box)
+                json_d = ocr_engine.get_structure(image, lang, config_str, box)
                 if json_d:
                     all_jsons.append(json_d)
 
