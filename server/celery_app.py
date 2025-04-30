@@ -14,8 +14,8 @@ from PIL import Image
 from PIL import ImageDraw
 import pypdfium2 as pdfium
 
-from src.algorithms import tesserOCR
-from src.algorithms import tesseract
+from src.engines import tesserOCR
+from src.engines import tesseract
 
 from src.utils.export import export_file
 from src.utils.export import load_invisible_font
@@ -487,7 +487,7 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
 
             # Perform OCR
             #ocr_start = time.time()
-            json_d = ocr_algorithm.get_structure(image, config)
+            json_d = ocr_engine.get_structure(image, lang, config_str)
             #ocr_time = time.time() - ocr_start
             #page_metrics["ocr_time"] = ocr_time
             json_d = [[x] for x in json_d]
@@ -553,7 +553,7 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
             for box in box_coordinates_list:
                 #Perform OCR
                 #ocr_start = time.time()
-                json_d = ocr_algorithm.get_structure(image, config, box)
+                json_d = ocr_engine.get_structure(image, lang, config_str, box)
                 #ocr_time = time.time() - ocr_start
                 #page_metrics["ocr_time"] = ocr_time
                 if json_d:
