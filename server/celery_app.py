@@ -7,7 +7,6 @@ from flask import Flask
 from flask_cors import CORS
 import logging as log
 from PIL import Image, ImageDraw
-import json
 
 from src.algorithms import tesseract
 from src.algorithms import easy_ocr
@@ -22,6 +21,17 @@ from src.utils.file import get_file_basename
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
 from src.utils.file import get_ner_file
+
+OCR_ENGINES = {
+    0: "tesseract",
+    1: "tesserOCR"
+}
+
+DEFAULT_OCR_ENGINE = os.environ.get('DEFAULT_OCR_ENGINE', "tesseract")
+DEFAULT_OCR_LANG = os.environ.get('DEFAULT_OCR_LANG', "por")
+DEFAULT_OCR_ENGINE_MODE = int(os.environ.get('DEFAULT_OCR_', '3'))
+DEFAULT_OCR_SEGMENTATION_MODE = int(os.environ.get('DEFAULT_OCR_DEFAULT_OCR_SEGMENTATION_MODE', '3'))
+DEFAULT_OCR_THRESHOLDING_METHOD = int(os.environ.get('DEFAULT_OCR_THRESHOLDING_METHOD', '0'))
 
 app = Flask(__name__)
 CORS(app)
@@ -98,16 +108,52 @@ def request_ner(data_folder):
     update_data(data_folder + "/_data.json", data)
 
 @celery.task(name="file_ocr")
-def task_file_ocr(path, config, ocr_algorithm, testing=False):
+def task_file_ocr(path: str, config: dict, testing=False):
     """
     Prepare the OCR of a file
-    @param path: path to the file
-    @param config: config to use
-    @param ocr_algorithm: algorithm to use
+    :param path: path to the file
+    :param config: config to use
     """
-
-    # Generate the images
+    data_folder = f"{path}/_data.json"
     try:
+        # Build string with Tesseract run configuration
+        if "engine" in config:
+            if config["engine"] not in OCR_ENGINES.keys():
+                raise ValueError("Invalid OCR engine value", config["engine"])
+            config["engineName"] = OCR_ENGINES[config["engine"]]
+        else:
+            config["engineName"] = DEFAULT_OCR_ENGINE
+        if "lang" not in config:
+            config["lang"] = DEFAULT_OCR_LANG
+        if "engineMode" not in config:
+            config["engineMode"] = DEFAULT_OCR_ENGINE_MODE
+        if "segmentMode" not in config:
+            config["segmentMode"] = DEFAULT_OCR_SEGMENTATION_MODE
+        if "thresholdMethod" not in config:
+            config["thresholdMethod"] = DEFAULT_OCR_THRESHOLDING_METHOD
+
+        config_str = f'-l {config["lang"]}'
+        if "dpi" in config:
+            ' '.join([config_str, f'--dpi {config["dpi"]}'])
+
+        ' '.join([config_str,
+                 f'--oem {config["engineMode"]}',
+                 f'--psm {config["segmentMode"]}',
+                 f'-c thresholding_method={config["thresholdMethod"]}',
+                 ])
+
+        if "otherParams" in config:
+            ' '.join([config_str, config["otherParams"]])
+
+        # Update the information related to the OCR
+        data = get_data(data_folder)
+        data["ocr"] = {
+            "config": config,
+            "progress": 0,
+        }
+        update_data(data_folder, data)
+
+        # Generate the images
         if not os.path.exists(f"{path}/_ocr_results"):
             os.mkdir(f"{path}/_ocr_results")
 
@@ -119,9 +165,9 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
 
         for image in images:
             if testing:
-                task_page_ocr(path, image, config, ocr_algorithm)
+                task_page_ocr(path, image, config["engineName"], config["lang"], config_str)
             else:
-                task_page_ocr.delay(path, image, config, ocr_algorithm)
+                task_page_ocr.delay(path, image, config["engineName"], config["lang"], config_str)
 
         return {"status": "success"}
 
@@ -136,21 +182,22 @@ def task_file_ocr(path, config, ocr_algorithm, testing=False):
         return {"status": "error"}
 
 @celery.task(name="page_ocr")
-def task_page_ocr(path, filename, config, ocr_algorithm):
+def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'por', config_str: str = ''):
     """
     Perform the page OCR
 
     :param path: path to the file
     :param filename: filename of the page
-    :param config: config to use
-    :param ocr_algorithm: algorithm to use
+    :param config_str: config string to use
+    :param lang: string of languages to use
+    :param ocr_engine_name: name of the OCR module to use
     """
 
     if filename.split(".")[0][-1] == "$": return
 
     try:
         # Convert the ocr_algorithm to the correct class
-        ocr_algorithm = globals()[ocr_algorithm]
+        ocr_engine = globals()[ocr_engine_name]
 
         layout_path = f"{path}/_layouts/{get_file_basename(filename)}.json"
         segment_ocr_flag = False

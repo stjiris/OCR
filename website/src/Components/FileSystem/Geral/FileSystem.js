@@ -245,12 +245,11 @@ class FileExplorer extends React.Component {
         if (this.props._private) { path = this.props.sessionId + '/' + path }
         if (file !== null) path += '/' + file;
 
-        this.ocrMenu.current.setPath(path);
-        this.ocrMenu.current.setMultiple(multiple);
-        this.ocrMenu.current.performOCR("Tesseract", ["por"], path, multiple);
-
-        // Right now, we dont want to show the menu. Assume default settings
-        // this.ocrMenu.current.toggleOpen();
+        this.ocrMenu.current.setState({
+            path: path,
+            multiple: multiple,
+            open: true
+        });
     }
 
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {

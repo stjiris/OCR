@@ -229,7 +229,7 @@ class ESPage extends React.Component {
                         <p style={{fontSize: '15px'}}><b>{this.state.showing.length} Pages</b></p>
                     </Box>
                     <TextField onChange={(e) => this.changeText(e)} ref={this.freeText} label="Pesquisar" variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
-                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.journal} label={"Documento"} options={[]} choice={[]} />
+                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.journal} label={"Documento"} options={[]} defaultChoice={[]} />
                     {/* <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"Tipo de Ficheiro"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.algorithm} label={"Algoritmo"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.config} label={"Configuração"} options={[]} choice={[]} /> */}
