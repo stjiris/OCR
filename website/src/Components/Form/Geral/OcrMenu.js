@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
 import Button from '@mui/material/Button';
+import ClickAwayListener from "@mui/material/ClickAwayListener";
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import Collapse from "@mui/material/Collapse";
@@ -209,9 +210,16 @@ class OcrMenu extends React.Component {
         this.langs = React.createRef();
         this.dpiField = React.createRef();
         this.moreParams = React.createRef();
+
+        // handler to close OCR menu on click outside box
+        this.handleClickOutsideMenu = this.handleClickOutsideMenu.bind(this);
     }
 
-    toggleOpen() { this.setState({ open: !this.state.open }) }
+    handleClickOutsideMenu() {
+        if (this.state.open) {
+            this.setState({ open: false });
+        }
+    }
 
     toggleAdvanced() {
         this.setState({ advancedOpen: !this.state.advancedOpen });
@@ -326,12 +334,17 @@ class OcrMenu extends React.Component {
 
     render() {
         return (
-            <Box>
-                <Notification message={""} severity={"success"} ref={this.successNot}/>
-                <Notification message={""} severity={"error"} ref={this.errorNot}/>
+        <Box>
+            <Notification message={""} severity={"success"} ref={this.successNot}/>
+            <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                <Modal open={this.state.open}>
-                    <Box sx={style}>
+            <Modal open={this.state.open}>
+                <ClickAwayListener
+                    mouseEvent="onMouseDown"
+                    touchEvent="onTouchStart"
+                    onClickAway={this.handleClickOutsideMenu}
+                >
+                    <Box role="presentation" sx={style}>
                         <Typography id="modal-modal-title" variant="h6" component="h2">
                             Realizar o OCR
                         </Typography>
@@ -443,13 +456,14 @@ class OcrMenu extends React.Component {
                             </Button>
                         </Box>
 
-                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.setState({ open: false })}>
                             <CloseRoundedIcon />
                         </IconButton>
                     </Box>
-                </Modal>
-            </Box>
-        )
+                </ClickAwayListener>
+            </Modal>
+        </Box>
+        );
     }
 }
 
