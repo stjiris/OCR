@@ -23,6 +23,9 @@ from src.utils.export import load_invisible_font
 from src.utils.file import ALLOWED_EXTENSIONS
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
+from src.utils.file import get_doc_len
+from src.utils.file import get_size
+from src.utils.file import update_data
 from src.utils.file import get_data
 from src.utils.file import get_file_basename
 from src.utils.file import get_ner_file
@@ -35,9 +38,10 @@ from src.utils.image import parse_images
 
 OCR_ENGINES = {
     0: "tesseract",
-    1: "tesserOCR"
+    1: "tesserOCR",
 }
 
+DEFAULT_OCR_OUTPUTS = os.environ.get('DEFAULT_OCR_OUTPUTS', "pdf").split(',')
 DEFAULT_OCR_ENGINE = os.environ.get('DEFAULT_OCR_ENGINE', "tesseract")
 DEFAULT_OCR_LANG = os.environ.get('DEFAULT_OCR_LANG', "por")
 DEFAULT_OCR_ENGINE_MODE = int(os.environ.get('DEFAULT_OCR_', '3'))
@@ -219,6 +223,8 @@ def task_file_ocr(path: str, config: dict, testing=False):
             config["segmentMode"] = DEFAULT_OCR_SEGMENTATION_MODE
         if "thresholdMethod" not in config:
             config["thresholdMethod"] = DEFAULT_OCR_THRESHOLDING_METHOD
+        if "outputs" not in config:
+            config["outputs"] = DEFAULT_OCR_OUTPUTS
 
         config_str = f'-l {config["lang"]}'
         if "dpi" in config:
@@ -288,9 +294,9 @@ def task_file_ocr(path: str, config: dict, testing=False):
 
         for image in images:
             if testing:
-                task_page_ocr(path, image, config["engineName"], config["lang"], config_str)
+                task_page_ocr(path, image, config["engineName"], config["lang"], config_str, config["outputs"])
             else:
-                task_page_ocr.delay(path, image, config["engineName"], config["lang"], config_str)
+                task_page_ocr.delay(path, image, config["engineName"], config["lang"], config_str, config["outputs"])
 
         return {"status": "success"}
 
@@ -439,18 +445,30 @@ def task_ocr_complete(results, path, start_time, initial_metrics):
 
 
 @celery.task(name="page_ocr")
-def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'por', config_str: str = ''):
+def task_page_ocr(
+    path: str,
+    filename: str,
+    ocr_engine_name: str = DEFAULT_OCR_ENGINE,
+    lang: str = DEFAULT_OCR_LANG,
+    config_str: str = '',
+    output_types: list[str] = None):
     """
     Perform the page OCR
 
     :param path: path to the file
     :param filename: filename of the page
-    :param config_str: config string to use
-    :param lang: string of languages to use
     :param ocr_engine_name: name of the OCR module to use
+    :param lang: string of languages to use
+    :param config_str: config string to use
+    :param output_types: output types to generate directly, if the file is a single page without user-defined text boxes
     """
+    if filename.split(".")[0][-1] == "$": return None
+    if output_types is None:
+        output_types = DEFAULT_OCR_OUTPUTS
 
-    if filename.split(".")[0][-1] == "$": return
+    data_file = f"{path}/_data.json"
+    n_doc_pages = get_doc_len(data_file)
+    raw_results = None
 
     # log.debug(f"OCR of page {filename}")
 
@@ -497,7 +515,11 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
 
             # Perform OCR
             #ocr_start = time.time()
-            json_d = ocr_engine.get_structure(image, lang, config_str)
+            # If single-page document, take advantage of output types to immediately generate results with Tesseract
+            if n_doc_pages == 1:
+                json_d, raw_results = ocr_engine.get_structure(image, lang, config_str, output_types=output_types)
+            else:
+                json_d, _ = ocr_engine.get_structure(image, lang, config_str)
             #ocr_time = time.time() - ocr_start
             #page_metrics["ocr_time"] = ocr_time
             json_d = [[x] for x in json_d]
@@ -565,7 +587,7 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
             for box in box_coordinates_list:
                 #Perform OCR
                 #ocr_start = time.time()
-                json_d = ocr_engine.get_structure(image, lang, config_str, box)
+                json_d, _ = ocr_engine.get_structure(image, lang, config_str, segment_box=box)
                 #ocr_time = time.time() - ocr_start
                 #page_metrics["ocr_time"] = ocr_time
                 if json_d:
@@ -584,25 +606,58 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
 
         files = os.listdir(f"{path}/_ocr_results")
 
-        data_folder = f"{path}/_data.json"
-        data = get_data(data_folder)
-        data["ocr"] = data.get("ocr", {})
+        data = get_data(data_file)
         data["ocr"]["progress"] = len(files)
-        update_data(data_folder, data)
+        update_data(data_file, data)
 
-        #time.sleep(0.4)
-        if data["pages"] == len(files):
+        # If last page has been processed, generate results
+        if len(files) == n_doc_pages:
             log.info(f"{path}: Acabei OCR")
-            creation_date = get_current_time()
 
             data["ocr"].update({
                 "progress": len(files),
                 "size": get_ocr_size(f"{path}/_ocr_results"),
-                "creation": creation_date,
+                "creation": get_current_time(),
             })
+            update_data(data_file, data)
 
-            update_data(data_folder, data)
+            # If single-page document, directly store results generated by Tesseract
+            if n_doc_pages == 1 and raw_results:
+                for extension in raw_results.keys():
+                    file_path = f"{path}/_{extension}.{extension}"
+                    with open(file_path, "wb") as f:
+                        f.write(raw_results[extension])
+                    creation_date = get_current_time()
+                    data[extension] = {
+                        "complete": True,
+                        "size": get_size(file_path, path_complete=True),
+                        "creation": creation_date,
+                    }
+                    if extension == "pdf":
+                        data[extension]["pages"] = get_page_count(path, file_path)
+                    update_data(data_file, data)
 
+            task_export_results.delay(path, output_types)
+
+        return {"status": "success"}
+
+    except Exception as e:
+        traceback.print_exc()
+        data = get_data(data_file)
+        data["ocr"]["exceptions"] = str(e)
+        update_data(data_file, data)
+        log.error(f"Error in performing a page's OCR for file at {path}: {e}")
+
+        return {"status": "error"}
+
+
+@celery.task(name="export_results")
+def task_export_results(path: str, output_types: list[str]):
+    data_file = f"{path}/_data.json"
+    data = get_data(data_file)
+
+    try:
+        if "txt" in output_types and not data["txt"]["complete"]:
             export_file(path, "txt")
             data["txt"] = {
                 "complete": True,
@@ -610,6 +665,7 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
                 "creation": get_current_time(),
             }
 
+        if "txt_delimited" in output_types and not data["txt_delimited"]["complete"]:
             export_file(path, "txt", delimiter=True)
             data["txt_delimited"] = {
                 "complete": True,
@@ -617,60 +673,78 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
                 "creation": get_current_time(),
             }
 
-            if os.path.exists(f"{path}/_images") and os.listdir(f"{path}/_images"):
-                export_file(path, "imgs")
-                data["zip"] = {
-                    "complete": True,
-                    "size": get_size(f"{path}/_images.zip", path_complete=True),
-                    "creation": get_current_time(),
-                }
+        if os.path.exists(f"{path}/_images") and os.listdir(f"{path}/_images"):
+            export_file(path, "imgs")
+            data["zip"] = {
+                "complete": True,
+                "size": get_size(f"{path}/_images.zip", path_complete=True),
+                "creation": get_current_time(),
+            }
 
-            export_file(path, "pdf")
+        if "pdf_indexed" in output_types and not data["pdf_indexed"]["complete"]:
+            export_file(path, "pdf", get_csv=("csv" in output_types))
             creation_time = get_current_time()
-            data["pdf"] = {
+            data["pdf_indexed"] = {
                 "complete": True,
                 "size": get_size(f"{path}/_pdf_indexed.pdf", path_complete=True),
                 "creation": creation_time,
                 "pages": get_page_count(path, f"{path}/_pdf_indexed.pdf"),
             }
-            # CSV exported as part of PDF export
+            if "csv" in output_types:
+                # CSV exported as part of PDF export
+                data["csv"] = {
+                    "complete": True,
+                    "size": get_size(f"{path}/_index.csv", path_complete=True),
+                    "creation": creation_time,
+                }
+
+        if "pdf" in output_types and not data["pdf"]["complete"]:
+            export_file(path, "pdf", simple=True, get_csv=("csv" in output_types))
+            creation_time = get_current_time()
+            data["pdf"] = {
+                "complete": True,
+                "size": get_size(f"{path}/_pdf.pdf", path_complete=True),
+                "creation": creation_time,
+                "pages": get_page_count(path, f"{path}/_pdf.pdf"),
+            }
+            if "csv" in output_types:
+                # CSV exported as part of PDF export
+                data["csv"] = {
+                    "complete": True,
+                    "size": get_size(f"{path}/_index.csv", path_complete=True),
+                    "creation": creation_time,
+                }
+
+        if "csv" in output_types and not data["csv"]["complete"]:
+            export_csv(path)
             data["csv"] = {
                 "complete": True,
                 "size": get_size(f"{path}/_index.csv", path_complete=True),
-                "creation": creation_time,
+                "creation": get_current_time(),
             }
 
-            if not data["pdf"]["complete"]:
-                export_file(path, "pdf", simple=True)
-                data["pdf"] = {
-                    "complete": True,
-                    "size": get_size(f"{path}/_pdf.pdf", path_complete=True),
-                    "creation": get_current_time(),
-                    "pages": get_page_count(path, f"{path}/_pdf.pdf"),
-                }
+        success = get_ner_file(path)
+        if success:
+            data["ner"] = {
+                "complete": True,
+                "size": get_size(f"{path}/_entities.json", path_complete=True),
+                "creation": get_current_time(),
+            }
+        else:
+            data["ner"] = {
+                "complete": False,
+                "error": True
+            }
 
-            success = get_ner_file(path)
-            if success:
-                data["ner"] = {
-                    "complete": True,
-                    "size": get_size(f"{path}/_entities.json", path_complete=True),
-                    "creation": get_current_time(),
-                }
-            else:
-                data["ner"] = {"complete": False, "error": True}
-
-            update_data(data_folder, data)
-
+        update_data(data_file, data)
         #return {"status": "success", "metricas": page_metrics}
         return {"status": "success"}
     except Exception as e:
         traceback.print_exc()
-
-        data_folder = f"{path}/_data.json"
-        data = get_data(data_folder)
+        data = get_data(data_file)
         data["ocr"]["exceptions"] = str(e)
-        update_data(data_folder, data)
-        log.error(f"Error in performing a page's OCR for file at {path}: {e}")
+        update_data(data_file, data)
+        log.error(f"Error in exporting results for file at {path}: {e}")
 
         #return {"status": "error", "metricas": page_metrics}
         return {"status": "error"}

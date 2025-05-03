@@ -631,6 +631,8 @@ def perform_ocr():
         data["txt_delimited"] = {"complete": False}
         data["csv"] = {"complete": False}
         data["ner"] = {"complete": False}
+        data["hocr"] = {"complete": False}
+        data["xml"] = {"complete": False}
         data["zip"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
