@@ -18,10 +18,11 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 
-import { Checkbox, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 
 import loadComponent from '../../../utils/loadComponents';
 const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
+const LayoutTable = loadComponent('LayoutMenu', 'LayoutTable');
 const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
 const Notification = loadComponent('Notification', 'Notifications');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
@@ -59,21 +60,21 @@ class LayoutMenu extends React.Component {
 			textModeState: true,
 		}
 
-		this.boxRefs = [];
-		this.imageRefs = [];
-		this.ignoreRefs = [];
-
 		this.image = React.createRef();
 		this.menu = React.createRef();
 		this.confirmLeave = React.createRef();
 
 		this.warningNot = React.createRef();
 		this.successNot = React.createRef();
-		this.textBox = React.createRef();
-		this.imageBox = React.createRef();
-		this.ignoreBox = React.createRef();
 
         this.updateBoxes = this.updateBoxes.bind(this);
+        this.newGroup = this.newGroup.bind(this);
+
+        this.allCheckboxesAreChecked = this.allCheckboxesAreChecked.bind(this);
+        this.commitAllCheckBoxes = this.commitAllCheckBoxes.bind(this);
+        this.changeChecked = this.changeChecked.bind(this);
+        this.switchType = this.switchType.bind(this);
+        this.reorderBoxes = this.reorderBoxes.bind(this);
 
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
@@ -105,8 +106,6 @@ class LayoutMenu extends React.Component {
 				}
 
 				this.setState({ contents: contents }, () => {
-					this.generateBoxes();
-					this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 					this.updateTextMode();
 				});
 			});
@@ -134,14 +133,21 @@ class LayoutMenu extends React.Component {
 					}
 
 					this.setState({ contents: contents, segmentLoading: false }, () => {
-						this.generateBoxes();
-						this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 						this.updateTextMode();
 					});
 				});
 		}, 1000);
 	}
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (!prevState.uncommittedChanges && this.state.uncommittedChanges) {
+            window.addEventListener('beforeunload', this.preventExit);
+        } else if (prevState.uncommittedChanges && !this.state.uncommittedChanges) {
+            window.removeEventListener('beforeunload', this.preventExit);
+        }
+    }
+
+    /*
 	addBoxToAllPages(box) {
 		var contents = this.state.contents;
 		for (var i = 0; i < contents.length; i++) {
@@ -150,58 +156,36 @@ class LayoutMenu extends React.Component {
 		}
 		this.setState({ contents: contents });
 	}
+     */
 
 	changePage(increment) {
-		const boxes = this.image.current.getAllBoxes();
-		const contents = this.state.contents;
-		contents[this.state.currentPage - 1]["boxes"] = boxes;
-
-		const newCurrentPage = this.state.currentPage + increment;
-		this.setState({ currentPage: newCurrentPage, contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.loadBoxes();
+		this.setState({ currentPage: this.state.currentPage + increment }, () => {
 			this.updateTextMode();
 		});
 	}
 
     firstPage() {
-        const boxes = this.image.current.getAllBoxes();
+        const boxes = this.image.current.getPageBoxes();
         const contents = this.state.contents;
         contents[this.state.currentPage - 1]["boxes"] = boxes;
 
         this.setState({ currentPage: 1, contents: contents }, () => {
-            this.generateBoxes();
-            this.image.current.loadBoxes();
             this.updateTextMode();
         });
     }
 
     lastPage() {
-        const boxes = this.image.current.getAllBoxes();
+        const boxes = this.image.current.getPageBoxes();
         const contents = this.state.contents;
         contents[this.state.currentPage - 1]["boxes"] = boxes;
 
         this.setState({ currentPage: this.state.contents.length, contents: contents }, () => {
-            this.generateBoxes();
-            this.image.current.loadBoxes();
             this.updateTextMode();
         });
     }
 
 	updateBoxes(groups) {
 		const contents = this.state.contents;
-
-		for (let i = 0; i < groups.length; i++) {
-			const group = groups[i];
-
-			for (let j = 0; j < group["squares"].length; j++) {
-				const square = group["squares"][j];
-				if (square.copyId) {
-					delete square.copyId;
-				}
-			}
-		}
-
 		contents[this.state.currentPage - 1]["boxes"] = groups;
 
 		// * Code to reflect changes in copy boxes (removed as requested per Prof. Borbinha's instructions)
@@ -230,18 +214,14 @@ class LayoutMenu extends React.Component {
 		//     }
 		// }
 
+        /*
 		for (let i = 0; i < contents.length; i++) {
 			contents[i]["boxes"] = this.renameGroups(contents[i]["boxes"], i + 1);
 		}
+         */
 
-		this.setState({ contents: contents, uncommittedChanges: true }, () => {
-			this.generateBoxes();
-			// this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
-
-		// this.setState({contents: contents, uncommittedChanges: true}, this.generateBoxes);
-		window.addEventListener('beforeunload', this.preventExit);
-	}
+		this.setState({ contents: contents, uncommittedChanges: true });
+    }
 
 	typeIndexToGlobalIndex(boxes, type, index) {
 		for (var i = 0; i < boxes.length; i++) {
@@ -254,6 +234,7 @@ class LayoutMenu extends React.Component {
 		}
 	}
 
+    /*
 	deleteBox(type, index) {
 		var boxes = this.image.current.getAllBoxes();
 		var contents = this.state.contents;
@@ -261,9 +242,8 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = boxes;
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-			this.generateBoxes();
-			window.addEventListener('beforeunload', this.preventExit);
+            window.addEventListener('beforeunload', this.preventExit);
+            this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
 
@@ -288,9 +268,8 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
+            window.addEventListener('beforeunload', this.preventExit);
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-			this.generateBoxes();
-			window.addEventListener('beforeunload', this.preventExit);
 		});
 	}
 
@@ -374,9 +353,8 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
 
 		this.setState({ contents: contents, uncommittedChanges: true }, () => {
+            window.addEventListener('beforeunload', this.preventExit);
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-			this.generateBoxes();
-			window.addEventListener('beforeunload', this.preventExit);
 		});
 	}
 
@@ -401,6 +379,7 @@ class LayoutMenu extends React.Component {
 
 		this.setState({ boxes: newBoxes });
 	}
+    */
 
 	goBack() {
 		if (this.state.uncommittedChanges) {
@@ -432,7 +411,7 @@ class LayoutMenu extends React.Component {
 		}).then(response => { return response.json() })
 			.then(data => {
 				if (data["success"]) {
-					this.setState({ uncommittedChanges: false });
+                    this.setState({ uncommittedChanges: false });
 
 					this.successNot.current.setMessage("Layout guardado com sucesso.");
 					this.successNot.current.open();
@@ -461,22 +440,16 @@ class LayoutMenu extends React.Component {
 					(a["page_number"] > b["page_number"]) ? 1 : -1
 				)
 
-				this.setState({ contents: contents, segmentLoading: false }, () => {
-					this.generateBoxes();
-					this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-				});
+				this.setState({ contents: contents, segmentLoading: false });
 			});
 	}
 
 	cleanAllBoxes() {
-		var contents = this.state.contents;
-		for (var i = 0; i < contents.length; i++) {
+		const contents = [...this.state.contents];
+		for (let i in contents) {
 			contents[i]["boxes"] = [];
 		}
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	showWarningNotification(message) {
@@ -492,19 +465,17 @@ class LayoutMenu extends React.Component {
 			boxes[i]["checked"] = e.target.checked;
 		}
 
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	changeChecked(e, index) {
-		var contents = this.state.contents;
-		var boxes = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const boxes = [...contents[this.state.currentPage - 1]["boxes"]];
 		boxes[index]["checked"] = e.target.checked;
-
+        contents[this.state.currentPage - 1]["boxes"] = boxes;
+        /*
 		// Get types of all boxes checked
-		var types = [];
+		const types = [];
 		for (var i = 0; i < boxes.length; i++) {
 			if (boxes[i]["checked"] && !types.includes(boxes[i]["type"])) {
 				types.push(boxes[i]["type"]);
@@ -516,12 +487,9 @@ class LayoutMenu extends React.Component {
 		} else {
 			this.setState({ typeSelected: "" });
 		}
+         */
 
-
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	allCheckboxesAreChecked() {
@@ -542,31 +510,34 @@ class LayoutMenu extends React.Component {
 	}
 
 	renameGroups(groups, page) {
-		var textGroups = groups.filter(e => e["type"] === "text");
-		var imageGroups = groups.filter(e => e["type"] === "image");
-		var ignoreGroups = groups.filter(e => e["type"] === "remove");
-
-		for (var l_id in [textGroups, imageGroups, ignoreGroups]) {
-			var l = [textGroups, imageGroups, ignoreGroups][l_id];
-			for (var i = 0; i < l.length; i++) {
-				var boxes = l[i]["squares"];
-				for (var j = 0; j < boxes.length; j++) {
-					let id;
-					if (boxes.length === 1) {
-						id = l[i].type[0].toUpperCase() + (page) + "." + (i + 1);
-					} else {
-						id = l[i].type[0].toUpperCase() + (page) + "." + (i + 1) + "." + (j + 1);
-					}
-					boxes[j]["id"] = id;
-				}
-			}
+		for (let i = 0; i < groups.length; i++) {
+            groups[i]["groupId"] = page + "." + (i + 1);
+            const boxes = groups[i]["squares"];
+            for (let j = 0; j < boxes.length; j++) {
+                let id;
+                if (boxes.length === 1) {
+                    id = page + "." + (i + 1);
+                } else {
+                    id = page + "." + (i + 1) + "." + (j + 1);
+                }
+                boxes[j]["id"] = id;
+            }
 		}
-
-
-		groups = textGroups.concat(imageGroups).concat(ignoreGroups);
-
 		return groups;
 	}
+
+    reorderBoxes(old_index, new_index) {
+        const contents = this.state.contents;
+        // create new array with box removed
+        const pageContents = [...contents[this.state.currentPage - 1]["boxes"]];
+        const elementToMove = pageContents[old_index];
+        pageContents.splice(old_index, 1);
+        // place box in new location
+        pageContents.splice(new_index, 0, elementToMove);
+        // recalculate IDs and replace page data
+        contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(pageContents, this.state.currentPage);
+        this.setState({ contents: contents, uncommittedChanges: true });
+    }
 
 	deleteCheckedBoxes() {
 		var contents = this.state.contents;
@@ -581,10 +552,7 @@ class LayoutMenu extends React.Component {
 		}
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	makeBoxCopy() {
@@ -610,11 +578,16 @@ class LayoutMenu extends React.Component {
 			}
 		}
 
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
+
+    newGroup(newGroupData) {
+        const contents = this.state.contents;
+        const pageBoxes = [...contents[this.state.currentPage - 1]["boxes"]];
+        pageBoxes.push(newGroupData);
+        contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
+        this.setState({ contents: contents });
+    }
 
 	groupCheckedBoxes() {
 		var contents = this.state.contents;
@@ -643,10 +616,7 @@ class LayoutMenu extends React.Component {
 		newGroups.splice(insertIndex, 0, newGroup);
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	splitCheckedBoxes() {
@@ -671,12 +641,10 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
 
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
+    /*
 	updateCheckBoxType(type) {
 		this.setState({ typeSelected: type });
 
@@ -692,7 +660,6 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
@@ -708,10 +675,10 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
 		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
+    */
 
 	goDown(index) {
 		var contents = this.state.contents;
@@ -723,34 +690,26 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	switchType(box) {
-		var contents = this.state.contents;
-		var groups = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const groups = [...contents[this.state.currentPage - 1]["boxes"]];
 
-		var group = groups[box];
-		var newType = group["type"] === "image" ? (this.state.textModeState ? "text" : "remove") : "image";
+		const group = groups[box];
+		const newType = group["type"] === "image" ? (this.state.textModeState ? "text" : "remove") : "image";
 		group["type"] = newType;
 
-		groups[box] = group;
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
-
-		this.setState({ contents: contents }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents });
 	}
 
 	switchMode() {
-		var contents = this.state.contents;
-		var groups = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const groups = [...contents[this.state.currentPage - 1]["boxes"]];
 
-		for (var i = 0; i < groups.length; i++) {
+		for (let i in groups) {
 			if (groups[i]["type"] !== "image") {
 				groups[i]["type"] = this.state.textModeState ? "remove" : "text";
 			}
@@ -758,10 +717,7 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
-		this.setState({ contents: contents, textModeState: !this.state.textModeState }, () => {
-			this.generateBoxes();
-			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
-		});
+		this.setState({ contents: contents, textModeState: !this.state.textModeState });
 	}
 
 	updateTextMode() {
@@ -776,9 +732,6 @@ class LayoutMenu extends React.Component {
 				break;
 			}
 		}
-
-		console.log(mode);
-
 		this.setState({ textModeState: mode });
 	}
 
@@ -795,12 +748,17 @@ class LayoutMenu extends React.Component {
     }
 
 	render() {
+        let tableData = [];
+
 		let noCheckBoxActive = false;
         let groupDisabled = false;
         let separateDisabled = false;
         let copyDisabled = false;
+
 		if (this.state.contents.length !== 0) {
-			noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
+            tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
+
+            noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
             groupDisabled = noCheckBoxActive
                             || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
                             || this.state.contents[this.state.currentPage - 1]["boxes"].map(e => e["checked"]).filter(Boolean).length <= 1
@@ -918,7 +876,8 @@ class LayoutMenu extends React.Component {
                                                    key={this.state.currentPage - 1}
                                                    pageIndex={this.state.currentPage}
                                                    imageURL={this.state.contents[this.state.currentPage - 1]["page_url"]}
-                                                   updateBoxes={this.updateBoxes}/>
+                                                   updateBoxes={this.updateBoxes}
+                                                   newGroup={this.newGroup}/>
 							}
 						</Box>
 
@@ -1038,94 +997,14 @@ class LayoutMenu extends React.Component {
 							<span>Ignorar/Extrair OCR</span>
 						</Box>
 
-						<TableContainer sx={{ width: "100%", maxHeight: `${window.innerHeight - 217}px`, border: '1px solid #aaa' }}>
-							<Table stickyHeader>
-								<TableHead>
-									<TableRow>
-										<TableCell align='center' sx={{ borderBottom: '1px solid #aaa' }}>
-											<Checkbox checked={this.allCheckboxesAreChecked()} sx={{ m: 0, p: 0 }} onChange={(e) => this.commitAllCheckBoxes(e)} />
-										</TableCell>
-										<TableCell align='center' sx={{ borderBottom: '1px solid #aaa' }}><b>ID</b></TableCell>
-										<TableCell align='center' sx={{ borderBottom: '1px solid #aaa' }}><b>Pixels</b></TableCell>
-										<TableCell align='center' sx={{ borderBottom: '1px solid #aaa' }}><b>Tipo</b></TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{
-										this.state.contents.length === 0 || this.state.contents[this.state.currentPage - 1] === undefined
-											? null
-											: this.state.contents[this.state.currentPage - 1]["boxes"].map((group, index) => {
-												return (
-                                                <TableRow key={index + " " + group.checked} sx={{ borderBottom: '1px solid #aaa' }}>
-													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
-														<Checkbox checked={group.checked} sx={{ m: 0, p: 0 }} onClick={(e) => this.changeChecked(e, index)} />
-													</TableCell>
-													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
-														<Box>
-															{
-																group["squares"].map((box, _index) => {
-																	return (
-																		<Box
-																			key={box.id + " " + group["copyId"]}
-																			sx={{
-																				backgroundColor: group.type === "text" ? "#0000ff" : group.type === "image" ? '#08A045' : '#F05E16',
-																				borderRadius: '10px',
-																				justifyContent: 'center',
-																				display: 'flex',
-																				color: '#fff',
-																				margin: '0.25rem',
-																				alignItems: 'center',
-																			}}
-																		>
-																			{box.id}
-
-																			{
-																				group["copyId"]
-																					? <ContentCopyIcon sx={{ fontSize: 15, ml: "10px" }} />
-																					: null
-																			}
-																		</Box>
-																	);
-																})
-															}
-														</Box>
-													</TableCell>
-													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
-														<Box sx={{ display: "flex", flexDirection: "column" }}>
-															{
-																group.squares.map((box, _index) => {
-																	return (<span>{Math.ceil(box.bottom - box.top)} x {Math.ceil(box.right - box.left)}</span>);
-																})
-															}
-														</Box>
-													</TableCell>
-													<TableCell align='center' sx={{ borderBottom: '1px solid #aaa', p: "4px 16px" }}>
-														{
-															this.state.textModeState
-																? <span>Texto</span>
-																: <span>Remover</span>
-														}
-														<Switch
-															size="small"
-															checked={group.type === "image"}
-															onChange={() => this.switchType(index)}
-															sx={{
-																"& .MuiSwitch-switchBase": {
-																	color: this.state.textModeState ? "#00f" : "#f05e16",
-																	'&.Mui-checked': {
-																		color: "#08A045",
-																	}
-																}
-															}}
-														/>
-														<span>Imagem</span>
-													</TableCell>
-												</TableRow>)
-											})
-									}
-								</TableBody>
-							</Table>
-						</TableContainer>
+                        <LayoutTable data={tableData}
+                                     reorderBoxes={this.reorderBoxes}
+                                     textModeState={this.state.textModeState}
+                                     confirmAllChecked={this.allCheckboxesAreChecked}
+                                     commitAllCheckBoxes={this.commitAllCheckBoxes}
+                                     changeChecked={this.changeChecked}
+                                     switchType={this.switchType}
+                        />
 					</Box>
 				</Box>
 			</>
