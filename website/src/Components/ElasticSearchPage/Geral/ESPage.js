@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 
 import Box from '@mui/material/Box';
 import Icon from '@mui/material/Icon';
@@ -55,18 +55,22 @@ class ESPage extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            loading: true,
+            documentList: [],
             pages: [],
             showing: [],
-            freeText: "",
-            loading: true
+            query: "",
+            documentOptions: []
         }
 
         // Filters
-        this.freeText = React.createRef();
-        this.journal = React.createRef();
+        this.searchBox = React.createRef();
+        this.document = React.createRef();
         this.fileType = React.createRef();
         this.algorithm = React.createRef();
         this.config = React.createRef();
+
+        this.search = this.search.bind(this);
     }
 
     get_journal(data) {
@@ -100,12 +104,23 @@ class ESPage extends React.Component {
 
     componentDidMount() {
         /**
-         * When the component is mounted, get the data from the ElasticSearch database
+         * When the component is mounted, get the list of indexed documents from the database
          */
-        fetch(process.env.REACT_APP_API_URL + "get_elasticsearch", {
+        fetch(process.env.REACT_APP_API_URL + "get-docs-list", {
             method: 'GET'
         })
         .then(response => {return response.json()})
+        .then(data => {
+            const documents = [];
+            for (const name of data) {
+                documents.push({
+                    "name": name,
+                    "code": name
+                });
+            }
+            this.setState({loading: false, documentList: documents});
+        });
+        /*
         .then(data => {
             var journals = [];
             var fileTypes = [];
@@ -151,8 +166,8 @@ class ESPage extends React.Component {
                 }
             }
 
-            if (this.journal.current !== null)
-                this.journal.current.setState({options: journals, choice: this.props.filesChoice});
+            if (this.document.current !== null)
+                this.document.current.setState({options: journals, choice: this.props.filesChoice});
             if (this.fileType.current !== null)
                 this.fileType.current.setState({options: fileTypes});
             if (this.algorithm.current !== null)
@@ -161,23 +176,50 @@ class ESPage extends React.Component {
                 this.config.current.setState({options: configs, choice: this.props.configChoice});
             this.setState({pages: data, showing: data, loading: false}, this.filterPages);
         });
+        */
     }
 
+    /*
     changeText(event) {
-        /**
-         * Handle the change in the text field
-         */
-        this.setState({freeText: event.target.value}, this.filterPages);
+        //
+        //Handle the change in the text field
+        //
+        this.setState({freeText: event.target.value});
+    }
+     */
+
+    search() {
+        const filteredDocs = this.document.current.getSelectedNames();
+        // Cancel empty search request
+        if (this.state.query === "" && filteredDocs.length === 0) return;
+
+        fetch(process.env.REACT_APP_API_URL + "search", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                'query': this.state.query,
+                'docs': filteredDocs
+            })
+        })
+        .then(response => {
+            return response.json();
+        })
+        .then(data => {
+            this.setState({showing: data});
+        });
     }
 
+    /*
     filterPages() {
-        /**
-         * Filter the pages based on the filters
-         */
+        //
+        //Filter the pages based on the filters
+        //
         var current_showing = [];
 
         var freeText = this.state.freeText;
-        var journal = this.journal.current.getChoiceList();
+        var journal = this.document.current.getChoiceList();
         // var fileType = this.fileType.current.getChoiceList();
         // var algorithm = this.algorithm.current.getChoiceList();
         // var config = this.config.current.getChoiceList();
@@ -204,6 +246,7 @@ class ESPage extends React.Component {
 
         this.setState({showing: current_showing});
     }
+    */
 
     render() {
         return (
@@ -228,8 +271,26 @@ class ESPage extends React.Component {
                         </Icon>
                         <p style={{fontSize: '15px'}}><b>{this.state.showing.length} Pages</b></p>
                     </Box>
-                    <TextField onChange={(e) => this.changeText(e)} ref={this.freeText} label="Pesquisar" variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
-                    <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.journal} label={"Documento"} options={[]} choice={[]} />
+                    <TextField sx={{width: '100%', mb: '0.3rem'}}
+                               ref={this.searchBox}
+                               label="Pesquisar"
+                               variant='outlined'
+                               size="small"
+                               onChange={(e) => this.setState({query: e.target.value})}
+                               onBlur={() => {this.search()}}
+                               onKeyDown={(e) => {
+                                   if (e.key === "Enter") {
+                                       e.preventDefault();
+                                       this.search();
+                                   }
+                               }}
+                    />
+                    <ChecklistDropdown
+                        ref={this.document}
+                        label={"Documento"}
+                        options={this.state.documentList}
+                        choice={[]}
+                        onCloseFunc={() => this.search()}/>
                     {/* <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"Tipo de Ficheiro"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.algorithm} label={"Algoritmo"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.config} label={"Configuração"} options={[]} choice={[]} /> */}
@@ -238,16 +299,18 @@ class ESPage extends React.Component {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
+                    height: '84vh',
                     width: '80%',
                     mr: '1.5rem',
                     ml: '1rem',
+                    overflow: 'scroll'
                 }}>
                     {
                         this.state.loading
-                        ? <p style={{fontSize: '20px'}}><b>Loading...</b></p>
+                        ? <p style={{fontSize: '20px'}}><b>Carregando...</b></p>
 
                         :   this.state.showing.length === 0
-                            ? <p style={{fontSize: '20px'}}><b>No pages found</b></p>
+                            ? <p style={{fontSize: '20px'}}><b>Nenhuma página encontrada.</b></p>
                             : this.state.showing.sort((a, b) => {
                                     var a_source = a['_source'];
                                     var b_source = b['_source'];
