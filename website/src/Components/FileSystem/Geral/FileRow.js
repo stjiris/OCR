@@ -166,7 +166,7 @@ class FileRow extends React.Component {
                         }}>
 
                             {
-                                this.state.info["ocr"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                                this.state.info?.["ocr"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                                 ? <IconButton
                                     onClick={() => this.setState({expanded: !this.state.expanded})}
                                     sx={{p: 0, color: '#1976d2', mr: '0.5rem'}}
@@ -183,10 +183,10 @@ class FileRow extends React.Component {
 
                             <FileIcon extension={this.state.info["extension"]} sx={{ fontSize: '25px', m: "0.5rem 0.5rem 0.5rem 0.2rem"  /* 0.2rem left */ }} />
                             {
-                                this.state.info["stored"] === undefined || this.state.info["stored"] === true
+                                this.state.info?.["stored"] === undefined || this.state.info["stored"] === true
                                 ? <Button
                                     onClick={(e) => this.getOriginalFile(e)}
-                                    style={{
+                                    sx={{
                                         p: 0,
                                         textTransform: 'none',
                                         display: "flex",
@@ -201,7 +201,7 @@ class FileRow extends React.Component {
                     </TableCell>
 
                     {
-                        this.state.info["stored"] !== undefined && this.state.info["stored"] !== true
+                        this.state.info?.["stored"] !== undefined && this.state.info["stored"] !== true
                         ? <>
                             {
                                 this.state.info["upload_stuck"] === true
@@ -245,13 +245,13 @@ class FileRow extends React.Component {
                         </>
                         : <>
                             {
-                                this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                                this.state.info?.["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                                 ? <>
                                     <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>{this.state.info["creation"]}</TableCell>
                                     <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>{this.state.info["pages"]} página(s)</TableCell>
                                     <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>{this.state.info["size"]}</TableCell>
                                 </>
-                                : this.state.info["ocr"]["exceptions"]
+                                : this.state.info?.["ocr"]["exceptions"]
                                     ? <TableCell colSpan={3} align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa", height: '100%'}}>
                                         <Box sx={{overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent:'space-evenly' }}>
                                             <span>Erro ao fazer OCR</span>
@@ -296,12 +296,12 @@ class FileRow extends React.Component {
                                     {
                                         this.props._private ?
                                             null
-                                        : (this.state.info["indexed"]
+                                        : (this.state.info?.["indexed"]
                                             ? <TooltipIcon
                                                 key={"Remove " + this.props.name}
                                                 color="#f00"
                                                 message="Desindexar"
-                                                disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
+                                                disabled={buttonsDisabled || this.state.info?.["ocr"] === undefined}
                                                 clickFunction={(e) => this.removeIndex(e)}
                                                 icon={<IconDatabaseOff/>}
                                             />
@@ -310,7 +310,7 @@ class FileRow extends React.Component {
                                                 key={"Index " + this.props.name}
                                                 color="#1976d2"
                                                 message="Indexar"
-                                                disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
+                                                disabled={buttonsDisabled || this.state.info?.["ocr"] === undefined}
                                                 clickFunction={(e) => this.indexFile(e)}
                                                 icon={<IconDatabaseImport/>}
                                             />)
@@ -331,13 +331,52 @@ class FileRow extends React.Component {
                 </TableRow>
 
                 {
-                    this.state.info !== undefined && this.state.info["pdf"] !== undefined && this.state.info["pdf"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info?.["pdf_indexed"] !== undefined && this.state.info["pdf_indexed"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
-                                    <Button onClick={(e) => this.getPdf(e)} style={{p: 0, textTransform: 'none'}}>PDF + Texto + Índice</Button>
+                                    <Button onClick={(e) => this.getPdf(e)} className="resultButton">PDF + Texto + Índice</Button>
+                                </Box>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["pdf_indexed"]["creation"]}</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["pages"]} página(s) + {this.state.info["pdf_indexed"]["pages"] - this.state.info["pages"]} página(s) de índice</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["pdf_indexed"]["size"]}</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>-</span>
+                            </Collapse>
+                        </TableCell>
+                    </TableRow>
+                    : null
+                }
+
+                {
+                    this.state.info?.["pdf"] !== undefined && this.state.info["pdf"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
+                                    <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
+                                    <Button onClick={(e) => this.getPdfSimples(e)} className="resultButton">PDF + Texto</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
@@ -350,7 +389,7 @@ class FileRow extends React.Component {
 
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-                                <span>{this.state.info["pages"]} página(s) + {this.state.info["pdf"]["pages"] - this.state.info["pages"]} página(s) de índice</span>
+                                <span>{this.state.info["pdf"]["pages"]} página(s)</span>
                             </Collapse>
                         </TableCell>
 
@@ -370,52 +409,13 @@ class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["pdf_simples"] !== undefined && this.state.info["pdf_simples"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
-                    ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
-                        <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
-                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-                                <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
-                                    <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
-                                    <Button onClick={(e) => this.getPdfSimples(e)} style={{p: 0, textTransform: 'none'}}>PDF + Texto</Button>
-                                </Box>
-                            </Collapse>
-                        </TableCell>
-
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
-                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-                                <span>{this.state.info["pdf_simples"]["creation"]}</span>
-                            </Collapse>
-                        </TableCell>
-
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
-                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-                                <span>{this.state.info["pdf_simples"]["pages"]} página(s)</span>
-                            </Collapse>
-                        </TableCell>
-
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
-                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-                                <span>{this.state.info["pdf_simples"]["size"]}</span>
-                            </Collapse>
-                        </TableCell>
-
-                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
-                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-                                <span>-</span>
-                            </Collapse>
-                        </TableCell>
-                    </TableRow>
-                    : null
-                }
-
-                {
-                    this.state.info !== undefined && this.state.info["txt"] !== undefined && this.state.info["txt"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info?.["txt"] !== undefined && this.state.info["txt"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <TxtIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} />
-                                    <Button onClick={(e) => this.getTxt(e)} style={{p: 0, textTransform: 'none'}}>Texto</Button>
+                                    <Button onClick={(e) => this.getTxt(e)} className="resultButton">Texto</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
@@ -448,20 +448,20 @@ class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["delimiter_txt"] !== undefined && this.state.info["delimiter_txt"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info?.["txt_delimited"] !== undefined && this.state.info["txt_delimited"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <TxtIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} />
-                                    <Button onClick={(e) => this.getDelimiterTxt(e)} style={{p: 0, textTransform: 'none'}}>Texto com Separador por Página</Button>
+                                    <Button onClick={(e) => this.getDelimiterTxt(e)} className="resultButton">Texto com Separador por Página</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
 
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-                                <span>{this.state.info["delimiter_txt"]["creation"]}</span>
+                                <span>{this.state.info["txt_delimited"]["creation"]}</span>
                             </Collapse>
                         </TableCell>
 
@@ -473,7 +473,7 @@ class FileRow extends React.Component {
 
                         <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
-                                <span>{this.state.info["delimiter_txt"]["size"]}</span>
+                                <span>{this.state.info["txt_delimited"]["size"]}</span>
                             </Collapse>
                         </TableCell>
 
@@ -487,13 +487,13 @@ class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["csv"] !== undefined && this.state.info["csv"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info?.["csv"] !== undefined && this.state.info["csv"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <CsvIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} color="primary" />
-                                    <Button onClick={(e) => this.getCSV(e)} style={{p: 0, textTransform: 'none'}}>Índice de Palavras</Button>
+                                    <Button onClick={(e) => this.getCSV(e)} className="resultButton">Índice de Palavras</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
@@ -526,13 +526,13 @@ class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["zip"] !== undefined && this.state.info["zip"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info?.["zip"] !== undefined && this.state.info["zip"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <ZipIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} />
-                                    <Button onClick={(e) => this.getImages(e)} style={{p: 0, textTransform: 'none'}}>Imagens Extraídas</Button>
+                                    <Button onClick={(e) => this.getImages(e)} sx={{p: 0, textTransform: 'none'}}>Imagens Extraídas</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
@@ -565,13 +565,13 @@ class FileRow extends React.Component {
                 }
 
                 {
-                    this.state.info !== undefined && this.state.info["ner"] !== undefined && this.state.info["ner"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    this.state.info?.["ner"] !== undefined && this.state.info["ner"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <JsonIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} />
-                                    <Button onClick={(e) => this.getEntities(e)} style={{p: 0, textTransform: 'none'}}>Entidades</Button>
+                                    <Button onClick={(e) => this.getEntities(e)} className="resultButton">Entidades</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
@@ -603,7 +603,7 @@ class FileRow extends React.Component {
                     : null
                 }
             </>
-        )
+        );
     }
 }
 

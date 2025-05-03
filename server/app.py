@@ -246,7 +246,7 @@ def get_txt_delimitado():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_text_delimiter.txt")
+    return send_file(f"{path}/_txt_delimited.txt")
 
 
 @app.route("/get_txt", methods=["GET"])
@@ -255,7 +255,7 @@ def get_txt():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_text.txt")
+    return send_file(f"{path}/_txt.txt")
 
 
 @app.route("/get_entities", methods=["GET"])
@@ -299,9 +299,9 @@ def get_zip():
     return send_file(safe_join(path, f"{path.split('/')[-1]}.zip"))  # filename == folder name
 
 
-@app.route("/get_pdf", methods=["GET"])
+@app.route("/get_pdf_indexed", methods=["GET"])
 @requires_arg_path
-def get_pdf():
+def get_pdf_indexed():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
@@ -310,9 +310,9 @@ def get_pdf():
     return send_file(file)
 
 
-@app.route("/get_pdf_simples", methods=["GET"])
+@app.route("/get_pdf", methods=["GET"])
 @requires_arg_path
-def get_pdf_simples():
+def get_pdf_simple():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
@@ -625,13 +625,13 @@ def perform_ocr():
             shutil.rmtree(f"{f}/_ocr_results")
         os.mkdir(f"{f}/_ocr_results")
 
-        data["txt"] = {"complete": False}
-        data["delimiter_txt"] = {"complete": False}
         data["pdf"] = {"complete": False}
+        data["pdf_indexed"] = {"complete": False}
+        data["txt"] = {"complete": False}
+        data["txt_delimited"] = {"complete": False}
         data["csv"] = {"complete": False}
         data["ner"] = {"complete": False}
         data["zip"] = {"complete": False}
-        data["pdf_simples"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
         if os.path.exists(f"{f}/_images"):
@@ -799,7 +799,7 @@ def submit_text():
     if remake_files:
         update_data(
             data_path,
-            {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
+            {"txt": {"complete": False}, "txt_delimited": {"complete": False}, "pdf_indexed": {"complete": False}, "pdf": {"complete": False}},
         )
 
         celery.send_task('make_changes', kwargs={'data_folder': path,  'data': data})

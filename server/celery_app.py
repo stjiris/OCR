@@ -63,33 +63,43 @@ def task_export(path, filetype, delimiter=False, force_recreate=False, simple=Fa
 
 @celery.task(name="make_changes")
 def task_make_changes(data_folder, data):
+    current_date = get_current_time()
+
     export_file(data_folder, "txt", force_recreate=True)
-    data["txt"]["complete"] = True
-    data["txt"]["creation"] = get_current_time()
-    data["txt"]["size"] = get_size(data_folder + "/_text.txt", path_complete=True)
+    data["txt"] = {
+        "complete": True,
+        "size": get_size(data_folder + "/_txt.txt", path_complete=True),
+        "creation": current_date,
+    }
 
     export_file(data_folder, "txt", delimiter=True, force_recreate=True)
-    data["delimiter_txt"]["complete"] = True
-    data["delimiter_txt"]["creation"] = get_current_time()
-    data["delimiter_txt"]["size"] = get_size(data_folder + "/_text_delimiter.txt", path_complete=True)
+    data["txt_delimited"] = {
+        "complete": True,
+        "size": get_size(data_folder + "/_txt_delimited.txt", path_complete=True),
+        "creation": current_date
+    }
 
-    update_data(data_folder + "/_data.json", data)
-
-    os.remove(data_folder + "/_search.pdf")
+    os.remove(data_folder + "/_pdf_indexed.pdf")
     export_file(data_folder, "pdf", force_recreate=True)
-    data["pdf"]["complete"] = True
-    data["pdf"]["creation"] = get_current_time()
-    data["pdf"]["size"] = get_size(data_folder + "/_search.pdf", path_complete=True)
+    data["pdf_indexed"] = {
+        "complete": True,
+        "size": get_size(data_folder + "/_pdf_indexed.pdf", path_complete=True),
+        "creation": current_date
+    }
 
-    os.remove(data_folder + "/_simple.pdf")
+    os.remove(data_folder + "/_pdf.pdf")
     export_file(data_folder, "pdf", force_recreate=True, simple=True)
-    data["pdf_simples"]["complete"] = True
-    data["pdf_simples"]["creation"] = get_current_time()
-    data["pdf_simples"]["size"] = get_size(data_folder + "/_simple.pdf", path_complete=True)
-
-    data["csv"]["complete"] = True
-    data["csv"]["creation"] = get_current_time()
-    data["csv"]["size"] = get_size(data_folder + "/_index.csv", path_complete=True)
+    data["pdf"] = {
+        "complete": True,
+        "size": get_size(data_folder + "/_pdf.pdf", path_complete=True),
+        "creation": current_date
+    }
+    # CSV exported as part of PDF export
+    data["csv"] = {
+        "complete": True,
+        "size": get_size(data_folder + "/_index.csv", path_complete=True),
+        "creation": current_date
+    }
 
     try:
         task_request_ner(data_folder)
@@ -97,6 +107,7 @@ def task_make_changes(data_folder, data):
         print(e)
         data["ner"] = {"complete": False, "error": True}
 
+    update_data(data_folder + "/_data.json", data)
     return {"status": "success"}
 
 
@@ -148,7 +159,6 @@ def task_prepare_file_ocr(path):
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
-
 
         update_data(f"{path}/_data.json", {
             "pages": get_page_count(path, extension),
@@ -274,7 +284,7 @@ def task_file_ocr(path: str, config: dict, testing=False):
         pages_path = f"{path}/_pages"
         images = sorted([x for x in os.listdir(pages_path)])
 
-        log.info("{path}: A começar OCR")
+        log.info(f"{path}: A começar OCR")
 
         for image in images:
             if testing:
@@ -493,6 +503,8 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
             json_d = [[x] for x in json_d]
             # Save results
             #save_start = time.time()
+
+            # Store formatted OCR output for the page in JSON
             with open(f"{path}/_ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
                 json.dump(json_d, f, indent=2, ensure_ascii=False)
             #save_time = time.time() - save_start
@@ -592,21 +604,17 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
             update_data(data_folder, data)
 
             export_file(path, "txt")
-            export_file(path, "txt", delimiter=True)
-            creation_date = get_current_time()
-
-            data["indexed"] = False
-
             data["txt"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_text.txt", path_complete=True),
-                "creation": creation_date,
+                "size": get_size(f"{path}/_txt.txt", path_complete=True),
+                "creation": get_current_time(),
             }
 
-            data["delimiter_txt"] = {
+            export_file(path, "txt", delimiter=True)
+            data["txt_delimited"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_text_delimiter.txt", path_complete=True),
-                "creation": creation_date,
+                "size": get_size(f"{path}/_txt_delimited.txt", path_complete=True),
+                "creation": get_current_time(),
             }
 
             if os.path.exists(f"{path}/_images") and os.listdir(f"{path}/_images"):
@@ -614,43 +622,39 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
                 data["zip"] = {
                     "complete": True,
                     "size": get_size(f"{path}/_images.zip", path_complete=True),
-                    "creation": creation_date,
+                    "creation": get_current_time(),
                 }
 
-            update_data(data_folder, data)
-
             export_file(path, "pdf")
-            creation_date = get_current_time()
+            creation_time = get_current_time()
             data["pdf"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_search.pdf", path_complete=True),
-                "creation": creation_date,
-                "pages": get_page_count(path, "pdf"),
+                "size": get_size(f"{path}/_pdf_indexed.pdf", path_complete=True),
+                "creation": creation_time,
+                "pages": get_page_count(path, f"{path}/_pdf_indexed.pdf"),
             }
+            # CSV exported as part of PDF export
             data["csv"] = {
                 "complete": True,
                 "size": get_size(f"{path}/_index.csv", path_complete=True),
-                "creation": creation_date,
+                "creation": creation_time,
             }
 
-            export_file(path, "pdf", simple=True)
-            creation_date = get_current_time()
-            data["pdf_simples"] = {
-                "complete": True,
-                "size": get_size(f"{path}/_simple.pdf", path_complete=True),
-                "creation": creation_date,
-                "pages": get_page_count(path, "pdf"),
-            }
-
-            update_data(data_folder, data)
+            if not data["pdf"]["complete"]:
+                export_file(path, "pdf", simple=True)
+                data["pdf"] = {
+                    "complete": True,
+                    "size": get_size(f"{path}/_pdf.pdf", path_complete=True),
+                    "creation": get_current_time(),
+                    "pages": get_page_count(path, f"{path}/_pdf.pdf"),
+                }
 
             success = get_ner_file(path)
-            creation_date = get_current_time()
             if success:
                 data["ner"] = {
                     "complete": True,
                     "size": get_size(f"{path}/_entities.json", path_complete=True),
-                    "creation": creation_date,
+                    "creation": get_current_time(),
                 }
             else:
                 data["ner"] = {"complete": False, "error": True}
@@ -659,10 +663,7 @@ def task_page_ocr(path: str, filename: str, ocr_engine_name: str, lang: str = 'p
 
         #return {"status": "success", "metricas": page_metrics}
         return {"status": "success"}
-
     except Exception as e:
-        print(e)
-
         traceback.print_exc()
 
         data_folder = f"{path}/_data.json"
