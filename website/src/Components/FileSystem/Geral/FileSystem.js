@@ -555,14 +555,14 @@ class FileExplorer extends React.Component {
      * Export the .pdf file
      */
     getPdf(file) {
-        this.getDocument("pdf", file, "_texto_indice");
+        this.getDocument("pdf_indexed", file, "_texto_indice");
     }
 
     /**
      * Export the .pdf file
      */
     getPdfSimples(file) {
-        this.getDocument("pdf_simples", file, "_texto");
+        this.getDocument("pdf", file, "_texto");
     }
 
     /*

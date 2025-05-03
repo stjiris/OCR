@@ -101,9 +101,9 @@ def export_txt(path, delimiter=False, force_recreate = False):
     :return: the path to the exported file
     """
 
-    filename = f"{path}/_text.txt"
+    filename = f"{path}/_txt.txt"
     if delimiter:
-        filename = f"{path}/_text_delimiter.txt"
+        filename = f"{path}/_txt_delimited.txt"
 
     ocr_folder = f"{path}/_ocr_results"
 
@@ -147,8 +147,8 @@ def export_pdf(path, force_recreate = False, simple=False):
     """
     Export the file as a .pdf file
     """
-    filename = f"{path}/_search.pdf"
-    simple_filename = f"{path}/_simple.pdf"
+    filename = f"{path}/_pdf_indexed.pdf"
+    simple_filename = f"{path}/_pdf.pdf"
     filename_csv = f"{path}/_index.csv"
 
     dpi_original = 300

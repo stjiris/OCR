@@ -42,6 +42,12 @@ body {
     margin: 0.5rem 0.5rem 0.5rem 0.2rem;  /* 0.2rem left */
 }
 
+.MuiButton-text.resultButton {
+    padding: 0;
+    justify-content: left;
+    text-transform: none;
+}
+
 .pageImageContainer {
     display: flex;
     position: relative;
