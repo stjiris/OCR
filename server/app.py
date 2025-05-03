@@ -7,9 +7,13 @@ from http import HTTPStatus
 
 from threading import Lock, Thread
 
+from celery import Celery
+from flask import Flask
 from flask import abort
+from flask import jsonify
 from flask import request
 from flask import send_file
+from flask_cors import CORS
 from werkzeug.utils import safe_join
 
 from src.elastic_search import create_document
@@ -18,8 +22,7 @@ from src.elastic_search import ES_URL
 from src.elastic_search import ES_INDEX
 from src.elastic_search import mapping
 from src.elastic_search import settings
-from src.utils.export import export_file
-from src.utils.export import json_to_text
+
 from src.utils.file import delete_structure
 from src.utils.file import generate_uuid
 from src.utils.file import get_current_time
@@ -30,15 +33,12 @@ from src.utils.file import get_file_layouts
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
 from src.utils.file import get_folder_info
-from src.utils.file import get_page_count
 from src.utils.file import get_structure_info
-from src.utils.file import prepare_file_ocr
+from src.utils.file import json_to_text
 from src.utils.file import update_data
 from src.utils.file import save_file_layouts
 
 from src.utils.file import FILES_PATH, TEMP_PATH, PRIVATE_PATH, ALLOWED_EXTENSIONS
-
-from src.utils.image import parse_images
 
 from src.utils.system import get_free_space
 #from src.utils.system import get_logs
@@ -46,10 +46,12 @@ from src.utils.system import get_private_sessions
 
 from src.utils.text import compare_dicts_words
 
-from celery_app import app
-from celery_app import request_ner
-from celery_app import task_file_ocr
-from celery_app import make_changes
+app = Flask(__name__)
+CORS(app)
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
 
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 # logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
@@ -278,7 +280,7 @@ def request_entities():
 
     update_data(f"{path}/_data.json", data)
 
-    request_ner.delay(path)
+    celery.send_task('request_ner', kwargs={'data_folder': path})
     # Thread(target=request_ner, args=(path,)).start()
     return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private)}
 
@@ -291,7 +293,7 @@ def get_zip():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
-        export_file(path, "zip")
+        celery.send_task('export_file', kwargs={'path': path, 'filetype': "zip"}).get()
     except Exception as e:
         return {"success": False, "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde"}
     return send_file(safe_join(path, f"{path.split('/')[-1]}.zip"))  # filename == folder name
@@ -303,7 +305,8 @@ def get_pdf():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    file = export_file(path, "pdf")
+    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "pdf"})
+    file = promise.get()
     return send_file(file)
 
 
@@ -313,7 +316,9 @@ def get_pdf_simples():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    file = export_file(path, "pdf", simple=True)
+
+    promise = celery.send_task('export_file', kwargs={'path':path, 'filetype': "pdf", 'simple': True})
+    file = promise.get()
     return send_file(file)
 
 
@@ -332,7 +337,9 @@ def get_images():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    file = export_file(path, "imgs")
+
+    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "imgs"})
+    file = promise.get()
     return send_file(file)
 
 
@@ -488,20 +495,14 @@ def prepare_upload():
     return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private), "filename": filename}
 
 
-def join_chunks(target_path, file_path, filename, total_count, temp_file_path):
+def join_chunks(target_path, filename, total_count, temp_file_path):
     # Save the file
     with open(f"{target_path}/{filename}", "wb") as f:
         for i in range(total_count):
             with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
 
-    prepare_file_ocr(target_path)
-
-    update_data(f"{target_path}/_data.json", {
-        "pages": get_page_count(target_path, file_path),
-        "stored": True,
-        "creation": get_current_time()
-    })
+    celery.send_task('prepare_file', kwargs={'path': target_path})
 
     shutil.rmtree(temp_file_path)
     log.info(f"Finished uploading file {filename}")
@@ -542,16 +543,7 @@ def upload_file():
     if total_count == 1:
         file.save(file_path)
 
-        try:
-            prepare_file_ocr(target_path)
-        except Exception:
-            abort(HTTPStatus.INTERNAL_SERVER_ERROR)
-
-        update_data(f"{target_path}/_data.json",{
-            "pages": get_page_count(target_path, file_path),
-            "stored": True,
-            "creation": get_current_time()
-        })
+        celery.send_task('prepare_file', kwargs={'path': target_path})
 
         return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
 
@@ -585,7 +577,7 @@ def upload_file():
 
             Thread(
                 target=join_chunks,
-                args=(target_path, file_path, filename, total_count, temp_file_path)
+                args=(target_path, filename, total_count, temp_file_path)
             ).start()
 
             return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
@@ -654,7 +646,7 @@ def perform_ocr():
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        task_file_ocr.delay(f, config, ocr_algorithm)
+        celery.send_task('file_ocr', kwargs={'path': f, 'config': config, 'ocr_algorithm': ocr_algorithm})
         # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         # task_file_ocr(f, config, ocr_algorithm, True)
 
@@ -693,7 +685,7 @@ def index_doc():
         files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
 
         extension = data["extension"]
-        for id, file in enumerate(files):
+        for i, file in enumerate(files):
             file_path = f"{hOCR_path}/{file}"
 
             with open(file_path, encoding="utf-8") as f:
@@ -707,7 +699,7 @@ def index_doc():
                     "pt",
                     text,
                     extension,
-                    id + 1,
+                    i + 1,
                 )
             else:
                 doc = create_document(
@@ -718,9 +710,9 @@ def index_doc():
                     extension
                 )
 
-            id = generate_uuid(file_path)
+            doc_id = generate_uuid(file_path)
 
-            es.add_document(id, doc)
+            es.add_document(doc_id, doc)
 
         update_data(data_path, {"indexed": True})
 
@@ -821,7 +813,7 @@ def submit_text():
             {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
         )
 
-        make_changes.delay(path, data)
+        celery.send_task('make_changes', kwargs={'data_folder': path,  'data': data})
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
 
@@ -843,9 +835,27 @@ def check_sintax():
 #####################################
 # ELASTICSEARCH
 #####################################
-@app.route("/get_elasticsearch", methods=["GET"])
-def get_elasticsearch():
-    return es.get_docs()
+@app.route("/get-docs-list", methods=["GET"])
+def get_docs_list():
+    return es.get_all_docs_names()
+
+@app.route("/search", methods=["POST"])
+def search():
+    data = request.json
+    if "query" not in data:
+        abort(HTTPStatus.BAD_REQUEST)
+
+    query = data["query"]
+    docs = None
+
+    if "docs" in data and len(data["docs"]):
+        docs = data["docs"]
+
+    # for empty query with doc list, get all content of those docs
+    if docs and query == "":
+        return jsonify(es.get_docs(docs))
+    else:
+        return jsonify(es.search(query, docs))
 
 #####################################
 # PRIVATE SESSIONS
@@ -941,8 +951,7 @@ def generate_automatic_layouts():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
-        # TODO: make automatic parsing a celery task?
-        parse_images(path)
+        celery.send_task('auto_segment', kwargs={'path': path}).get()
         layouts = get_file_layouts(path, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)

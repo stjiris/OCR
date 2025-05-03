@@ -267,7 +267,7 @@ class FileRow extends React.Component {
                             <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
                                 <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
                                     <TooltipIcon
-                                        key={"OCR " + (buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined)}
+                                        key={"OCR " + this.props.name}
                                         disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
                                         color="#1976d2"
                                         message="Fazer OCR"
@@ -276,8 +276,8 @@ class FileRow extends React.Component {
                                     />
 
                                     <TooltipIcon
-                                        key={"Layout " + buttonsDisabled}
-                                        disabled={buttonsDisabled}
+                                        key={"Layout " + this.props.name}
+                                        disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
                                         color="#1976d2"
                                         message="Criar Layout"
                                         clickFunction={(e) => this.createLayout(e)}
@@ -285,7 +285,7 @@ class FileRow extends React.Component {
                                     />
 
                                     <TooltipIcon
-                                        key={"edit " + (buttonsDisabled || this.state.info["ocr"] === undefined)}
+                                        key={"Edit " + this.props.name}
                                         color="#1976d2"
                                         message="Editar"
                                         disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
@@ -298,7 +298,7 @@ class FileRow extends React.Component {
                                             null
                                         : (this.state.info["indexed"]
                                             ? <TooltipIcon
-                                                key={"remove " + (buttonsDisabled || this.state.info["ocr"] === undefined)}
+                                                key={"Remove " + this.props.name}
                                                 color="#f00"
                                                 message="Desindexar"
                                                 disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
@@ -307,7 +307,7 @@ class FileRow extends React.Component {
                                             />
 
                                             : <TooltipIcon
-                                                key={"add " + (buttonsDisabled || this.state.info["ocr"] === undefined)}
+                                                key={"Index " + this.props.name}
                                                 color="#1976d2"
                                                 message="Indexar"
                                                 disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
@@ -317,7 +317,7 @@ class FileRow extends React.Component {
                                     }
 
                                     <TooltipIcon
-                                        key="delete"
+                                        key={"Delete " + this.props.name}
                                         color="#f00"
                                         message="Apagar"
                                         clickFunction={(e) => this.delete(e)}
