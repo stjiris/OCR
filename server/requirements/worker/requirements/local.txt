@@ -1,0 +1,6 @@
+-r base.txt
+
+coverage==7.3.2
+django-coverage-plugin==3.1.0
+pytest==7.4.2
+pytest-cov==4.1.0

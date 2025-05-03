@@ -3,23 +3,14 @@ import logging as log
 import os
 import random
 import re
-import shutil
-import zipfile
-from json import JSONDecodeError
-
-import requests
 import uuid
 from datetime import datetime
+from json import JSONDecodeError
 from os import environ
-from pathlib import Path
-import pytz
-
-import pypdfium2 as pdfium
-
-from PIL import Image
-from src.utils.export import export_file
-from src.utils.export import json_to_text
 from string import punctuation
+
+import pytz
+import requests
 
 FILES_PATH = environ.get("FILES_PATH", "_files")
 TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
@@ -422,17 +413,11 @@ def get_structure(path, private_session=None, is_private=False):
 # FILES UTILS
 ##################################################
 # DONE
-def get_page_count(target_path, file_path):
+def get_page_count(target_path, extension):
     """
     Get the number of pages of a file
     """
-
-    extension = file_path.split(".")[-1]
-    if extension == "pdf":
-        with open(file_path, "rb") as f:
-            return len(pdfium.PdfDocument(f))
-            # return len(PdfReader(f).pages)
-    elif extension == "zip":
+    if extension == "pdf" or extension == "zip":
         return len(os.listdir(f"{target_path}/_pages"))
     elif extension in ALLOWED_EXTENSIONS:  # some other than pdf or zip
         return 1
@@ -456,6 +441,19 @@ def get_file_extension(filename):
     :return: extension of the file
     """
     return filename.split(".")[-1]
+
+
+def json_to_text(json_d):
+    """
+    Convert json to text
+    :param json_d: json with the hOCR data
+    :return: text
+    """
+    lines = []
+    for section in json_d:
+        l = [w["text"] for l in section for w in l]
+        lines.append(" ".join(l))
+    return "\n".join(lines).strip()
 
 ##################################################
 # OCR UTILS
@@ -481,66 +479,3 @@ def update_data(file, data):
     with open(file, "w", encoding="utf-8") as f:
         previous_data.update(data)
         json.dump(previous_data, f, ensure_ascii=False, indent=2)
-
-# DONE
-def prepare_file_ocr(path):
-    """
-    Prepare the OCR of a file
-    @param path: path to the file
-    @param ocr_folder: folder to save the results
-    """
-    try:
-        if not os.path.exists(f"{path}/_pages"):
-            os.mkdir(f"{path}/_pages")
-
-        extension = path.split(".")[-1].lower()
-        basename = get_file_basename(path)
-
-        log.info(f"{path}: A preparar páginas")
-
-        if extension == "pdf":
-            pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
-            for i in range(len(pdf)):
-                page = pdf[i]
-                bitmap = page.render(300 / 72)  # turn PDF page into 300 DPI bitmap
-                pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/_pages/{basename}_{i}.jpg", quality=95, dpi=(300, 300))
-
-            pdf.close()
-
-        elif extension == "zip":
-            temp_folder_name = f"{path}/{generate_random_uuid()}"
-            os.mkdir(temp_folder_name)
-
-            with zipfile.ZipFile(f"{path}/{basename}.zip", 'r') as zip_ref:
-                zip_ref.extractall(temp_folder_name)
-
-            page_paths = [
-                f"{temp_folder_name}/{file}"
-                for file in os.listdir(temp_folder_name)
-                if os.path.isfile(os.path.join(temp_folder_name, file))
-            ]
-
-            # sort pages alphabetically, case-insensitive
-            # casefold for better internationalization, original string appended as fallback
-            page_paths.sort(key=lambda s: (s.casefold(), s))
-
-            for i, page in enumerate(page_paths):
-                im = Image.open(page)
-                im.save(f"{path}/_pages/{basename}_{i}.png", format="PNG")  # using PNG to keep RGBA
-            shutil.rmtree(temp_folder_name)
-
-        elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
-            original_path = f"{path}/{basename}.{extension}"
-            link_path = f"{path}/_pages/{basename}_0.{extension}"
-            if not os.path.exists(link_path):
-                os.link(original_path, link_path)
-
-    except Exception as e:
-        data_folder = f"{path}/_data.json"
-        data = get_data(data_folder)
-        data["ocr"] = data.get("ocr", {})
-        data["ocr"]["exceptions"] = str(e)
-        update_data(data_folder, data)
-        log.error(f"Error in preparing OCR for file at {path}: {e}")
-        raise e
