@@ -88,10 +88,11 @@ class FileExplorer extends React.Component {
         this.getTxt = this.getTxt.bind(this);
         this.getEntities = this.getEntities.bind(this);
         this.requestEntities = this.requestEntities.bind(this);
+        this.getAlto = this.getAlto.bind(this);
         this.getCSV = this.getCSV.bind(this);
         this.getImages = this.getImages.bind(this);
-        this.getPdf = this.getPdf.bind(this);
-        this.getPdfSimples = this.getPdfSimples.bind(this);
+        this.getPdfIndexed = this.getPdfIndexed.bind(this);
+        this.getPdfSimple = this.getPdfSimple.bind(this);
         this.editText = this.editText.bind(this);
         this.performOCR = this.performOCR.bind(this);
         this.indexFile = this.indexFile.bind(this);
@@ -396,7 +397,7 @@ class FileExplorer extends React.Component {
     /**
      * Export the .txt or .pdf file
      */
-    getDocument(type, file, suffix="") {
+    getDocument(type, file, extension, suffix="") {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
@@ -409,7 +410,7 @@ class FileExplorer extends React.Component {
             a.href = URL.createObjectURL(data);
 
             const basename = file.split('.').slice(0, -1).join('.');
-            a.download = basename + '_ocr' + suffix + '.' + type.split('_')[0];
+            a.download = basename + '_ocr' + suffix + '.' + extension;
             a.click();
             a.remove();
         });
@@ -512,7 +513,7 @@ class FileExplorer extends React.Component {
      * Export the .txt file
      */
     getTxt(file) {
-        this.getDocument("txt", file);
+        this.getDocument("txt", file, "txt");
     }
 
     /**
@@ -520,14 +521,14 @@ class FileExplorer extends React.Component {
      * with the delimiter
      */
     getDelimiterTxt(file) {
-        this.getDocument("txt_delimitado", file, "_delimitado");
+        this.getDocument("txt_delimitado", file, "txt", "_delimitado");
     }
 
     /**
      * Export the .csv file
      */
     getCSV(file) {
-         this.getDocument("csv", file);
+         this.getDocument("csv", file, "csv");
     }
 
     /**
@@ -554,15 +555,19 @@ class FileExplorer extends React.Component {
     /**
      * Export the .pdf file
      */
-    getPdf(file) {
-        this.getDocument("pdf_indexed", file, "_texto_indice");
+    getPdfIndexed(file) {
+        this.getDocument("pdf_indexed", file, "pdf", "_texto_indice");
     }
 
     /**
      * Export the .pdf file
      */
-    getPdfSimples(file) {
-        this.getDocument("pdf", file, "_texto");
+    getPdfSimple(file) {
+        this.getDocument("pdf", file, "pdf", "_texto");
+    }
+
+    getAlto(file) {
+        this.getDocument("alto", file, "xml", "_alto");
     }
 
     /*
@@ -726,8 +731,9 @@ class FileExplorer extends React.Component {
                         requestEntities={this.requestEntities}
                         getCSV={this.getCSV}
                         getImages={this.getImages}
-                        getPdf={this.getPdf}
-                        getPdfSimples={this.getPdfSimples}
+                        getPdfIndexed={this.getPdfIndexed}
+                        getPdfSimple={this.getPdfSimple}
+                        getAlto={this.getAlto}
                         editText={this.editText}
                         performOCR={this.performOCR}
                         indexFile={this.props._private ? null : this.indexFile}

@@ -31,6 +31,17 @@ const tesseractLangList = [
     {"name": "Português", "code": "por"},
 ]
 
+const tesseractOutputsList = [
+    {"name": "PDF com texto e índice", "code": "pdf_indexed"},
+    {"name": "PDF com texto", "code": "pdf"},
+    {"name": "Texto", "code": "txt"},
+    {"name": "Texto com separador por página", "code": "txt_delimited"},
+    {"name": "Índice de palavras", "code": "csv"},
+    {"name": "hOCR", "code": "hocr"},
+    {"name": "ALTO", "code": "xml"},
+]
+const defaultOutputs = [tesseractOutputsList[1]];
+
 const defaultEngine = 0;
 const engineList = [
     { value: 0, description: "PyTesseract"},
@@ -185,8 +196,6 @@ class OcrMenu extends React.Component {
             open: false,
             path: "",
             multiple: false,
-            languageOptions: tesseractLangList,
-            languageChoice: [tesseractLangList[defaultLangIndex]],
 
             advancedOpen: false,
             dpiVal: null,
@@ -208,6 +217,7 @@ class OcrMenu extends React.Component {
         this.storageMenu = React.createRef();
 
         this.langs = React.createRef();
+        this.outputs = React.createRef();
         this.dpiField = React.createRef();
         this.moreParams = React.createRef();
 
@@ -229,6 +239,7 @@ class OcrMenu extends React.Component {
         return {
             engine: this.state.engine,
             lang: this.langs.current.getChoiceList().join('+'),
+            outputs: this.outputs.current.getChoiceList(),
             engineMode: this.state.engineMode,
             segmentMode: this.state.segmentMode,
             thresholdMethod: this.state.thresholdMethod,
@@ -360,6 +371,11 @@ class OcrMenu extends React.Component {
                                            helperText={"Para melhores resultados, selecione por ordem de relevância"}
                                            options={tesseractLangList}
                                            defaultChoice={[tesseractLangList[defaultLangIndex]]}/>
+
+                        <ChecklistDropdown ref={this.outputs}
+                                           label={"Formatos de resultado"}
+                                           options={tesseractOutputsList}
+                                           defaultChoice={defaultOutputs}/>
 
                         <Button onClick={() => this.toggleAdvanced()}>
                             Opções avançadas

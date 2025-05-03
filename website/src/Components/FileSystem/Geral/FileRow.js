@@ -28,6 +28,7 @@ const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
 const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
 const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
 const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
+const AltoIcon = loadComponent('CustomIcons', 'AltoIcon');
 
 
 class FileRow extends React.Component {
@@ -104,16 +105,23 @@ class FileRow extends React.Component {
         this.successNot.current.open();
     }
 
-    getPdf(e) {
+    getPdfIndexed(e) {
         e.stopPropagation();
-        this.props.getPdf(this.props.name);
+        this.props.getPdfIndexed(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
 
-    getPdfSimples(e) {
+    getPdfSimple(e) {
         e.stopPropagation();
-        this.props.getPdfSimples(this.props.name);
+        this.props.getPdfSimple(this.props.name);
+        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
+        this.successNot.current.open();
+    }
+
+    getAlto(e) {
+        e.stopPropagation();
+        this.props.getAlto(this.props.name);
         this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
         this.successNot.current.open();
     }
@@ -337,7 +345,7 @@ class FileRow extends React.Component {
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
-                                    <Button onClick={(e) => this.getPdf(e)} className="resultButton">PDF + Texto + Índice</Button>
+                                    <Button onClick={(e) => this.getPdfIndexed(e)} className="resultButton">PDF + Texto + Índice</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
@@ -376,7 +384,7 @@ class FileRow extends React.Component {
                             <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
                                 <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
                                     <PdfIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0.2rem' }} />
-                                    <Button onClick={(e) => this.getPdfSimples(e)} className="resultButton">PDF + Texto</Button>
+                                    <Button onClick={(e) => this.getPdfSimple(e)} className="resultButton">PDF + Texto</Button>
                                 </Box>
                             </Collapse>
                         </TableCell>
@@ -602,6 +610,45 @@ class FileRow extends React.Component {
                     </TableRow>
                     : null
                 }
+
+                {
+                    this.state.info?.["xml"] !== undefined && this.state.info["xml"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                    ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <Box sx={{display: "flex", flexDirection: "row", alignItems: 'center'}}>
+                                    <AltoIcon sx={{ fontSize: '25px', m: '0.5rem', ml: '0rem' }} />
+                                    <Button onClick={(e) => this.getAlto(e)} className="resultButton">ALTO</Button>
+                                </Box>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["xml"]["creation"]}</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>-</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>{this.state.info["xml"]["size"]}</span>
+                            </Collapse>
+                        </TableCell>
+
+                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft: "1px solid #aaa"}}>
+                            <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+                                <span>-</span>
+                            </Collapse>
+                        </TableCell>
+                    </TableRow>
+                    : null
+                }
             </>
         );
     }
@@ -619,8 +666,8 @@ FileRow.defaultProps = {
     requestEntities: null,
     getCSV: null,
     getImages: null,
-    getPdf: null,
-    getPdfSimples: null,
+    getPdfIndexed: null,
+    getPdfSimple: null,
     deleteItem: null,
     editText: null,
     performOCR: null,

@@ -326,6 +326,15 @@ def get_csv():
     return send_file(f"{path}/_index.csv")
 
 
+@app.route("/get_alto", methods=["GET"])
+@requires_arg_path
+def get_alto():
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+    return send_file(f"{path}/_xml.xml")
+
+
 @app.route("/get_images", methods=["GET"])
 @requires_arg_path
 def get_images():
