@@ -469,6 +469,15 @@ def get_data(file):
             return {}
         return json.loads(text)
 
+
+def get_doc_len(file):
+    with open(file, encoding="utf-8") as f:
+        text = f.read()
+        if text == "":
+            return {}
+        return json.loads(text)["pages"]
+
+
 # DONE
 def update_data(file, data):
     """
