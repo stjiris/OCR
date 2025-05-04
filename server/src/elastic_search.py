@@ -10,6 +10,24 @@ ES_INDEX = "jornais.0.1"
 
 settings = {
     "analysis": {
+        "analyzer": {
+            "filename_analyzer": {
+                "type": "pattern",
+                "pattern": "\\W|_",
+                "lowercase": True
+            },
+            "text_analyzer": {
+                "tokenizer": "whitespace",
+                "filter": ["stop_eng_pt"],
+            }
+        },
+        "filter": {
+            "stop_eng_pt": {
+                "type": "stop",
+                "ignore_case": True,
+                "stopwords": ["_english_", "_portuguese_"]
+            }
+        },
         "normalizer": {
             "term_normalizer": {
                 "type": "custom",
@@ -24,36 +42,53 @@ settings = {
 
 mapping = {
     "properties": {
-        "Id": {"type": "keyword", "normalizer": "term_normalizer"},
         "Document": {
             "type": "text",
+            "analyzer": "filename_analyzer",
             "fields": {
-                "raw": {"type": "keyword"},
-                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
+                "keyword": {
+                    "type": "keyword"
+                }
             },
         },
         "Path": {
             "type": "text",
-            "fields": {
-                "raw": {"type": "keyword"},
-                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
-            },
+            "analyzer": "filename_analyzer"
         },
         "Page": {
             "type": "integer",
             "fields": {
-                "raw": {"type": "keyword"},
-                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                },
             },
         },
         "Text": {
             "type": "text",
+            "analyzer": "text_analyzer",
             "fields": {
-                "raw": {"type": "keyword"},
-                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
+                "raw": {
+                    "type": "keyword"
+                },
+                "keyword": {
+                    "type": "keyword",
+                    "normalizer": "term_normalizer"
+                },
             },
         },
-        " Page Image": {"enabled": False},
+        "Algorithm": {
+            "type": "keyword",
+            "normalizer": "term_normalizer"
+        },
+        "Config": {  # TODO: improve for tokenizing future config params
+            "type": "text",
+            "analyzer": "standard"
+        },
+        "Page Image": {"enabled": False},
     }
 }
 
@@ -107,16 +142,92 @@ class ElasticSearchClient:
 
         self.client.delete(index=self.ES_INDEX, id=id)
 
-    def get_docs(self):
+    def get_all_docs_names(self):
         """
-        Get the documents from the index
+        Get the list of documents from the index
         """
+        results = self.client.search(
+            index=self.ES_INDEX,
+            body={
+                "size": 0,
+                "aggs": {
+                    "docs_names" : {
+                        "terms": {
+                            "field": "Document.keyword",
+                            "size": 10000
+                        }
+                    }
+                }
+            }
+        )["aggregations"]["docs_names"]["buckets"]
+        return [doc["key"] for doc in results]
 
-        return list(
-            self.client.search(
-                index=self.ES_INDEX, body={"size": 1000, "query": {"match_all": {}}}
-            )["hits"]["hits"]
-        )
+    def get_docs(self, docs: list[str]):
+        """
+        Get all content of the specified documents from the index
+        """
+        results = self.client.search(
+            index=self.ES_INDEX,
+            body={
+                "size": 1000,
+                "query": {
+                    "bool": {
+                        "filter": {
+                            "terms": {
+                                "Document.keyword": docs
+                            }
+                        }
+                    }
+                }
+            }
+        )["hits"]["hits"]
+        for r in results:
+            r.pop("_index", None)
+            r.pop("_score", None)
+        return results
+
+    def search(self, string: str, docs: list[str] = None):
+        """
+        Search for the words on the given string within the indexed texts and document names.
+        If a list of documents is given, the search is restricted to these filenames.
+        """
+        query = {
+            "multi_match" : {
+                "query": string,
+                "type": "best_fields",
+                "fuzziness": "AUTO",
+                "fields": [ "Text", "Document" ]
+            }
+        }
+
+        if docs is not None:
+            body = {
+                "size": 1000,
+                "query": {
+                    "bool": {
+                        "must": query,
+                        "filter": {
+                            "terms": {
+                                "Document.keyword": docs
+                            }
+                        }
+                    }
+                }
+            }
+        else:
+            body = {
+                "size": 1000,
+                "query": query
+            }
+
+        results = self.client.search(
+                    index=self.ES_INDEX,
+                    body=body
+                    )["hits"]["hits"]
+        for r in results:
+            r.pop("_index", None)
+            r.pop("_score", None)
+        return results
 
 
 def create_document(path, algorithm, config, text, extension="pdf", page=None):
@@ -131,20 +242,20 @@ def create_document(path, algorithm, config, text, extension="pdf", page=None):
 
     if page is None:
         return {
+            "Document": path.split("/")[-3],
             "Path": path,
+            "Text": text,
             "Algorithm": algorithm,
             "Config": config,
-            "Document": path.split("/")[-3],
             "Page Image": page_url,
-            "Text": text,
         }
     else:
         return {
+            "Document": path.split("/")[-3],
             "Path": path,
+            "Page": page,
+            "Text": text,
             "Algorithm": algorithm,
             "Config": config,
-            "Document": path.split("/")[-3],
-            "Page": page,
             "Page Image": page_url,
-            "Text": text,
         }

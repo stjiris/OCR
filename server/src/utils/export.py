@@ -26,22 +26,13 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter
 
+from src.utils.file import json_to_text
+
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
 PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
 
 OUT_DEFAULT_DPI = 150
 
-def json_to_text(json_d):
-    """
-    Convert json to text
-    :param json_d: json with the hOCR data
-    :return: text
-    """
-    lines = []
-    for section in json_d:
-        l = [w["text"] for l in section for w in l]
-        lines.append(" ".join(l))
-    return "\n".join(lines).strip()
 
 def get_file_basename(filename):
     """
@@ -81,7 +72,7 @@ def export_file(path, filetype, delimiter=False, force_recreate=False, simple=Fa
 ####################################################
 # EXPORT TXT FUNCTIONS
 ####################################################
-def export_imgs(path, force_recreate = False):
+def export_imgs(path, force_recreate=False):
     """
     Export the images as a .zip file
 
@@ -172,10 +163,11 @@ def export_csv_from_words(filename_csv, index_data):
 
     return filename_csv
 
+
 ####################################################
 # EXPORT PDF FUNCTIONS
 ####################################################
-def export_pdf(path, force_recreate = False, simple=False, get_csv=False):
+def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
     """
     Export the file as a .pdf file
     """
@@ -245,7 +237,6 @@ def export_pdf(path, force_recreate = False, simple=False, get_csv=False):
                 words[word] = words.get(word, 0) + new_words[word]
 
             pdf.showPage()
-
 
         # Sort the `words` dict by key
         words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]

@@ -26,7 +26,6 @@ class ChecklistDropdown extends React.Component {
         this.state = {
             visible: true,
             choice: props.defaultChoice,
-            parentfunc: props.parentfunc
         }
     }
 
@@ -35,6 +34,10 @@ class ChecklistDropdown extends React.Component {
          * Return the choice as a list
          */
         return this.state.choice.map((x) => x.code);
+    }
+
+    getSelectedNames() {
+        return this.state.choice.map((x) => x.name);
     }
 
     handleChange(event) {
@@ -74,7 +77,9 @@ class ChecklistDropdown extends React.Component {
                 {
                     this.state.visible
                     &&
-                    <FormControl open={this.state.visible} className="simpleDropdown">
+                    <FormControl
+                        open={this.state.visible}
+                        className="simpleDropdown">
                         <InputLabel>{this.props.label}</InputLabel>
                         <Select
                             multiple
@@ -82,6 +87,7 @@ class ChecklistDropdown extends React.Component {
                             value={this.state.choice}
                             onChange={(e) => this.handleChange(e)}
                             input={<OutlinedInput label={this.props.label} />}
+                            onClose={this.props.onCloseFunc}
                             renderValue={(selected) => selected.map((x) => x.code).join(', ')}
                             MenuProps={MenuProps}
                             sx={{height: '2.5rem'}}
@@ -104,11 +110,12 @@ class ChecklistDropdown extends React.Component {
 }
 
 ChecklistDropdown.defaultProps = {
-    options: null,
-    defaultChoice: null,
+    options: [],
+    defaultChoice: [],
     label: null,
     helperText: null,
     // functions:
+    onCloseFunc: null,
     parentfunc: null
 }
 
