@@ -67,43 +67,53 @@ def task_export(path, filetype, delimiter=False, force_recreate=False, simple=Fa
 
 @celery.task(name="make_changes")
 def task_make_changes(data_folder, data):
-    current_date = get_current_time()
+    created_time = get_current_time()
 
-    export_file(data_folder, "txt", force_recreate=True)
-    data["txt"] = {
-        "complete": True,
-        "size": get_size(data_folder + "/_txt.txt", path_complete=True),
-        "creation": current_date,
-    }
+    if data["txt"]["complete"]:
+        export_file(data_folder, "txt", force_recreate=True)
+        data["txt"] = {
+            "complete": True,
+            "size": get_size(data_folder + "/_txt.txt", path_complete=True),
+            "creation": created_time
+        }
 
-    export_file(data_folder, "txt", delimiter=True, force_recreate=True)
-    data["txt_delimited"] = {
-        "complete": True,
-        "size": get_size(data_folder + "/_txt_delimited.txt", path_complete=True),
-        "creation": current_date
-    }
+    if data["txt_delimited"]["complete"]:
+        export_file(data_folder, "txt", delimiter=True, force_recreate=True)
+        data["txt_delimited"] = {
+            "complete": True,
+            "size": get_size(data_folder + "/_txt_delimited.txt", path_complete=True),
+            "creation": created_time
+        }
 
-    os.remove(data_folder + "/_pdf_indexed.pdf")
-    export_file(data_folder, "pdf", force_recreate=True)
-    data["pdf_indexed"] = {
-        "complete": True,
-        "size": get_size(data_folder + "/_pdf_indexed.pdf", path_complete=True),
-        "creation": current_date
-    }
+    if data["pdf_indexed"]["complete"]:
+        recreate_csv = data["csv"]["completed"]
+        os.remove(data_folder + "/_pdf_indexed.pdf")
+        export_file(data_folder, "pdf", force_recreate=True, get_csv=recreate_csv)
+        data["pdf_indexed"] = {
+            "complete": True,
+            "size": get_size(data_folder + "/_pdf_indexed.pdf", path_complete=True),
+            "creation": created_time
+        }
 
-    os.remove(data_folder + "/_pdf.pdf")
-    export_file(data_folder, "pdf", force_recreate=True, simple=True)
-    data["pdf"] = {
-        "complete": True,
-        "size": get_size(data_folder + "/_pdf.pdf", path_complete=True),
-        "creation": current_date
-    }
-    # CSV exported as part of PDF export
-    data["csv"] = {
-        "complete": True,
-        "size": get_size(data_folder + "/_index.csv", path_complete=True),
-        "creation": current_date
-    }
+    if data["pdf"]["complete"]:
+        recreate_csv = data["csv"]["completed"] and not data["pdf_indexed"]["complete"]
+        os.remove(data_folder + "/_pdf.pdf")
+        export_file(data_folder, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
+        data["pdf"] = {
+            "complete": True,
+            "size": get_size(data_folder + "/_pdf.pdf", path_complete=True),
+            "creation": created_time
+        }
+
+    if data["csv"]["completed"] and not (data["pdf_indexed"]["complete"] or data["pdf"]["complete"]):
+        export_csv(data_folder, force_recreate=True)
+
+    if data["csv"]["completed"]:
+        data["csv"] = {
+            "complete": True,
+            "size": get_size(data_folder + "/_index.csv", path_complete=True),
+            "creation": created_time
+        }
 
     try:
         task_request_ner(data_folder)

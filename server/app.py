@@ -808,11 +808,6 @@ def submit_text():
             json.dump(text, f, indent=2, ensure_ascii=False)
 
     if remake_files:
-        update_data(
-            data_path,
-            {"txt": {"complete": False}, "txt_delimited": {"complete": False}, "pdf_indexed": {"complete": False}, "pdf": {"complete": False}},
-        )
-
         celery.send_task('make_changes', kwargs={'data_folder': path,  'data': data})
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
