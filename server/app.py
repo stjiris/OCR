@@ -240,9 +240,9 @@ def get_file():
     return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
 
-@app.route("/get_txt_delimitado", methods=["GET"])
+@app.route("/get_txt_delimited", methods=["GET"])
 @requires_arg_path
-def get_txt_delimitado():
+def get_txt_delimited():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)

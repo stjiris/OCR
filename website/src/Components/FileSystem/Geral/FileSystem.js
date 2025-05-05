@@ -521,7 +521,7 @@ class FileExplorer extends React.Component {
      * with the delimiter
      */
     getDelimiterTxt(file) {
-        this.getDocument("txt_delimitado", file, "txt", "_delimitado");
+        this.getDocument("txt_delimited", file, "txt", "_delimitado");
     }
 
     /**
