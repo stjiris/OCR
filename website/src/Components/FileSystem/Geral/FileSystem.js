@@ -93,6 +93,7 @@ class FileExplorer extends React.Component {
         this.getImages = this.getImages.bind(this);
         this.getPdfIndexed = this.getPdfIndexed.bind(this);
         this.getPdfSimple = this.getPdfSimple.bind(this);
+        this.getHocr = this.getHocr.bind(this);
         this.editText = this.editText.bind(this);
         this.performOCR = this.performOCR.bind(this);
         this.indexFile = this.indexFile.bind(this);
@@ -570,6 +571,10 @@ class FileExplorer extends React.Component {
         this.getDocument("alto", file, "xml", "_alto");
     }
 
+    getHocr(file) {
+        this.getDocument("hocr", file, "hocr", "");
+    }
+
     /*
     editFile(file) {
         const filename = this.state.current_folder + '/' + file;
@@ -734,6 +739,7 @@ class FileExplorer extends React.Component {
                         getPdfIndexed={this.getPdfIndexed}
                         getPdfSimple={this.getPdfSimple}
                         getAlto={this.getAlto}
+                        getHocr={this.getHocr}
                         editText={this.editText}
                         performOCR={this.performOCR}
                         indexFile={this.props._private ? null : this.indexFile}
