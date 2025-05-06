@@ -50,7 +50,7 @@ log.basicConfig(level=log.INFO, format=f'%(asctime)s %(levelname)s : %(message)s
 def get_ner_file(path):
     r = requests.post(
         "https://iris.sysresearch.org/absconditus/from-text",
-        files={"file": open(f"{path}/_txt.txt", "rb")},
+        files={"file": open(f"{path}/_export/_txt.txt", "rb")},
     )
     try:
         ner = r.json()
@@ -58,7 +58,7 @@ def get_ner_file(path):
         return False
 
     if r.status_code == 200:
-        with open(f"{path}/_entities.json", "w", encoding="utf-8") as f:
+        with open(f"{path}/_export/_entities.json", "w", encoding="utf-8") as f:
             json.dump(ner, f, indent=2, ensure_ascii=False)
         return True
     else:
