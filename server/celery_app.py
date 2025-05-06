@@ -447,7 +447,7 @@ def task_page_ocr(
                         "creation": creation_date,
                     }
                     if extension == "pdf":
-                        data[extension]["pages"] = get_page_count(path, file_path)
+                        data[extension]["pages"] = get_page_count(path, "pdf")
                     update_data(data_file, data)
 
             task_export_results.delay(path, output_types)
@@ -501,7 +501,7 @@ def task_export_results(path: str, output_types: list[str]):
                 "complete": True,
                 "size": get_size(f"{path}/_pdf_indexed.pdf", path_complete=True),
                 "creation": creation_time,
-                "pages": get_page_count(path, f"{path}/_pdf_indexed.pdf"),
+                "pages": get_page_count(path, "pdf") + 1,
             }
             if "csv" in output_types:
                 # CSV exported as part of PDF export
@@ -518,7 +518,7 @@ def task_export_results(path: str, output_types: list[str]):
                 "complete": True,
                 "size": get_size(f"{path}/_pdf.pdf", path_complete=True),
                 "creation": creation_time,
-                "pages": get_page_count(path, f"{path}/_pdf.pdf"),
+                "pages": get_page_count(path, "pdf"),
             }
             if "csv" in output_types:
                 # CSV exported as part of PDF export

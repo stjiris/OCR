@@ -421,6 +421,8 @@ def get_page_count(target_path, extension):
         return len(os.listdir(f"{target_path}/_pages"))
     elif extension in ALLOWED_EXTENSIONS:  # some other than pdf or zip
         return 1
+    return None
+
 
 # DONE
 def get_file_basename(filename):
