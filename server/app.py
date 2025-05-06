@@ -700,8 +700,8 @@ def index_doc():
             if data["pages"] > 1:
                 doc = create_document(
                     file_path,
-                    "Tesseract",
-                    "pt",
+                    data["ocr"]["config"]["engineName"],
+                    data["ocr"]["config"],
                     text,
                     extension,
                     i + 1,
@@ -710,7 +710,7 @@ def index_doc():
                 doc = create_document(
                     file_path,
                     "Tesseract",
-                    "pt",
+                    data["ocr"]["config"],
                     text,
                     extension
                 )
