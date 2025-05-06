@@ -81,7 +81,7 @@ def export_imgs(path, force_recreate=False):
 
     :return: the path to the exported file
     """
-    filename = f"{path}/_images.zip"
+    filename = f"{path}/_export/_images.zip"
     if os.path.exists(filename) and not force_recreate:
         return filename
 
@@ -99,9 +99,9 @@ def export_txt(path, delimiter=False, force_recreate=False):
     :return: the path to the exported file
     """
 
-    filename = f"{path}/_txt.txt"
+    filename = f"{path}/_export/_txt.txt"
     if delimiter:
-        filename = f"{path}/_txt_delimited.txt"
+        filename = f"{path}/_export/_txt_delimited.txt"
     if os.path.exists(filename) and not force_recreate:
         return filename
 
@@ -133,7 +133,7 @@ def export_txt(path, delimiter=False, force_recreate=False):
 # EXPORT CSV FUNCTIONS
 ####################################################
 def export_csv(path, force_recreate=False):
-    filename_csv = f"{path}/_index.csv"
+    filename_csv = f"{path}/_export/_index.csv"
     if os.path.exists(filename_csv) and not force_recreate:
         return filename_csv
 
@@ -170,9 +170,9 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
     """
     Export the file as a .pdf file
     """
-    filename = f"{path}/_pdf_indexed.pdf"
-    simple_filename = f"{path}/_pdf.pdf"
-    filename_csv = f"{path}/_index.csv"
+    filename = f"{path}/_export/_pdf_indexed.pdf"
+    simple_filename = f"{path}/_export/_pdf.pdf"
+    filename_csv = f"{path}/_export/_index.csv"
 
     dpi_original = 300
     dpi_compressed = OUT_DEFAULT_DPI  # TODO: variable output DPI
@@ -189,7 +189,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
             page_extension = "png"
             pdf_basename = get_file_basename(path)
 
-            pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
+            pdf = pdfium.PdfDocument(f"{path}/_export/{pdf_basename}.pdf")
             for i in range(len(pdf)):
                 page = pdf[i]
                 bitmap = page.render(dpi_compressed / 72)

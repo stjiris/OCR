@@ -246,7 +246,7 @@ def get_txt_delimited():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_txt_delimited.txt")
+    return send_file(f"{path}/_export/_txt_delimited.txt")
 
 
 @app.route("/get_txt", methods=["GET"])
@@ -255,7 +255,7 @@ def get_txt():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_txt.txt")
+    return send_file(f"{path}/_export/_txt.txt")
 
 
 @app.route("/get_entities", methods=["GET"])
@@ -264,7 +264,7 @@ def get_entities():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_entities.json")
+    return send_file(f"{path}/_export/_entities.json")
 
 
 @app.route("/request_entities", methods=["GET"])
@@ -328,7 +328,7 @@ def get_csv():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_index.csv")
+    return send_file(f"{path}/_export/_index.csv")
 
 
 @app.route("/get_alto", methods=["GET"])
@@ -337,7 +337,7 @@ def get_alto():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_xml.xml")
+    return send_file(f"{path}/_export/_xml.xml")
 
 
 @app.route("/get_images", methods=["GET"])
@@ -632,7 +632,10 @@ def perform_ocr():
         # Delete previous results
         if os.path.exists(f"{f}/_ocr_results"):
             shutil.rmtree(f"{f}/_ocr_results")
+        if os.path.exists(f"{f}/_export"):
+            shutil.rmtree(f"{f}/_export")
         os.mkdir(f"{f}/_ocr_results")
+        os.mkdir(f"{f}/_export")
 
         data["pdf"] = {"complete": False}
         data["pdf_indexed"] = {"complete": False}
