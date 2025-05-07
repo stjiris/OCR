@@ -786,7 +786,7 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{borderLeft:"1px solid #aaa"}}>
+                            <TableCell sx={{width: "26%", borderLeft:"1px solid #aaa"}}>
                                 <Button
                                     startIcon={<SwapVertIcon />}
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
@@ -794,10 +794,10 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Descrição</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
+                            <TableCell align='center' sx={{width: "15%", borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
+                            <TableCell align='center' sx={{width: "20%", borderLeft:"1px solid #aaa"}}><b>Descrição</b></TableCell>
+                            <TableCell align='center' sx={{width: "12%", borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
+                            <TableCell align='center' sx={{width: "23%", borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
