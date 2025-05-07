@@ -11,18 +11,22 @@ TESSERACT_OUTPUTS = (
     "xml",
 )
 
-EXTENTION_TO_CONFIG = {
+EXTENSION_TO_CONFIG = {
     #'box': '-c tessedit_create_boxfile=1 batch.nochop makebox',
     'hocr': '-c tessedit_create_hocr=1',
     'pdf': '-c tessedit_create_pdf=1',
     'tsv': '-c tessedit_create_tsv=1',
+    'txt': '-c tessedit_create_txt=1',
     'xml': '-c tessedit_create_alto=1',
 }
 
 
-def _read_output(filename: str) -> bytes:
-    with open(filename, 'rb') as output_file:
-        return output_file.read()
+def _read_output(filename: str) -> bytes | None:
+    if os.path.isfile(filename):
+        with open(filename, 'rb') as output_file:
+            return output_file.read()
+    else:
+        return None
 
 
 def _get_segment_hocr(page, lang: str, config_str: str, segment_coordinates):
@@ -49,7 +53,7 @@ def _run_and_get_multiple_output(
         extensions.append("hocr")
 
     out_config = ' '.join(
-        EXTENTION_TO_CONFIG.get(out_ext, '') for out_ext in extensions
+        EXTENSION_TO_CONFIG.get(out_ext, '') for out_ext in extensions
     ).strip()
     if out_config:
         config = f'{config_str} {out_config}'
