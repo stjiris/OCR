@@ -33,7 +33,7 @@ const tesseractLangList = [
 
 const tesseractOutputsList = [
     {"name": "PDF com texto e índice", "code": "pdf_indexed"},
-    {"name": "PDF com texto", "code": "pdf"},
+    {"name": "PDF com texto (por defeito)", "code": "pdf"},
     {"name": "Texto", "code": "txt"},
     {"name": "Texto com separador por página", "code": "txt_delimited"},
     {"name": "Índice de palavras", "code": "csv"},
@@ -376,7 +376,8 @@ class OcrMenu extends React.Component {
                         <ChecklistDropdown ref={this.outputs}
                                            label={"Formatos de resultado"}
                                            options={tesseractOutputsList}
-                                           defaultChoice={defaultOutputs}/>
+                                           defaultChoice={defaultOutputs}
+                                           allowCheckAll={true}/>
 
                         <Button onClick={() => this.toggleAdvanced()}>
                             Opções avançadas
