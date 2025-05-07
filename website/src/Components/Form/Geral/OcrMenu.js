@@ -46,7 +46,7 @@ const defaultOutputs = [tesseractOutputsList[1]];
 const defaultEngine = 0;
 const engineList = [
     { value: 0, description: "PyTesseract"},
-    { value: 1, description: "TesserOCR"},
+    //{ value: 1, description: "TesserOCR"},
 ]
 
 const defaultEngineMode = 3;
