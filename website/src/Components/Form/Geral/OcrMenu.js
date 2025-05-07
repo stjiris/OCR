@@ -38,8 +38,8 @@ const tesseractOutputsList = [
     {"name": "Texto com separador por página", "code": "txt_delimited"},
     {"name": "Índice de palavras", "code": "csv"},
     // {"name": "Entidades (NER)", "code": "ner"},
-    {"name": "hOCR", "code": "hocr"},
-    {"name": "ALTO", "code": "xml"},
+    {"name": "hOCR (apenas documentos com 1 página)", "code": "hocr"},
+    {"name": "ALTO (apenas documentos com 1 página)", "code": "xml"},
 ]
 const defaultOutputs = [tesseractOutputsList[1]];
 
