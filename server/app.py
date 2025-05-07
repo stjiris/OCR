@@ -240,13 +240,13 @@ def get_file():
     return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
 
-@app.route("/get_txt_delimitado", methods=["GET"])
+@app.route("/get_txt_delimited", methods=["GET"])
 @requires_arg_path
-def get_txt_delimitado():
+def get_txt_delimited():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_text_delimiter.txt")
+    return send_file(f"{path}/_export/_txt_delimited.txt")
 
 
 @app.route("/get_txt", methods=["GET"])
@@ -255,7 +255,7 @@ def get_txt():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_text.txt")
+    return send_file(f"{path}/_export/_txt.txt")
 
 
 @app.route("/get_entities", methods=["GET"])
@@ -264,7 +264,7 @@ def get_entities():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_entities.json")
+    return send_file(f"{path}/_export/_entities.json")
 
 
 @app.route("/request_entities", methods=["GET"])
@@ -299,9 +299,9 @@ def get_zip():
     return send_file(safe_join(path, f"{path.split('/')[-1]}.zip"))  # filename == folder name
 
 
-@app.route("/get_pdf", methods=["GET"])
+@app.route("/get_pdf_indexed", methods=["GET"])
 @requires_arg_path
-def get_pdf():
+def get_pdf_indexed():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
@@ -310,9 +310,9 @@ def get_pdf():
     return send_file(file)
 
 
-@app.route("/get_pdf_simples", methods=["GET"])
+@app.route("/get_pdf", methods=["GET"])
 @requires_arg_path
-def get_pdf_simples():
+def get_pdf_simple():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
@@ -328,7 +328,25 @@ def get_csv():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_index.csv")
+    return send_file(f"{path}/_export/_index.csv")
+
+
+@app.route("/get_hocr", methods=["GET"])
+@requires_arg_path
+def get_hocr():
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+    return send_file(f"{path}/_export/_hocr.hocr")
+
+
+@app.route("/get_alto", methods=["GET"])
+@requires_arg_path
+def get_alto():
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+    return send_file(f"{path}/_export/_xml.xml")
 
 
 @app.route("/get_images", methods=["GET"])
@@ -601,12 +619,9 @@ def perform_ocr():
 
     data = request.json
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
-    algorithm = data["algorithm"]
-    config = data["config"]
-    multiple = data["multiple"]
 
-    # ocr_algorithm = "tesserOCR"
-    ocr_algorithm = "tesseract"
+    config = data["config"] if "config" in data else {}
+    multiple = data["multiple"] if "multiple" in data else False
 
     if multiple:
         files = [
@@ -626,27 +641,26 @@ def perform_ocr():
         # Delete previous results
         if os.path.exists(f"{f}/_ocr_results"):
             shutil.rmtree(f"{f}/_ocr_results")
+        if os.path.exists(f"{f}/_export"):
+            shutil.rmtree(f"{f}/_export")
         os.mkdir(f"{f}/_ocr_results")
+        os.mkdir(f"{f}/_export")
 
-        # Update the information related to the OCR
-        data["ocr"] = {
-            "algorithm": algorithm,
-            "config": "_".join(config),
-            "progress": 0,
-        }
-        data["txt"] = {"complete": False}
-        data["delimiter_txt"] = {"complete": False}
         data["pdf"] = {"complete": False}
+        data["pdf_indexed"] = {"complete": False}
+        data["txt"] = {"complete": False}
+        data["txt_delimited"] = {"complete": False}
         data["csv"] = {"complete": False}
         data["ner"] = {"complete": False}
+        data["hocr"] = {"complete": False}
+        data["xml"] = {"complete": False}
         data["zip"] = {"complete": False}
-        data["pdf_simples"] = {"complete": False}
         update_data(f"{f}/_data.json", data)
 
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        celery.send_task('file_ocr', kwargs={'path': f, 'config': config, 'ocr_algorithm': ocr_algorithm})
+        celery.send_task('file_ocr', kwargs={'path': f, 'config': config})
         # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
         # task_file_ocr(f, config, ocr_algorithm, True)
 
@@ -695,8 +709,8 @@ def index_doc():
             if data["pages"] > 1:
                 doc = create_document(
                     file_path,
-                    "Tesseract",
-                    "pt",
+                    data["ocr"]["config"]["engineName"],
+                    data["ocr"]["config"],
                     text,
                     extension,
                     i + 1,
@@ -705,7 +719,7 @@ def index_doc():
                 doc = create_document(
                     file_path,
                     "Tesseract",
-                    "pt",
+                    data["ocr"]["config"],
                     text,
                     extension
                 )
@@ -808,11 +822,6 @@ def submit_text():
             json.dump(text, f, indent=2, ensure_ascii=False)
 
     if remake_files:
-        update_data(
-            data_path,
-            {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
-        )
-
         celery.send_task('make_changes', kwargs={'data_folder': path,  'data': data})
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)

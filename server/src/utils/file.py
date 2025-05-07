@@ -50,7 +50,7 @@ log.basicConfig(level=log.INFO, format=f'%(asctime)s %(levelname)s : %(message)s
 def get_ner_file(path):
     r = requests.post(
         "https://iris.sysresearch.org/absconditus/from-text",
-        files={"file": open(f"{path}/_text.txt", "rb")},
+        files={"file": open(f"{path}/_export/_txt.txt", "rb")},
     )
     try:
         ner = r.json()
@@ -58,7 +58,7 @@ def get_ner_file(path):
         return False
 
     if r.status_code == 200:
-        with open(f"{path}/_entities.json", "w", encoding="utf-8") as f:
+        with open(f"{path}/_export/_entities.json", "w", encoding="utf-8") as f:
             json.dump(ner, f, indent=2, ensure_ascii=False)
         return True
     else:
@@ -421,6 +421,8 @@ def get_page_count(target_path, extension):
         return len(os.listdir(f"{target_path}/_pages"))
     elif extension in ALLOWED_EXTENSIONS:  # some other than pdf or zip
         return 1
+    return None
+
 
 # DONE
 def get_file_basename(filename):
@@ -466,6 +468,15 @@ def get_data(file):
         if text == "":
             return {}
         return json.loads(text)
+
+
+def get_doc_len(file):
+    with open(file, encoding="utf-8") as f:
+        text = f.read()
+        if text == "":
+            return {}
+        return json.loads(text)["pages"]
+
 
 # DONE
 def update_data(file, data):
