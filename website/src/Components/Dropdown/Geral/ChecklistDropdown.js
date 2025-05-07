@@ -60,6 +60,17 @@ class ChecklistDropdown extends React.Component {
         });
         */
 
+        // Handle "select all" option
+        if (value[value.length - 1] === "all") {
+            if (this.state.choice.length === this.props.options.length) {
+                // If all are selected, revert to default
+                value = this.props.defaultChoice;
+            } else {
+                // If not all are selected, select all
+                value = [...this.props.options];
+            }
+        }
+
         // If all options are disabled, reset the choice list to the default
         if (value.length === 0) {
             value = this.props.defaultChoice
@@ -92,6 +103,18 @@ class ChecklistDropdown extends React.Component {
                             sx={{height: '2.5rem'}}
                         >
                             {
+                                this.props.allowCheckAll
+                                ?
+                                <MenuItem key="all" value="all" sx={{height: '2.5rem'}}>
+                                    <Checkbox
+                                        checked={this.state.choice.length > 0 && this.state.choice.length === this.props.options.length}
+                                        //indeterminate={this.state.choice.length > 0 && this.state.choice.length < this.props.options.length}
+                                    />
+                                    <ListItemText primary={"Selecionar tudo"} />
+                                </MenuItem>
+                                : null
+                            }
+                            {
                                 this.props.options.map((option) => (
                                     <MenuItem key={option.name} value={option} sx={{height: '2.5rem'}}>
                                         <Checkbox checked={this.state.choice.includes(option)} />
@@ -113,6 +136,7 @@ ChecklistDropdown.defaultProps = {
     defaultChoice: [],
     label: null,
     helperText: null,
+    allowCheckAll: false,
     // functions:
     onCloseFunc: null,
     parentfunc: null
