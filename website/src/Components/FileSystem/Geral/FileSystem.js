@@ -56,7 +56,7 @@ class FileExplorer extends React.Component {
             updatingRate: 15,
             updateCount: 0,
 
-            loading: false,
+            fetched: false,
 
             layoutMenu: false,
             editingMenu: false,
@@ -120,11 +120,25 @@ class FileExplorer extends React.Component {
             + '&path=' + (this.props._private ? this.props.sessionId : ""), {
             method: 'GET'
         })
-        .then(response => {return response.json()})
+        .then(async response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error("Esta sessão privada não existe.");
+                } else {
+                    throw new Error("Não foi possível obter os dados do servidor.");
+                }
+            } else {
+                return response.json()
+            }
+        })
         .then(data => {
             const info = data["info"];
             const files = data["files"];
-            this.setState({files: files, info: info, loading: false});
+            this.setState({files: files, info: info, fetched: true});
+        })
+        .catch(err => {
+            this.storageMenu.current.setMessage(err.message);
+            this.storageMenu.current.toggleOpen();
         });
 
         // Update the info every UPDATE_TIME seconds
@@ -954,7 +968,7 @@ class FileExplorer extends React.Component {
                             <OcrMenu ref={this.ocrMenu} _private={this.props._private} updateFiles={this.updateFiles} showStorageForm={this.showStorageForm}/>
                             <DeleteMenu ref={this.deleteMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
                             {
-                                this.props._private
+                                this.props._private && this.state.fetched
                                 ? <PrivateSessionMenu ref={this.privateSessionMenu} rowRefsLength={this.rowRefs.length} createFile={this.createFile}/>
                                 : null
                             }

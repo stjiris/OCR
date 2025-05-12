@@ -256,9 +256,6 @@ class OcrMenu extends React.Component {
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
         this.algoDropdown = React.createRef();
-
-        this.storageMenu = React.createRef();
-
         this.langs = React.createRef();
     }
 
