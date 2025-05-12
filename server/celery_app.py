@@ -4,17 +4,19 @@ import os
 import shutil
 import traceback
 import zipfile
+from datetime import datetime
 
 from celery import Celery
 from PIL import Image
 from PIL import ImageDraw
 import pypdfium2 as pdfium
+from celery.schedules import crontab
 
 from src.algorithms import tesseract
 from src.utils.export import export_file
 from src.utils.export import load_invisible_font
 
-from src.utils.file import ALLOWED_EXTENSIONS
+from src.utils.file import ALLOWED_EXTENSIONS, PRIVATE_PATH, TIMEZONE
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -27,8 +29,10 @@ from src.utils.file import update_data
 
 from src.utils.image import parse_images
 
+MAX_PRIVATE_SESSION_AGE = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
 
 load_invisible_font()
@@ -422,3 +426,28 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         log.error(f"Error in performing a page's OCR for file at {path}: {e}")
 
         return {"status": "error"}
+
+
+#####################################
+# SCHEDULED TASKS
+#####################################
+@celery.on_after_configure.connect
+def setup_periodic_tasks(sender: Celery, **kwargs):
+    # Clean up old private sessions daily at midnight
+    sender.add_periodic_task(crontab(minute='0', hour='0'), delete_old_private_sessions.s(), name='cleanup private sessions every midnight')
+
+
+@celery.task
+def delete_old_private_sessions():
+    log.debug("Deleting old private sessions")
+    priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
+    for folder in priv_sessions:
+        #log.warning(f"CHECKING {folder}")
+        data = get_data(f"{folder}/_data.json")
+        created_time = data["creation"]
+        #log.warning(f'{folder} CREATED ON {created_time}')
+        as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(TIMEZONE)
+        #log.warning(f'{folder} DATETIME IS {as_datetime}')
+        now = datetime.now().astimezone(TIMEZONE)
+        #log.warning(f'CURRENT DATETIME IS {now}')
+        log.warning(f'{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > MAX_PRIVATE_SESSION_AGE}')
