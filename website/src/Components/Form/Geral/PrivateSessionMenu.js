@@ -70,6 +70,7 @@ class PrivateSessionMenu extends React.Component {
                         </Typography>
                         <Typography variant="body1" component="p" sx={{mt: '1rem', mb: '1rem'}}>
                             Para poder aceder a esta sessão novamente no futuro, certifique-se que guarda o link da sessão privada num lugar seguro.
+                            As sessões privadas são removidas ao fim de {this.props.maxAge} dias.
                         </Typography>
                         <Button
                             disabled={this.state.buttonDisabled}
@@ -111,6 +112,7 @@ class PrivateSessionMenu extends React.Component {
 }
 
 PrivateSessionMenu.defaultProps = {
+    maxAge: null,
     rowRefsLength: null,
     // functions:
     createFile: null

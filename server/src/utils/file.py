@@ -239,9 +239,11 @@ def delete_structure(client, path):
 
 
 # TODO
-def get_filesystem(path, private_session=None, is_private=False):
+def get_filesystem(path, private_session: str = None, is_private: bool = False) -> dict:
     """
     :param path: path to the folder
+    :param private_session: name of the private session, if applicable
+    :param is_private: whether the target path is a private session
     """
     files = get_structure(path, private_session, is_private)
     info = get_structure_info(path, private_session, is_private)

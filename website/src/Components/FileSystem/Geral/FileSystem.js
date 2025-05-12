@@ -48,6 +48,7 @@ class FileExplorer extends React.Component {
         this.state = {
             files: null,
             info: null,
+            maxAge: null,
             // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
             current_folder: props.current_folder.join('/').replace(/^\//, ''),
             components: [],
@@ -134,7 +135,8 @@ class FileExplorer extends React.Component {
         .then(data => {
             const info = data["info"];
             const files = data["files"];
-            this.setState({files: files, info: info, fetched: true});
+            const maxAge = data["maxAge"];
+            this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
         })
         .catch(err => {
             this.storageMenu.current.setMessage(err.message);
@@ -969,7 +971,7 @@ class FileExplorer extends React.Component {
                             <DeleteMenu ref={this.deleteMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
                             {
                                 this.props._private && this.state.fetched
-                                ? <PrivateSessionMenu ref={this.privateSessionMenu} rowRefsLength={this.rowRefs.length} createFile={this.createFile}/>
+                                ? <PrivateSessionMenu ref={this.privateSessionMenu} maxAge={this.state.maxAge} rowRefsLength={this.rowRefs.length} createFile={this.createFile}/>
                                 : null
                             }
                             <FullStorageMenu ref={this.storageMenu}/>

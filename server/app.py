@@ -46,13 +46,14 @@ from src.utils.system import get_private_sessions
 
 from src.utils.text import compare_dicts_words
 
+MAX_PRIVATE_SESSION_AGE = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+
 app = Flask(__name__)
 CORS(app)
 
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
-
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 # logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
@@ -147,7 +148,9 @@ def get_file_system():
 
     try:
         if "path" not in request.values or request.values["path"] == "":
-            return get_filesystem(FILES_PATH)
+            filesystem = get_filesystem(FILES_PATH)
+            filesystem["maxAge"] = MAX_PRIVATE_SESSION_AGE
+            return filesystem
 
         path = request.values["path"].strip("/")
         log.info(f'Request values: {request.values}')
@@ -158,7 +161,9 @@ def get_file_system():
         else:
             path = safe_join(FILES_PATH, path)
 
-        return get_filesystem(path, private_session, is_private)
+        filesystem = get_filesystem(path, private_session, is_private)
+        filesystem["maxAge"] = MAX_PRIVATE_SESSION_AGE
+        return filesystem
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
