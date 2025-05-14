@@ -437,15 +437,15 @@ def is_filename_reserved(path, filename):
 
     :return: True if reserved, False otherwise
     """
-    for f in os.listdir(path):
-        # If f is a folder
-        if not os.path.isdir(f"{path}/{f}"): continue
-        if f == filename: return True
+    with os.scandir(path) as dir_content:
+        for f in dir_content:
+            # If f is a folder
+            if not f.is_dir(): continue
+            if f.name == filename: return True
 
-        data = get_data(f"{path}/{f}/_data.json")
-        if "original_filename" in data and data["original_filename"] == filename:
-            return True
-
+            data = get_data(f"{f.path}/_data.json")
+            if "original_filename" in data and data["original_filename"] == filename:
+                return True
     return False
 
 
