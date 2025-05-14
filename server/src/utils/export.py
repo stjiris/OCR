@@ -189,7 +189,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
             page_extension = "png"
             pdf_basename = get_file_basename(path)
 
-            pdf = pdfium.PdfDocument(f"{path}/_export/{pdf_basename}.pdf")
+            pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
             for i in range(len(pdf)):
                 page = pdf[i]
                 bitmap = page.render(dpi_compressed / 72)
