@@ -26,6 +26,8 @@ const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+
 /**
  * About Versioning:
  * Version -> MAJOR.MINOR.PATCH
@@ -81,7 +83,7 @@ function App() {
 
         componentDidMount() {
             if (window.location.href.includes(process.env.REACT_APP_ADMIN)) {
-                fetch(process.env.REACT_APP_API_URL + 'system-info', {
+                fetch(API_URL + '/system-info', {
                     method: 'GET'
                 })
                 .then(response => {return response.json()})
@@ -95,7 +97,7 @@ function App() {
                 });
 
                 this.interval = setInterval(() => {
-                    fetch(process.env.REACT_APP_API_URL + 'system-info', {
+                    fetch(API_URL + '/system-info', {
                         method: 'GET'
                     })
                     .then(response => {return response.json()})
@@ -194,7 +196,7 @@ function App() {
              //
              //Send the changes to the server
              //
-            fetch(process.env.REACT_APP_API_URL + 'submit-text', {
+            fetch(API_URL + '/submit-text', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -221,7 +223,7 @@ function App() {
          */
 
         createPrivateSession() {
-            fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
+            return fetch(API_URL + '/create-private-session', {
                 method: 'GET'
             })
             .then(response => {return response.json()})
@@ -272,7 +274,7 @@ function App() {
 
         deletePrivateSession(e, privateSession) {
             e.stopPropagation();
-            fetch(process.env.REACT_APP_API_URL + "/delete-private-session", {
+            fetch(API_URL + "/delete-private-session", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -42,6 +42,8 @@ const validExtensions = ["application/pdf",
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+
 class FileExplorer extends React.Component {
     constructor(props) {
         super(props);
@@ -116,7 +118,7 @@ class FileExplorer extends React.Component {
         /**
          * Fetch the files and info from the server
          */
-        fetch(process.env.REACT_APP_API_URL + 'files?'
+        fetch(API_URL + '/files?'
             + '_private=' + this.props._private
             + '&path=' + (this.props._private ? this.props.sessionId : ""), {
             method: 'GET'
@@ -148,7 +150,7 @@ class FileExplorer extends React.Component {
 
         // Check for stuck uploads every STUCK_UPDATE_TIME seconds
         this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?' +
+            fetch(API_URL + '/info?' +
                 '_private=' + this.props._private
                 + '&path=' + (this.props._private
                                 ? this.props.sessionId
@@ -167,7 +169,7 @@ class FileExplorer extends React.Component {
                             const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
 
                             if (timeDiffMinutes >= 10) {
-                                fetch(process.env.REACT_APP_API_URL + 'set-upload-stuck', {
+                                fetch(API_URL + '/set-upload-stuck', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -199,7 +201,7 @@ class FileExplorer extends React.Component {
 
     createUpdateInfo() {
         this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?'
+            fetch(API_URL + '/info?'
                 + '_private=' + this.props._private
                 + '&path=' + (this.props._private
                                 ? this.props.sessionId
@@ -282,7 +284,7 @@ class FileExplorer extends React.Component {
         formData.append('counter', i+1);
         formData.append('totalCount', _totalCount);
 
-        fetch(process.env.REACT_APP_API_URL + 'upload-file', {
+        fetch(API_URL + '/upload-file', {
             method: 'POST',
             body: formData
         }).then(response => {return response.json()})
@@ -345,7 +347,7 @@ class FileExplorer extends React.Component {
 
                 const _fileID = uuidv4() + "." + fileName.split('.').pop();
 
-                fetch(process.env.REACT_APP_API_URL + 'prepare-upload', {
+                fetch(API_URL + '/prepare-upload', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -387,7 +389,7 @@ class FileExplorer extends React.Component {
     }
 
     createPrivateSession() {
-        fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
+        fetch(API_URL + '/create-private-session', {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -417,7 +419,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'get_' + type + '?_private=' + this.props._private + '&path=' + path, {
+        fetch(API_URL + '/get_' + type + '?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
@@ -436,7 +438,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'get_entities?_private=' + this.props._private + '&path=' + path, {
+        fetch(API_URL + '/get_entities?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
@@ -455,7 +457,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'request_entities?_private=' + this.props._private + '&path=' + path, {
+        fetch( API_URL + '/request_entities?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -477,7 +479,7 @@ class FileExplorer extends React.Component {
          //
         const path = this.state.current_folder.replace(/^\//, '');
 
-        fetch(process.env.REACT_APP_API_URL + "get_zip?path=" + path, {
+        fetch(API_URL + "get_zip?path=" + path, {
             method: 'GET'
         })
         .then(response => {
@@ -511,7 +513,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'get_original?_private=' + this.props._private + '&path=' + path, {
+        fetch(API_URL + '/get_original?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
@@ -554,7 +556,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'get_images?_private=' + this.props._private + '&path=' + path, {
+        fetch(API_URL + '/get_images?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
@@ -816,7 +818,7 @@ class FileExplorer extends React.Component {
     indexFile(file, multiple) {
         const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
 
-        fetch(process.env.REACT_APP_API_URL + 'index-doc', {
+        fetch(API_URL + '/index-doc', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -842,7 +844,7 @@ class FileExplorer extends React.Component {
     removeIndexFile(file, multiple) {
         const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
 
-        fetch(process.env.REACT_APP_API_URL + 'remove-index-doc', {
+        fetch(API_URL + '/remove-index-doc', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -9,6 +9,8 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import loadComponent from '../../../utils/loadComponents';
 const Notification = loadComponent('Notification', 'Notifications');
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+
 const style = {
     position: 'absolute',
     top: '50%',
@@ -57,7 +59,7 @@ class DeleteMenu extends React.Component {
 
     deleteItem() {
         this.setState({ buttonDisabled: true });
-        fetch(process.env.REACT_APP_API_URL + 'delete-path', {
+        fetch(API_URL + '/delete-path', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

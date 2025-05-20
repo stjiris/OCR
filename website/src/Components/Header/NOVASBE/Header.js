@@ -12,6 +12,8 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import logoNovaSBE from '../../../static/logoNovaSBE.png';
 import loadComponent from '../../../utils/loadComponents';
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+
 export default class Header extends React.Component {
     constructor(props) {
         super(props);
@@ -37,7 +39,7 @@ export default class Header extends React.Component {
 
     deletePrivateSession(e, privateSession) {
         e.stopPropagation();
-        fetch(process.env.REACT_APP_API_URL + "/delete-private-session", {
+        fetch(API_URL + "/delete-private-session", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -54,7 +56,7 @@ export default class Header extends React.Component {
         });
     }
 
-    render() {        
+    render() {
         const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
         return (
@@ -68,7 +70,7 @@ export default class Header extends React.Component {
                 mt: '1rem',
                 zIndex: '100'
             }}>
-                <Box sx={{display:'flex', flexDirection: 'row', alignItems: 'center'}}>  
+                <Box sx={{display:'flex', flexDirection: 'row', alignItems: 'center'}}>
                     <img src={logoNovaSBE} alt="logoNovaSBE" style={{marginRight:'2rem', height: '64px', width: 'auto'}}/>
                     <Link
                         className="link"
@@ -79,7 +81,7 @@ export default class Header extends React.Component {
                         style={{textDecoration: 'none'}}
                         onClick={() => {
                                 this.state.app.setState({fileSystemMode: true, editFileMode: false, filesChoice: [], algorithmChoice: [], configChoice: []})
-                                this.state.app.redirectHome();                                                
+                                this.state.app.redirectHome();
                             }
                         }
                         underline="hover"
@@ -150,7 +152,7 @@ export default class Header extends React.Component {
                                 : null
                             }
 
-                            <Button sx={{mr: '1.5rem', padding: '0rem', color: '#000000'}} 
+                            <Button sx={{mr: '1.5rem', padding: '0rem', color: '#000000'}}
                                 onClick={() => this.state.app.openLogsMenu()}
                             >
                                 <AssignmentRoundedIcon sx={{mr: '0.3rem'}} />
@@ -161,7 +163,7 @@ export default class Header extends React.Component {
                         : null
                     }
                     <p>{`Versão: ${this.state.version}`}</p>
-                    <Button sx={{ml: '1.5rem', padding: '0rem', color: '#000000'}} 
+                    <Button sx={{ml: '1.5rem', padding: '0rem', color: '#000000'}}
                             onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
                     >
                         <HelpIcon sx={{mr: '0.3rem'}}>

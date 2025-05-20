@@ -11,6 +11,8 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import loadComponent from '../../../utils/loadComponents';
 const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+
 export default class Header extends React.Component {
     constructor(props) {
         super(props);
@@ -36,7 +38,7 @@ export default class Header extends React.Component {
 
     deletePrivateSession(e, privateSession) {
         e.stopPropagation();
-        fetch(process.env.REACT_APP_API_URL + "/delete-private-session", {
+        fetch(API_URL + "/delete-private-session", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

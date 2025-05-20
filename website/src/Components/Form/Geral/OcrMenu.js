@@ -11,6 +11,8 @@ const Notification = loadComponent('Notification', 'Notifications');
 const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
 const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+
 const tesseractChoice = [{"name": "Português", "code": "por"}]
 const tesseractLangList = [
     {"name": "Africanês", "code": "afr"},
@@ -288,7 +290,7 @@ class OcrMenu extends React.Component {
         if (path === null) path = this.state.path;
         if (multiple === null) multiple = this.state.multiple;
 
-        fetch(process.env.REACT_APP_API_URL + 'perform-ocr', {
+        fetch(API_URL + '/perform-ocr', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
