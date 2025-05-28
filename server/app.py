@@ -7,13 +7,26 @@ from http import HTTPStatus
 
 from threading import Lock, Thread
 
+import flask_wtf
+import requests
 from celery import Celery
+from dotenv import load_dotenv
 from flask import Flask
+from flask import Response
 from flask import abort
 from flask import jsonify
 from flask import request
 from flask import send_file
 from flask_cors import CORS
+from flask_login import current_user
+from flask_mailman import Mail
+from flask_security import auth_required
+from flask_security import hash_password
+from flask_security import roles_required
+from flask_security import Security
+from flask_security import SQLAlchemyUserDatastore
+from flask_security.models import fsqla_v3 as fsqla
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import safe_join
 
 from src.elastic_search import create_document
@@ -46,14 +59,52 @@ from src.utils.system import get_private_sessions
 
 from src.utils.text import compare_dicts_words
 
+load_dotenv()
+
 MAX_PRIVATE_SESSION_AGE = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
 
+#app.config["APPLICATION_ROOT"] = "/api"
+app.config["APPLICATION_ROOT"] = "/"
+
+# Set secret key and salt (required)
+app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
+app.config["SECURITY_PASSWORD_SALT"] = os.environ["FLASK_SECURITY_PASSWORD_SALT"]
+
+# Get configs from file
+app.config.from_pyfile('app.cfg')
+
+# Enable CSRF on all api endpoints
+flask_wtf.CSRFProtect(app)
+
+# Setup authentication DB
+db = SQLAlchemy(app)
+fsqla.FsModels.set_db_info(db)
+
+# Setup mail service - must be configured for production!!!
+#mail = Mail(app)
+
+
+class Role(db.Model, fsqla.FsRoleMixin):
+    pass
+
+
+class User(db.Model, fsqla.FsUserMixin):
+    pass
+
+
+# Setup Flask-Security
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+security = Security(app, user_datastore)
+
+# Setup connection to celery
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
+
+# Setup connection to ElasticSearch
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 # logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
@@ -62,6 +113,10 @@ log = app.logger
 lock_system = dict()
 private_sessions = dict()
 
+
+#####################################
+# REQUEST HANDLING
+#####################################
 
 def format_path(request_data):
     is_private = "_private" in request_data and (request_data["_private"] == 'true' or request_data["_private"] == True)
@@ -100,15 +155,18 @@ def requires_arg_path(func):
     func._requires_arg_path = True  # value unimportant
     return func
 
+
 # Endpoint requires a non-empty 'path' JSON value
 def requires_json_path(func):
     func._requires_json_path = True  # value unimportant
     return func
 
+
 # Endpoint requires a non-empty 'path' form value
 def requires_form_path(func):
     func._requires_form_path = True  # value unimportant
     return func
+
 
 # Endpoint requires an allowed file type
 def requires_allowed_file(func):
@@ -134,7 +192,6 @@ def abort_bad_request():
                 abort(HTTPStatus.BAD_REQUEST)
             if request.form["name"].split(".")[-1].lower() not in ALLOWED_EXTENSIONS:
                 abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
-
 
 
 #####################################
@@ -181,7 +238,8 @@ def get_info():
             path = safe_join(PRIVATE_PATH, private_session)
             return {"info": get_structure_info(path, private_session, is_private)}
         else:
-            path = safe_join(FILES_PATH, path)  # TODO: alter front-end and response to get info only from current folder
+            # TODO: alter front-end and response to get info only from current folder
+            # path = safe_join(FILES_PATH, path)
             return {"info": get_structure_info(FILES_PATH)}
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
@@ -322,7 +380,7 @@ def get_pdf_simples():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    promise = celery.send_task('export_file', kwargs={'path':path, 'filetype': "pdf", 'simple': True})
+    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "pdf", 'simple': True})
     file = promise.get()
     return send_file(file)
 
@@ -465,6 +523,7 @@ def find_valid_filename(path, basename, extension):
 
     return f"{basename} ({id}).{extension}"
 
+
 @app.route("/prepare-upload", methods=["POST"])
 @requires_json_path
 def prepare_upload():
@@ -497,7 +556,8 @@ def prepare_upload():
             ensure_ascii=False,
         )
 
-    return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private), "filename": filename}
+    return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private),
+            "filename": filename}
 
 
 def join_chunks(target_path, filename, total_count, temp_file_path):
@@ -532,7 +592,7 @@ def upload_file():
     counter = int(request.form["counter"])
     total_count = int(request.form["totalCount"])
 
-    temp_filename = safe_join(path,  f"_{filename}").replace("/", "_")
+    temp_filename = safe_join(path, f"_{filename}").replace("/", "_")
     target_path = safe_join(path, filename)  # path for document data is "path/filename"
     file_path = safe_join(target_path, filename)  # file stored as "path/filename/filename"
 
@@ -571,7 +631,7 @@ def upload_file():
 
         # Number of chunks saved
         chunks_saved = len(os.listdir(f"{temp_file_path}"))
-        stored = round(100 * chunks_saved/total_count, 2)
+        stored = round(100 * chunks_saved / total_count, 2)
 
         log.info(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
 
@@ -815,10 +875,11 @@ def submit_text():
     if remake_files:
         update_data(
             data_path,
-            {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
+            {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False},
+             "pdf_simples": {"complete": False}},
         )
 
-        celery.send_task('make_changes', kwargs={'data_folder': path,  'data': data})
+        celery.send_task('make_changes', kwargs={'data_folder': path, 'data': data})
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
 
@@ -837,12 +898,14 @@ def check_sintax():
     result = compare_dicts_words(words, languages)
     return {"success": True, "result": result}
 
+
 #####################################
 # ELASTICSEARCH
 #####################################
 @app.route("/get-docs-list", methods=["GET"])
 def get_docs_list():
     return es.get_all_docs_names()
+
 
 @app.route("/search", methods=["POST"])
 def search():
@@ -861,6 +924,7 @@ def search():
         return jsonify(es.get_docs(docs))
     else:
         return jsonify(es.search(query, docs))
+
 
 #####################################
 # PRIVATE SESSIONS
@@ -964,6 +1028,76 @@ def generate_automatic_layouts():
 
 
 #####################################
+# LOGIN MANAGEMENT
+#####################################
+@app.route('/account/check-auth')
+@auth_required()
+@roles_required('Admin')
+def check_authorized():
+    if current_user.is_authenticated:
+        return {"status": "Logged in"}
+    else:
+        abort(HTTPStatus.FORBIDDEN)
+
+"""
+@app.route("/register", methods=["POST"])
+def register_user():
+    email = request.json["email"]
+    password = request.json["password"]
+    user_exists = User.query.filter_by(email=email).first() is not None
+
+    if user_exists:
+        return jsonify({"error": "Utilizador já registado com este email."}), 409
+
+    new_user = User(email=email, password=password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    session["user_id"] = new_user.id
+    return jsonify({
+        "id": new_user.id,
+        "email": new_user.email
+    })
+"""
+
+#####################################
+# ADMIN ROUTES
+#####################################
+
+@app.route('/admin/flower/', defaults={'fullpath': ''}, methods=["GET", "POST"])
+@app.route('/admin/flower/<path:fullpath>', methods=["GET", "POST"])
+@auth_required()
+@roles_required('Admin')
+def proxy_flower(fullpath):
+    """
+    Proxy requests to the Flower Celery manager. Flower can be setup to allow operations without authentication,
+    as authentication can be ensured through this endpoint.
+    :param fullpath: rest of the path to the Flower API
+    :return: response from Flower
+    """
+    log.info(f'Requesting to flower {request.base_url.replace(request.host_url, "http://flower:5050/")}')
+    res = requests.request(
+        method=request.method,
+        url=request.base_url.replace(request.host_url, 'http://flower:5050/'),
+        params=request.query_string,
+        headers={k: v for k, v in request.headers if k.lower() != 'host'},
+        data=request.get_data(),
+        cookies=request.cookies,
+        allow_redirects=False,
+    )
+
+    # exclude "hop-by-hop headers" defined by RFC 2616 section 13.5.1 ref. https://www.rfc-editor.org/rfc/rfc2616#section-13.5.1
+    excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+    headers = [
+        (k, v) for k, v in res.raw.headers.items()
+        if k.lower() not in excluded_headers
+    ]
+
+    response = Response(res.content, res.status_code, headers)
+    return response
+
+
+#####################################
 # MAIN
 #####################################
 if not os.path.exists(f"./{FILES_PATH}/"):
@@ -986,6 +1120,17 @@ if not os.path.exists(f"./{PRIVATE_PATH}/"):
             ensure_ascii=False,
         )
 
+with app.app_context():
+    db.create_all()
+    if not security.datastore.find_role("Admin"):
+        security.datastore.create_role(name="Admin")
+
+    if app.debug:
+        if not security.datastore.find_user(email="test@home.com"):
+            security.datastore.create_user(email="test@home.com", password=hash_password("password"), roles=["Admin"])
+
+    db.session.commit()
+
 if __name__ == "__main__":
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
-    app.run(host='0.0.0.0', port=5001, threaded=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True, use_reloader=False)
