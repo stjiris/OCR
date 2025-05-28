@@ -1,5 +1,6 @@
 import cv2
 import os
+import uuid
 import numpy as np
 import glob
 import logging as log
@@ -240,16 +241,20 @@ def parse_images(path):
             for box in mer_boxes.values():
                 left, top, right, bottom = box
                 formatted_box = {
+                    "_uniq_id": uuid.uuid4().hex[:16],  # each line in the sortable list must have a constant unique ID
+                    "groupId": "temp",
                     "checked": False,
                     "type": "text",
                     "squares": [
                         {
+                            "id": "temp",
                             "top": top,
                             "left": left,
                             "bottom": bottom,
                             "right": right,
                         }
-                    ]
+                    ],
+                    "copyId": None
                 }
                 formatted_boxes.append(formatted_box)
 
@@ -265,8 +270,9 @@ def parse_images(path):
             sorted_layout = sorted(layout['boxes'], key=lambda c: (c["squares"][0]['top'], c["squares"][0]['left']))
 
             for i, group in enumerate(sorted_layout):
+                group['groupId'] = f"{page + 1}.{i + 1}"
                 for b in group['squares']:
-                    b['id'] = f"T{page + 1}.{i + 1}"
+                    b['id'] = f"{page + 1}.{i + 1}"
 
             sorted_all_layouts.append({'boxes': sorted_layout})
         save_file_layouts(path, sorted_all_layouts)
