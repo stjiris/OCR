@@ -88,10 +88,12 @@ class FileExplorer extends React.Component {
         this.getTxt = this.getTxt.bind(this);
         this.getEntities = this.getEntities.bind(this);
         this.requestEntities = this.requestEntities.bind(this);
+        this.getAlto = this.getAlto.bind(this);
         this.getCSV = this.getCSV.bind(this);
         this.getImages = this.getImages.bind(this);
-        this.getPdf = this.getPdf.bind(this);
-        this.getPdfSimples = this.getPdfSimples.bind(this);
+        this.getPdfIndexed = this.getPdfIndexed.bind(this);
+        this.getPdfSimple = this.getPdfSimple.bind(this);
+        this.getHocr = this.getHocr.bind(this);
         this.editText = this.editText.bind(this);
         this.performOCR = this.performOCR.bind(this);
         this.indexFile = this.indexFile.bind(this);
@@ -245,12 +247,11 @@ class FileExplorer extends React.Component {
         if (this.props._private) { path = this.props.sessionId + '/' + path }
         if (file !== null) path += '/' + file;
 
-        this.ocrMenu.current.setPath(path);
-        this.ocrMenu.current.setMultiple(multiple);
-        this.ocrMenu.current.performOCR("Tesseract", ["por"], path, multiple);
-
-        // Right now, we dont want to show the menu. Assume default settings
-        // this.ocrMenu.current.toggleOpen();
+        this.ocrMenu.current.setState({
+            path: path,
+            multiple: multiple,
+            open: true
+        });
     }
 
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
@@ -397,7 +398,7 @@ class FileExplorer extends React.Component {
     /**
      * Export the .txt or .pdf file
      */
-    getDocument(type, file, suffix="") {
+    getDocument(type, file, extension, suffix="") {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
@@ -410,7 +411,7 @@ class FileExplorer extends React.Component {
             a.href = URL.createObjectURL(data);
 
             const basename = file.split('.').slice(0, -1).join('.');
-            a.download = basename + '_ocr' + suffix + '.' + type.split('_')[0];
+            a.download = basename + '_ocr' + suffix + '.' + extension;
             a.click();
             a.remove();
         });
@@ -513,7 +514,7 @@ class FileExplorer extends React.Component {
      * Export the .txt file
      */
     getTxt(file) {
-        this.getDocument("txt", file);
+        this.getDocument("txt", file, "txt");
     }
 
     /**
@@ -521,14 +522,14 @@ class FileExplorer extends React.Component {
      * with the delimiter
      */
     getDelimiterTxt(file) {
-        this.getDocument("txt_delimitado", file, "_delimitado");
+        this.getDocument("txt_delimited", file, "txt", "_delimitado");
     }
 
     /**
      * Export the .csv file
      */
     getCSV(file) {
-         this.getDocument("csv", file);
+         this.getDocument("csv", file, "csv");
     }
 
     /**
@@ -555,15 +556,23 @@ class FileExplorer extends React.Component {
     /**
      * Export the .pdf file
      */
-    getPdf(file) {
-        this.getDocument("pdf", file, "_texto_indice");
+    getPdfIndexed(file) {
+        this.getDocument("pdf_indexed", file, "pdf", "_texto_indice");
     }
 
     /**
      * Export the .pdf file
      */
-    getPdfSimples(file) {
-        this.getDocument("pdf_simples", file, "_texto");
+    getPdfSimple(file) {
+        this.getDocument("pdf", file, "pdf", "_texto");
+    }
+
+    getAlto(file) {
+        this.getDocument("alto", file, "xml", "_alto");
+    }
+
+    getHocr(file) {
+        this.getDocument("hocr", file, "hocr", "");
     }
 
     /*
@@ -727,8 +736,10 @@ class FileExplorer extends React.Component {
                         requestEntities={this.requestEntities}
                         getCSV={this.getCSV}
                         getImages={this.getImages}
-                        getPdf={this.getPdf}
-                        getPdfSimples={this.getPdfSimples}
+                        getPdfIndexed={this.getPdfIndexed}
+                        getPdfSimple={this.getPdfSimple}
+                        getAlto={this.getAlto}
+                        getHocr={this.getHocr}
                         editText={this.editText}
                         performOCR={this.performOCR}
                         indexFile={this.props._private ? null : this.indexFile}
@@ -775,7 +786,7 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{borderLeft:"1px solid #aaa"}}>
+                            <TableCell sx={{width: "26%", borderLeft:"1px solid #aaa"}}>
                                 <Button
                                     startIcon={<SwapVertIcon />}
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
@@ -783,10 +794,10 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Descrição</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
-                            <TableCell align='center' sx={{borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
+                            <TableCell align='center' sx={{width: "15%", borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
+                            <TableCell align='center' sx={{width: "20%", borderLeft:"1px solid #aaa"}}><b>Descrição</b></TableCell>
+                            <TableCell align='center' sx={{width: "12%", borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
+                            <TableCell align='center' sx={{width: "23%", borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
