@@ -245,17 +245,6 @@ def get_info():
         abort(HTTPStatus.NOT_FOUND)
 
 
-@app.route("/system-info", methods=["GET"])
-def get_system_info():
-    free_space, free_space_percentage = get_free_space()
-    return {
-        "free_space": free_space,
-        "free_space_percentage": free_space_percentage,
-        # "logs": get_logs(),
-        "private_sessions": get_private_sessions(),
-    }
-
-
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
@@ -437,28 +426,6 @@ def delete_path():
         "success": True,
         "message": "Apagado com sucesso",
         "files": get_filesystem(filesystem_path, private_session, is_private),
-    }
-
-
-@app.route("/delete-private-session", methods=["POST"])
-def delete_private_session():
-    data = request.json
-    if "sessionId" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
-    session_id = data["sessionId"]
-
-    session_path = safe_join(PRIVATE_PATH, session_id)
-    if session_path is None:
-        abort(HTTPStatus.NOT_FOUND)
-
-    shutil.rmtree(session_path)
-    if session_id in private_sessions:
-        del private_sessions[session_id]
-
-    return {
-        "success": True,
-        "message": "Apagado com sucesso",
-        "private_sessions": get_private_sessions(),
     }
 
 
@@ -1063,6 +1030,43 @@ def register_user():
 #####################################
 # ADMIN ROUTES
 #####################################
+
+@app.route("/admin/system-info", methods=["GET"])
+@auth_required()
+@roles_required('Admin')
+def get_system_info():
+    free_space, free_space_percentage = get_free_space()
+    return {
+        "free_space": free_space,
+        "free_space_percentage": free_space_percentage,
+        # "logs": get_logs(),
+        "private_sessions": get_private_sessions(),
+    }
+
+
+@app.route("/admin/delete-private-session", methods=["POST"])
+@auth_required()
+@roles_required('Admin')
+def delete_private_session():
+    data = request.json
+    if "sessionId" not in data:
+        abort(HTTPStatus.BAD_REQUEST)
+    session_id = data["sessionId"]
+
+    session_path = safe_join(PRIVATE_PATH, session_id)
+    if session_path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
+    shutil.rmtree(session_path)
+    if session_id in private_sessions:
+        del private_sessions[session_id]
+
+    return {
+        "success": True,
+        "message": "Apagado com sucesso",
+        "private_sessions": get_private_sessions(),
+    }
+
 
 @app.route('/admin/flower/', defaults={'fullpath': ''}, methods=["GET", "POST"])
 @app.route('/admin/flower/<path:fullpath>', methods=["GET", "POST"])
