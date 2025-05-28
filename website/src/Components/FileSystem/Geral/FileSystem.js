@@ -77,7 +77,8 @@ class FileExplorer extends React.Component {
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
 
-        this.interval = null;
+        this.infoInterval = null;
+        this.stuckInterval = null;
         this.rowRefs = [];
 
         // functions for private session opening menu
@@ -115,41 +116,14 @@ class FileExplorer extends React.Component {
     }
 
     componentDidMount() {
-        /**
-         * Fetch the files and info from the server
-         */
-        fetch(API_URL + '/files?'
-            + '_private=' + this.props._private
-            + '&path=' + (this.props._private ? this.props.sessionId : ""), {
-            method: 'GET'
-        })
-        .then(async response => {
-            if (!response.ok) {
-                if (response.status === 404) {
-                    throw new Error("Esta sessão privada não existe.");
-                } else {
-                    throw new Error("Não foi possível obter os dados do servidor.");
-                }
-            } else {
-                return response.json()
-            }
-        })
-        .then(data => {
-            const info = data["info"];
-            const files = data["files"];
-            const maxAge = data["maxAge"];
-            this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
-        })
-        .catch(err => {
-            this.storageMenu.current.setMessage(err.message);
-            this.storageMenu.current.toggleOpen();
-        });
+         // Fetch the files and info from the server
+        this.fetchFileSystem();
 
         // Update the info every UPDATE_TIME seconds
         this.createUpdateInfo();
 
         // Check for stuck uploads every STUCK_UPDATE_TIME seconds
-        this.interval = setInterval(() => {
+        this.stuckInterval = setInterval(() => {
             fetch(API_URL + '/info?' +
                 '_private=' + this.props._private
                 + '&path=' + (this.props._private
@@ -192,15 +166,46 @@ class FileExplorer extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files || this.state.fileOpened !== prevState.fileOpened) {
+        if (prevProps._private !== this.props._private) {
+            this.fetchFileSystem();
+        } else if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files || this.state.fileOpened !== prevState.fileOpened) {
             this.displayFileSystem();
         } else if (this.state.info !== prevState.info || this.state.components !== prevState.components) {
             this.updateInfo();
         }
     }
 
+    fetchFileSystem() {
+        fetch(API_URL + '/files?'
+            + '_private=' + this.props._private
+            + '&path=' + (this.props._private ? this.props.sessionId : ""), {
+            method: 'GET'
+        })
+            .then(async response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error("Esta sessão privada não existe.");
+                    } else {
+                        throw new Error("Não foi possível obter os dados do servidor.");
+                    }
+                } else {
+                    return response.json()
+                }
+            })
+            .then(data => {
+                const info = data["info"];
+                const files = data["files"];
+                const maxAge = data["maxAge"];
+                this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
+            })
+            .catch(err => {
+                this.storageMenu.current.setMessage(err.message);
+                this.storageMenu.current.toggleOpen();
+            });
+    }
+
     createUpdateInfo() {
-        this.interval = setInterval(() => {
+        this.infoInterval = setInterval(() => {
             fetch(API_URL + '/info?'
                 + '_private=' + this.props._private
                 + '&path=' + (this.props._private
@@ -229,8 +234,10 @@ class FileExplorer extends React.Component {
     }
 
     componentWillUnmount() {
-        if (this.interval)
-            clearInterval(this.interval);
+        if (this.infoInterval)
+            clearInterval(this.infoInterval);
+        if (this.stuckInterval)
+            clearInterval(this.stuckInterval);
     }
 
     /**
