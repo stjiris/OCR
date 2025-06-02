@@ -623,5 +623,5 @@ def task_page_ocr(path, filename, config, ocr_algorithm):
         update_data(data_folder, data)
         log.error(f"Error in performing a page's OCR for file at {path}: {e}")
 
-        return {"status": "error", "metricas": page_metrics}
+        #return {"status": "error", "metricas": page_metrics}
         return {"status": "error"}
