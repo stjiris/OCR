@@ -3,7 +3,6 @@ from tesserocr import PyTessBaseAPI, PSM
 from lxml import etree
 from lxml import html
 from PIL import Image, ImageEnhance, ImageFilter
-import numpy as np
 
 def preprocess_image(image):
     # Downscale to 200 DPI (assuming 300 DPI input)

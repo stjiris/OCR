@@ -1,15 +1,14 @@
-from io import BytesIO
+#from io import BytesIO
 import json
 import logging as log
 import os
 import shutil
-import tempfile
-import time
+#import tempfile
+#import time
 import traceback
 import zipfile
 
-from tesserocr import PyTessBaseAPI
-from celery import chord, group
+#from celery import chord, group
 from celery import Celery
 from PIL import Image
 from PIL import ImageDraw
@@ -17,6 +16,7 @@ import pypdfium2 as pdfium
 
 from src.algorithms import tesserOCR
 from src.algorithms import tesseract
+
 from src.utils.export import export_file
 from src.utils.export import load_invisible_font
 
