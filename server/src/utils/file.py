@@ -83,7 +83,7 @@ def get_file_parsed(path, is_private):
     :return: list with the text of each page
     """
     extension = path.split(".")[-1].lower()
-    page_extension = ".jpg" if extension == "pdf" else ".png" if extension == "zip" else f".{extension}"
+    page_extension = ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
     url_prefix = IMAGE_PREFIX + ("/private/" if is_private else "/images/")  # TODO: secure private session images
 
     path += "/_ocr_results"
@@ -161,7 +161,7 @@ def get_file_layouts(path, is_private):
     layouts = []
     basename = get_file_basename(path)
     extension = path.split(".")[-1].lower()
-    page_extension = ".jpg" if extension == "pdf" else ".png" if extension == "zip" else f".{extension}"
+    page_extension = ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
     url_prefix = (IMAGE_PREFIX
                   + (f"/private/{path.replace(PRIVATE_PATH, '')}" if is_private
                     else f"/images/{path.replace(FILES_PATH, '')}"))

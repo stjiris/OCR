@@ -223,7 +223,7 @@ def parse_image(img_path):
 
 def parse_images(path):
     extension = path.split(".")[-1].lower()
-    page_extension = ".jpg" if extension == "pdf" else ".png" if extension == "zip" else f".{extension}"
+    page_extension = ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
     basename = get_file_basename(path)
 
     if os.path.exists(f"{path}/_pages"):

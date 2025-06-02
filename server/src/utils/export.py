@@ -154,7 +154,7 @@ def export_pdf(path, force_recreate=False, simple=False):
         original_extension = path.split('.')[-1].lower()
 
         if original_extension == 'pdf':
-            page_extension = "jpg"
+            page_extension = "png"
             pdf_basename = get_file_basename(path)
 
             pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
@@ -162,7 +162,7 @@ def export_pdf(path, force_recreate=False, simple=False):
                 page = pdf[i]
                 bitmap = page.render(dpi_compressed / 72)
                 pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/{pdf_basename}_{i}$.jpg")
+                pil_image.save(f"{path}/{pdf_basename}_{i}$.{page_extension}")
 
             pdf.close()
 
@@ -493,7 +493,7 @@ def create_document_mets(path):
 
             raise ValueError("Error: Not all files are ready to be extracted")
 
-    single_files = [x for x in os.listdir(path) if os.path.isfile(path + "/" + x) and not x.endswith(".json") and not x.endswith(".zip") and not x.endswith(".xml") and not x.endswith(".jpg")]
+    single_files = [x for x in os.listdir(path) if os.path.isfile(path + "/" + x) and not x.endswith(".json") and not x.endswith(".zip") and not x.endswith(".xml") and not x.endswith(".png")]
     extensions = [x.split(".")[-1] for x in single_files]
 
     structMap = ""
@@ -503,12 +503,12 @@ def create_document_mets(path):
     for id, file in enumerate(files):
         export_alto(file)
         structMap += f'\t\t\t<div TYPE="Page" ORDER="{id+1}">' + \
-            f'\n\t\t\t\t<fptr FILEID="JPG{(id+1):05d}"/>' + \
+            f'\n\t\t\t\t<fptr FILEID="PNG{(id+1):05d}"/>' + \
             f'\n\t\t\t\t<fptr FILEID="ALTO{(id+1):05d}"/>' + \
             '\n\t\t\t</div>\n'
 
-    jpg_grp = "\n\t\t\t".join(
-        generate_file(path, f.replace("/_ocr_results", "").replace(".json", ".jpg"), "IMG", id + 1, "image/jpeg")
+    png_grp = "\n\t\t\t".join(
+        generate_file(path, f.replace("/_ocr_results", "").replace(".json", ".png"), "IMG", id + 1, "image/png")
         for id, f in enumerate(files)
     )
 
@@ -560,7 +560,7 @@ def create_document_mets(path):
                     <mix>
                         <BasicDigitalObjectInformation>
                             <FormatDesignation>
-                                <formatName>image/jpeg</formatName>
+                                <formatName>image/png</formatName>
                             </FormatDesignation>
                         </BasicDigitalObjectInformation>
                     </mix>
@@ -634,9 +634,9 @@ def create_document_mets(path):
         </techMD>
     </amdSec>
     <fileSec>
-        <fileGrp ID="JPEGGRP" USE="Images">
+        <fileGrp ID="PNGGRP" USE="Images">
             {
-                jpg_grp
+                png_grp
             }
         </fileGrp>
         <fileGrp ID="ALTOGRP" USE="Text">
