@@ -13,3 +13,6 @@ pypdfium2==5.0.0b1
 requests==2.*
 dnspython<2.6.0  #eventlet breaks with any higher version
 python-dotenv
+#numpy<2
+#memory-profiler
+tesserocr==2.8.0
