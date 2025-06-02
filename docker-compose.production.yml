@@ -37,7 +37,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379
       CELERY_RESULT_BACKEND: redis://redis:6379
       C_FORCE_ROOT: true
-    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P eventlet
+    command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P prefork
     volumes:
       - files_data:/app/files
     depends_on:

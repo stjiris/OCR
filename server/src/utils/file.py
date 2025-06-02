@@ -120,7 +120,7 @@ def get_file_parsed(path):
                     + "/".join(file.split("/")[1:-2])
                     + "/"
                     + basename
-                    + ".jpg",
+                    + ".png",
                 }
             )
     return data, words
@@ -133,7 +133,7 @@ def get_file_layouts(path):
 
     for page in range(data["pages"]):
         filename = f"{path}/layouts/{basename}_{page}.json"
-        page_url = IMAGE_PREFIX + "/images/" + "/".join(path.split("/")[1:]) + f"/{basename}_{page}.jpg"
+        page_url = IMAGE_PREFIX + "/images/" + "/".join(path.split("/")[1:]) + f"/{basename}_{page}.png"
 
         if os.path.exists(filename):
             with open(filename, encoding="utf-8") as f:
@@ -358,7 +358,7 @@ def get_page_count(filename):
         with open(filename, "rb") as f:
             return len(pdfium.PdfDocument(f))
             # return len(PdfReader(f).pages)
-    elif extension in ["jpg", "jpeg"]:
+    elif extension in ["jpg", "jpeg", "png"]:
         return 1
 
 # DONE
@@ -405,38 +405,3 @@ def update_data(file, data):
     with open(file, "w", encoding="utf-8") as f:
         previous_data.update(data)
         json.dump(previous_data, f, ensure_ascii=False, indent=2)
-
-# DONE
-def prepare_file_ocr(path):
-    """
-    Prepare the OCR of a file
-    @param path: path to the file
-    @param ocr_folder: folder to save the results
-    """
-    try:
-        extension = path.split(".")[-1]
-        basename = get_file_basename(path)
-
-        log.info("{path}: A preparar páginas")
-
-        if extension == "pdf":
-            pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
-            for i in range(len(pdf)):
-                page = pdf[i]
-                bitmap = page.render(200 / 72)
-                pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/{basename}_{i}.jpg")
-
-            pdf.close()
-
-        elif extension in ["jpeg", "jpg"]:
-            img = Image.open(f"{path}/{basename}.{extension}")
-            img.save(f"{path}/{basename}.jpg", "JPEG")
-    except Exception as e:
-        
-        data_folder = f"{path}/_data.json"
-        data = get_data(data_folder)
-        data["ocr"] = data.get("ocr", {})
-        data["ocr"]["exceptions"] = str(e)
-        update_data(data_folder, data)
-        log.error(f"Error in preparing OCR for file at {path}: {e}")
