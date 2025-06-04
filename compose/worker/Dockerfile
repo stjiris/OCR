@@ -91,17 +91,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   jbig2dec \
   pngquant \
   tesseract-ocr \
-  tesseract-ocr-chi-sim \
-  tesseract-ocr-deu \
-  tesseract-ocr-eng \
-  tesseract-ocr-fra \
-  tesseract-ocr-por \
-  tesseract-ocr-spa \
   unpaper \
   file \
   && rm -rf /var/lib/apt/lists/*
 
 ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
+
+# Trained data which supports legacy Tesseract engine (non-LSTM)
+ADD https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/eng.traineddata \
+    https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/por.traineddata \
+    https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/deu.traineddata \
+    https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/fra.traineddata \
+    https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/spa.traineddata \
+    https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/equ.traineddata \
+    https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/osd.traineddata \
+    /usr/share/tesseract-ocr/5/tessdata/
 
 WORKDIR /app
 
