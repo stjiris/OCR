@@ -268,9 +268,10 @@ function App() {
             );
         }
 
-        exitMenus() {
+        exitMenus(callback) {
             this.setState({...fileSystemState, fileOpened: null},
-                () => this.fileSystem.current.setState({...closeFileSystemMenus})
+        () => this.fileSystem.current.setState({...closeFileSystemMenus},
+                    () => { if (callback) callback(); })
             );
         }
 

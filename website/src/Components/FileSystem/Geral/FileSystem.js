@@ -779,7 +779,7 @@ class FileExplorer extends React.Component {
     }
 
     closeLayoutMenu() {
-        this.props.exitMenus();
+        this.props.exitMenus(this.fetchInfo);
     }
 
     editText(filename) {
@@ -787,7 +787,7 @@ class FileExplorer extends React.Component {
     }
 
     closeEditingMenu() {
-        this.props.exitMenus();
+        this.props.exitMenus(this.fetchInfo);
     }
 
     generateTable() {
