@@ -17,14 +17,14 @@ import pypdfium2 as pdfium
 from src.engines import tesserOCR
 from src.engines import tesseract
 
+from src.utils.export import export_csv
+from src.utils.export import export_file
 from src.utils.export import load_invisible_font
 
 from src.utils.file import ALLOWED_EXTENSIONS
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_doc_len
-from src.utils.file import get_size
-from src.utils.file import update_data
 from src.utils.file import get_data
 from src.utils.file import get_file_basename
 from src.utils.file import get_ner_file

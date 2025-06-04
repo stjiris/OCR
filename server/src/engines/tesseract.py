@@ -1,4 +1,9 @@
-import pytesseract
+import os
+
+from tempfile import NamedTemporaryFile
+from pytesseract import pytesseract
+from lxml import etree
+from lxml import html
 
 from src.utils.parse_hocr import parse_hocr
 
@@ -63,7 +68,7 @@ def _run_and_get_multiple_output(
     try:
         with NamedTemporaryFile(prefix='tess_', delete=False) as f:
             image, extension = pytesseract.prepare(image)
-            input_file_name = f'{f.name}_input{extsep}{extension}'
+            input_file_name = f'{f.name}_input{os.extsep}{extension}'
             image.save(input_file_name, format=image.format)
             temp_name = f.name
 
@@ -80,7 +85,7 @@ def _run_and_get_multiple_output(
             pytesseract.run_tesseract(**kwargs)
             result = dict.fromkeys(extensions)
             for out_ext in extensions:
-                result[out_ext] = _read_output(f"{kwargs['output_filename_base']}{extsep}{out_ext}")
+                result[out_ext] = _read_output(f"{kwargs['output_filename_base']}{os.extsep}{out_ext}")
     finally:
         # delete temporary file
         pytesseract.cleanup(f.name)

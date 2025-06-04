@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from json import JSONDecodeError
 from os import environ
-from string import punctuation
+# from string import punctuation
 
 import pytz
 import requests
