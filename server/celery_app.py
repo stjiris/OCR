@@ -296,8 +296,8 @@ def task_file_ocr(path: str, config: dict, testing=False):
         if not os.path.exists(f"{path}/_export"):
             os.mkdir(f"{path}/_export")
 
-        #TODO: remove this possible duplicate generation of files for OCR?
-        task_prepare_file_ocr(path)
+        # This should not be necessary as images for OCR are extracted on document upload
+        #task_prepare_file_ocr(path)
         pages_path = f"{path}/_pages"
         images = sorted([x for x in os.listdir(pages_path)])
 
