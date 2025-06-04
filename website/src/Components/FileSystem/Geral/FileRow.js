@@ -145,7 +145,7 @@ class FileRow extends React.Component {
 
     performOCR(e) {
         e.stopPropagation();
-        this.props.performOCR(false, this.props.name);
+        this.props.performOCR(this.props.name, false);
     }
 
     indexFile(e) {

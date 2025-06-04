@@ -16,7 +16,14 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 
-import {fileSystemState, layoutMenuState, editingMenuState, searchMenuState, closeFileSystemMenus} from "./states";
+import {
+    fileSystemState,
+    layoutMenuState,
+    editingMenuState,
+    searchMenuState,
+    closeFileSystemMenus,
+    ocrMenuState
+} from "./states";
 
 const Notification = loadComponent('Notification', 'Notifications');
 const VersionsMenu = loadComponent('Form', 'VersionsMenu');
@@ -74,6 +81,7 @@ function App() {
             this.fileSystem = React.createRef();
 
             this.setCurrentPath = this.setCurrentPath.bind(this);
+            this.enterOcrMenu = this.enterOcrMenu.bind(this);
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
             this.enterEditingMenu = this.enterEditingMenu.bind(this);
             this.exitMenus = this.exitMenus.bind(this);
@@ -242,6 +250,12 @@ function App() {
             );
         }
 
+        enterOcrMenu(filename = null, isFolder = false) {
+            this.setState({...ocrMenuState, fileOpened: filename},
+                () => this.fileSystem.current.setState({...ocrMenuState, fileOpened: filename, isFolder: isFolder})
+            );
+        }
+
         enterLayoutMenu(filename = null) {
             this.setState({...layoutMenuState, fileOpened: filename},
                 () => this.fileSystem.current.setState({...layoutMenuState, fileOpened: filename})
@@ -290,7 +304,7 @@ function App() {
         }
 
         render() {
-            const buttonsDisabled = this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
+            const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: '100vh'}}>
                     <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -567,6 +581,7 @@ function App() {
                                             sessionId={this.state.sessionId || ""}  // sessionId or empty str if null
                                             current_folder={this.state.currentFolderPathList}
                                             setCurrentPath={this.setCurrentPath}
+                                            enterOcrMenu={this.enterOcrMenu}
                                             enterLayoutMenu={this.enterLayoutMenu}
                                             enterEditingMenu={this.enterEditingMenu}
                                             exitMenus={this.exitMenus}/>

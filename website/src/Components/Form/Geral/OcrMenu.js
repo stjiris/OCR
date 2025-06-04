@@ -2,13 +2,10 @@ import React from 'react';
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Modal from '@mui/material/Modal';
 import Button from '@mui/material/Button';
-import ClickAwayListener from "@mui/material/ClickAwayListener";
-import IconButton from '@mui/material/IconButton';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import Collapse from "@mui/material/Collapse";
 import {ExpandLess, ExpandMore} from "@mui/icons-material";
+import UndoIcon from "@mui/icons-material/Undo";
 import TextField from "@mui/material/TextField";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
@@ -194,10 +191,6 @@ class OcrMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            open: false,
-            path: "",
-            multiple: false,
-
             advancedOpen: false,
             dpiVal: null,
             engineOptions: engineList,
@@ -221,15 +214,6 @@ class OcrMenu extends React.Component {
         this.outputs = React.createRef();
         this.dpiField = React.createRef();
         this.moreParams = React.createRef();
-
-        // handler to close OCR menu on click outside box
-        this.handleClickOutsideMenu = this.handleClickOutsideMenu.bind(this);
-    }
-
-    handleClickOutsideMenu() {
-        if (this.state.open) {
-            this.setState({ open: false });
-        }
     }
 
     toggleAdvanced() {
@@ -276,6 +260,10 @@ class OcrMenu extends React.Component {
         this.setState({ otherParams: value });
     }
 
+    leave() {
+        this.props.closeOCRMenu();
+    }
+
     // PROCESS FUNCTIONS
     /*
     changeAlgorithm(algorithm) {
@@ -307,8 +295,12 @@ class OcrMenu extends React.Component {
             config.otherParams = this.state.otherParams;
         }
 
-        if (path === null) path = this.state.path;
-        if (multiple === null) multiple = this.state.multiple;
+        if (multiple === null) multiple = this.props.isFolder;
+
+        if (path == null) {
+            path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename)
+                    .replace(/^\//, '');
+        }
 
         fetch(process.env.REACT_APP_API_URL + 'perform-ocr', {
             method: 'POST',
@@ -316,7 +308,7 @@ class OcrMenu extends React.Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                "path": path.replace(/^\//, ''),
+                "path": path,
                 "config": config,
                 "multiple": multiple,
                 "_private": this.props._private
@@ -340,154 +332,194 @@ class OcrMenu extends React.Component {
 
             this.props.updateFiles(data.files)
 
-            this.setState({ open: false });
+            this.leave();
         });
     }
 
     render() {
         return (
-        <Box>
+        <>
             <Notification message={""} severity={"success"} ref={this.successNot}/>
             <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-            <Modal open={this.state.open}>
-                <ClickAwayListener
-                    mouseEvent="onMouseDown"
-                    touchEvent="onTouchStart"
-                    onClickAway={this.handleClickOutsideMenu}
+            <Box sx={{
+                ml: '0.5rem',
+                mr: '0.5rem',
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                position: 'sticky',
+                top: 0,
+                zIndex: 100,
+                backgroundColor: '#fff',
+                paddingBottom: '1rem',
+                marginBottom: '0.5rem',
+                borderBottom: '1px solid black',
+            }}>
+                <Button
+                    variant="contained"
+                    startIcon={<UndoIcon />}
+                    onClick={() => this.leave()}
+                    sx={{
+                        border: '1px solid black',
+                        height: '2rem',
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        backgroundColor: '#ffffff',
+                        color: '#000000',
+                        ':hover': { bgcolor: '#ddd' }
+                    }}
                 >
-                    <Box role="presentation" sx={style}>
-                        <Typography id="modal-modal-title" variant="h6" component="h2">
-                            Realizar o OCR
-                        </Typography>
+                    Voltar
+                </Button>
+            </Box>
 
-                        <p style={{color: 'red'}}><b>Se já fez o OCR antes, irá perder todas as alterações anteriormente feitas</b></p>
+            <Box role="presentation" sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '84vh',
+                width: '44%',
+                margin: 'auto',
+                /*overflow: 'scroll'*/
+            }}>
+                <Typography variant="h5" component="h2" sx={{alignSelf: 'center'}}>
+                    Realizar o OCR {this.state.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
+                </Typography>
 
-                        {
-                        //<AlgoDropdown ref={this.algoDropdown} menu={this}/>
-                        }
+                <p style={{color: 'red'}}><b>Se já fez o OCR antes, irá perder todas as alterações anteriormente feitas</b></p>
 
-                        <ChecklistDropdown ref={this.langs}
-                                           label={"Língua"}
-                                           helperText={"Para melhores resultados, selecione por ordem de relevância"}
-                                           options={tesseractLangList}
-                                           defaultChoice={[tesseractLangList[defaultLangIndex]]}/>
+                {
+                //<AlgoDropdown ref={this.algoDropdown} menu={this}/>
+                }
 
-                        <ChecklistDropdown ref={this.outputs}
-                                           label={"Formatos de resultado"}
-                                           options={tesseractOutputsList}
-                                           defaultChoice={defaultOutputs}
-                                           allowCheckAll={true}/>
+                <ChecklistDropdown className="simpleDropdown ocrDropdown"
+                                   ref={this.langs}
+                                   label={"Língua"}
+                                   helperText={"Para melhores resultados, selecione por ordem de relevância"}
+                                   options={tesseractLangList}
+                                   defaultChoice={[tesseractLangList[defaultLangIndex]]}/>
 
-                        <Button onClick={() => this.toggleAdvanced()}>
-                            Opções avançadas
-                            {this.state.advancedOpen ? <ExpandLess/> : <ExpandMore/>}
-                        </Button>
-                        <Collapse sx={{display: 'flex', flexDirection: 'column'}} in={this.state.advancedOpen}>
+                <ChecklistDropdown className="simpleDropdown ocrDropdown"
+                                   ref={this.outputs}
+                                   label={"Formatos de resultado"}
+                                   options={tesseractOutputsList}
+                                   defaultChoice={defaultOutputs}
+                                   allowCheckAll={true}/>
 
-                            <TextField ref={this.dpiField}
-                                       label="DPI (Dots Per Inch)"
-                                       inputProps={{ inputMode: "numeric", pattern: "[1-9][0-9]*" }}
-                                       onChange={(e) => this.changeDpi(e.target.value)}
-                                       variant='outlined'
-                                       size="small"
-                                       sx={{
-                                           width: '100%',
-                                           mb: '0.3rem',
-                                           "& input:focus:invalid + fieldset": {borderColor: "red", borderWidth: 2}
-                                        }}
-                            />
+                <Button onClick={() => this.toggleAdvanced()} sx={{alignSelf: 'start', marginBottom: '1rem'}}>
+                    Opções avançadas
+                    {this.state.advancedOpen ? <ExpandLess/> : <ExpandMore/>}
+                </Button>
+                <Collapse sx={{display: 'flex', flexDirection: 'column'}} in={this.state.advancedOpen}>
 
-                            <FormControl className="simpleDropdown">
-                                <InputLabel>Motor de OCR</InputLabel>
-                                <Select
-                                    label={"Motor de OCR"}
-                                    value={this.state.engine}
-                                    onChange={(e) => this.changeEngine(e.target.value)}>
-                                    {
-                                        this.state.engineOptions.map((item) => (
-                                            <MenuItem value={item.value}>
-                                                {item.description}
-                                            </MenuItem>
-                                        ))
-                                    }
-                                </Select>
-                            </FormControl>
+                    <TextField ref={this.dpiField}
+                               label="DPI (Dots Per Inch)"
+                               inputProps={{ inputMode: "numeric", pattern: "[1-9][0-9]*" }}
+                               onChange={(e) => this.changeDpi(e.target.value)}
+                               variant='outlined'
+                               size="small"
+                               className="simpleDropdown ocrDropdown"
+                               sx={{
+                                   "& input:focus:invalid + fieldset": {borderColor: "red", borderWidth: 2}
+                                }}
+                    />
 
-                            <FormControl className="simpleDropdown">
-                                <InputLabel>Modo do motor</InputLabel>
-                                <Select
-                                    label={"Modo do motor"}
-                                    value={this.state.engineMode}
-                                    onChange={(e) => this.changeEngineMode(e.target.value)}>
-                                    {
-                                        this.state.engineModeOptions.map((item) => (
-                                            <MenuItem value={item.value}>
-                                                {item.description}
-                                            </MenuItem>
-                                        ))
-                                    }
-                                </Select>
-                            </FormControl>
+                    <FormControl className="simpleDropdown ocrDropdown">
+                        <InputLabel>Motor de OCR</InputLabel>
+                        <Select
+                            label={"Motor de OCR"}
+                            value={this.state.engine}
+                            onChange={(e) => this.changeEngine(e.target.value)}>
+                            {
+                                this.state.engineOptions.map((item) => (
+                                    <MenuItem value={item.value}>
+                                        {item.description}
+                                    </MenuItem>
+                                ))
+                            }
+                        </Select>
+                    </FormControl>
 
-                            <FormControl className="simpleDropdown">
-                                <InputLabel>Segmentação</InputLabel>
-                                <Select
-                                    label={"Segmentação"}
-                                    value={this.state.segmentMode}
-                                    onChange={(e) => this.changeSegmentationMode(e.target.value)}>
-                                    {
-                                        this.state.segmentModeOptions.map((item) => (
-                                            <MenuItem value={item.value}>
-                                                {item.description}
-                                            </MenuItem>
-                                        ))
-                                    }
-                                </Select>
-                            </FormControl>
+                    <FormControl className="simpleDropdown ocrDropdown">
+                        <InputLabel>Modo do motor</InputLabel>
+                        <Select
+                            label={"Modo do motor"}
+                            value={this.state.engineMode}
+                            onChange={(e) => this.changeEngineMode(e.target.value)}>
+                            {
+                                this.state.engineModeOptions.map((item) => (
+                                    <MenuItem value={item.value}>
+                                        {item.description}
+                                    </MenuItem>
+                                ))
+                            }
+                        </Select>
+                    </FormControl>
 
-                            <FormControl className="simpleDropdown">
-                                <InputLabel>Thresholding</InputLabel>
-                                <Select
-                                    label={"Thresholding"}
-                                    value={this.state.thresholdMethod}
-                                    onChange={(e) => this.changeThresholdingMethod(e.target.value)}>
-                                    {
-                                        this.state.thresholdMethodOptions.map((item) => (
-                                            <MenuItem value={item.value}>
-                                                {item.description}
-                                            </MenuItem>
-                                        ))
-                                    }
-                                </Select>
-                            </FormControl>
+                    <FormControl className="simpleDropdown ocrDropdown">
+                        <InputLabel>Segmentação</InputLabel>
+                        <Select
+                            label={"Segmentação"}
+                            value={this.state.segmentMode}
+                            onChange={(e) => this.changeSegmentationMode(e.target.value)}>
+                            {
+                                this.state.segmentModeOptions.map((item) => (
+                                    <MenuItem value={item.value}>
+                                        {item.description}
+                                    </MenuItem>
+                                ))
+                            }
+                        </Select>
+                    </FormControl>
 
-                            <TextField ref={this.moreParams}
-                                       label="Parâmetros adicionais"
-                                       onChange={(e) => this.changeAdditionalParams(e.target.value)}
-                                       variant='outlined' size="small" sx={{width: '100%', mb: '0.3rem'}}/>
-                        </Collapse>
+                    <FormControl className="simpleDropdown ocrDropdown">
+                        <InputLabel>Thresholding</InputLabel>
+                        <Select
+                            label={"Thresholding"}
+                            value={this.state.thresholdMethod}
+                            onChange={(e) => this.changeThresholdingMethod(e.target.value)}>
+                            {
+                                this.state.thresholdMethodOptions.map((item) => (
+                                    <MenuItem value={item.value}>
+                                        {item.description}
+                                    </MenuItem>
+                                ))
+                            }
+                        </Select>
+                    </FormControl>
 
-                        <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
-                            <Button variant="contained" onClick={() => this.performOCR()}>
-                                Começar
-                            </Button>
-                        </Box>
+                    <TextField ref={this.moreParams}
+                               label="Parâmetros adicionais"
+                               onChange={(e) => this.changeAdditionalParams(e.target.value)}
+                               variant='outlined'
+                               className="simpleDropdown ocrDropdown"
+                               size="small"
+                               sx={{
+                                   marginBottom: '1rem !important'
+                               }}
+                    />
+                </Collapse>
 
-                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.setState({ open: false })}>
-                            <CloseRoundedIcon />
-                        </IconButton>
-                    </Box>
-                </ClickAwayListener>
-            </Modal>
-        </Box>
+                <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
+                    <Button variant="contained" onClick={() => this.performOCR()}>
+                        Começar
+                    </Button>
+                </Box>
+            </Box>
+        </>
         );
     }
 }
 
 OcrMenu.defaultProps = {
     _private: false,
+    sessionId: "",
+    current_folder: null,
+    filename: null,
+    isFolder: false,
     // functions:
+    closeOCRMenu: null,
     updateFiles: null,
     showStorageForm: null
 }

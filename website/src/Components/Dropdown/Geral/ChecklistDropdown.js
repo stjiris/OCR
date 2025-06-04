@@ -89,7 +89,7 @@ class ChecklistDropdown extends React.Component {
                 {
                     this.state.visible
                     &&
-                    <FormControl open={this.state.visible} className="simpleDropdown">
+                    <FormControl open={this.state.visible} className={this.props.className}>
                         <InputLabel>{this.props.label}</InputLabel>
                         <Select
                             multiple
@@ -137,6 +137,7 @@ ChecklistDropdown.defaultProps = {
     label: null,
     helperText: null,
     allowCheckAll: false,
+    className: "simpleDropdown",
     // functions:
     onCloseFunc: null,
     parentfunc: null

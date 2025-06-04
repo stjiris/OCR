@@ -82,6 +82,12 @@ body {
     width: 100%;
 }
 
+.simpleDropdown.ocrDropdown {
+    width: fit-content;
+    min-width: 54%;
+    max-width: 100%;
+}
+
 .page-div {
   margin-top: 0.5rem;
   text-align: center;

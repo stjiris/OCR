@@ -1,7 +1,8 @@
 import React from 'react';
+import axios from 'axios';
+
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -58,13 +59,15 @@ class FileExplorer extends React.Component {
 
             loading: false,
 
+            ocrMenu: false,
             layoutMenu: false,
             editingMenu: false,
             fileOpened: null,
+            isFolder: false,
         }
 
         this.folderMenu = React.createRef();
-        this.ocrMenu = React.createRef();
+        //this.ocrMenu = React.createRef();
         this.deleteMenu = React.createRef();
         if (props._private) {
             this.privateSessionMenu = React.createRef();
@@ -76,6 +79,8 @@ class FileExplorer extends React.Component {
 
         this.interval = null;
         this.rowRefs = [];
+
+        this.fetchInfo = this.fetchInfo.bind(this);
 
         // functions for private session opening menu
         this.createFile = this.createFile.bind(this);
@@ -101,6 +106,7 @@ class FileExplorer extends React.Component {
         this.createLayout = this.createLayout.bind(this);
 
         // functions for OCR menu
+        this.closeOCRMenu = this.closeOCRMenu.bind(this);
         this.showStorageForm = this.showStorageForm.bind(this);
 
         // functions for layout menu
@@ -117,32 +123,27 @@ class FileExplorer extends React.Component {
         /**
          * Fetch the files and info from the server
          */
-        fetch(process.env.REACT_APP_API_URL + 'files?'
+        axios.get(process.env.REACT_APP_API_URL + 'files?'
             + '_private=' + this.props._private
-            + '&path=' + (this.props._private ? this.props.sessionId : ""), {
-            method: 'GET'
-        })
-        .then(response => {return response.json()})
-        .then(data => {
+            + '&path=' + (this.props._private ? this.props.sessionId : ""))
+        .then(({ data }) => {
+            console.log(data);
             const info = data["info"];
             const files = data["files"];
             this.setState({files: files, info: info, loading: false});
         });
 
         // Update the info every UPDATE_TIME seconds
-        this.createUpdateInfo();
+        this.createFetchInfoInterval();
 
         // Check for stuck uploads every STUCK_UPDATE_TIME seconds
         this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?' +
-                '_private=' + this.props._private
-                + '&path=' + (this.props._private
-                                ? this.props.sessionId
-                                : this.state.current_folder), {
-                method: 'GET'
-            })
-            .then(response => {return response.json()})
-            .then(data => {
+            axios.get(process.env.REACT_APP_API_URL + 'info?'
+                        + '_private=' + this.props._private
+                        + '&path=' + (this.props._private
+                                        ? this.props.sessionId
+                                        : this.state.current_folder))
+            .then(({ data }) => {
                 const info = data["info"];
                 // Find if a upload is stuck
                 for (const [path, value] of Object.entries(info)) {
@@ -183,25 +184,38 @@ class FileExplorer extends React.Component {
         }
     }
 
-    createUpdateInfo() {
-        this.interval = setInterval(() => {
-            fetch(process.env.REACT_APP_API_URL + 'info?'
-                + '_private=' + this.props._private
-                + '&path=' + (this.props._private
-                                ? this.props.sessionId
-                                : this.state.current_folder), {
-                method: 'GET'
-            })
+    createFetchInfoInterval() {
+        this.interval = setInterval(this.fetchInfo, 1000 * UPDATE_TIME);
+    }
+
+    fetchInfo() {
+        axios.get(process.env.REACT_APP_API_URL + 'info?'
+                    + '_private=' + this.props._private
+                    + '&path=' + (this.props._private
+                                    ? this.props.sessionId
+                                    : this.state.current_folder))
+        .then(({ data }) => {
+            const info = data["info"];
+            this.setState({info: info, updateCount: 0});
+        });
+        /*
+        fetch(process.env.REACT_APP_API_URL + 'info?'
+            + '_private=' + this.props._private
+            + '&path=' + (this.props._private
+                ? this.props.sessionId
+                : this.state.current_folder), {
+            method: 'GET'
+        })
             .then(response => {return response.json()})
             .then(data => {
                 const info = data["info"];
                 this.setState({info: info, updateCount: 0});
             });
-        }, 1000 * UPDATE_TIME);
+         */
     }
 
     updateInfo() {
-        if (this.state.layoutMenu || this.state.editingMenu) return;
+        if (this.state.ocrMenu || this.state.layoutMenu || this.state.editingMenu) return;
         this.rowRefs.forEach(ref => {
             const filename = ref.current.props.name;
             if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
@@ -240,18 +254,6 @@ class FileExplorer extends React.Component {
     showStorageForm(errorMessage) {
         this.storageMenu.current.setMessage(errorMessage);
         this.storageMenu.current.toggleOpen();
-    }
-
-    performOCR(multiple, file=null) {
-        let path = this.state.current_folder;
-        if (this.props._private) { path = this.props.sessionId + '/' + path }
-        if (file !== null) path += '/' + file;
-
-        this.ocrMenu.current.setState({
-            path: path,
-            multiple: multiple,
-            open: true
-        });
     }
 
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
@@ -764,6 +766,14 @@ class FileExplorer extends React.Component {
         this.setState({components: items});
     }
 
+    performOCR(filename, isFolder=false) {
+        this.props.enterOcrMenu(filename, isFolder)
+    }
+
+    closeOCRMenu() {
+        this.props.exitMenus(this.fetchInfo);
+    }
+
     createLayout(filename) {
         this.props.enterLayoutMenu(filename);
     }
@@ -941,40 +951,48 @@ class FileExplorer extends React.Component {
         return (
             <>
                 {
-                    this.state.layoutMenu
+                    this.state.ocrMenu
+                    ? <OcrMenu _private={this.props._private}
+                               sessionId={this.props._private ? this.props.sessionId : ""}
+                               current_folder={this.state.current_folder}
+                               filename={this.state.fileOpened}
+                               isFolder={this.state.isFolder}
+                               closeOCRMenu={this.closeOCRMenu}
+                               updateFiles={this.updateFiles}
+                               showStorageForm={this.showStorageForm}/>
+                    : this.state.layoutMenu
                     ? <LayoutMenu _private={this.props._private}
                                   sessionId={this.props._private ? this.props.sessionId : ""}
                                   current_folder={this.state.current_folder}
                                   filename={this.state.fileOpened}
                                   closeLayoutMenu={this.closeLayoutMenu}/>
                     : this.state.editingMenu
-                        ? <EditingMenu _private={this.props._private}
-                                       sessionId={this.props._private ? this.props.sessionId : ""}
-                                       current_folder={this.state.current_folder}
-                                       filename={this.state.fileOpened}
-                                       closeEditingMenu={this.closeEditingMenu}/>
-                        : <Box sx={{
-                            ml: '1.5rem',
-                            mr: '1.5rem',
-                            mb: '1.5rem',
-                        }}>
-                            <Notification message={""} severity={"success"} ref={this.successNot}/>
-                            <Notification message={""} severity={"error"} ref={this.errorNot}/>
+                    ? <EditingMenu _private={this.props._private}
+                                   sessionId={this.props._private ? this.props.sessionId : ""}
+                                   current_folder={this.state.current_folder}
+                                   filename={this.state.fileOpened}
+                                   closeEditingMenu={this.closeEditingMenu}/>
+                    : <Box sx={{
+                        ml: '1.5rem',
+                        mr: '1.5rem',
+                        mb: '1.5rem',
+                    }}>
+                        <Notification message={""} severity={"success"} ref={this.successNot}/>
+                        <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                            <FolderMenu ref={this.folderMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
-                            <OcrMenu ref={this.ocrMenu} _private={this.props._private} updateFiles={this.updateFiles} showStorageForm={this.showStorageForm}/>
-                            <DeleteMenu ref={this.deleteMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
-                            {
-                                this.props._private
-                                ? <PrivateSessionMenu ref={this.privateSessionMenu} rowRefsLength={this.rowRefs.length} createFile={this.createFile}/>
-                                : null
-                            }
-                            <FullStorageMenu ref={this.storageMenu}/>
+                        <FolderMenu ref={this.folderMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
+                        <DeleteMenu ref={this.deleteMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
+                        {
+                            this.props._private
+                            ? <PrivateSessionMenu ref={this.privateSessionMenu} rowRefsLength={this.rowRefs.length} createFile={this.createFile}/>
+                            : null
+                        }
+                        <FullStorageMenu ref={this.storageMenu}/>
 
-                            {
-                                this.generateTable()
-                            }
-                        </Box>
+                        {
+                            this.generateTable()
+                        }
+                    </Box>
                 }
             </>
         );
@@ -987,6 +1005,7 @@ FileExplorer.defaultProps = {
     current_folder: null,
     // functions:
     setCurrentPath: null,
+    enterOcrMenu: null,
     enterLayoutMenu: null,
     enterEditingMenu: null,
     exitMenus: null
