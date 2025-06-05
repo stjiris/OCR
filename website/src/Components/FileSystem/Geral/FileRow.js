@@ -196,7 +196,7 @@ class FileRow extends React.Component {
                                 </IconButton>
                             }
 
-                            <FileIcon extension={this.state.info["extension"]} sx={{ fontSize: '25px', m: "0.5rem 0.5rem 0.5rem 0.2rem"  /* 0.2rem left */ }} />
+                            <FileIcon extension={this.state.info["extension"]}/>
                             {
                                 this.state.info?.["stored"] === undefined || this.state.info["stored"] === true
                                 ? <Button
