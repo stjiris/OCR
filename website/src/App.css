@@ -104,6 +104,14 @@ body {
     padding-bottom: 0;
 }
 
+.explorerCell.errorCell {
+    background-color: #f44336;
+}
+
+.explorerCell.infoCell {
+    background-color: #ffed7a;
+}
+
 .MuiTableCell-root.nameCell {
     width: 26%;
 }

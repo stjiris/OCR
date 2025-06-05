@@ -804,10 +804,18 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell align='center' sx={{width: "15%", borderLeft:"1px solid #aaa"}}><b>Data de criação</b></TableCell>
-                            <TableCell align='center' sx={{width: "20%", borderLeft:"1px solid #aaa"}}><b>Descrição</b></TableCell>
-                            <TableCell align='center' sx={{width: "12%", borderLeft:"1px solid #aaa"}}><b>Tamanho</b></TableCell>
-                            <TableCell align='center' sx={{width: "23%", borderLeft:"1px solid #aaa"}}><b>Ações</b></TableCell>
+                            <TableCell className="explorerCell actionsCell" align='center'>
+                                <b>Ações</b>
+                            </TableCell>
+                            <TableCell className="explorerCell dateCreatedCell" align='center'>
+                                <b>Data de criação</b>
+                            </TableCell>
+                            <TableCell className="explorerCell detailsCell" align='center'>
+                                <b>Detalhes</b>
+                            </TableCell>
+                            <TableCell className="explorerCell sizeCell" align='center'>
+                                <b>Tamanho</b>
+                            </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

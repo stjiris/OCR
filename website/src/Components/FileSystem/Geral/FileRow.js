@@ -221,11 +221,6 @@ class FileRow extends React.Component {
                             {
                                 this.state.info["upload_stuck"] === true
                                     ? <>
-                                        <TableCell colSpan={3} align='center' sx={{backgroundColor: '#f44336', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
-                                            <Box>
-                                                <span>Erro ao carregar ficheiro</span>
-                                            </Box>
-                                        </TableCell>
                                         <TableCell className="explorerCell actionsCell" align='center'>
                                             <Box>
                                                 <TooltipIcon
@@ -237,10 +232,15 @@ class FileRow extends React.Component {
                                                 />
                                             </Box>
                                         </TableCell>
+                                        <TableCell colSpan={3} className="explorerCell errorCell" align='center'>
+                                            <Box>
+                                                <span>Erro ao carregar ficheiro</span>
+                                            </Box>
+                                        </TableCell>
                                     </>
 
                                     : this.state.info["stored"] !== 100.00
-                                        ? <TableCell colSpan={4} align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
+                                        ? <TableCell colSpan={4} className="explorerCell infoCell" align='center'>
                                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                                 <span>Carregamento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
@@ -250,7 +250,7 @@ class FileRow extends React.Component {
                                             </Box>
                                         </TableCell>
 
-                                        : <TableCell colSpan={4} align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 1, paddingBottom: 1, borderLeft:"1px solid #aaa"}}>
+                                        : <TableCell colSpan={4} className="explorerCell infoCell" align='center'>
                                             <Box>
                                                 <span>A preparar o documento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
@@ -259,26 +259,6 @@ class FileRow extends React.Component {
                             }
                         </>
                         : <>
-                            {
-                                this.state.info?.["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"]
-                                ? <>
-                                    <TableCell className="explorerCell dateCreatedCell" align='center'>{this.state.info["creation"]}</TableCell>
-                                    <TableCell className="explorerCell detailsCell" align='center'>{this.state.info["pages"]} página(s)</TableCell>
-                                    <TableCell className="explorerCell sizeCell" align='center'>{this.state.info["size"]}</TableCell>
-                                </>
-                                : this.state.info?.["ocr"]["exceptions"]
-                                    ? <TableCell colSpan={3} align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa", height: '100%'}}>
-                                        <Box sx={{overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent:'space-evenly' }}>
-                                            <span>Erro ao fazer OCR</span>
-                                        </Box>
-                                    </TableCell>
-                                    : <TableCell colSpan={3} align='center' sx={{backgroundColor: '#ffed7a', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa", height: '100%'}}>
-                                        <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
-                                            <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
-                                            <CircularProgress sx={{ml: '1rem'}} size='1rem' />
-                                        </Box>
-                                    </TableCell>
-                            }
                             <TableCell className="explorerCell actionsCell" align='center'>
                                 <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
                                     <TooltipIcon
@@ -341,6 +321,27 @@ class FileRow extends React.Component {
 
                                 </Box>
                             </TableCell>
+
+                            {
+                                this.state.info?.["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                                ? <>
+                                    <TableCell className="explorerCell dateCreatedCell" align='center'>{this.state.info["creation"]}</TableCell>
+                                    <TableCell className="explorerCell detailsCell" align='center'>{this.state.info["pages"]} página(s)</TableCell>
+                                    <TableCell className="explorerCell sizeCell" align='center'>{this.state.info["size"]}</TableCell>
+                                </>
+                                : this.state.info?.["ocr"]["exceptions"]
+                                    ? <TableCell colSpan={3} className="explorerCell errorCell" align='center'>
+                                        <Box sx={{overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent:'space-evenly' }}>
+                                            <span>Erro ao fazer OCR</span>
+                                        </Box>
+                                    </TableCell>
+                                    : <TableCell colSpan={3} className="explorerCell infoCell" align='center'>
+                                        <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
+                                            <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
+                                            <CircularProgress sx={{ml: '1rem'}} size='1rem' />
+                                        </Box>
+                                    </TableCell>
+                            }
                         </>
                     }
                 </TableRow>
