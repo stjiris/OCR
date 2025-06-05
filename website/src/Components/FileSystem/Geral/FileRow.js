@@ -170,10 +170,10 @@ class FileRow extends React.Component {
             <>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
 
-                <TableRow
+                <TableRow className="explorerRow"
                     onClick={() => this.fileClicked()}
                 >
-                    <TableCell sx={{paddingTop: 0, paddingBottom: 0}}>
+                    <TableCell className="explorerCell nameCell">
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'row',
@@ -226,7 +226,7 @@ class FileRow extends React.Component {
                                                 <span>Erro ao carregar ficheiro</span>
                                             </Box>
                                         </TableCell>
-                                        <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
+                                        <TableCell className="explorerCell actionsCell" align='center'>
                                             <Box>
                                                 <TooltipIcon
                                                     key="delete"
@@ -262,9 +262,9 @@ class FileRow extends React.Component {
                             {
                                 this.state.info?.["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                                 ? <>
-                                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>{this.state.info["creation"]}</TableCell>
-                                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>{this.state.info["pages"]} página(s)</TableCell>
-                                    <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>{this.state.info["size"]}</TableCell>
+                                    <TableCell className="explorerCell dateCreatedCell" align='center'>{this.state.info["creation"]}</TableCell>
+                                    <TableCell className="explorerCell detailsCell" align='center'>{this.state.info["pages"]} página(s)</TableCell>
+                                    <TableCell className="explorerCell sizeCell" align='center'>{this.state.info["size"]}</TableCell>
                                 </>
                                 : this.state.info?.["ocr"]["exceptions"]
                                     ? <TableCell colSpan={3} align='center' sx={{backgroundColor: '#f44336', paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa", height: '100%'}}>
@@ -279,7 +279,7 @@ class FileRow extends React.Component {
                                         </Box>
                                     </TableCell>
                             }
-                            <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
+                            <TableCell className="explorerCell actionsCell" align='center'>
                                 <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
                                     <TooltipIcon
                                         key={"OCR " + this.props.name}
@@ -309,8 +309,8 @@ class FileRow extends React.Component {
                                     />
 
                                     {
-                                        this.props._private ?
-                                            null
+                                        this.props._private
+                                        ? null
                                         : (this.state.info?.["indexed"]
                                             ? <TooltipIcon
                                                 key={"Remove " + this.props.name}

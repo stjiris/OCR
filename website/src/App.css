@@ -88,6 +88,42 @@ body {
     max-width: 100%;
 }
 
+/*
+  File Explorer table formatting
+*/
+.MuiTableRow-root.explorerRow {
+    height: 4rem;
+}
+
+.MuiTableCell-root.explorerCell {
+    border-left: 1px solid #aaa;
+}
+
+.MuiTableCell-root.MuiTableCell-body.explorerCell {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.MuiTableCell-root.nameCell {
+    width: 26%;
+}
+
+.MuiTableCell-root.actionsCell {
+    width: 23%;
+}
+
+.MuiTableCell-root.dateCreatedCell {
+    width: 15%;
+}
+
+.MuiTableCell-root.detailsCell {
+    width: 20%;
+}
+
+.MuiTableCell-root.sizeCell {
+    width: 12%;
+}
+
 .page-div {
   margin-top: 0.5rem;
   text-align: center;

@@ -796,7 +796,7 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{width: "26%", borderLeft:"1px solid #aaa"}}>
+                            <TableCell className="explorerCell nameCell" sx={{width: "26%", borderLeft:"1px solid #aaa"}}>
                                 <Button
                                     startIcon={<SwapVertIcon />}
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
