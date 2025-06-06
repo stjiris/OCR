@@ -387,7 +387,9 @@ class OcrMenu extends React.Component {
                     Realizar o OCR {this.state.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
                 </Typography>
 
-                <p style={{color: 'red'}}><b>Se já fez o OCR antes, irá perder todas as alterações anteriormente feitas</b></p>
+                {this.props.alreadyOCR
+                    && <p style={{color: 'red'}}><b>Irá perder os resultados e alterações anteriores!</b></p>
+                }
 
                 {
                 //<AlgoDropdown ref={this.algoDropdown} menu={this}/>
@@ -518,6 +520,7 @@ OcrMenu.defaultProps = {
     current_folder: null,
     filename: null,
     isFolder: false,
+    alreadyOCR: false,
     // functions:
     closeOCRMenu: null,
     updateFiles: null,

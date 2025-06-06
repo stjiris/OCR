@@ -58,8 +58,6 @@ function App() {
                 fileOpened: "",
                 currentFolderPathList: [""],
 
-                contents: [],
-
                 filesChoice: [],
                 algorithmChoice: [],
                 configChoice: [],
@@ -250,9 +248,9 @@ function App() {
             );
         }
 
-        enterOcrMenu(filename = null, isFolder = false) {
+        enterOcrMenu(filename = null, isFolder=false, alreadyOCR=false) {
             this.setState({...ocrMenuState, fileOpened: filename},
-                () => this.fileSystem.current.setState({...ocrMenuState, fileOpened: filename, isFolder: isFolder})
+                () => this.fileSystem.current.setState({...ocrMenuState, fileOpened: filename, isFolder: isFolder, alreadyOCR: alreadyOCR})
             );
         }
 
