@@ -4,15 +4,17 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Collapse from "@mui/material/Collapse";
+import TextField from "@mui/material/TextField";
 import {ExpandLess, ExpandMore} from "@mui/icons-material";
 import UndoIcon from "@mui/icons-material/Undo";
-import TextField from "@mui/material/TextField";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import InputLabel from "@mui/material/InputLabel";
 import FormControl from "@mui/material/FormControl";
 
 import loadComponent from '../../../utils/loadComponents';
+const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
 const Notification = loadComponent('Notification', 'Notifications');
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
 const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
@@ -168,25 +170,6 @@ const easyOCRLangList = [
   ]
 */
 
-const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: 400,
-    bgcolor: 'background.paper',
-    border: '2px solid #000',
-    boxShadow: 24,
-    p: 4,
-    borderRadius: 2
-};
-
-const crossStyle = {
-    position: 'absolute',
-    top: '0.5rem',
-    right: '0.5rem'
-}
-
 class OcrMenu extends React.Component {
     constructor(props) {
         super(props);
@@ -202,10 +185,12 @@ class OcrMenu extends React.Component {
             thresholdMethodOptions: tesseractThreshList,
             thresholdMethod: defaultThresholding,
             otherParams: null,
+            uncommittedChanges: false,
         }
-
+        this.confirmLeave = React.createRef();
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
+
         //this.algoDropdown = React.createRef();
 
         this.storageMenu = React.createRef();
@@ -214,6 +199,19 @@ class OcrMenu extends React.Component {
         this.outputs = React.createRef();
         this.dpiField = React.createRef();
         this.moreParams = React.createRef();
+    }
+
+    preventExit(event) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (!prevState.uncommittedChanges && this.state.uncommittedChanges) {
+            window.addEventListener('beforeunload', this.preventExit);
+        } else if (prevState.uncommittedChanges && !this.state.uncommittedChanges) {
+            window.removeEventListener('beforeunload', this.preventExit);
+        }
     }
 
     toggleAdvanced() {
@@ -260,8 +258,19 @@ class OcrMenu extends React.Component {
         this.setState({ otherParams: value });
     }
 
+    goBack() {
+        if (this.state.uncommittedChanges) {
+            this.confirmLeave.current.toggleOpen();
+        } else {
+            window.removeEventListener('beforeunload', this.preventExit);
+            this.props.closeOCRMenu();
+        }
+    }
+
     leave() {
+        window.removeEventListener('beforeunload', this.preventExit);
         this.props.closeOCRMenu();
+        this.confirmLeave.current.toggleOpen();
     }
 
     // PROCESS FUNCTIONS
@@ -284,6 +293,7 @@ class OcrMenu extends React.Component {
     /**
      * Request OCR of the file on the given path from the backend
      */
+    /*
     performOCR(algorithm = null, config = null, path = null, multiple = null) {
         //if (algorithm === null) algorithm = this.algoDropdown.current.getChoice();
         if (config === null) config = this.getConfig();
@@ -335,12 +345,23 @@ class OcrMenu extends React.Component {
             this.leave();
         });
     }
+     */
+
+    saveSettings() {
+        // TODO: save settings client-side for OCR of clicked file/folder
+        const settings = {};
+        console.log("Saving settings");
+        this.setState({ uncommittedChanges: false }, () => {
+            this.props.closeOCRMenu(settings, this.props.current_folder, this.props.filename);
+        });
+    }
 
     render() {
         return (
         <>
             <Notification message={""} severity={"success"} ref={this.successNot}/>
             <Notification message={""} severity={"error"} ref={this.errorNot}/>
+            <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
 
             <Box sx={{
                 ml: '0.5rem',
@@ -360,7 +381,7 @@ class OcrMenu extends React.Component {
                 <Button
                     variant="contained"
                     startIcon={<UndoIcon />}
-                    onClick={() => this.leave()}
+                    onClick={() => this.goBack()}
                     sx={{
                         border: '1px solid black',
                         height: '2rem',
@@ -373,6 +394,18 @@ class OcrMenu extends React.Component {
                 >
                     Voltar
                 </Button>
+
+                <Box>
+                    <Button
+                        variant="contained"
+                        color="success"
+                        className="menuFunctionButton noMargin"
+                        startIcon={<CheckRoundedIcon />}
+                        onClick={() => this.saveSettings()}
+                    >
+                        Confirmar
+                    </Button>
+                </Box>
             </Box>
 
             <Box role="presentation" sx={{
@@ -384,10 +417,10 @@ class OcrMenu extends React.Component {
                 /*overflow: 'scroll'*/
             }}>
                 <Typography variant="h5" component="h2" sx={{alignSelf: 'center'}}>
-                    Realizar o OCR {this.state.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
+                    Configurar OCR {this.state.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
                 </Typography>
 
-                {this.props.alreadyOCR
+                {this.props.alreadyOcr
                     && <p style={{color: 'red'}}><b>Irá perder os resultados e alterações anteriores!</b></p>
                 }
 
@@ -503,11 +536,13 @@ class OcrMenu extends React.Component {
                     />
                 </Collapse>
 
+                {/*
                 <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
                     <Button variant="contained" onClick={() => this.performOCR()}>
                         Começar
                     </Button>
                 </Box>
+                */}
             </Box>
         </>
         );
@@ -520,8 +555,9 @@ OcrMenu.defaultProps = {
     current_folder: null,
     filename: null,
     isFolder: false,
-    alreadyOCR: false,
+    alreadyOcr: false,
     // functions:
+    setOcrSettings: null,
     closeOCRMenu: null,
     updateFiles: null,
     showStorageForm: null

@@ -23,7 +23,7 @@ import { CircularProgress } from '@mui/material';
 import loadComponent from '../../../utils/loadComponents';
 const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
 const LayoutTable = loadComponent('LayoutMenu', 'LayoutTable');
-const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
+const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
 const Notification = loadComponent('Notification', 'Notifications');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 

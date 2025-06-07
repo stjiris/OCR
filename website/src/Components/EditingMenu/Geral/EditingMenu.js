@@ -23,7 +23,7 @@ import {CircularProgress, TextareaAutosize} from '@mui/material';
 
 const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 const Notification = loadComponent('Notification', 'Notifications');
-const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
+const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 
 class Word extends React.Component {

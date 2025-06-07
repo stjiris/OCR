@@ -11,6 +11,7 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 import { IconButton } from '@mui/material';
 
@@ -148,6 +149,11 @@ class FileRow extends React.Component {
         this.props.performOCR(this.props.name, false, this.state.info?.["ocr"] !== undefined);
     }
 
+    configureOCR(e) {
+        e.stopPropagation();
+        this.props.configureOCR(this.props.name, false, this.state.info?.["ocr"] !== undefined);
+    }
+
     indexFile(e) {
         e.stopPropagation();
         this.props.indexFile(this.props.name, false);
@@ -268,6 +274,15 @@ class FileRow extends React.Component {
                                         message="Fazer OCR"
                                         clickFunction={(e) => this.performOCR(e)}
                                         icon={<OcrIcon/>}
+                                    />
+
+                                    <TooltipIcon
+                                        key={"Config " + this.props.name}
+                                        disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
+                                        color="#1976d2"
+                                        message="Configurar OCR"
+                                        clickFunction={(e) => this.configureOCR(e)}
+                                        icon={<SettingsIcon/>}
                                     />
 
                                     <TooltipIcon

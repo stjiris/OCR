@@ -6,6 +6,8 @@ import Modal from '@mui/material/Modal';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import ClickAwayListener from "@mui/material/ClickAwayListener";
+
 import loadComponent from '../../../utils/loadComponents';
 const Notification = loadComponent('Notification', 'Notifications');
 
@@ -14,7 +16,7 @@ const style = {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: 400,
+    width: 'fit-content',
     bgcolor: 'background.paper',
     border: '2px solid #000',
     boxShadow: 24,
@@ -33,37 +35,43 @@ class DeleteMenu extends React.Component {
         super(props);
         this.state = {
             open: false,
-            path: "",
-            textFieldValue: "",
+            filename: null,
             buttonDisabled: false
         }
 
         this.textField = React.createRef();
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
+
+        // handler to close menu on click outside box
+        this.handleClickOutsideMenu = this.handleClickOutsideMenu.bind(this);
     }
 
-    setPath(path) {
-        this.setState({ path: path });
+    handleClickOutsideMenu() {
+        if (this.state.open) {
+            this.closeMenu();
+        }
     }
 
-    toggleOpen() {
-        this.setState({ open: !this.state.open });
+    openMenu(filename) {
+        this.setState({ open: true, filename: filename });
     }
 
-    textFieldUpdate = event => {
-        this.setState({ textFieldValue: event.target.value });
+    closeMenu() {
+        this.setState({ open: false, filename: null });
     }
 
     deleteItem() {
         this.setState({ buttonDisabled: true });
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename)
+            .replace(/^\//, '');
         fetch(process.env.REACT_APP_API_URL + 'delete-path', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                "path": this.state.path,
+                "path": path,
                 "_private": this.props._private
             })
         })
@@ -76,7 +84,7 @@ class DeleteMenu extends React.Component {
                 this.successNot.current.setMessage(data.message);
                 this.successNot.current.open();
 
-                this.toggleOpen();
+                this.closeMenu();
             } else {
                 this.errorNot.current.setMessage(data.error);
                 this.errorNot.current.open();
@@ -90,30 +98,36 @@ class DeleteMenu extends React.Component {
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <Notification message={""} severity={"error"} ref={this.errorNot}/>
                 <Modal open={this.state.open}>
-                    <Box sx={style}>
-                        <Typography id="modal-modal-title" variant="h6" component="h2">
-                            Tem a certeza que quer apagar?
-                        </Typography>
+                    <ClickAwayListener
+                        mouseEvent="onMouseDown"
+                        touchEvent="onTouchStart"
+                        onClickAway={this.handleClickOutsideMenu}
+                    >
+                        <Box sx={style}>
+                            <Typography id="modal-modal-title" variant="h6" component="h2">
+                                Tem a certeza que quer apagar <b>{this.state.filename}</b>?
+                            </Typography>
 
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'row'
-                        }}>
-                            <Button
-                                disabled={this.state.buttonDisabled}
-                                color="error"
-                                variant="contained"
-                                sx={{border: '1px solid black', mt: '0.5rem'}}
-                                onClick={() => this.deleteItem()}
-                            >
-                                Apagar
-                            </Button>
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'row'
+                            }}>
+                                <Button
+                                    disabled={this.state.buttonDisabled}
+                                    color="error"
+                                    variant="contained"
+                                    sx={{border: '1px solid black', mt: '0.5rem'}}
+                                    onClick={() => this.deleteItem()}
+                                >
+                                    Apagar
+                                </Button>
+                            </Box>
+
+                            <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.closeMenu()}>
+                                <CloseRoundedIcon />
+                            </IconButton>
                         </Box>
-
-                        <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
-                            <CloseRoundedIcon />
-                        </IconButton>
-                    </Box>
+                    </ClickAwayListener>
                 </Modal>
             </Box>
         )
@@ -122,6 +136,8 @@ class DeleteMenu extends React.Component {
 
 DeleteMenu.defaultProps = {
     _private: false,
+    sessionId: null,
+    current_folder: null,
     // functions:
     updateFiles: null
 }

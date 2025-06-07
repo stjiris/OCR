@@ -21,8 +21,9 @@ const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
 const FolderRow = loadComponent('FileSystem', 'FolderRow');
 const Notification = loadComponent('Notification', 'Notifications');
 const FolderMenu = loadComponent('Form', 'FolderMenu');
-const OcrMenu = loadComponent('Form', 'OcrMenu');
 const DeleteMenu = loadComponent('Form', 'DeleteMenu');
+const OcrPopup = loadComponent('Form', 'OcrPopup');
+const OcrMenu = loadComponent('OcrMenu', 'OcrMenu');
 const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
 const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
 const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
@@ -64,11 +65,11 @@ class FileExplorer extends React.Component {
             editingMenu: false,
             fileOpened: null,
             isFolder: false,
-            alreadyOCR: false,
+            alreadyOcr: false,
         }
 
         this.folderMenu = React.createRef();
-        //this.ocrMenu = React.createRef();
+        this.ocrPopup = React.createRef();
         this.deleteMenu = React.createRef();
         if (props._private) {
             this.privateSessionMenu = React.createRef();
@@ -102,11 +103,13 @@ class FileExplorer extends React.Component {
         this.getHocr = this.getHocr.bind(this);
         this.editText = this.editText.bind(this);
         this.performOCR = this.performOCR.bind(this);
+        this.configureOCR = this.configureOCR.bind(this);
         this.indexFile = this.indexFile.bind(this);
         this.removeIndexFile = this.removeIndexFile.bind(this);
         this.createLayout = this.createLayout.bind(this);
 
         // functions for OCR menu
+        this.setOcrSettings = this.setOcrSettings.bind(this);
         this.closeOCRMenu = this.closeOCRMenu.bind(this);
         this.showStorageForm = this.showStorageForm.bind(this);
 
@@ -255,6 +258,10 @@ class FileExplorer extends React.Component {
     showStorageForm(errorMessage) {
         this.storageMenu.current.setMessage(errorMessage);
         this.storageMenu.current.toggleOpen();
+    }
+
+    performOCR(filename, isFolder=false, alreadyOcr=false) {
+        this.ocrPopup.current.openMenu(filename, isFolder, alreadyOcr);
     }
 
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
@@ -597,12 +604,8 @@ class FileExplorer extends React.Component {
     /**
      * Open the delete menu
      */
-    deleteItem(name) {
-        let path = this.state.current_folder + '/' + name;
-        if (this.props._private) { path = this.props.sessionId + '/' + path }
-
-        this.deleteMenu.current.setPath(path);
-        this.deleteMenu.current.toggleOpen();
+    deleteItem(filename) {
+        this.deleteMenu.current.openMenu(filename);
     }
 
     /**
@@ -745,6 +748,7 @@ class FileExplorer extends React.Component {
                         getHocr={this.getHocr}
                         editText={this.editText}
                         performOCR={this.performOCR}
+                        configureOCR={this.configureOCR}
                         indexFile={this.props._private ? null : this.indexFile}
                         removeIndexFile={this.props._private ? null : this.removeIndexFile}
                         createLayout={this.createLayout}
@@ -767,11 +771,20 @@ class FileExplorer extends React.Component {
         this.setState({components: items});
     }
 
-    performOCR(filename, isFolder=false, alreadyOCR=false) {
-        this.props.enterOcrMenu(filename, isFolder, alreadyOCR)
+    configureOCR(filename, isFolder=false, alreadyOcr=false) {
+        this.props.enterOcrMenu(filename, isFolder, alreadyOcr)
     }
 
-    closeOCRMenu() {
+    setOcrSettings(currentFolder, filename, settings) {
+        //TODO
+    }
+
+    closeOCRMenu(settings=null, currentFolder=null, filename=null) {
+        if (settings !== null) {
+            // TODO: save settings for specified folder/file; for now, use separate dict in state. if folder/file not in dict, use default config
+            // Later, can be in e.g. "_config" file for each folder/file
+            console.log("Settings saved");
+        }
         this.props.exitMenus(this.fetchInfo);
     }
 
@@ -966,7 +979,8 @@ class FileExplorer extends React.Component {
                                current_folder={this.state.current_folder}
                                filename={this.state.fileOpened}
                                isFolder={this.state.isFolder}
-                               alreadyOCR={this.state.alreadyOCR}
+                               alreadyOcr={this.state.alreadyOcr}
+                               setOcrSettings={this.setOcrSettings}
                                closeOCRMenu={this.closeOCRMenu}
                                updateFiles={this.updateFiles}
                                showStorageForm={this.showStorageForm}/>
@@ -991,6 +1005,13 @@ class FileExplorer extends React.Component {
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
                         <FolderMenu ref={this.folderMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
+                        <OcrPopup ref={this.ocrPopup}
+                                  _private={this.props._private}
+                                  sessionId={this.props._private ? this.props.sessionId : ""}
+                                  current_folder={this.state.current_folder}
+                                  filename={this.state.fileOpened}
+                                  updateFiles={this.updateFiles}
+                                  showStorageForm={this.showStorageForm}/>
                         <DeleteMenu ref={this.deleteMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
                         {
                             this.props._private
