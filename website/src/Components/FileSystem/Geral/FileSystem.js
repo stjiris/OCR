@@ -21,7 +21,7 @@ const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
 const FolderRow = loadComponent('FileSystem', 'FolderRow');
 const Notification = loadComponent('Notification', 'Notifications');
 const FolderMenu = loadComponent('Form', 'FolderMenu');
-const DeleteMenu = loadComponent('Form', 'DeleteMenu');
+const DeletePopup = loadComponent('Form', 'DeletePopup');
 const OcrPopup = loadComponent('Form', 'OcrPopup');
 const OcrMenu = loadComponent('OcrMenu', 'OcrMenu');
 const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
@@ -70,7 +70,7 @@ class FileExplorer extends React.Component {
 
         this.folderMenu = React.createRef();
         this.ocrPopup = React.createRef();
-        this.deleteMenu = React.createRef();
+        this.deletePopup = React.createRef();
         if (props._private) {
             this.privateSessionMenu = React.createRef();
         }
@@ -605,7 +605,7 @@ class FileExplorer extends React.Component {
      * Open the delete menu
      */
     deleteItem(filename) {
-        this.deleteMenu.current.openMenu(filename);
+        this.deletePopup.current.openMenu(filename);
     }
 
     /**
@@ -1012,7 +1012,7 @@ class FileExplorer extends React.Component {
                                   filename={this.state.fileOpened}
                                   updateFiles={this.updateFiles}
                                   showStorageForm={this.showStorageForm}/>
-                        <DeleteMenu ref={this.deleteMenu} _private={this.props._private} updateFiles={this.updateFiles}/>
+                        <DeletePopup ref={this.deletePopup} _private={this.props._private} updateFiles={this.updateFiles}/>
                         {
                             this.props._private
                             ? <PrivateSessionMenu ref={this.privateSessionMenu} rowRefsLength={this.rowRefs.length} createFile={this.createFile}/>

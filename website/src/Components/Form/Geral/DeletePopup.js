@@ -30,7 +30,7 @@ const crossStyle = {
     right: '0.5rem'
 }
 
-class DeleteMenu extends React.Component {
+class DeletePopup extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -134,7 +134,7 @@ class DeleteMenu extends React.Component {
     }
 }
 
-DeleteMenu.defaultProps = {
+DeletePopup.defaultProps = {
     _private: false,
     sessionId: null,
     current_folder: null,
@@ -142,4 +142,4 @@ DeleteMenu.defaultProps = {
     updateFiles: null
 }
 
-export default DeleteMenu;
+export default DeletePopup;
