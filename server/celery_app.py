@@ -1,15 +1,16 @@
-#from io import BytesIO
+from io import BytesIO
 import json
 import logging as log
 import os
 import shutil
-#import tempfile
+import tempfile
 #import time
 import traceback
 import zipfile
 
-#from celery import chord, group
 from celery import Celery
+from celery import chord
+from celery import group
 from PIL import Image
 from PIL import ImageDraw
 import pypdfium2 as pdfium
@@ -124,6 +125,21 @@ def task_make_changes(data_folder, data):
     return {"status": "success"}
 
 
+@celery.task(name="count_doc_pages")
+def count_doc_pages(_, path, extension):
+    """
+    Updates the metadata of the document at the given path with its page count.
+    :param _: first positional parameter expected by the callback of a Celery chord; ignored
+    :param path: the document's path
+    :param extension: the document's extension
+    """
+    update_data(f"{path}/_data.json", {
+        "pages": get_page_count(path, extension),
+        "stored": True,
+        "creation": get_current_time()
+    })
+
+
 @celery.task(name="prepare_file")
 def task_prepare_file_ocr(path):
     try:
@@ -133,17 +149,15 @@ def task_prepare_file_ocr(path):
         extension = path.split(".")[-1].lower()
         basename = get_file_basename(path)
 
-        log.info(f"{path}: A preparar páginas")
+        log.debug(f"{path}: A preparar páginas")
 
         if extension == "pdf":
             pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
-            for i in range(len(pdf)):
-                page = pdf[i]
-                bitmap = page.render(300 / 72)  # turn PDF page into 300 DPI bitmap
-                pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/_pages/{basename}_{i}.png", format="PNG", compress_level=6)
-
+            num_pages = len(pdf)
             pdf.close()
+
+            callback = count_doc_pages.s(path=path, extension=extension)
+            chord(task_extract_pdf_page.s(path, basename, i) for i in range(num_pages))(callback)
 
         elif extension == "zip":
             temp_folder_name = f"{path}/{generate_random_uuid()}"
@@ -166,18 +180,14 @@ def task_prepare_file_ocr(path):
                 im = Image.open(page)
                 im.save(f"{path}/_pages/{basename}_{i}.png", format="PNG")  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
+            count_doc_pages(path=path, extension=extension)
 
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
-
-        update_data(f"{path}/_data.json", {
-            "pages": get_page_count(path, extension),
-            "stored": True,
-            "creation": get_current_time()
-        })
+            count_doc_pages(path=path, extension=extension)
 
     except Exception as e:
         data_folder = f"{path}/_data.json"
@@ -209,7 +219,7 @@ def task_request_ner(data_folder):
 
 
 @celery.task(name="file_ocr")
-def task_file_ocr(path: str, config: dict, testing=False):
+def task_file_ocr(path: str, config: dict):
     """
     Prepare the OCR of a file
     :param path: path to the file
@@ -301,13 +311,15 @@ def task_file_ocr(path: str, config: dict, testing=False):
         pages_path = f"{path}/_pages"
         images = sorted([x for x in os.listdir(pages_path)])
 
-        log.info(f"{path}: A começar OCR")
+        if not images:
+            raise FileNotFoundError('Page folder is empty')
 
-        for image in images:
-            if testing:
-                task_page_ocr(path, image, config["engineName"], config["lang"], config_str, config["outputs"])
-            else:
-                task_page_ocr.delay(path, image, config["engineName"], config["lang"], config_str, config["outputs"])
+        log.debug(f"{path}: A começar OCR")
+
+        tasks = group(
+            task_page_ocr.s(path, image, config["engineName"], config["lang"], config_str, config["outputs"]) for image
+            in images)
+        tasks.apply_async()
 
         return {"status": "success"}
 
@@ -321,45 +333,6 @@ def task_file_ocr(path: str, config: dict, testing=False):
 
         return {"status": "error"}
 
-"""
-# DONE
-def prepare_file_ocr(path):
-    #
-    # Prepare the OCR of a file
-    # @param path: path to the file
-    # @param ocr_folder: folder to save the results
-    #
-    try:
-        extension = path.split(".")[-1]
-        basename = get_file_basename(path)
-
-        log.info("{path}: A preparar páginas")
-
-        if extension == "pdf":
-            pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
-            num_pages = len(pdf)
-            pdf.close()
-
-            tasks = group(task_extract_pdf_page.s(path, basename, i) for i in range(num_pages))
-
-            tasks.apply_async()
-
-            pdf.close()
-
-        elif extension in ["jpeg", "jpg"]:
-            img = Image.open(f"{path}/{basename}.{extension}")
-            img.save(f"{path}/{basename}.png", "PNG")
-    except Exception as e:
-
-
-        data_folder = f"{path}/_data.json"
-        data = get_data(data_folder)
-        data["ocr"] = data.get("ocr", {})
-        data["ocr"]["exceptions"] = str(e)
-        update_data(data_folder, data)
-        log.error(f"Error in preparing OCR for file at {path}: {e}")
-
-
 
 @celery.task(name="extract_pdf_page")
 def task_extract_pdf_page(path, basename, i):
@@ -371,12 +344,13 @@ def task_extract_pdf_page(path, basename, i):
         pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
         page = pdf[i]
         bitmap = page.render(300 / 72)  # You can adjust DPI here (e.g., 150 / 72 for smaller files)
+        pdf.close()
         pil_image = bitmap.to_pil()
-        output_path = f"{path}/{basename}_{i}.png"
+        output_path = f"{path}/_pages/{basename}_{i}.png"
 
         # Use BytesIO for buffered I/O
         buffer = BytesIO()
-        pil_image.save(buffer, format="PNG", compress_level=0, optimize=False)  # Use compression for smaller files
+        pil_image.save(buffer, format="PNG", compress_level=6)
         buffer.seek(0)
 
         # Use temporary file for atomic write
@@ -390,19 +364,19 @@ def task_extract_pdf_page(path, basename, i):
         try:
             with Image.open(output_path) as img:
                 img.load()  # Force load to check for truncation
-            log.info(f"Verified page {i} from {basename}.pdf is valid (size: {os.path.getsize(output_path)} bytes)")
+            log.debug(f"Verified page {i} from {basename}.pdf is valid (size: {os.path.getsize(output_path)} bytes)")
         except Exception as e:
             log.error(f"Invalid PNG generated for page {i}: {e}")
             os.remove(output_path)  # Remove truncated file
             raise
 
-        pdf.close()
-        log.info(f"Extracted page {i} from {basename}.pdf")
+        log.debug(f"Extracted page {i} from {basename}.pdf")
 
     except Exception as e:
         log.error(f"Error extracting page {i} from {basename}.pdf: {e}")
 
 
+"""
 @celery.task(name="ocr_complete")
 def task_ocr_complete(results, path, start_time, initial_metrics):
     #
@@ -478,12 +452,15 @@ def task_page_ocr(
         output_types = DEFAULT_OCR_OUTPUTS
 
     data_file = f"{path}/_data.json"
-    n_doc_pages = get_doc_len(data_file)
-    raw_results = None
-
-    # log.debug(f"OCR of page {filename}")
+    # hacky way of aborting if another task_page_ocr previously raised an error
+    if "exceptions" in get_data(data_file)["ocr"]:
+        return {"status": "aborted"}
 
     try:
+        n_doc_pages = get_doc_len(data_file)
+        raw_results = None
+
+        # log.debug(f"OCR of page {filename}")
         """
         page_metrics = {}
         data_folder = f"{path}/_data.json"
@@ -623,7 +600,7 @@ def task_page_ocr(
 
         # If last page has been processed, generate results
         if len(files) == n_doc_pages:
-            log.info(f"{path}: Acabei OCR")
+            log.debug(f"{path}: Acabei OCR")
 
             data["ocr"].update({
                 "progress": len(files),
