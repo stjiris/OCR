@@ -758,7 +758,7 @@ class EditingMenu extends React.Component {
                 this.successNot.current.open();
 
                 if (remakeFiles) {
-                    this.props.closeEditingMenu();
+                    this.leave();
                 }
             } else {
                 // this.errorNot.current.setMessage(data.error);

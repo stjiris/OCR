@@ -417,7 +417,7 @@ class LayoutMenu extends React.Component {
 					this.successNot.current.open();
 
 					if (closeWindow) {
-						this.props.closeLayoutMenu();
+						this.leave();
 					}
 				} else {
 					alert("Erro inesperado ao guardar o layout.")

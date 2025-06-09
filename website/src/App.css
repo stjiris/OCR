@@ -76,16 +76,19 @@ body {
     margin-right: 0
 }
 
+.MuiFormControl-root.simpleInput {
+    margin-bottom: 0.3rem;
+    margin-top: 0.5rem;
+}
+
 .MuiFormControl-root.simpleDropdown {
     margin-bottom: 0.3rem;
     margin-top: 0.5rem;
     width: 100%;
 }
 
-.simpleDropdown.ocrDropdown {
-    width: fit-content;
-    min-width: 54%;
-    max-width: 100%;
+.MuiFormControl-root.borderTop {
+    border-top: 1px solid black;
 }
 
 /*

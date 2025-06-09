@@ -3,44 +3,44 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import Collapse from "@mui/material/Collapse";
 import TextField from "@mui/material/TextField";
-import {ExpandLess, ExpandMore} from "@mui/icons-material";
 import UndoIcon from "@mui/icons-material/Undo";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import InputLabel from "@mui/material/InputLabel";
+import SaveIcon from "@mui/icons-material/Save";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormLabel from "@mui/material/FormLabel";
+import RadioGroup from "@mui/material/RadioGroup";
+import Radio from "@mui/material/Radio";
 import FormControl from "@mui/material/FormControl";
 
 import loadComponent from '../../../utils/loadComponents';
 const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
 const Notification = loadComponent('Notification', 'Notifications');
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
-const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
+const CheckboxList = loadComponent('OcrMenu', 'CheckboxList');
 
-const defaultLangIndex = 6;  // Português
+const defaultLangs = ["por"];
 const tesseractLangList = [
-    {"name": "Alemão", "code": "deu"},
-    {"name": "Espanhol Castelhano", "code": "spa"},
-    {"name": "Francês", "code": "fra"},
-    {"name": "Inglês", "code": "eng"},
-    {"name": "Módulo de detecção de matemática / equações", "code": "equ"},
-    {"name": "Módulo de orientação e detecção de scripts", "code": "osd"},
-    {"name": "Português", "code": "por"},
+    { value: "deu", description: "Alemão"},
+    { value: "spa", description: "Espanhol Castelhano"},
+    { value: "fra", description: "Francês"},
+    { value: "eng", description: "Inglês"},
+    { value: "por", description: "Português"},
+    { value: "equ", description: "Módulo de detecção de matemática / equações"},
+    { value: "osd", description: "Módulo de orientação e detecção de scripts"},
 ]
 
+const defaultOutputs = ["pdf"];
 const tesseractOutputsList = [
-    {"name": "PDF com texto e índice", "code": "pdf_indexed"},
-    {"name": "PDF com texto (por defeito)", "code": "pdf"},
-    {"name": "Texto", "code": "txt"},
-    {"name": "Texto com separador por página", "code": "txt_delimited"},
-    {"name": "Índice de palavras", "code": "csv"},
-    // {"name": "Entidades (NER)", "code": "ner"},
-    {"name": "hOCR (apenas documentos com 1 página)", "code": "hocr"},
-    {"name": "ALTO (apenas documentos com 1 página)", "code": "xml"},
+    { value: "pdf_indexed", description: "PDF com texto e índice"},
+    { value: "pdf", description: "PDF com texto (por defeito)"},
+    { value: "txt", description: "Texto"},
+    { value: "txt_delimited", description: "Texto com separador por página"},
+    { value: "csv", description: "Índice de palavras"},
+    //{ value: "ner", description: "Entidades (NER)"},
+    { value: "hocr", description: "hOCR (apenas documentos com 1 página)"},
+    { value: "xml", description: "ALTO (apenas documentos com 1 página)"},
 ]
-const defaultOutputs = [tesseractOutputsList[1]];
 
 const defaultEngine = 0;
 const engineList = [
@@ -174,8 +174,9 @@ class OcrMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            advancedOpen: false,
             dpiVal: null,
+            // lists of options in state, to allow changing them dynamically depending on other choices
+            // e.g. when choosing an OCR engine that has different parameter values
             engineOptions: engineList,
             engine: defaultEngine,
             engineModeOptions: tesseractModeList,
@@ -214,15 +215,11 @@ class OcrMenu extends React.Component {
         }
     }
 
-    toggleAdvanced() {
-        this.setState({ advancedOpen: !this.state.advancedOpen });
-    }
-
     getConfig() {
         return {
             engine: this.state.engine,
-            lang: this.langs.current.getChoiceList().join('+'),
-            outputs: this.outputs.current.getChoiceList(),
+            lang: this.langs.current.getSelected().join('+'),
+            outputs: this.outputs.current.getSelected(),
             engineMode: this.state.engineMode,
             segmentMode: this.state.segmentMode,
             thresholdMethod: this.state.thresholdMethod,
@@ -347,12 +344,14 @@ class OcrMenu extends React.Component {
     }
      */
 
-    saveSettings() {
+    saveSettings(exit = false) {
         // TODO: save settings client-side for OCR of clicked file/folder
         const settings = {};
         console.log("Saving settings");
         this.setState({ uncommittedChanges: false }, () => {
-            this.props.closeOCRMenu(settings, this.props.current_folder, this.props.filename);
+            if (exit) {
+                this.props.closeOCRMenu(settings, this.props.current_folder, this.props.filename);
+            }
         });
     }
 
@@ -397,22 +396,30 @@ class OcrMenu extends React.Component {
 
                 <Box>
                     <Button
+                        color="success"
+                        variant="contained"
+                        className="menuFunctionButton"
+                        startIcon={<SaveIcon />}
+                        onClick={() => this.saveSettings()}
+                    >
+                        Guardar
+                    </Button>
+                    <Button
                         variant="contained"
                         color="success"
                         className="menuFunctionButton noMargin"
                         startIcon={<CheckRoundedIcon />}
-                        onClick={() => this.saveSettings()}
+                        onClick={() => this.saveSettings(true)}
                     >
-                        Confirmar
+                        Terminar
                     </Button>
                 </Box>
             </Box>
 
-            <Box role="presentation" sx={{
+            <Box sx={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: '84vh',
-                width: '44%',
+                width: 'auto',
                 margin: 'auto',
                 /*overflow: 'scroll'*/
             }}>
@@ -421,120 +428,136 @@ class OcrMenu extends React.Component {
                 </Typography>
 
                 {this.props.alreadyOcr
-                    && <p style={{color: 'red'}}><b>Irá perder os resultados e alterações anteriores!</b></p>
+                    && <p style={{color: 'red', alignSelf: 'center'}}><b>Irá perder os resultados e alterações anteriores!</b></p>
                 }
+            </Box>
 
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-evenly',
+                height: 'auto',
+                width: 'auto',
+                margin: 'auto',
+                /*overflow: 'scroll'*/
+            }}>
                 {
                 //<AlgoDropdown ref={this.algoDropdown} menu={this}/>
                 }
-
+                {/*
                 <ChecklistDropdown className="simpleDropdown ocrDropdown"
                                    ref={this.langs}
                                    label={"Língua"}
                                    helperText={"Para melhores resultados, selecione por ordem de relevância"}
                                    options={tesseractLangList}
                                    defaultChoice={[tesseractLangList[defaultLangIndex]]}/>
+                */}
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    <CheckboxList ref={this.langs}
+                                  title={"Língua"}
+                                  options={tesseractLangList}
+                                  defaultChoice={defaultLangs}
+                                  required
+                                  helperText="Para melhores resultados, selecione por ordem de relevância"
+                                  errorText="Deve selecionar pelo menos uma língua"/>
+                </Box>
 
-                <ChecklistDropdown className="simpleDropdown ocrDropdown"
-                                   ref={this.outputs}
-                                   label={"Formatos de resultado"}
-                                   options={tesseractOutputsList}
-                                   defaultChoice={defaultOutputs}
-                                   allowCheckAll={true}/>
-
-                <Button onClick={() => this.toggleAdvanced()} sx={{alignSelf: 'start', marginBottom: '1rem'}}>
-                    Opções avançadas
-                    {this.state.advancedOpen ? <ExpandLess/> : <ExpandMore/>}
-                </Button>
-                <Collapse sx={{display: 'flex', flexDirection: 'column'}} in={this.state.advancedOpen}>
-
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '30%',
+                }}>
                     <TextField ref={this.dpiField}
                                label="DPI (Dots Per Inch)"
                                inputProps={{ inputMode: "numeric", pattern: "[1-9][0-9]*" }}
                                onChange={(e) => this.changeDpi(e.target.value)}
                                variant='outlined'
                                size="small"
-                               className="simpleDropdown ocrDropdown"
+                               className="simpleInput"
                                sx={{
                                    "& input:focus:invalid + fieldset": {borderColor: "red", borderWidth: 2}
                                 }}
                     />
 
-                    <FormControl className="simpleDropdown ocrDropdown">
-                        <InputLabel>Motor de OCR</InputLabel>
-                        <Select
-                            label={"Motor de OCR"}
+                    <FormControl className="simpleDropdown borderTop">
+                        <FormLabel id="label-ocr-engine-select">Motor de OCR</FormLabel>
+                        <RadioGroup
+                            aria-labelledby="label-ocr-engine-select"
                             value={this.state.engine}
                             onChange={(e) => this.changeEngine(e.target.value)}>
                             {
-                                this.state.engineOptions.map((item) => (
-                                    <MenuItem value={item.value}>
-                                        {item.description}
-                                    </MenuItem>
-                                ))
+                                this.state.engineOptions.map((option) =>
+                                    <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
+                                )
                             }
-                        </Select>
+                        </RadioGroup>
                     </FormControl>
 
-                    <FormControl className="simpleDropdown ocrDropdown">
-                        <InputLabel>Modo do motor</InputLabel>
-                        <Select
-                            label={"Modo do motor"}
+                    <FormControl className="simpleDropdown borderTop">
+                        <FormLabel id="label-engine-type-select">Modo do motor</FormLabel>
+                        <RadioGroup
+                            aria-labelledby="label-engine-type-select"
                             value={this.state.engineMode}
                             onChange={(e) => this.changeEngineMode(e.target.value)}>
                             {
-                                this.state.engineModeOptions.map((item) => (
-                                    <MenuItem value={item.value}>
-                                        {item.description}
-                                    </MenuItem>
-                                ))
+                                this.state.engineModeOptions.map((option) =>
+                                    <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
+                                )
                             }
-                        </Select>
+                        </RadioGroup>
                     </FormControl>
 
-                    <FormControl className="simpleDropdown ocrDropdown">
-                        <InputLabel>Segmentação</InputLabel>
-                        <Select
-                            label={"Segmentação"}
+                    <FormControl className="simpleDropdown borderTop">
+                        <FormLabel id="label-segmentation-select">Segmentação</FormLabel>
+                        <RadioGroup
+                            aria-labelledby="label-segmentation-select"
                             value={this.state.segmentMode}
                             onChange={(e) => this.changeSegmentationMode(e.target.value)}>
                             {
-                                this.state.segmentModeOptions.map((item) => (
-                                    <MenuItem value={item.value}>
-                                        {item.description}
-                                    </MenuItem>
-                                ))
+                                this.state.segmentModeOptions.map((option) =>
+                                    <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
+                                )
                             }
-                        </Select>
+                        </RadioGroup>
                     </FormControl>
 
-                    <FormControl className="simpleDropdown ocrDropdown">
-                        <InputLabel>Thresholding</InputLabel>
-                        <Select
-                            label={"Thresholding"}
+                    <FormControl className="simpleDropdown borderTop">
+                        <FormLabel id="label-thresholding-select">Thresholding</FormLabel>
+                        <RadioGroup
+                            aria-labelledby="label-thresholding-select"
                             value={this.state.thresholdMethod}
                             onChange={(e) => this.changeThresholdingMethod(e.target.value)}>
                             {
-                                this.state.thresholdMethodOptions.map((item) => (
-                                    <MenuItem value={item.value}>
-                                        {item.description}
-                                    </MenuItem>
-                                ))
+                                this.state.thresholdMethodOptions.map((option) =>
+                                    <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
+                                )
                             }
-                        </Select>
+                        </RadioGroup>
                     </FormControl>
 
                     <TextField ref={this.moreParams}
                                label="Parâmetros adicionais"
                                onChange={(e) => this.changeAdditionalParams(e.target.value)}
                                variant='outlined'
-                               className="simpleDropdown ocrDropdown"
+                               className="simpleInput borderTop"
                                size="small"
-                               sx={{
-                                   marginBottom: '1rem !important'
-                               }}
                     />
-                </Collapse>
+                </Box>
+
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    <CheckboxList ref={this.outputs}
+                                  title={"Formatos de resultado"}
+                                  options={tesseractOutputsList}
+                                  defaultChoice={defaultOutputs}
+                                  required
+                                  errorText="Deve selecionar pelo menos um formato de resultado"/>
+                </Box>
 
                 {/*
                 <Box sx={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
