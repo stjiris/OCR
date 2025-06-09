@@ -227,12 +227,14 @@ class OcrMenu extends React.Component {
     }
 
     changeDpi(value) {
-        if (isNaN(value)) {
+        value = value.trim()
+        if (isNaN(value)
+            || (this.state.dpiVal !== null
+            && this.state.dpiVal !== "" && !this.state.dpiVal.match("[1-9][0-9]*"))) {
             this.errorNot.current.setMessage("O valor de DPI deve ser um número inteiro!");
             this.errorNot.current.open();
-        } else {
-            this.setState({dpiVal: Number(value)});
         }
+        this.setState({dpiVal: value});
     }
 
     changeEngine(value) {
@@ -356,6 +358,11 @@ class OcrMenu extends React.Component {
     }
 
     render() {
+        const valid = (
+            (!isNaN(this.state.dpiVal) || (this.state.dpiVal !== "" && this.state.dpiVal.match("[1-9][0-9]*")))
+            && this.langs.current?.getSelected() !== []
+            && this.outputs.current?.getSelected() !== []
+        );
         return (
         <>
             <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -396,6 +403,7 @@ class OcrMenu extends React.Component {
 
                 <Box>
                     <Button
+                        disabled={!valid}
                         color="success"
                         variant="contained"
                         className="menuFunctionButton"
@@ -405,6 +413,7 @@ class OcrMenu extends React.Component {
                         Guardar
                     </Button>
                     <Button
+                        disabled={!valid}
                         variant="contained"
                         color="success"
                         className="menuFunctionButton noMargin"
@@ -473,6 +482,10 @@ class OcrMenu extends React.Component {
                     <TextField ref={this.dpiField}
                                label="DPI (Dots Per Inch)"
                                inputProps={{ inputMode: "numeric", pattern: "[1-9][0-9]*" }}
+                               error={isNaN(this.state.dpiVal)
+                                   || (this.state.dpiVal !== null
+                                   && this.state.dpiVal !== "" && !this.state.dpiVal.match("[1-9][0-9]*"))}
+                               value={this.state.dpiVal}
                                onChange={(e) => this.changeDpi(e.target.value)}
                                variant='outlined'
                                size="small"
