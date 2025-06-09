@@ -200,6 +200,9 @@ class OcrMenu extends React.Component {
         this.outputs = React.createRef();
         this.dpiField = React.createRef();
         this.moreParams = React.createRef();
+
+        this.leave = this.leave.bind(this);
+        this.setUncommittedChanges = this.setUncommittedChanges.bind(this);
     }
 
     preventExit(event) {
@@ -226,6 +229,10 @@ class OcrMenu extends React.Component {
         }
     }
 
+    setUncommittedChanges() {
+        this.setState({ uncommittedChanges: true });
+    }
+
     changeDpi(value) {
         value = value.trim()
         if (isNaN(value)
@@ -234,27 +241,27 @@ class OcrMenu extends React.Component {
             this.errorNot.current.setMessage("O valor de DPI deve ser um número inteiro!");
             this.errorNot.current.open();
         }
-        this.setState({dpiVal: value});
+        this.setState({ dpiVal: value, uncommittedChanges: true });
     }
 
     changeEngine(value) {
-        this.setState({ engine: value });
+        this.setState({ engine: value, uncommittedChanges: true });
     }
 
     changeEngineMode(value) {
-        this.setState({ engineMode: value });
+        this.setState({ engineMode: value, uncommittedChanges: true });
     }
 
     changeSegmentationMode(value) {
-        this.setState({ segmentMode: value });
+        this.setState({ segmentMode: value, uncommittedChanges: true });
     }
 
     changeThresholdingMethod(value) {
-        this.setState({ thresholdMethod: value });
+        this.setState({ thresholdMethod: value, uncommittedChanges: true });
     }
 
     changeAdditionalParams(value) {
-        this.setState({ otherParams: value });
+        this.setState({ otherParams: value, uncommittedChanges: true });
     }
 
     goBack() {
@@ -469,6 +476,7 @@ class OcrMenu extends React.Component {
                                   title={"Língua"}
                                   options={tesseractLangList}
                                   defaultChoice={defaultLangs}
+                                  onChangeCallback={this.setUncommittedChanges}
                                   required
                                   helperText="Para melhores resultados, selecione por ordem de relevância"
                                   errorText="Deve selecionar pelo menos uma língua"/>
@@ -568,6 +576,7 @@ class OcrMenu extends React.Component {
                                   title={"Formatos de resultado"}
                                   options={tesseractOutputsList}
                                   defaultChoice={defaultOutputs}
+                                  onChangeCallback={this.setUncommittedChanges}
                                   required
                                   errorText="Deve selecionar pelo menos um formato de resultado"/>
                 </Box>
