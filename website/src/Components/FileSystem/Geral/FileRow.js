@@ -6,14 +6,14 @@ import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
+import IconButton from '@mui/material/IconButton';
 
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import SettingsIcon from '@mui/icons-material/Settings';
-
-import { IconButton } from '@mui/material';
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 import calculateEstimatedTime from '../../../utils/waitingTime';
 import loadComponent from '../../../utils/loadComponents';
@@ -171,7 +171,7 @@ class FileRow extends React.Component {
 
     render() {
         const buttonsDisabled = !(this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"])
-
+        const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "useDefault";
         return (
             <>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -281,12 +281,12 @@ class FileRow extends React.Component {
                                         disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
                                         className={"actionButton"
                                             // highlight custom configs with different color
-                                            + ((this.state.info?.["config"] && this.state.info["config"] !== "useDefault")
+                                            + (usingCustomConfig
                                                 ? " altColor"
                                                 : "")}
                                         message="Configurar OCR"
-                                        clickFunction={(e) => this.configureOCR(e)}
-                                        icon={<SettingsIcon/>}
+                                        clickFunction={(e) => this.configureOCR(e, usingCustomConfig)}
+                                        icon={usingCustomConfig ? <SettingsSuggestIcon/> : <SettingsIcon/>}
                                     />
 
                                     <TooltipIcon
