@@ -238,6 +238,7 @@ class OcrMenu extends React.Component {
     }
 
     restoreDefault() {
+        if (this.state.usingDefault) return;
         this.setState({
             ...defaultParams,
             usingDefault: true,
@@ -449,7 +450,7 @@ class OcrMenu extends React.Component {
 
                 <Box>
                     <Button
-                        disabled={!valid}
+                        disabled={this.state.usingDefault}
                         variant="contained"
                         className="menuFunctionButton"
                         startIcon={<RotateLeft />}
