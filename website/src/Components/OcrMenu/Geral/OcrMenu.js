@@ -484,16 +484,11 @@ class OcrMenu extends React.Component {
                 display: 'flex',
                 flexDirection: 'column',
                 width: 'auto',
-                margin: 'auto',
-                /*overflow: 'scroll'*/
+                margin: '1rem',
             }}>
                 <Typography variant="h5" component="h2" sx={{alignSelf: 'center'}}>
                     Configurar OCR {this.state.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
                 </Typography>
-
-                {this.props.alreadyOcr
-                    && <p style={{color: 'red', alignSelf: 'center'}}><b>Irá perder os resultados e alterações anteriores!</b></p>
-                }
             </Box>
 
             <Box sx={{
@@ -646,7 +641,6 @@ OcrMenu.defaultProps = {
     current_folder: null,
     filename: null,
     isFolder: false,
-    alreadyOcr: false,
     usingDefault: true,
     // functions:
     closeOCRMenu: null,
