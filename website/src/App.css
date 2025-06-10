@@ -25,6 +25,18 @@ body {
     color: black;
 }
 
+.actionButton {
+    color: #1976d2;
+}
+
+.actionButton.altColor {
+    color: #19a942;
+}
+
+.negActionButton {
+    color: #f00;
+}
+
 .MuiButton-contained.menuFunctionButton {
     border: 1px solid black;
     height: 2rem;

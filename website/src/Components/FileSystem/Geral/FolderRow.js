@@ -50,7 +50,7 @@ class FolderRow extends React.Component {
 
                 <TableCell className="explorerCell actionsCell" align='center'>
                     <TooltipIcon
-                        color="#f00"
+                        className="negActionButton"
                         message="Apagar"
                         clickFunction={(e) => this.delete(e)}
                         icon={<DeleteForeverIcon/>}

@@ -270,7 +270,7 @@ class FileRow extends React.Component {
                                     <TooltipIcon
                                         key={"OCR " + this.props.name}
                                         disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
-                                        color="#1976d2"
+                                        className="actionButton"
                                         message="Fazer OCR"
                                         clickFunction={(e) => this.performOCR(e)}
                                         icon={<OcrIcon/>}
@@ -279,7 +279,11 @@ class FileRow extends React.Component {
                                     <TooltipIcon
                                         key={"Config " + this.props.name}
                                         disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
-                                        color="#1976d2"
+                                        className={"actionButton"
+                                            // highlight custom configs with different color
+                                            + ((this.state.info?.["config"] && this.state.info["config"] !== "useDefault")
+                                                ? " altColor"
+                                                : "")}
                                         message="Configurar OCR"
                                         clickFunction={(e) => this.configureOCR(e)}
                                         icon={<SettingsIcon/>}
@@ -288,7 +292,7 @@ class FileRow extends React.Component {
                                     <TooltipIcon
                                         key={"Layout " + this.props.name}
                                         disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
-                                        color="#1976d2"
+                                        className="actionButton"
                                         message="Criar Layout"
                                         clickFunction={(e) => this.createLayout(e)}
                                         icon={<LayoutIcon/>}
@@ -296,7 +300,7 @@ class FileRow extends React.Component {
 
                                     <TooltipIcon
                                         key={"Edit " + this.props.name}
-                                        color="#1976d2"
+                                        className="actionButton"
                                         message="Editar"
                                         disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
                                         clickFunction={(e) => this.editFile(e)}
@@ -309,7 +313,7 @@ class FileRow extends React.Component {
                                         : (this.state.info?.["indexed"]
                                             ? <TooltipIcon
                                                 key={"Remove " + this.props.name}
-                                                color="#f00"
+                                                className="negActionButton"
                                                 message="Desindexar"
                                                 disabled={buttonsDisabled || this.state.info?.["ocr"] === undefined}
                                                 clickFunction={(e) => this.removeIndex(e)}
@@ -318,7 +322,7 @@ class FileRow extends React.Component {
 
                                             : <TooltipIcon
                                                 key={"Index " + this.props.name}
-                                                color="#1976d2"
+                                                className="actionButton"
                                                 message="Indexar"
                                                 disabled={buttonsDisabled || this.state.info?.["ocr"] === undefined}
                                                 clickFunction={(e) => this.indexFile(e)}
@@ -328,7 +332,7 @@ class FileRow extends React.Component {
 
                                     <TooltipIcon
                                         key={"Delete " + this.props.name}
-                                        color="#f00"
+                                        className="negActionButton"
                                         message="Apagar"
                                         clickFunction={(e) => this.delete(e)}
                                         icon={<DeleteForeverIcon/>}
