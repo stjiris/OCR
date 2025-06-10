@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from "axios";
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -6,6 +7,7 @@ import Button from '@mui/material/Button';
 import TextField from "@mui/material/TextField";
 import UndoIcon from "@mui/icons-material/Undo";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import RotateLeft from "@mui/icons-material/RotateLeft";
 import SaveIcon from "@mui/icons-material/Save";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
@@ -170,22 +172,29 @@ const easyOCRLangList = [
   ]
 */
 
+const defaultParams = {
+    langs: defaultLangs,
+    outputs: defaultOutputs,
+    dpiVal: null,
+    otherParams: null,
+    engine: defaultEngine,
+    engineMode: defaultEngineMode,
+    segmentMode: defaultSegmentationMode,
+    thresholdMethod: defaultThresholding,
+}
+
 class OcrMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            dpiVal: null,
+            ...defaultParams,
             // lists of options in state, to allow changing them dynamically depending on other choices
             // e.g. when choosing an OCR engine that has different parameter values
             engineOptions: engineList,
-            engine: defaultEngine,
             engineModeOptions: tesseractModeList,
-            engineMode: defaultEngineMode,
             segmentModeOptions: tesseractSegmentList,
-            segmentMode: defaultSegmentationMode,
             thresholdMethodOptions: tesseractThreshList,
-            thresholdMethod: defaultThresholding,
-            otherParams: null,
+            usingDefault: this.props.usingDefault,
             uncommittedChanges: false,
         }
         this.confirmLeave = React.createRef();
@@ -196,13 +205,12 @@ class OcrMenu extends React.Component {
 
         this.storageMenu = React.createRef();
 
-        this.langs = React.createRef();
-        this.outputs = React.createRef();
         this.dpiField = React.createRef();
         this.moreParams = React.createRef();
 
         this.leave = this.leave.bind(this);
-        this.setUncommittedChanges = this.setUncommittedChanges.bind(this);
+        this.setLangList = this.setLangList.bind(this);
+        this.setOutputList = this.setOutputList.bind(this);
     }
 
     preventExit(event) {
@@ -221,16 +229,28 @@ class OcrMenu extends React.Component {
     getConfig() {
         return {
             engine: this.state.engine,
-            lang: this.langs.current.getSelected().join('+'),
-            outputs: this.outputs.current.getSelected(),
+            lang: this.state.langs,
+            outputs: this.state.outputs,
             engineMode: this.state.engineMode,
             segmentMode: this.state.segmentMode,
             thresholdMethod: this.state.thresholdMethod,
         }
     }
 
-    setUncommittedChanges() {
-        this.setState({ uncommittedChanges: true });
+    restoreDefault() {
+        this.setState({
+            ...defaultParams,
+            usingDefault: true,
+            uncommittedChanges: true
+        });
+    }
+
+    setLangList(checked) {
+        this.setState({ langs: checked, usingDefault: false, uncommittedChanges: true });
+    }
+
+    setOutputList(checked) {
+        this.setState({ outputs: checked, usingDefault: false, uncommittedChanges: true });
     }
 
     changeDpi(value) {
@@ -241,27 +261,27 @@ class OcrMenu extends React.Component {
             this.errorNot.current.setMessage("O valor de DPI deve ser um número inteiro!");
             this.errorNot.current.open();
         }
-        this.setState({ dpiVal: value, uncommittedChanges: true });
+        this.setState({ dpiVal: value, usingDefault: false, uncommittedChanges: true });
     }
 
     changeEngine(value) {
-        this.setState({ engine: value, uncommittedChanges: true });
+        this.setState({ engine: value, usingDefault: false, uncommittedChanges: true });
     }
 
     changeEngineMode(value) {
-        this.setState({ engineMode: value, uncommittedChanges: true });
+        this.setState({ engineMode: value, usingDefault: false, uncommittedChanges: true });
     }
 
     changeSegmentationMode(value) {
-        this.setState({ segmentMode: value, uncommittedChanges: true });
+        this.setState({ segmentMode: value, usingDefault: false, uncommittedChanges: true });
     }
 
     changeThresholdingMethod(value) {
-        this.setState({ thresholdMethod: value, uncommittedChanges: true });
+        this.setState({ thresholdMethod: value, usingDefault: false, uncommittedChanges: true });
     }
 
     changeAdditionalParams(value) {
-        this.setState({ otherParams: value, uncommittedChanges: true });
+        this.setState({ otherParams: value, usingDefault: false, uncommittedChanges: true });
     }
 
     goBack() {
@@ -411,11 +431,20 @@ class OcrMenu extends React.Component {
                 <Box>
                     <Button
                         disabled={!valid}
+                        variant="contained"
+                        className="menuFunctionButton"
+                        startIcon={<RotateLeft />}
+                        onClick={() => this.restoreDefault()}
+                    >
+                        Configuração Predefinida
+                    </Button>
+                    <Button
+                        disabled={!valid}
                         color="success"
                         variant="contained"
                         className="menuFunctionButton"
                         startIcon={<SaveIcon />}
-                        onClick={() => this.saveSettings()}
+                        onClick={() => this.saveConfig()}
                     >
                         Guardar
                     </Button>
@@ -425,7 +454,7 @@ class OcrMenu extends React.Component {
                         color="success"
                         className="menuFunctionButton noMargin"
                         startIcon={<CheckRoundedIcon />}
-                        onClick={() => this.saveSettings(true)}
+                        onClick={() => this.saveConfig(true)}
                     >
                         Terminar
                     </Button>
@@ -472,11 +501,10 @@ class OcrMenu extends React.Component {
                     display: 'flex',
                     flexDirection: 'column',
                 }}>
-                    <CheckboxList ref={this.langs}
-                                  title={"Língua"}
+                    <CheckboxList title={"Língua"}
                                   options={tesseractLangList}
-                                  defaultChoice={defaultLangs}
-                                  onChangeCallback={this.setUncommittedChanges}
+                                  checked={this.state.langs}
+                                  onChangeCallback={this.setLangList}
                                   required
                                   helperText="Para melhores resultados, selecione por ordem de relevância"
                                   errorText="Deve selecionar pelo menos uma língua"/>
@@ -572,11 +600,10 @@ class OcrMenu extends React.Component {
                     display: 'flex',
                     flexDirection: 'column',
                 }}>
-                    <CheckboxList ref={this.outputs}
-                                  title={"Formatos de resultado"}
+                    <CheckboxList title={"Formatos de resultado"}
                                   options={tesseractOutputsList}
-                                  defaultChoice={defaultOutputs}
-                                  onChangeCallback={this.setUncommittedChanges}
+                                  checked={this.state.outputs}
+                                  onChangeCallback={this.setOutputList}
                                   required
                                   errorText="Deve selecionar pelo menos um formato de resultado"/>
                 </Box>
@@ -601,8 +628,8 @@ OcrMenu.defaultProps = {
     filename: null,
     isFolder: false,
     alreadyOcr: false,
+    usingDefault: true,
     // functions:
-    setOcrSettings: null,
     closeOCRMenu: null,
     updateFiles: null,
     showStorageForm: null

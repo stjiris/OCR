@@ -7,8 +7,17 @@ import FormGroup from "@mui/material/FormGroup";
 import FormHelperText from "@mui/material/FormHelperText";
 import FormLabel from "@mui/material/FormLabel";
 
-function CheckboxList({ options, defaultChoice, title, required, helperText, errorText, onChangeCallback }) {
-    const [checked, setChecked] = React.useState(defaultChoice);
+function CheckboxList(
+    {
+        options = [],
+        checked = [],
+        title = "",
+        required = false,
+        helperText = null,
+        errorText = null,
+        // functions:
+        onChangeCallback = null,  // required
+    }) {
 
     const handleChange = (event) => {
         const { target : { value } } = event;
@@ -22,18 +31,10 @@ function CheckboxList({ options, defaultChoice, title, required, helperText, err
             newChecked.splice(currentIndex, 1);
         }
 
-        setChecked(newChecked);
-        if (onChangeCallback) {
-            onChangeCallback();
-        }
+        onChangeCallback(newChecked);
     };
 
-    function getSelected() {
-        return [...checked];
-    }
-
     const error = required && checked.filter(v => v).length === 0;
-
     return (
         <FormControl
             required={required}
@@ -66,17 +67,6 @@ function CheckboxList({ options, defaultChoice, title, required, helperText, err
             {errorText && error && <FormHelperText>{errorText}</FormHelperText>}
         </FormControl>
     );
-}
-
-CheckboxList.defaultProps = {
-    options: [],
-    defaultChoice: [],
-    title: "",
-    required: false,
-    helperText: null,
-    errorText: null,
-    // functions:
-    onChangeCallback: null,
 }
 
 export default CheckboxList;

@@ -109,7 +109,6 @@ class FileExplorer extends React.Component {
         this.createLayout = this.createLayout.bind(this);
 
         // functions for OCR menu
-        this.setOcrSettings = this.setOcrSettings.bind(this);
         this.closeOCRMenu = this.closeOCRMenu.bind(this);
         this.showStorageForm = this.showStorageForm.bind(this);
 
@@ -775,16 +774,7 @@ class FileExplorer extends React.Component {
         this.props.enterOcrMenu(filename, isFolder, alreadyOcr)
     }
 
-    setOcrSettings(currentFolder, filename, settings) {
-        //TODO
-    }
-
-    closeOCRMenu(settings=null, currentFolder=null, filename=null) {
-        if (settings !== null) {
-            // TODO: save settings for specified folder/file; for now, use separate dict in state. if folder/file not in dict, use default config
-            // Later, can be in e.g. "_config" file for each folder/file
-            console.log("Settings saved");
-        }
+    closeOCRMenu() {
         this.props.exitMenus(this.fetchInfo);
     }
 
@@ -980,7 +970,6 @@ class FileExplorer extends React.Component {
                                filename={this.state.fileOpened}
                                isFolder={this.state.isFolder}
                                alreadyOcr={this.state.alreadyOcr}
-                               setOcrSettings={this.setOcrSettings}
                                closeOCRMenu={this.closeOCRMenu}
                                updateFiles={this.updateFiles}
                                showStorageForm={this.showStorageForm}/>
