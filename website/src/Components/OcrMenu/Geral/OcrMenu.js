@@ -172,8 +172,8 @@ const easyOCRLangList = [
   ]
 */
 
-const defaultParams = {
-    langs: defaultLangs,
+const defaultConfig = {
+    lang: defaultLangs,
     outputs: defaultOutputs,
     dpiVal: null,
     otherParams: null,
@@ -186,15 +186,17 @@ const defaultParams = {
 class OcrMenu extends React.Component {
     constructor(props) {
         super(props);
+        const usingDefault = this.props.customConfig == null;  // null or undefined
+        const initialConfig = Object.assign({...defaultConfig}, this.props.customConfig);
         this.state = {
-            ...defaultParams,
+            ...initialConfig,
             // lists of options in state, to allow changing them dynamically depending on other choices
             // e.g. when choosing an OCR engine that has different parameter values
             engineOptions: engineList,
             engineModeOptions: tesseractModeList,
             segmentModeOptions: tesseractSegmentList,
             thresholdMethodOptions: tesseractThreshList,
-            usingDefault: this.props.usingDefault,
+            usingDefault: usingDefault,
             uncommittedChanges: false,
         }
         this.confirmLeave = React.createRef();
@@ -229,7 +231,7 @@ class OcrMenu extends React.Component {
     getConfig() {
         return {
             engine: this.state.engine,
-            lang: this.state.langs,
+            lang: this.state.lang,
             outputs: this.state.outputs,
             engineMode: this.state.engineMode,
             segmentMode: this.state.segmentMode,
@@ -240,14 +242,14 @@ class OcrMenu extends React.Component {
     restoreDefault() {
         if (this.state.usingDefault) return;
         this.setState({
-            ...defaultParams,
+            ...defaultConfig,
             usingDefault: true,
             uncommittedChanges: true
         });
     }
 
     setLangList(checked) {
-        this.setState({ langs: checked, usingDefault: false, uncommittedChanges: true });
+        this.setState({ lang: checked, usingDefault: false, uncommittedChanges: true });
     }
 
     setOutputList(checked) {
@@ -376,7 +378,7 @@ class OcrMenu extends React.Component {
 
     saveConfig(exit = false) {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-        const config = this.state.usingDefault ? { useDefault: true } : this.getConfig();
+        const config = this.state.usingDefault ? "useDefault" : this.getConfig();
         axios.post(process.env.REACT_APP_API_URL + 'save-config',
             JSON.stringify({
                 _private: this.props._private,
@@ -407,7 +409,7 @@ class OcrMenu extends React.Component {
     render() {
         const valid = (
             (!isNaN(this.state.dpiVal) || (this.state.dpiVal !== "" && this.state.dpiVal.match("[1-9][0-9]*")))
-            && this.state.langs.length !== 0
+            && this.state.lang.length !== 0
             && this.state.outputs.length !== 0
         );
         return (
@@ -518,7 +520,7 @@ class OcrMenu extends React.Component {
                 }}>
                     <CheckboxList title={"Língua"}
                                   options={tesseractLangList}
-                                  checked={this.state.langs}
+                                  checked={this.state.lang}
                                   onChangeCallback={this.setLangList}
                                   required
                                   helperText="Para melhores resultados, selecione por ordem de relevância"
@@ -642,7 +644,7 @@ OcrMenu.defaultProps = {
     current_folder: null,
     filename: null,
     isFolder: false,
-    usingDefault: true,
+    customConfig: null,
     // functions:
     closeOCRMenu: null,
     updateFiles: null,

@@ -248,9 +248,16 @@ function App() {
             );
         }
 
-        enterOcrMenu(filename = null, isFolder=false, alreadyOcr=false) {
+        enterOcrMenu(filename = null, isFolder=false, alreadyOcr=false, customConfig=null) {
             this.setState({...ocrMenuState, fileOpened: filename},
-                () => this.fileSystem.current.setState({...ocrMenuState, fileOpened: filename, isFolder: isFolder, alreadyOcr: alreadyOcr})
+                () => this.fileSystem.current.setState(
+                    {
+                        ...ocrMenuState,
+                        fileOpened: filename,
+                        isFolder: isFolder,
+                        alreadyOcr: alreadyOcr,
+                        customConfig: customConfig
+                    })
             );
         }
 

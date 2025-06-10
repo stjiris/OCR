@@ -608,7 +608,7 @@ def upload_file():
 @requires_json_path
 def configure_ocr():
     req_data = request.json
-    if "useDefault" not in req_data and "config" not in req_data:
+    if "config" not in req_data:
         abort(HTTPStatus.BAD_REQUEST)
     path, filesystem_path, private_session, is_private = format_filesystem_path(req_data)
     data_path = f"{path}/_data.json"
@@ -617,10 +617,12 @@ def configure_ocr():
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)  # TODO: improve feedback to users on error
 
-    if "useDefault" in data and data["useDefault"] == True:
-        data["config"] = "useDefault"
-    else:
+    if isinstance(req_data["config"], dict) or req_data["config"] == "useDefault":
         data["config"] = req_data["config"]
+    else:
+        # TODO: accept and verify other strings as config file names
+        abort(HTTPStatus.BAD_REQUEST)
+
     update_data(data_path, data)
 
     return {"success": True}

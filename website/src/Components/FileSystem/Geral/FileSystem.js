@@ -66,6 +66,7 @@ class FileExplorer extends React.Component {
             fileOpened: null,
             isFolder: false,
             alreadyOcr: false,
+            customConfig: null,
         }
 
         this.folderMenu = React.createRef();
@@ -770,8 +771,8 @@ class FileExplorer extends React.Component {
         this.setState({components: items});
     }
 
-    configureOCR(filename, isFolder=false, alreadyOcr=false) {
-        this.props.enterOcrMenu(filename, isFolder, alreadyOcr)
+    configureOCR(filename, isFolder=false, alreadyOcr=false, customConfig=null) {
+        this.props.enterOcrMenu(filename, isFolder, alreadyOcr, customConfig)
     }
 
     closeOCRMenu() {
@@ -970,6 +971,7 @@ class FileExplorer extends React.Component {
                                filename={this.state.fileOpened}
                                isFolder={this.state.isFolder}
                                alreadyOcr={this.state.alreadyOcr}
+                               customConfig={this.state.customConfig}
                                closeOCRMenu={this.closeOCRMenu}
                                updateFiles={this.updateFiles}
                                showStorageForm={this.showStorageForm}/>

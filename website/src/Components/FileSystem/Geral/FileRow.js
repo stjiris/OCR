@@ -149,9 +149,10 @@ class FileRow extends React.Component {
         this.props.performOCR(this.props.name, false, this.state.info?.["ocr"] !== undefined);
     }
 
-    configureOCR(e) {
+    configureOCR(e, usingCustomConfig) {
         e.stopPropagation();
-        this.props.configureOCR(this.props.name, false, this.state.info?.["ocr"] !== undefined);
+        const customConfig = usingCustomConfig ? this.state.info?.["config"] : null;
+        this.props.configureOCR(this.props.name, false, this.state.info?.["ocr"] !== undefined, customConfig);
     }
 
     indexFile(e) {
