@@ -373,15 +373,34 @@ class OcrMenu extends React.Component {
     }
      */
 
-    saveSettings(exit = false) {
-        // TODO: save settings client-side for OCR of clicked file/folder
-        const settings = {};
-        console.log("Saving settings");
-        this.setState({ uncommittedChanges: false }, () => {
-            if (exit) {
-                this.props.closeOCRMenu(settings, this.props.current_folder, this.props.filename);
-            }
-        });
+    saveConfig(exit = false) {
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        const config = this.state.usingDefault ? { useDefault: true } : this.getConfig();
+        axios.post(process.env.REACT_APP_API_URL + 'save-config',
+            JSON.stringify({
+                _private: this.props._private,
+                path: path,
+                config: config,
+            }),
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(({ data }) => {
+                if (data["success"]) {
+                    this.setState({ uncommittedChanges: false });
+
+                    this.successNot.current.setMessage("Configuração de OCR guardada com sucesso.");
+                    this.successNot.current.open();
+
+                    if (exit) {
+                        this.leave();
+                    }
+                } else {
+                    alert("Erro inesperado ao guardar a configuração de OCR.")
+                }
+            });
     }
 
     render() {

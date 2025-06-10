@@ -478,7 +478,6 @@ def get_doc_len(file):
         return json.loads(text)["pages"]
 
 
-# DONE
 def update_data(file, data):
     """
     Update the data file
@@ -486,6 +485,7 @@ def update_data(file, data):
     @param data: data to update
     """
 
+    # TODO: ensure atomic operations to handle multiple users making changes to the same files/folders
     previous_data = get_data(file)
     with open(file, "w", encoding="utf-8") as f:
         previous_data.update(data)

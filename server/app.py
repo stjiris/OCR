@@ -478,6 +478,7 @@ def find_valid_filename(path, basename, extension):
 
     return f"{basename} ({id}).{extension}"
 
+
 @app.route("/prepare-upload", methods=["POST"])
 @requires_json_path
 def prepare_upload():
@@ -603,6 +604,28 @@ def upload_file():
     return {"success": True, "finished": False, "info": get_folder_info(target_path, private_session)}
 
 
+@app.route("/save-config", methods=["POST"])
+@requires_json_path
+def configure_ocr():
+    req_data = request.json
+    if "useDefault" not in req_data and "config" not in req_data:
+        abort(HTTPStatus.BAD_REQUEST)
+    path, filesystem_path, private_session, is_private = format_filesystem_path(req_data)
+    data_path = f"{path}/_data.json"
+    try:
+        data = get_data(data_path)
+    except FileNotFoundError:
+        abort(HTTPStatus.NOT_FOUND)  # TODO: improve feedback to users on error
+
+    if "useDefault" in data and data["useDefault"] == True:
+        data["config"] = "useDefault"
+    else:
+        data["config"] = req_data["config"]
+    update_data(data_path, data)
+
+    return {"success": True}
+
+
 @app.route("/perform-ocr", methods=["POST"])
 @requires_json_path
 def perform_ocr():
@@ -620,7 +643,7 @@ def perform_ocr():
     data = request.json
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
 
-    config = data["config"] if "config" in data else {}
+    config = data["config"] if "config" in data else None
     multiple = data["multiple"] if "multiple" in data else False
 
     if multiple:
@@ -637,6 +660,11 @@ def perform_ocr():
             data = get_data(f"{f}/_data.json")
         except FileNotFoundError:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)  # TODO: improve feedback to users on error
+
+        # TODO: handle default or preset name configs in celery tasks
+        # Replace specified config with saved config, if exists
+        if config is None and "config" in data:
+            config = data["config"]
 
         # Delete previous results
         if os.path.exists(f"{f}/_ocr_results"):
