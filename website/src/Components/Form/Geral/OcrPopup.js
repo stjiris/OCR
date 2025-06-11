@@ -40,15 +40,7 @@ class OcrPopup extends React.Component {
             filename: null,
             isFolder: false,
             alreadyOcr: false,
-
-            //languageChoice: [tesseractLangList[defaultLangIndex]],
-
-            dpiVal: null,
-            //engine: defaultEngine,
-            //engineMode: defaultEngineMode,
-            //segmentMode: defaultSegmentationMode,
-            //thresholdMethod: defaultThresholding,
-            otherParams: null,
+            customConfig: null,
         }
 
         this.successNot = React.createRef();
@@ -71,12 +63,16 @@ class OcrPopup extends React.Component {
         }
     }
 
-    openMenu(filename, isFolder, alreadyOcr) {
+    openMenu(filename, isFolder, alreadyOcr, customConfig) {
+        if (customConfig?.["lang"].length > 0) {
+            customConfig["lang"] = customConfig["lang"].join('+');
+        }
         this.setState({
             open: true,
             filename: filename,
             isFolder: isFolder,
             alreadyOcr: alreadyOcr,
+            customConfig: customConfig,
         });
     }
 
@@ -86,38 +82,22 @@ class OcrPopup extends React.Component {
             filename: null,
             isFolder: false,
             alreadyOcr: false,
+            customConfig: null,
         });
-    }
-
-    getConfig() {
-        return {
-            engine: this.state.engine,
-            lang: this.langs.current.getChoiceList().join('+'),
-            engineMode: this.state.engineMode,
-            segmentMode: this.state.segmentMode,
-            thresholdMethod: this.state.thresholdMethod,
-        }
     }
 
     /**
      * Request OCR of the file on the given path from the backend
      */
-    performOCR(algorithm = null, config = null, path = null, multiple = null) {
-        //if (algorithm === null) algorithm = this.algoDropdown.current.getChoice();
-        if (config === null) config = this.getConfig();
-        console.log(this.state.dpiVal);
-        if (this.state.dpiVal && this.state.dpiVal != "") {
-            config.dpi = this.state.dpiVal;
+    performOCR() {
+        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+        const body = {
+            "path": path,
+            "multiple": this.state.isFolder,
+            "_private": this.props._private
         }
-        if (this.state.otherParams && this.state.otherParams != "") {
-            config.otherParams = this.state.otherParams;
-        }
-
-        if (multiple === null) multiple = this.state.isFolder;
-
-        if (path == null) {
-            path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename)
-                    .replace(/^\//, '');
+        if (this.state.customConfig) {
+            body["config"] = this.state.customConfig;
         }
 
         fetch(process.env.REACT_APP_API_URL + 'perform-ocr', {
@@ -125,18 +105,11 @@ class OcrPopup extends React.Component {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                "path": path,
-                "config": config,
-                "multiple": multiple,
-                "_private": this.props._private
-            }),
+            body: JSON.stringify(body),
         })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    this.props.updateFiles(data.files)
-
                     this.successNot.current.setMessage(data.message);
                     this.successNot.current.open();
                 } else {
@@ -148,7 +121,7 @@ class OcrPopup extends React.Component {
                     }
                 }
 
-                this.setState({ open: false });
+                this.setState({ open: false }, this.props.fetchInfo);
             });
     }
 
@@ -195,8 +168,8 @@ OcrPopup.defaultProps = {
     sessionId: "",
     current_folder: null,
     // functions:
-    updateFiles: null,
-    showStorageForm: null
+    fetchInfo: null,
+    showStorageForm: null,
 }
 
 export default OcrPopup;

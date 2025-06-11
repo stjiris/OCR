@@ -260,8 +260,8 @@ class FileExplorer extends React.Component {
         this.storageMenu.current.toggleOpen();
     }
 
-    performOCR(filename, isFolder=false, alreadyOcr=false) {
-        this.ocrPopup.current.openMenu(filename, isFolder, alreadyOcr);
+    performOCR(filename, isFolder=false, alreadyOcr=false, customConfig=null) {
+        this.ocrPopup.current.openMenu(filename, isFolder, alreadyOcr, customConfig);
     }
 
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
@@ -973,7 +973,6 @@ class FileExplorer extends React.Component {
                                alreadyOcr={this.state.alreadyOcr}
                                customConfig={this.state.customConfig}
                                closeOCRMenu={this.closeOCRMenu}
-                               updateFiles={this.updateFiles}
                                showStorageForm={this.showStorageForm}/>
                     : this.state.layoutMenu
                     ? <LayoutMenu _private={this.props._private}
@@ -1001,7 +1000,7 @@ class FileExplorer extends React.Component {
                                   sessionId={this.props._private ? this.props.sessionId : ""}
                                   current_folder={this.state.current_folder}
                                   filename={this.state.fileOpened}
-                                  updateFiles={this.updateFiles}
+                                  fetchInfo={this.fetchInfo}
                                   showStorageForm={this.showStorageForm}/>
                         <DeletePopup ref={this.deletePopup} _private={this.props._private} updateFiles={this.updateFiles}/>
                         {

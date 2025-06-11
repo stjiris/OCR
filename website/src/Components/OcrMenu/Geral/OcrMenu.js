@@ -574,8 +574,7 @@ OcrMenu.defaultProps = {
     customConfig: null,
     // functions:
     closeOCRMenu: null,
-    updateFiles: null,
-    showStorageForm: null
+    showStorageForm: null,
 }
 
 export default OcrMenu;

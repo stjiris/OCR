@@ -144,9 +144,10 @@ class FileRow extends React.Component {
         this.props.editText(this.props.name);
     }
 
-    performOCR(e) {
+    performOCR(e, usingCustomConfig) {
         e.stopPropagation();
-        this.props.performOCR(this.props.name, false, this.state.info?.["ocr"] !== undefined);
+        const customConfig = usingCustomConfig ? this.state.info?.["config"] : null;
+        this.props.performOCR(this.props.name, false, this.state.info?.["ocr"] !== undefined, customConfig);
     }
 
     configureOCR(e, usingCustomConfig) {
@@ -273,7 +274,7 @@ class FileRow extends React.Component {
                                         disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
                                         className="actionButton"
                                         message="Fazer OCR"
-                                        clickFunction={(e) => this.performOCR(e)}
+                                        clickFunction={(e) => this.performOCR(e, usingCustomConfig)}
                                         icon={<OcrIcon/>}
                                     />
 

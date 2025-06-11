@@ -695,7 +695,6 @@ def perform_ocr():
     return {
         "success": True,
         "message": "O OCR começou, por favor aguarde",
-        "files": get_filesystem(filesystem_path, private_session, is_private),
     }
 
 
