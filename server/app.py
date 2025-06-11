@@ -852,7 +852,7 @@ def submit_text():
             json.dump(text, f, indent=2, ensure_ascii=False)
 
     if remake_files:
-        celery.send_task('make_changes', kwargs={'data_folder': path,  'data': data})
+        celery.send_task('make_changes', kwargs={'path': path,  'data': data})
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
 

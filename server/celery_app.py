@@ -66,62 +66,63 @@ def task_export(path, filetype, delimiter=False, force_recreate=False, simple=Fa
 
 
 @celery.task(name="make_changes")
-def task_make_changes(data_folder, data):
+def task_make_changes(path, data):
+    export_folder = path + "/_export"
     created_time = get_current_time()
 
     if data["txt"]["complete"]:
-        export_file(data_folder, "txt", force_recreate=True)
+        export_file(path, "txt", force_recreate=True)
         data["txt"] = {
             "complete": True,
-            "size": get_size(data_folder + "/_txt.txt", path_complete=True),
+            "size": get_size(export_folder + "/_txt.txt", path_complete=True),
             "creation": created_time
         }
 
     if data["txt_delimited"]["complete"]:
-        export_file(data_folder, "txt", delimiter=True, force_recreate=True)
+        export_file(path, "txt", delimiter=True, force_recreate=True)
         data["txt_delimited"] = {
             "complete": True,
-            "size": get_size(data_folder + "/_txt_delimited.txt", path_complete=True),
+            "size": get_size(export_folder + "/_txt_delimited.txt", path_complete=True),
             "creation": created_time
         }
 
     if data["pdf_indexed"]["complete"]:
         recreate_csv = data["csv"]["complete"]
-        os.remove(data_folder + "/_pdf_indexed.pdf")
-        export_file(data_folder, "pdf", force_recreate=True, get_csv=recreate_csv)
+        os.remove(export_folder + "/_pdf_indexed.pdf")
+        export_file(path, "pdf", force_recreate=True, get_csv=recreate_csv)
         data["pdf_indexed"] = {
             "complete": True,
-            "size": get_size(data_folder + "/_pdf_indexed.pdf", path_complete=True),
+            "size": get_size(export_folder + "/_pdf_indexed.pdf", path_complete=True),
             "creation": created_time
         }
 
     if data["pdf"]["complete"]:
         recreate_csv = data["csv"]["complete"] and not data["pdf_indexed"]["complete"]
-        os.remove(data_folder + "/_pdf.pdf")
-        export_file(data_folder, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
+        os.remove(export_folder + "/_pdf.pdf")
+        export_file(path, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
         data["pdf"] = {
             "complete": True,
-            "size": get_size(data_folder + "/_pdf.pdf", path_complete=True),
+            "size": get_size(export_folder + "/_pdf.pdf", path_complete=True),
             "creation": created_time
         }
 
     if data["csv"]["complete"] and not (data["pdf_indexed"]["complete"] or data["pdf"]["complete"]):
-        export_csv(data_folder, force_recreate=True)
+        export_csv(path, force_recreate=True)
 
     if data["csv"]["complete"]:
         data["csv"] = {
             "complete": True,
-            "size": get_size(data_folder + "/_index.csv", path_complete=True),
+            "size": get_size(export_folder + "/_index.csv", path_complete=True),
             "creation": created_time
         }
 
     try:
-        task_request_ner(data_folder)
+        task_request_ner(path)
     except Exception as e:
         print(e)
         data["ner"] = {"complete": False, "error": True}
 
-    update_data(data_folder + "/_data.json", data)
+    update_data(path + "/_data.json", data)
     return {"status": "success"}
 
 
@@ -200,22 +201,21 @@ def task_prepare_file_ocr(path):
 
 
 @celery.task(name="request_ner")
-def task_request_ner(data_folder):
-    data = get_data(data_folder + "/_data.json")
+def task_request_ner(path):
+    data = get_data(path + "/_data.json")
 
-    os.remove(data_folder + "/_entities.json")
-    success = get_ner_file(data_folder)
+    success = get_ner_file(path)
     creation_date = get_current_time()
     if success:
         data["ner"] = {
             "complete": True,
-            "size": get_size(f"{data_folder}/_entities.json", path_complete=True),
+            "size": get_size(f"{path}/_export/_entities.json", path_complete=True),
             "creation": creation_date
         }
     else:
         data["ner"] = {"complete": False, "error": True}
 
-    update_data(data_folder + "/_data.json", data)
+    update_data(path + "/_data.json", data)
 
 
 @celery.task(name="file_ocr")
