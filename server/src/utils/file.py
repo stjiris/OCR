@@ -16,7 +16,7 @@ FILES_PATH = environ.get("FILES_PATH", "_files")
 TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
 PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
 
-ALLOWED_EXTENSIONS = {'pdf',
+ALLOWED_EXTENSIONS = ('pdf',
                       'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp',  # JPEG
                       'png',
                       'tiff', 'tif',  # TIFF
@@ -26,7 +26,7 @@ ALLOWED_EXTENSIONS = {'pdf',
                       'pnm',  # image/x-portable-anymap
                       'jp2',  # JPEG 2000
                       'zip',
-                      }
+                      )
 
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")

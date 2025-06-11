@@ -676,15 +676,18 @@ def perform_ocr():
         os.mkdir(f"{f}/_ocr_results")
         os.mkdir(f"{f}/_export")
 
-        data["pdf"] = {"complete": False}
-        data["pdf_indexed"] = {"complete": False}
-        data["txt"] = {"complete": False}
-        data["txt_delimited"] = {"complete": False}
-        data["csv"] = {"complete": False}
-        data["ner"] = {"complete": False}
-        data["hocr"] = {"complete": False}
-        data["xml"] = {"complete": False}
-        data["zip"] = {"complete": False}
+        data.update({
+            "ocr": {"progress": 0},
+            "pdf": {"complete": False},
+            "pdf_indexed": {"complete": False},
+            "txt": {"complete": False},
+            "txt_delimited": {"complete": False},
+            "csv": {"complete": False},
+            "ner": {"complete": False},
+            "hocr": {"complete": False},
+            "xml": {"complete": False},
+            "zip": {"complete": False},
+        })
         update_data(f"{f}/_data.json", data)
 
         if os.path.exists(f"{f}/_images"):

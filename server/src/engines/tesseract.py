@@ -117,29 +117,28 @@ def _run_and_get_multiple_output(
         config = f'{config_str} {out_config}'
     else:
         config = config_str
-    result = None
-    try:
-        with NamedTemporaryFile(prefix='tess_', delete=False) as f:
-            image, extension = pytesseract.prepare(image)
-            input_file_name = f'{f.name}_input{os.extsep}{extension}'
-            image.save(input_file_name, format=image.format)
-            temp_name = f.name
 
-            kwargs = {
-                'input_filename': input_file_name,
-                'output_filename_base': temp_name,
-                'extension': ' '.join(extensions),
-                'lang': lang,
-                'config': config,
-                'nice': nice,
-                'timeout': timeout,
-            }
+    with NamedTemporaryFile(prefix='tess_', delete=False) as f:
+        image, extension = pytesseract.prepare(image)
+        input_file_name = f'{f.name}_input{os.extsep}{extension}'
+        image.save(input_file_name, format=image.format)
+        temp_name = f.name
 
-            pytesseract.run_tesseract(**kwargs)
-            result = dict.fromkeys(extensions)
-            for out_ext in extensions:
-                result[out_ext] = _read_output(f"{kwargs['output_filename_base']}{os.extsep}{out_ext}")
-    finally:
+        kwargs = {
+            'input_filename': input_file_name,
+            'output_filename_base': temp_name,
+            'extension': ' '.join(extensions),
+            'lang': lang,
+            'config': config,
+            'nice': nice,
+            'timeout': timeout,
+        }
+
+        pytesseract.run_tesseract(**kwargs)
+        result = dict.fromkeys(extensions)
+        for out_ext in extensions:
+            result[out_ext] = _read_output(f"{kwargs['output_filename_base']}{os.extsep}{out_ext}")
+
         # delete temporary file
         pytesseract.cleanup(f.name)
         return result
