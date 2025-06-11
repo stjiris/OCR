@@ -86,7 +86,7 @@ def task_make_changes(data_folder, data):
         }
 
     if data["pdf_indexed"]["complete"]:
-        recreate_csv = data["csv"]["completed"]
+        recreate_csv = data["csv"]["complete"]
         os.remove(data_folder + "/_pdf_indexed.pdf")
         export_file(data_folder, "pdf", force_recreate=True, get_csv=recreate_csv)
         data["pdf_indexed"] = {
@@ -96,7 +96,7 @@ def task_make_changes(data_folder, data):
         }
 
     if data["pdf"]["complete"]:
-        recreate_csv = data["csv"]["completed"] and not data["pdf_indexed"]["complete"]
+        recreate_csv = data["csv"]["complete"] and not data["pdf_indexed"]["complete"]
         os.remove(data_folder + "/_pdf.pdf")
         export_file(data_folder, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
         data["pdf"] = {
@@ -105,10 +105,10 @@ def task_make_changes(data_folder, data):
             "creation": created_time
         }
 
-    if data["csv"]["completed"] and not (data["pdf_indexed"]["complete"] or data["pdf"]["complete"]):
+    if data["csv"]["complete"] and not (data["pdf_indexed"]["complete"] or data["pdf"]["complete"]):
         export_csv(data_folder, force_recreate=True)
 
-    if data["csv"]["completed"]:
+    if data["csv"]["complete"]:
         data["csv"] = {
             "complete": True,
             "size": get_size(data_folder + "/_index.csv", path_complete=True),
