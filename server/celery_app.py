@@ -15,7 +15,7 @@ from PIL import Image
 from PIL import ImageDraw
 import pypdfium2 as pdfium
 
-from src.engines import tesserOCR
+from src.engines import tesserocr
 from src.engines import tesseract
 
 from src.utils.export import export_csv
@@ -36,17 +36,12 @@ from src.utils.file import update_data
 
 from src.utils.image import parse_images
 
-OCR_ENGINES = {
-    0: "tesseract",
-    1: "tesserOCR",
-}
+OCR_ENGINES = (
+    "tesseract",
+    "tesserOCR",
+)
 
-DEFAULT_OCR_OUTPUTS = os.environ.get('DEFAULT_OCR_OUTPUTS', "pdf").split(',')
-DEFAULT_OCR_ENGINE = os.environ.get('DEFAULT_OCR_ENGINE', "tesseract")
-DEFAULT_OCR_LANG = os.environ.get('DEFAULT_OCR_LANG', "por")
-DEFAULT_OCR_ENGINE_MODE = int(os.environ.get('DEFAULT_OCR_', '3'))
-DEFAULT_OCR_SEGMENTATION_MODE = int(os.environ.get('DEFAULT_OCR_DEFAULT_OCR_SEGMENTATION_MODE', '3'))
-DEFAULT_OCR_THRESHOLDING_METHOD = int(os.environ.get('DEFAULT_OCR_THRESHOLDING_METHOD', '0'))
+DEFAULT_CONFIG_FILE = os.environ.get('DEFAULT_CONFIG_FILE', "config_files/default.json")
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
@@ -219,7 +214,7 @@ def task_request_ner(path):
 
 
 @celery.task(name="file_ocr")
-def task_file_ocr(path: str, config: dict):
+def task_file_ocr(path: str, config: dict | None):
     """
     Prepare the OCR of a file
     :param path: path to the file
@@ -227,26 +222,31 @@ def task_file_ocr(path: str, config: dict):
     """
     data_folder = f"{path}/_data.json"
     try:
-        # Build string with Tesseract run configuration
-        if "engine" in config:
-            if config["engine"] not in OCR_ENGINES.keys():
-                raise ValueError("Invalid OCR engine value", config["engine"])
-            config["engineName"] = OCR_ENGINES[config["engine"]]
+        with open(DEFAULT_CONFIG_FILE) as f:
+            default_config = json.load(f)
+
+        if config is None:
+            config = default_config
         else:
-            config["engineName"] = DEFAULT_OCR_ENGINE
-        if "lang" not in config:
-            config["lang"] = DEFAULT_OCR_LANG
-        if "engineMode" not in config:
-            config["engineMode"] = DEFAULT_OCR_ENGINE_MODE
-        if "segmentMode" not in config:
-            config["segmentMode"] = DEFAULT_OCR_SEGMENTATION_MODE
-        if "thresholdMethod" not in config:
-            config["thresholdMethod"] = DEFAULT_OCR_THRESHOLDING_METHOD
-        if "outputs" not in config:
-            config["outputs"] = DEFAULT_OCR_OUTPUTS
+            # Build string with Tesseract run configuration
+            if "engine" in config:
+                if config["engine"].lower() not in OCR_ENGINES:
+                    raise ValueError("Invalid OCR engine value", config["engine"])
+            else:
+                config["engine"] = default_config["engine"]
+            if "lang" not in config:
+                config["lang"] = default_config["lang"]
+            if "engineMode" not in config:
+                config["engineMode"] = default_config["engineMode"]
+            if "segmentMode" not in config:
+                config["segmentMode"] = default_config["segmentMode"]
+            if "thresholdMethod" not in config:
+                config["thresholdMethod"] = default_config["thresholdMethod"]
+            if "outputs" not in config:
+                config["outputs"] = default_config["outputs"]
 
         # Verify parameter values
-        ocr_engine = globals()[config["engineName"]]
+        ocr_engine = globals()[config["engine"].lower()]
         valid, errors = ocr_engine.verify_params(config)
         if not valid:
             data = get_data(data_folder)
@@ -335,8 +335,15 @@ def task_file_ocr(path: str, config: dict):
         log.debug(f"{path}: A começar OCR")
 
         tasks = group(
-            task_page_ocr.s(path, image, config["engineName"], lang, config_str, config["outputs"]) for image
-            in images)
+            task_page_ocr.s(
+                path=path,
+                filename=image,
+                ocr_engine_name=config["engine"],
+                lang=lang,
+                config_str=config_str,
+                output_types=config["outputs"]
+            ) for image in images
+        )
         tasks.apply_async()
 
         return {"status": "success"}
@@ -450,10 +457,10 @@ def task_ocr_complete(results, path, start_time, initial_metrics):
 def task_page_ocr(
     path: str,
     filename: str,
-    ocr_engine_name: str = DEFAULT_OCR_ENGINE,
-    lang: str = DEFAULT_OCR_LANG,
-    config_str: str = '',
-    output_types: list[str] = None):
+    ocr_engine_name: str,
+    lang: list[str],
+    output_types: list[str],
+    config_str: str = '',):
     """
     Perform the page OCR
 
@@ -465,8 +472,6 @@ def task_page_ocr(
     :param output_types: output types to generate directly, if the file is a single page without user-defined text boxes
     """
     if filename.split(".")[0][-1] == "$": return None
-    if output_types is None:
-        output_types = DEFAULT_OCR_OUTPUTS
 
     data_file = f"{path}/_data.json"
     # hacky way of aborting if another task_page_ocr previously raised an error
@@ -485,7 +490,7 @@ def task_page_ocr(
         """
 
         # Convert the ocr_algorithm to the correct class
-        ocr_engine = globals()[ocr_engine_name]
+        ocr_engine = globals()[ocr_engine_name.lower()]
 
         layout_path = f"{path}/_layouts/{get_file_basename(filename)}.json"
         segment_ocr_flag = False

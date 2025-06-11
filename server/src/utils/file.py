@@ -49,7 +49,7 @@ log.basicConfig(level=log.INFO, format=f'%(asctime)s %(levelname)s : %(message)s
 
 def get_ner_file(path):
     r = requests.post(
-        "https://iris.sysresearch.org/absconditus/from-text",
+        "https://iris.sysresearch.org/anonimizador/from-text",
         files={"file": open(f"{path}/_export/_txt.txt", "rb")},
     )
     try:

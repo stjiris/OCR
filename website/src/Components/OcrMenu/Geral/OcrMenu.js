@@ -21,6 +21,9 @@ const Notification = loadComponent('Notification', 'Notifications');
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
 const CheckboxList = loadComponent('OcrMenu', 'CheckboxList');
 
+
+// TODO: always get the most updated default config from an API endpoint
+
 const defaultLangs = ["por"];
 const tesseractLangList = [
     { value: "deu", description: "Alemão"},
@@ -44,10 +47,10 @@ const tesseractOutputsList = [
     { value: "xml", description: "ALTO (apenas documentos com 1 página)"},
 ]
 
-const defaultEngine = 0;
+const defaultEngine = "tesseract";
 const engineList = [
-    { value: 0, description: "PyTesseract"},
-    //{ value: 1, description: "TesserOCR"},
+    { value: "tesseract", description: "PyTesseract"},
+    //{ value: "tesserOCR", description: "TesserOCR"},
 ]
 
 const defaultEngineMode = 3;

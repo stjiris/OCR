@@ -739,7 +739,7 @@ def index_doc():
             if data["pages"] > 1:
                 doc = create_document(
                     file_path,
-                    data["ocr"]["config"]["engineName"],
+                    data["ocr"]["config"]["engine"],
                     data["ocr"]["config"],
                     text,
                     extension,
