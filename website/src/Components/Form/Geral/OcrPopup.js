@@ -64,9 +64,6 @@ class OcrPopup extends React.Component {
     }
 
     openMenu(filename, isFolder, alreadyOcr, customConfig) {
-        if (customConfig?.["lang"].length > 0) {
-            customConfig["lang"] = customConfig["lang"].join('+');
-        }
         this.setState({
             open: true,
             filename: filename,

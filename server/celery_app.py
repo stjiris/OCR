@@ -257,7 +257,10 @@ def task_file_ocr(path: str, config: dict):
             log.error(f'Error in performing OCR for file at {path}: {data["ocr"]["exceptions"]}')
             return {"status": "error", "errors": errors}
 
-        config_str = f'-l {config["lang"]}'
+        # Join langs with pluses, expected by tesseract
+        lang = '+'.join(config["lang"])
+        config_str = ""
+
         if "dpi" in config:
             ' '.join([config_str, f'--dpi {config["dpi"]}'])
 
@@ -329,7 +332,7 @@ def task_file_ocr(path: str, config: dict):
         log.debug(f"{path}: A começar OCR")
 
         tasks = group(
-            task_page_ocr.s(path, image, config["engineName"], config["lang"], config_str, config["outputs"]) for image
+            task_page_ocr.s(path, image, config["engineName"], lang, config_str, config["outputs"]) for image
             in images)
         tasks.apply_async()
 
