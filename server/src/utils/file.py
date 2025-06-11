@@ -65,7 +65,7 @@ def get_ner_file(path):
         return False
 
 
-# DONE
+
 def get_current_time():
     """
     Get the current time in the correct format
@@ -74,7 +74,7 @@ def get_current_time():
     """
     return datetime.now().astimezone(TIMEZONE).strftime("%d/%m/%Y %H:%M:%S")
 
-# TODO
+
 def get_file_parsed(path, is_private):
     """
     Return the text off all the pages of the file
@@ -155,7 +155,7 @@ def get_file_parsed(path, is_private):
             )
     return data, words
 
-# TODO
+
 def get_file_layouts(path, is_private):
     data = get_data(f"{path}/_data.json")
     layouts = []
@@ -190,7 +190,7 @@ def get_file_layouts(path, is_private):
 
     return layouts
 
-# TODO
+
 def save_file_layouts(path, layouts):
     data = get_data(f"{path}/_data.json")
     if data["type"] != "file":
@@ -207,7 +207,7 @@ def save_file_layouts(path, layouts):
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(layouts, f, indent=2, ensure_ascii=False)
 
-# DONE
+
 def generate_uuid(path):
     random.seed(path)
     return str(
@@ -217,7 +217,7 @@ def generate_uuid(path):
 def generate_random_uuid():
     return uuid.uuid4().hex
 
-# TODO
+
 def delete_structure(client, path):
     """
     Delete all the files in the structure
@@ -238,7 +238,7 @@ def delete_structure(client, path):
             delete_structure(client, folder)
 
 
-# TODO
+
 def get_filesystem(path, private_session=None, is_private=False):
     """
     :param path: path to the folder
@@ -255,7 +255,7 @@ def get_filesystem(path, private_session=None, is_private=False):
     return {**files, "info": info}
 
 
-# TODO
+
 def get_ocr_size(path):
     """
     Get the size of the hocr files
@@ -282,7 +282,7 @@ def get_ocr_size(path):
     else:
         return f"{size / 1024 ** 3:.2f} GB"
 
-# TODO
+
 def get_size(path, path_complete=False):
     """
     Get the size of the file
@@ -306,7 +306,7 @@ def get_size(path, path_complete=False):
     else:
         return f"{size / 1024 ** 3:.2f} GB"
 
-# TODO
+
 def get_folder_info(path, private_session=None):
     """
     Get the info of the folder
@@ -329,7 +329,7 @@ def get_folder_info(path, private_session=None):
     info[path] = data
     return info
 
-# TODO
+
 def get_structure_info(path, private_session=None, is_private=False):
     """
     Get the info of each file/folder
@@ -356,7 +356,7 @@ def get_structure_info(path, private_session=None, is_private=False):
 
     return info
 
-# TODO
+
 def get_structure(path, private_session=None, is_private=False):
     """
     Put the file system structure in a dict
@@ -412,7 +412,7 @@ def get_structure(path, private_session=None, is_private=False):
 ##################################################
 # FILES UTILS
 ##################################################
-# DONE
+
 def get_page_count(target_path, extension):
     """
     Get the number of pages of a file
@@ -424,7 +424,6 @@ def get_page_count(target_path, extension):
     return None
 
 
-# DONE
 def get_file_basename(filename):
     """
     Get the basename of a file
@@ -434,7 +433,7 @@ def get_file_basename(filename):
     """
     return ".".join(filename.replace("\\", "/").split("/")[-1].split(".")[:-1])
 
-# DONE
+
 def get_file_extension(filename):
     """
     Get the extension of a file
@@ -460,7 +459,7 @@ def json_to_text(json_d):
 ##################################################
 # OCR UTILS
 ##################################################
-# DONE
+
 def get_data(file):
     if not os.path.exists(file): raise FileNotFoundError
     with open(file, encoding="utf-8") as f:
