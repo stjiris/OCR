@@ -100,6 +100,7 @@ body {
 }
 
 .MuiFormControl-root.borderTop {
+    padding-top: 0.5rem;
     border-top: 1px solid black;
 }
 

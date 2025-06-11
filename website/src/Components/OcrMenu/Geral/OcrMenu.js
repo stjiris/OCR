@@ -302,80 +302,6 @@ class OcrMenu extends React.Component {
         this.confirmLeave.current.toggleOpen();
     }
 
-    // PROCESS FUNCTIONS
-    /*
-    changeAlgorithm(algorithm) {
-        //
-        //Change the interface when the algorithm is changed
-        //
-
-        if (algorithm === "Tesseract") {
-            this.langs.current.setChoice(tesseractChoice);
-            this.langs.current.setOptions(tesseractLangList);
-        } else {
-            this.langs.current.setChoice(easyOCRChoice);
-            this.langs.current.setOptions(easyOCRLangList);
-        }
-    }
-    */
-
-    /**
-     * Request OCR of the file on the given path from the backend
-     */
-    /*
-    performOCR(algorithm = null, config = null, path = null, multiple = null) {
-        //if (algorithm === null) algorithm = this.algoDropdown.current.getChoice();
-        if (config === null) config = this.getConfig();
-        console.log(this.state.dpiVal);
-        if (this.state.dpiVal && this.state.dpiVal != "") {
-            config.dpi = this.state.dpiVal;
-        }
-        if (this.state.otherParams && this.state.otherParams != "") {
-            config.otherParams = this.state.otherParams;
-        }
-
-        if (multiple === null) multiple = this.props.isFolder;
-
-        if (path == null) {
-            path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename)
-                    .replace(/^\//, '');
-        }
-
-        fetch(process.env.REACT_APP_API_URL + 'perform-ocr', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                "path": path,
-                "config": config,
-                "multiple": multiple,
-                "_private": this.props._private
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                this.props.updateFiles(data.files)
-
-                this.successNot.current.setMessage(data.message);
-                this.successNot.current.open();
-            } else {
-                if (data.error) {
-                    this.props.showStorageForm(data.error);
-                } else {
-                    this.errorNot.current.setMessage(data.message);
-                    this.errorNot.current.open();
-                }
-            }
-
-            this.props.updateFiles(data.files)
-
-            this.leave();
-        });
-    }
-     */
-
     saveConfig(exit = false) {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const config = this.state.usingDefault ? "useDefault" : this.getConfig();
@@ -610,6 +536,7 @@ class OcrMenu extends React.Component {
                                variant='outlined'
                                className="simpleInput borderTop"
                                size="small"
+                               InputLabelProps={{sx: {top: "0.5rem"}}}
                     />
                 </Box>
 
