@@ -370,8 +370,6 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
 
     return index_words
 
-def polyval(poly, x):
-    return x * poly[0] + poly[1]
 
 # Glyphless variation of vedaal's invisible font retrieved from
 # http://www.angelfire.com/pr/pgpf/if.html, which says:

@@ -245,6 +245,18 @@ def task_file_ocr(path: str, config: dict):
         if "outputs" not in config:
             config["outputs"] = DEFAULT_OCR_OUTPUTS
 
+        # Verify parameter values
+        ocr_engine = globals()[config["engineName"]]
+        valid, errors = ocr_engine.verify_params(config)
+        if not valid:
+            data = get_data(data_folder)
+            data["ocr"]["exceptions"] = {
+                "Parâmetros inválidos:" : errors
+            }
+            update_data(data_folder, data)
+            log.error(f'Error in performing OCR for file at {path}: {data["ocr"]["exceptions"]}')
+            return {"status": "error", "errors": errors}
+
         config_str = f'-l {config["lang"]}'
         if "dpi" in config:
             ' '.join([config_str, f'--dpi {config["dpi"]}'])
@@ -325,7 +337,6 @@ def task_file_ocr(path: str, config: dict):
 
     except Exception as e:
         print(e)
-        data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"]["exceptions"] = str(e)
         update_data(data_folder, data)

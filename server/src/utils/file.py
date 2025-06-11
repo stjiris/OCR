@@ -65,7 +65,6 @@ def get_ner_file(path):
         return False
 
 
-
 def get_current_time():
     """
     Get the current time in the correct format
