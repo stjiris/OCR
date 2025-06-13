@@ -1,18 +1,41 @@
 # OCR
 
 # Setup
-## Environment Variables for Local Testing
-```
-DEBUG=True
-ES_URL=http://localhost:9200/
-IMAGE_PREFIX=http://localhost
+## Example production `.env` file for the `website` folder
+```sh
+PUBLIC_URL = /endpoint-that-serves-website/
+GENERATE_SOURCEMAP = false
+
+REACT_APP_API_URL = /endpoint-that-serves-website/api
+REACT_APP_HEADER_STYLE = ''
+REACT_APP_ADMIN = "?perfil=admin"
 ```
 
-## `.env` file for the website
+## Example production `.env` file for the `server` folder
+```sh
+CELERY_BROKER_URL = redis://redis:6379/0
+CELERY_RESULT_BACKEND = redis://redis:6379/0
+ES_URL=http://elasticsearch:9200
+
+# IMAGE_PREFIX must be set to the same value as website's PUBLIC_URL if PUBLIC_URL is not '/' 
+FILES_PATH = _files
+PRIVATE_PATH = _files/_private_sessions
+
+FLASK_DEBUG = False
+FLASK_SECRET_KEY = something_very_long_and_complex (for example, use python's secrets.token_hex())
+FLASK_SECURITY_PASSWORD_SALT = a_big_number_for_HMAC_salt (for example, use python's secrets.SystemRandom().getrandbits(128))
 ```
-PORT=3001
-REACT_APP_API_URL='http://localhost/api/'
-REACT_APP_IMAGES_PREFIX = 'http://localhost'
+
+## Environment variables recommended for development
+```
+# website:
+PUBLIC_URL = /
+DEBUG=True
+GENERATE_SOURCEMAP = true
+REACT_APP_API_URL = /api
+
+# server:
+FLASK_DEBUG = True
 ```
 
 ## NGINX config file
