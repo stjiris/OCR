@@ -106,7 +106,7 @@ def task_prepare_file_ocr(path):
                 page = pdf[i]
                 bitmap = page.render(300 / 72)  # turn PDF page into 300 DPI bitmap
                 pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/_pages/{basename}_{i}.jpg", quality=95, dpi=(300, 300))
+                pil_image.save(f"{path}/_pages/{basename}_{i}.png", format="PNG", compress_level=6)
 
             pdf.close()
 
