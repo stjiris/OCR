@@ -12,7 +12,6 @@ services:
       FLASK_APP: app
       FLASK_ENV: development
       FLASK_DEBUG: 1
-      ES_URL: http://elasticsearch:9200
     command: /app/start
     expose:
       - "5001"  # exposed only to other services
