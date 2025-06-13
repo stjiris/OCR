@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 
 ENV LANG=C.UTF-8
 ENV TZ=UTC
@@ -25,6 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential autoconf automake libtool \
   libleptonica-dev \
   zlib1g-dev \
+  python3-venv \
+  python3-pip \
   python3-dev \
   libffi-dev \
   ca-certificates \
@@ -69,9 +71,10 @@ COPY . /app
 
 WORKDIR /app
 
-# Get the latest pip (Ubuntu version doesn't support manylinux2010)
-RUN \
-  curl https://bootstrap.pypa.io/get-pip.py | python3
+# Create and enable venv
+RUN python -m venv /opt/venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN pip3 install --no-cache-dir -r requirements/worker/requirements.txt
 
@@ -102,10 +105,15 @@ ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
 
 WORKDIR /app
 
+COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY --from=builder /app/ /app/
+
+# Enable venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 RUN sed -i 's/\r$//g' /app/start
 RUN chmod +x /app/start

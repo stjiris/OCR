@@ -8,10 +8,13 @@ services:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
     image: ocr-server
+    env_file: "server/.env"
     environment:
       FLASK_APP: app
       FLASK_ENV: development
       FLASK_DEBUG: 1
+      PYTHONUNBUFFERED: true
+      PYTHONDONTWRITEBYTECODE : true
     command: /app/start
     expose:
       - "5001"  # exposed only to other services
@@ -31,11 +34,13 @@ services:
       context: ./server
       dockerfile: ../compose/worker/Dockerfile
     image: ocr-worker
+    env_file: "server/.env"
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       C_FORCE_ROOT: true
       PYTHONUNBUFFERED: true
+      PYTHONDONTWRITEBYTECODE : true
     command: celery -A celery_app.celery worker --loglevel=debug --without-gossip --without-mingle --without-heartbeat -Ofair -E --hostname=worker1@%h
     volumes:
       - files_data:/app/_files
