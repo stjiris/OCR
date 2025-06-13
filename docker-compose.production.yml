@@ -8,11 +8,13 @@ services:
       context: ./server
       dockerfile: ../compose/server/Dockerfile
     image: ocr-server
+    env_file: "server/.env"
     environment:
       FLASK_APP: app
       FLASK_ENV: production
       FLASK_DEBUG: 0
-      ES_URL: http://elasticsearch:9200
+      PYTHONUNBUFFERED: true
+      PYTHONDONTWRITEBYTECODE : true
     command: /app/start
     expose:
       - "5001"  # exposed only to other services
@@ -32,11 +34,13 @@ services:
       context: ./server
       dockerfile: ../compose/worker/Dockerfile
     image: ocr-worker
+    env_file: "server/.env"
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       C_FORCE_ROOT: true
       PYTHONUNBUFFERED: true
+      PYTHONDONTWRITEBYTECODE : true
     command: celery -A celery_app.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair --concurrency=8 -P prefork
     volumes:
       - files_data:/app/_files
@@ -51,6 +55,7 @@ services:
     image: ocr-worker
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
     command: celery -A celery_app.celery flower --port=5050
     expose:
       - "5050"  # exposed only to other services
@@ -89,8 +94,6 @@ services:
     environment:
       NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
       CLIENT_MAX_BODY_SIZE: 200M
-      PUBLIC_URL: /ocr/
-      REACT_APP_API_URL: ./api/
     restart: unless-stopped
     networks:
       - internal-network

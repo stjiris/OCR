@@ -4,7 +4,7 @@ from elasticsearch import Elasticsearch
 from src.utils.file import get_file_basename
 from src.utils.file import FILES_PATH
 
-ES_URL = environ.get("ES_URL", "http://localhost:9200/")
+ES_URL = environ.get("ES_URL", "http://elasticsearch:9200/")
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 ES_INDEX = "jornais.0.1"
 
