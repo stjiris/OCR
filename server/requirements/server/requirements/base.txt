@@ -10,3 +10,4 @@ psutil==5.9.5
 elasticsearch==8.17.1
 requests==2.32.2
 dnspython<2.6.0  #eventlet breaks with any higher version
+python-dotenv
