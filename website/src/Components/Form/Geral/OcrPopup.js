@@ -36,7 +36,7 @@ class OcrPopup extends React.Component {
         this.state = {
             open: false,
 
-            current_folder: null,
+            path: "",
             filename: null,
             isFolder: false,
             alreadyOcr: false,
@@ -63,9 +63,10 @@ class OcrPopup extends React.Component {
         }
     }
 
-    openMenu(filename, isFolder, alreadyOcr, customConfig) {
+    openMenu(path, filename, isFolder=false, alreadyOcr=false, customConfig=null) {
         this.setState({
             open: true,
+            path: path,
             filename: filename,
             isFolder: isFolder,
             alreadyOcr: alreadyOcr,
@@ -73,21 +74,22 @@ class OcrPopup extends React.Component {
         });
     }
 
-    closeMenu() {
+    closeMenu(callback = null) {
         this.setState({
             open: false,
+            path: "",
             filename: null,
             isFolder: false,
             alreadyOcr: false,
             customConfig: null,
-        });
+        }, callback);
     }
 
     /**
      * Request OCR of the file on the given path from the backend
      */
     performOCR() {
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename).replace(/^\//, '');
+        const path = this.state.path + '/' + this.state.filename;
         const body = {
             "path": path,
             "multiple": this.state.isFolder,
@@ -118,7 +120,7 @@ class OcrPopup extends React.Component {
                     }
                 }
 
-                this.setState({ open: false }, this.props.fetchInfo);
+                this.closeMenu(this.props.submitCallback);
             });
     }
 
@@ -162,10 +164,8 @@ class OcrPopup extends React.Component {
 
 OcrPopup.defaultProps = {
     _private: false,
-    sessionId: "",
-    current_folder: null,
     // functions:
-    fetchInfo: null,
+    submitCallback: null,
     showStorageForm: null,
 }
 

@@ -142,42 +142,27 @@ def abort_bad_request():
 
 @app.route("/files", methods=["GET"])
 def get_file_system():
-    is_private = "_private" in request.values and (request.values["_private"] == 'true')
-    private_session = None
-
     try:
+        # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
             return get_filesystem(FILES_PATH)
 
-        path = request.values["path"].strip("/")
-        log.info(f'Request values: {request.values}')
-        if is_private:
-            log.info(f'Is private? {is_private}')
-            private_session = path.split('/')[-1]
-            path = safe_join(PRIVATE_PATH, private_session)
-        else:
-            path = safe_join(FILES_PATH, path)
-
-        return get_filesystem(path, private_session, is_private)
+        path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
+        log.info(f"Getting info of {filesystem_path}, priv session {private_session}")
+        return get_filesystem(filesystem_path, private_session, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
 
 @app.route("/info", methods=["GET"])
 def get_info():
-    is_private = "_private" in request.values and (request.values["_private"] == 'true')
     try:
+        # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
             return get_filesystem(FILES_PATH)
 
-        path = request.values["path"].strip("/")
-        if is_private:
-            private_session = path.split('/')[-1]
-            path = safe_join(PRIVATE_PATH, private_session)
-            return {"info": get_structure_info(path, private_session, is_private)}
-        else:
-            path = safe_join(FILES_PATH, path)  # TODO: alter front-end and response to get info only from current folder
-            return {"info": get_structure_info(FILES_PATH)}
+        path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
+        return {"info": get_structure_info(filesystem_path, private_session, is_private)}
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
@@ -226,7 +211,10 @@ def create_folder():
         )
 
     # TODO: alter front-end and response to get info only from current folder
-    return {"success": True, "files": get_filesystem(filesystem_path, private_session, is_private)}
+    return {
+        "success": True,
+        "message": f"Pasta {folder} criada com sucesso",
+    }
 
 
 @app.route("/get-file", methods=["GET"])
@@ -391,7 +379,6 @@ def delete_path():
     return {
         "success": True,
         "message": "Apagado com sucesso",
-        "files": get_filesystem(filesystem_path, private_session, is_private),
     }
 
 
