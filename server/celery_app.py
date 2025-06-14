@@ -176,14 +176,14 @@ def task_prepare_file_ocr(path):
                 im = Image.open(page)
                 im.save(f"{path}/_pages/{basename}_{i}.png", format="PNG")  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
-            count_doc_pages(path=path, extension=extension)
+            count_doc_pages(path=path, extension=extension, _=None)
 
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
-            count_doc_pages(path=path, extension=extension)
+            count_doc_pages(path=path, extension=extension, _=None)
 
     except Exception as e:
         data_folder = f"{path}/_data.json"
