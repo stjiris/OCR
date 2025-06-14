@@ -6,12 +6,9 @@ import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
-import IconButton from '@mui/material/IconButton';
 
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
-import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
-import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
@@ -32,7 +29,7 @@ const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
 const AltoIcon = loadComponent('CustomIcons', 'AltoIcon');
 
 
-class FileRow extends React.Component {
+class DocumentRow extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -44,17 +41,14 @@ class FileRow extends React.Component {
     }
 
     updateInfo(info) {
-        // Auto-expand file row if OCR status was not performed/concluded and became concluded
-        if ((this.state.info === undefined || this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] < this.state.info["pages"])
-            && (info !== undefined && info["ocr"] !== undefined && info["ocr"]["progress"] >= info["pages"])) {
-            this.setState({info: info, expanded: true});
-        } else {
-            this.setState({info: info});
-        }
+        this.setState({info: info});
     }
 
-    fileClicked() {
-        this.setState({expanded: !this.state.expanded});
+    documentClicked() {
+        // Only open list of document files (original, results) if it has been fully stored
+        if (this.state.info?.["stored"] === true) {
+            this.props.enterDocument(this.props.name, true);
+        }
     }
 
     getOriginalFile(e) {
@@ -179,7 +173,7 @@ class FileRow extends React.Component {
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
 
                 <TableRow className="explorerRow"
-                    onClick={() => this.fileClicked()}
+                    onClick={() => { if (!buttonsDisabled) this.documentClicked() }}
                 >
                     <TableCell className="explorerCell nameCell">
                         <Box sx={{
@@ -187,26 +181,9 @@ class FileRow extends React.Component {
                             flexDirection: 'row',
                             alignItems: 'center',
                         }}>
-
-                            {
-                                this.state.info?.["ocr"] !== undefined && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
-                                ? <IconButton
-                                    onClick={() => this.setState({expanded: !this.state.expanded})}
-                                    sx={{p: 0, color: '#1976d2', mr: '0.5rem'}}
-                                >
-                                    {this.state.expanded ? <KeyboardArrowUpRoundedIcon/> : <KeyboardArrowDownRoundedIcon/>}
-                                </IconButton>
-                                : <IconButton
-                                    disabled
-                                    sx={{p: 0, color: '#fff', mr: '0.5rem'}}
-                                >
-                                    <KeyboardArrowDownRoundedIcon/>
-                                </IconButton>
-                            }
-
                             <FileIcon extension={this.state.info["extension"]}/>
                             {
-                                this.state.info?.["stored"] === undefined || this.state.info["stored"] === true
+                                this.state.info?.["stored"] === true
                                 ? <Button
                                     onClick={(e) => this.getOriginalFile(e)}
                                     sx={{
@@ -224,7 +201,7 @@ class FileRow extends React.Component {
                     </TableCell>
 
                     {
-                        this.state.info?.["stored"] !== undefined && this.state.info["stored"] !== true
+                        this.state.info?.["stored"] === undefined || this.state.info["stored"] !== true
                         ? <>
                             {
                                 this.state.info["upload_stuck"] === true
@@ -339,16 +316,15 @@ class FileRow extends React.Component {
                                         clickFunction={(e) => this.delete(e)}
                                         icon={<DeleteForeverIcon/>}
                                     />
-
                                 </Box>
                             </TableCell>
 
                             {
                                 this.state.info?.["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                                 ? <>
-                                    <TableCell className="explorerCell dateCreatedCell" align='center'>{this.state.info["creation"]}</TableCell>
-                                    <TableCell className="explorerCell detailsCell" align='center'>{this.state.info["pages"]} página(s)</TableCell>
-                                    <TableCell className="explorerCell sizeCell" align='center'>{this.state.info["size"]}</TableCell>
+                                    <TableCell className="explorerCell dateCreatedCell" align='center'><span>{this.state.info["creation"]}</span></TableCell>
+                                    <TableCell className="explorerCell detailsCell" align='center'><span>{this.state.info["pages"]} página(s)</span></TableCell>
+                                    <TableCell className="explorerCell sizeCell" align='center'><span>{this.state.info["size"]}</span></TableCell>
                                 </>
                                 : this.state.info?.["ocr"]["exceptions"]
                                     ? <TableCell colSpan={3} className="explorerCell errorCell" align='center'>
@@ -366,7 +342,7 @@ class FileRow extends React.Component {
                         </>
                     }
                 </TableRow>
-
+                {/*
                 {
                     this.state.info?.["pdf_indexed"] !== undefined && this.state.info["pdf_indexed"]["complete"] && this.state.info["ocr"]["progress"] >= this.state.info["pages"]
                     ? <TableRow style={{backgroundColor: "#c4dcf4", ...(!this.state.expanded && {display: 'none'})}}>
@@ -717,16 +693,18 @@ class FileRow extends React.Component {
                     </TableRow>
                     : null
                 }
+                */}
             </>
         );
     }
 }
 
-FileRow.defaultProps = {
+DocumentRow.defaultProps = {
     _private: false,
     info: null,
     name: null,
     // functions:
+    enterDocument: null,
     getOriginalFile: null,
     getDelimiterTxt: null,
     getTxt: null,
@@ -744,4 +722,4 @@ FileRow.defaultProps = {
     createLayout: null
 }
 
-export default FileRow;
+export default DocumentRow;

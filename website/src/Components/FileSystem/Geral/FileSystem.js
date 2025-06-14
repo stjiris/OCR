@@ -16,7 +16,9 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
-const FileRow = loadComponent('FileSystem', 'FileRow');
+const DocumentRow = loadComponent('FileSystem', 'DocumentRow');
+const StaticFileRow = loadComponent('FileSystem', 'StaticFileRow');
+const FileIcon = loadComponent('CustomIcons', 'FileIcon');
 const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
 const FolderRow = loadComponent('FileSystem', 'FolderRow');
 const Notification = loadComponent('Notification', 'Notifications');
@@ -181,7 +183,9 @@ class FileExplorer extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (this.state.current_folder !== prevState.current_folder || this.state.files !== prevState.files || this.state.fileOpened !== prevState.fileOpened) {
+        if (this.state.current_folder !== prevState.current_folder  // moved to different folder
+            || this.state.files !== prevState.files                 // created/deleted document or folder
+            || this.state.fileOpened !== prevState.fileOpened) {    // exited menu or entered/exited document "folder"
             this.displayFileSystem();
         } else if (this.state.info !== prevState.info || this.state.components !== prevState.components) {
             this.updateInfo();
@@ -220,14 +224,25 @@ class FileExplorer extends React.Component {
 
     updateInfo() {
         if (this.state.ocrMenu || this.state.layoutMenu || this.state.editingMenu) return;
-        this.rowRefs.forEach(ref => {
-            const filename = ref.current.props.name;
-            if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
+        if (this.state.fileOpened) {
+            // update rows for document's files (original and outputs)
+            this.rowRefs.forEach(ref => {
+                const filename = ref.current.props.filename;
                 const rowInfo = this.getInfo(filename);
+                // TODO: give appropriate info to each of the document's files (original, results, etc.)
                 ref.current.updateInfo(rowInfo);
-            }
-        });
-        this.setState({updatingRows: []});
+            });
+        } else {
+            // update info of rows for current folder's contents
+            this.rowRefs.forEach(ref => {
+                const filename = ref.current.props.name;
+                if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
+                    const rowInfo = this.getInfo(filename);
+                    ref.current.updateInfo(rowInfo);
+                }
+            });
+            this.setState({updatingRows: []});
+        }
     }
 
     componentWillUnmount() {
@@ -611,10 +626,10 @@ class FileExplorer extends React.Component {
     /**
      * Enter the folder and update the path
      */
-    enterFolder(folder) {
+    enterFolder(folder, isDocument = false) {
         const current_folder_list = this.state.current_folder.split('/');
         current_folder_list.push(folder);
-        this.props.setCurrentPath(current_folder_list);
+        this.props.setCurrentPath(current_folder_list, isDocument);
     }
 
     /**
@@ -716,24 +731,39 @@ class FileExplorer extends React.Component {
         /**
          * Iterate the contents of the folder and build the components
          */
-        const contents = this.sortContents(this.getPathContents());
+        if (this.state.ocrMenu || this.state.layoutMenu || this.state.editingMenu) return;
+
         this.rowRefs = [];
+        const items = [];
 
-        let items = [];
-
-        for (let f in contents) {
+        if (this.state.fileOpened) {
+            const docInfo = this.getInfo(this.state.fileOpened);
+            let ref = React.createRef();
+            this.rowRefs.push(ref);
+            items.push(
+                <StaticFileRow
+                    ref={ref}
+                    key={this.state.fileOpened + " original"}
+                    name={this.state.fileOpened + " (original)"}
+                    filename={this.state.fileOpened}
+                    info={docInfo}
+                    fileIcon={<FileIcon extension={docInfo["extension"]} />}
+                    downloadFile={this.getOriginalFile}
+                />
+            );
+        } else for (let item of this.sortContents(this.getPathContents())) {
             let ref = React.createRef();
             this.rowRefs.push(ref);
 
-            const item = contents[f];
             if (typeof item === 'string' || item instanceof String) {
                 items.push(
-                    <FileRow
+                    <DocumentRow
                         ref={ref}
                         key={item}
                         name={item}
                         _private={this.props._private}
                         info={this.getInfo(item)}
+                        enterDocument={this.enterFolder}
                         deleteItem={this.deleteItem}
                         getOriginalFile={this.getOriginalFile}
                         getDelimiterTxt={this.getDelimiterTxt}

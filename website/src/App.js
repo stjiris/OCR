@@ -55,7 +55,7 @@ function App() {
                 editingMenu: false,
                 layoutMenu: false,
 
-                fileOpened: "",
+                fileOpened: null,
                 currentFolderPathList: [""],
 
                 filesChoice: [],
@@ -241,14 +241,25 @@ function App() {
             });
         }
 
-        setCurrentPath(new_path_list) {
+        setCurrentPath(new_path_list, isDocument=false) {
             // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
-            this.setState({...fileSystemState, currentFolderPathList: new_path_list},
-                () => this.fileSystem.current.setState({...closeFileSystemMenus, current_folder: new_path_list.join('/').replace(/^\//, '')})
+            let fileOpened = null;
+            if (isDocument) {
+                fileOpened = new_path_list.pop();
+            }
+            // ensure empty root item, lost if the path was joined into a string and split again
+            if (new_path_list[0] !== "") new_path_list.unshift("");
+
+            this.setState({...fileSystemState, currentFolderPathList: new_path_list, fileOpened: fileOpened},
+                () => this.fileSystem.current.setState({
+                    ...closeFileSystemMenus,
+                    current_folder: new_path_list.join('/').replace(/^\//, ''),
+                    fileOpened: fileOpened,
+                })
             );
         }
 
-        enterOcrMenu(filename = null, isFolder=false, alreadyOcr=false, customConfig=null) {
+        enterOcrMenu(filename, isFolder = false, alreadyOcr = false, customConfig = null) {
             this.setState({...ocrMenuState, fileOpened: filename},
                 () => this.fileSystem.current.setState(
                     {
@@ -261,13 +272,13 @@ function App() {
             );
         }
 
-        enterLayoutMenu(filename = null) {
+        enterLayoutMenu(filename) {
             this.setState({...layoutMenuState, fileOpened: filename},
                 () => this.fileSystem.current.setState({...layoutMenuState, fileOpened: filename})
             );
         }
 
-        enterEditingMenu(filename = null) {
+        enterEditingMenu(filename) {
             this.setState({...editingMenuState, fileOpened: filename},
                 () => this.fileSystem.current.setState({...editingMenuState, fileOpened: filename})
             );

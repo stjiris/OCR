@@ -31,7 +31,7 @@ class TooltipIcon extends React.Component {
                             padding: "2px 2px",
 
                         }}>
-                            <span style={{fontSize: "9px"}}>{this.props.message}</span>
+                            <span style={{fontSize: "smaller"}}>{this.props.message}</span>
                         </Box>
                         <Box sx={{
                             position: 'absolute',

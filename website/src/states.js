@@ -10,7 +10,6 @@ export const fileSystemState = {
     editingMenu: false,
     layoutMenu: false,
     ocrMenu: false,
-    fileOpened: "",
     contents: []
 };
 
