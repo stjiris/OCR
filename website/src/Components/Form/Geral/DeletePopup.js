@@ -35,6 +35,7 @@ class DeletePopup extends React.Component {
         super(props);
         this.state = {
             open: false,
+            path: "",
             filename: null,
             buttonDisabled: false
         }
@@ -53,18 +54,17 @@ class DeletePopup extends React.Component {
         }
     }
 
-    openMenu(filename) {
-        this.setState({ open: true, filename: filename });
+    openMenu(path, filename) {
+        this.setState({ open: true, path: path, filename: filename });
     }
 
-    closeMenu() {
-        this.setState({ open: false, filename: null });
+    closeMenu(callback = null) {
+        this.setState({ open: false }, callback);
     }
 
     deleteItem() {
         this.setState({ buttonDisabled: true });
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.state.filename)
-            .replace(/^\//, '');
+        const path = this.state.path + '/' + this.state.filename;
         fetch(process.env.REACT_APP_API_URL + 'delete-path', {
             method: 'POST',
             headers: {
@@ -79,12 +79,10 @@ class DeletePopup extends React.Component {
         .then(data => {
             this.setState({ buttonDisabled: false });
             if (data.success) {
-                this.props.updateFiles(data.files);
-
                 this.successNot.current.setMessage(data.message);
                 this.successNot.current.open();
 
-                this.closeMenu();
+                this.closeMenu(this.props.submitCallback);
             } else {
                 this.errorNot.current.setMessage(data.error);
                 this.errorNot.current.open();
@@ -136,10 +134,8 @@ class DeletePopup extends React.Component {
 
 DeletePopup.defaultProps = {
     _private: false,
-    sessionId: null,
-    current_folder: null,
     // functions:
-    updateFiles: null
+    submitCallback: null,
 }
 
 export default DeletePopup;
