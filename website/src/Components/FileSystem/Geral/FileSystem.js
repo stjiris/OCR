@@ -19,6 +19,12 @@ import loadComponent from '../../../utils/loadComponents';
 const DocumentRow = loadComponent('FileSystem', 'DocumentRow');
 const StaticFileRow = loadComponent('FileSystem', 'StaticFileRow');
 const FileIcon = loadComponent('CustomIcons', 'FileIcon');
+const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
+const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
+const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
+const AltoIcon = loadComponent('CustomIcons', 'AltoIcon');
+const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
+const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
 const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
 const FolderRow = loadComponent('FileSystem', 'FolderRow');
 const Notification = loadComponent('Notification', 'Notifications');
@@ -752,6 +758,142 @@ class FileExplorer extends React.Component {
                     downloadFile={this.getOriginalFile}
                 />
             );
+            if (docInfo["pdf_indexed"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " pdf_indexed"}
+                        name={"TEMP NAME pdf indexed"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["pdf_indexed"]}
+                        fileIcon={<PdfIcon />}
+                        downloadFile={this.getPdfIndexed}
+                    />
+                );
+            }
+            if (docInfo["pdf"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " pdf"}
+                        name={"TEMP NAME pdf"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["pdf"]}
+                        fileIcon={<PdfIcon />}
+                        downloadFile={this.getPdfSimple}
+                    />
+                );
+            }
+            if (docInfo["txt"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " txt"}
+                        name={"TEMP NAME txt"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["txt"]}
+                        fileIcon={<TxtIcon />}
+                        downloadFile={this.getTxt}
+                    />
+                );
+            }
+            if (docInfo["txt_delimited"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " txt_delimited"}
+                        name={"TEMP NAME txt_delimited"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["txt_delimited"]}
+                        fileIcon={<TxtIcon />}
+                        downloadFile={this.getDelimiterTxt}
+                    />
+                );
+            }
+            if (docInfo["csv"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " csv"}
+                        name={"TEMP NAME csv index"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["csv"]}
+                        fileIcon={<CsvIcon />}
+                        downloadFile={this.getCSV}
+                    />
+                );
+            }
+            if (docInfo["ner"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " ner"}
+                        name={"TEMP NAME NER"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["ner"]}
+                        fileIcon={<JsonIcon />}
+                        downloadFile={this.getEntities /* TODO: request and endpoint may need updating */ }
+                    />
+                );
+            }
+            if (docInfo["hocr"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " hocr"}
+                        name={"TEMP NAME hOCR"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["hocr"]}
+                        fileIcon={<AltoIcon />}
+                        downloadFile={this.getHocr}
+                    />
+                );
+            }
+            if (docInfo["xml"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " xml"}
+                        name={"TEMP NAME ALTO"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["xml"]}
+                        fileIcon={<AltoIcon />}
+                        downloadFile={this.getAlto}
+                    />
+                );
+            }
+            if (docInfo["zip"]?.complete) {
+                ref = React.createRef();
+                this.rowRefs.push(ref);
+                items.push(
+                    <StaticFileRow
+                        ref={ref}
+                        key={this.state.fileOpened + " zip"}
+                        name={"TEMP NAME zip"}
+                        filename={this.state.fileOpened}
+                        info={docInfo["zip"]}
+                        fileIcon={<ZipIcon />}
+                        downloadFile={this.getImages}
+                    />
+                );
+            }
+
         } else for (let item of this.sortContents(this.getPathContents())) {
             let ref = React.createRef();
             this.rowRefs.push(ref);

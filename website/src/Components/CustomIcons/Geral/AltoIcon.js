@@ -3,7 +3,8 @@ import SvgIcon from '@mui/material/SvgIcon';
 
 export default function AltoIcon(props) {
     return (
-        // License: MIT. Made by vscode-icons: https://github.com/vscode-icons/vscode-icons
+    // License: MIT. Made by vscode-icons: https://github.com/vscode-icons/vscode-icons
+    <div className="fileIcon">
         <SvgIcon
             {...props}
             width="800px" height="800px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/"
@@ -13,5 +14,6 @@ export default function AltoIcon(props) {
             <path d="M11.58,10.843,9.369,8.631,2,16l7.369,7.369,2.211-2.211L6.42,16Z" fill="#f1662a"/>
             <path d="M17.411,7.677l1.6.437-4.42,16.209-1.6-.437,4.42-16.209Z" fill="#f1662a"/>
         </SvgIcon>
+    </div>
     )
 }
