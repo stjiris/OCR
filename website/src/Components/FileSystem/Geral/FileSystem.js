@@ -429,6 +429,8 @@ class FileExplorer extends React.Component {
      * Export the .txt or .pdf file
      */
     getDocument(type, file, extension, suffix="") {
+        this.successNot.current.openNotif("A transferência do ficheiro começou, por favor aguarde");
+
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
@@ -448,6 +450,8 @@ class FileExplorer extends React.Component {
     }
 
     getEntities(file) {
+        this.successNot.current.openNotif("A transferência do ficheiro começou, por favor aguarde");
+
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
@@ -523,6 +527,8 @@ class FileExplorer extends React.Component {
     */
 
     getOriginalFile(file) {
+        this.successNot.current.openNotif("A transferência do ficheiro começou, por favor aguarde");
+
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
@@ -566,6 +572,8 @@ class FileExplorer extends React.Component {
      * Export the .zip file
      */
     getImages(file) {
+        this.successNot.current.openNotif("A transferência do ficheiro começou, por favor aguarde");
+
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
@@ -1020,10 +1028,9 @@ class FileExplorer extends React.Component {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                this.successNot.current.setMessage(data.message)
-                this.successNot.current.open();
+                this.successNot.current.openNotif(data.message);
             } else {
-                this.errorNot.current.open();
+                this.errorNot.current.openNotif(data.message);
             }
 
             this.updateFiles(data.files);
@@ -1046,10 +1053,9 @@ class FileExplorer extends React.Component {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                this.successNot.current.setMessage(data.message)
-                this.successNot.current.open();
+                this.successNot.current.openNotif(data.message);
             } else {
-                this.errorNot.current.open();
+                this.errorNot.current.openNotif(data.message);
             }
 
             this.updateFiles(data.files);

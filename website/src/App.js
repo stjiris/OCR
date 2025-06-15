@@ -70,9 +70,6 @@ function App() {
 
             this.header = React.createRef();
 
-            this.successNot = React.createRef();
-            this.errorNot = React.createRef();
-
             this.versionsMenu = React.createRef();
             this.logsMenu = React.createRef();
 
@@ -324,9 +321,6 @@ function App() {
             const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: '100vh'}}>
-                    <Notification message={""} severity={"success"} ref={this.successNot}/>
-                    <Notification message={""} severity={"error"} ref={this.errorNot}/>
-
                     <VersionsMenu ref={this.versionsMenu}/>
                     <LogsMenu ref={this.logsMenu}/>
                     <Box sx={{

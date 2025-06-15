@@ -36,8 +36,6 @@ class DocumentRow extends React.Component {
             info: props.info,
             expanded: false,
         }
-
-        this.successNot = React.createRef();
     }
 
     updateInfo(info) {
@@ -54,8 +52,6 @@ class DocumentRow extends React.Component {
     getOriginalFile(e) {
         e.stopPropagation();
         this.props.getOriginalFile(this.props.name);
-        this.successNot.current.setMessage("A transferência do ficheiro começou, por favor aguarde");
-        this.successNot.current.open();
     }
 
     delete(e) {
@@ -100,8 +96,6 @@ class DocumentRow extends React.Component {
         const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "useDefault";
         return (
             <>
-                <Notification message={""} severity={"success"} ref={this.successNot}/>
-
                 <TableRow className="explorerRow"
                     onClick={() => { if (!buttonsDisabled) this.documentClicked() }}
                 >

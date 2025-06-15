@@ -109,14 +109,12 @@ class OcrPopup extends React.Component {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    this.successNot.current.setMessage(data.message);
-                    this.successNot.current.open();
+                    this.successNot.current.openNotif(data.message);
                 } else {
                     if (data.error) {
                         this.props.showStorageForm(data.error);
                     } else {
-                        this.errorNot.current.setMessage(data.message);
-                        this.errorNot.current.open();
+                        this.errorNot.current.openNotif(data.message);
                     }
                 }
 

@@ -38,7 +38,6 @@ class PrivateSessionMenu extends React.Component {
             buttonDisabled: false
         }
 
-        this.successNot = React.createRef();
         this.errorNot = React.createRef();
     }
 
@@ -61,8 +60,6 @@ class PrivateSessionMenu extends React.Component {
     render() {
         return (
             <Box>
-                <Notification message={""} severity={"success"} ref={this.successNot}/>
-                <Notification message={""} severity={"error"} ref={this.errorNot}/>
                 <Modal open={this.state.open}>
                     <Box sx={style}>
                         <Typography id="modal-modal-title" variant="h6" component="h2">

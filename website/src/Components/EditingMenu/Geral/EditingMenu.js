@@ -749,13 +749,10 @@ class EditingMenu extends React.Component {
         .then(response => {return response.json()})
         .then(data => {
             if (data.success) {
-                // this.successNot.current.setMessage("Texto submetido com sucesso");
-                // this.successNot.current.open();
                 this.setState({uncommittedChanges: false});
                 window.removeEventListener('beforeunload', this.preventExit);
 
-                this.successNot.current.setMessage("Texto submetido com sucesso");
-                this.successNot.current.open();
+                this.successNot.current.openNotif("Texto submetido com sucesso");
 
                 if (remakeFiles) {
                     this.leave();

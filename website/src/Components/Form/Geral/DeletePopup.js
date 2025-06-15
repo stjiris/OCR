@@ -79,13 +79,11 @@ class DeletePopup extends React.Component {
         .then(data => {
             this.setState({ buttonDisabled: false });
             if (data.success) {
-                this.successNot.current.setMessage(data.message);
-                this.successNot.current.open();
+                this.successNot.current.openNotif(data.message);
 
                 this.closeMenu(this.props.submitCallback);
             } else {
-                this.errorNot.current.setMessage(data.error);
-                this.errorNot.current.open();
+                this.errorNot.current.openNotif(data.error);
             }
         });
     }

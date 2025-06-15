@@ -269,8 +269,7 @@ class OcrMenu extends React.Component {
         if (isNaN(value)
             || (this.state.dpiVal !== null
             && this.state.dpiVal !== "" && !this.state.dpiVal.match("[1-9][0-9]*"))) {
-            this.errorNot.current.setMessage("O valor de DPI deve ser um número inteiro!");
-            this.errorNot.current.open();
+            this.errorNot.current.openNotif("O valor de DPI deve ser um número inteiro!");
         }
         this.setState({ dpiVal: value, usingDefault: false, uncommittedChanges: true });
     }
@@ -328,14 +327,13 @@ class OcrMenu extends React.Component {
                 if (data["success"]) {
                     this.setState({ uncommittedChanges: false });
 
-                    this.successNot.current.setMessage("Configuração de OCR guardada com sucesso.");
-                    this.successNot.current.open();
+                    this.successNot.current.openNotif("Configuração de OCR guardada com sucesso.");
 
                     if (exit) {
                         this.leave();
                     }
                 } else {
-                    alert("Erro inesperado ao guardar a configuração de OCR.")
+                    this.errorNot.current.openNotif("Erro inesperado ao guardar a configuração de OCR.")
                 }
             });
     }

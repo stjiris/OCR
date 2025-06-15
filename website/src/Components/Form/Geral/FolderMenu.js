@@ -74,13 +74,11 @@ class FolderMenu extends React.Component {
         .then(data => {
             this.setState({ buttonDisabled: false });
             if (data.success) {
-                this.successNot.current.setMessage("Pasta criada com sucesso");
-                this.successNot.current.open();
+                this.successNot.current.openNotif("Pasta criada com sucesso");
 
                 this.closeMenu(this.props.submitCallback);
             } else {
-                this.errorNot.current.setMessage(data.error);
-                this.errorNot.current.open();
+                this.errorNot.current.openNotif(data.error);
             }
         });
     }
