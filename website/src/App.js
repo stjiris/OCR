@@ -437,7 +437,9 @@ function App() {
                                     {this.state.fileOpened}
                                 </p>
                                 {
-                                    (!buttonsDisabled && (this.state.currentFolderPathList.length > 1 || this.getPrivateSession() != null))  // in private session, root level can have docs
+                                    (!buttonsDisabled
+                                        && !this.state.fileOpened
+                                        && (this.state.currentFolderPathList.length > 1 || this.getPrivateSession() != null))  // in private session, root level can have docs
                                         ? <Button
                                             variant="text"
                                             startIcon={<NoteAddIcon/>}
