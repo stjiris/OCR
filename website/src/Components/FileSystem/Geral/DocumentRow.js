@@ -147,7 +147,7 @@ class DocumentRow extends React.Component {
     configureOCR(e, usingCustomConfig) {
         e.stopPropagation();
         const customConfig = usingCustomConfig ? this.state.info?.["config"] : null;
-        this.props.configureOCR(this.props.name, false, this.state.info?.["ocr"] !== undefined, customConfig);
+        this.props.configureOCR(this.props.name, false, this.state.info["pages"] === 1, customConfig);
     }
 
     indexFile(e) {

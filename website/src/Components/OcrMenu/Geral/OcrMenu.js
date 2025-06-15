@@ -43,8 +43,8 @@ const tesseractOutputsList = [
     { value: "txt_delimited", description: "Texto com separador por página"},
     { value: "csv", description: "Índice de palavras"},
     //{ value: "ner", description: "Entidades (NER)"},
-    { value: "hocr", description: "hOCR (apenas documentos com 1 página)"},
-    { value: "xml", description: "ALTO (apenas documentos com 1 página)"},
+    { value: "hocr", description: "hOCR (apenas documentos com 1 página)", disabled: true},
+    { value: "xml", description: "ALTO (apenas documentos com 1 página)", disabled: true},
 ]
 
 const defaultEngine = "tesseract";
@@ -202,6 +202,11 @@ class OcrMenu extends React.Component {
             usingDefault: usingDefault,
             uncommittedChanges: false,
         }
+
+        // Enable options restricted to single-page
+        tesseractOutputsList[tesseractOutputsList.length-2]["disabled"] = !this.props.isSinglePage;  // hOCR output
+        tesseractOutputsList[tesseractOutputsList.length-1]["disabled"] = !this.props.isSinglePage;  // ALTO output
+
         this.confirmLeave = React.createRef();
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
@@ -419,7 +424,7 @@ class OcrMenu extends React.Component {
                 margin: '1rem',
             }}>
                 <Typography variant="h5" component="h2" sx={{alignSelf: 'center'}}>
-                    Configurar OCR {this.state.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
+                    Configurar OCR {this.props.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
                 </Typography>
             </Box>
 
@@ -574,6 +579,7 @@ OcrMenu.defaultProps = {
     current_folder: null,
     filename: null,
     isFolder: false,
+    isSinglePage: false,
     customConfig: null,
     // functions:
     closeOCRMenu: null,

@@ -45,9 +45,10 @@ function CheckboxList(
             <FormLabel component="legend">{title}</FormLabel>
             <FormGroup>
             {/*<List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>*/}
-                {options.map(({ value, description }, index) => {
+                {options.map(({ value, description, disabled }, index) => {
                     return (
                         <FormControlLabel
+                            disabled={disabled}
                             control={
                                 <Checkbox
                                     edge="start"

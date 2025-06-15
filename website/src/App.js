@@ -259,14 +259,14 @@ function App() {
             );
         }
 
-        enterOcrMenu(filename, isFolder = false, alreadyOcr = false, customConfig = null) {
+        enterOcrMenu(filename, isFolder=false, isSinglePage=false, customConfig=null) {
             this.setState({...ocrMenuState, fileOpened: filename},
                 () => this.fileSystem.current.setState(
                     {
                         ...ocrMenuState,
                         fileOpened: filename,
                         isFolder: isFolder,
-                        alreadyOcr: alreadyOcr,
+                        isSinglePage: isSinglePage,
                         customConfig: customConfig
                     })
             );

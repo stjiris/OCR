@@ -67,7 +67,7 @@ class FileExplorer extends React.Component {
             editingMenu: false,
             fileOpened: null,
             isFolder: false,
-            alreadyOcr: false,
+            isSinglePage: false,
             customConfig: null,
         }
 
@@ -802,8 +802,8 @@ class FileExplorer extends React.Component {
         this.setState({components: items});
     }
 
-    configureOCR(filename, isFolder=false, alreadyOcr=false, customConfig=null) {
-        this.props.enterOcrMenu(filename, isFolder, alreadyOcr, customConfig);
+    configureOCR(filename, isFolder=false, isSinglePage=false, customConfig=null) {
+        this.props.enterOcrMenu(filename, isFolder, isSinglePage, customConfig);
     }
 
     closeOCRMenu() {
@@ -1001,7 +1001,7 @@ class FileExplorer extends React.Component {
                                current_folder={this.state.current_folder}
                                filename={this.state.fileOpened}
                                isFolder={this.state.isFolder}
-                               alreadyOcr={this.state.alreadyOcr}
+                               isSinglePage={this.state.isSinglePage}
                                customConfig={this.state.customConfig}
                                closeOCRMenu={this.closeOCRMenu}
                                showStorageForm={this.showStorageForm}/>
