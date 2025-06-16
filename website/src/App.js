@@ -382,6 +382,7 @@ function App() {
                                         if (this.state.searchMenu && index > 0)
                                             return null;
 
+                                        // Show hint of collapsed names when inside deep folder
                                         if (folderDepth > 3 && index === 1) {
                                             return (
                                                 <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
@@ -390,9 +391,16 @@ function App() {
                                             )
                                         }
 
+                                        // Hide intermediate folder names when inside deep folder
                                         if (folderDepth > 3 && index > 0 && index < folderDepth - 2) return null;
 
-                                        return (
+                                        // If not in menu or inside document "folder" containing original and results,
+                                        // make current folder non-clickable (folder names are clickable to go back)
+                                        if (!this.state.fileOpened && index > 0 && index === folderDepth - 1) {
+                                            return <p className="pathElement">
+                                                {name}
+                                            </p>
+                                        } else return (
                                             <Box
                                                 sx={{
                                                     display: 'flex',
@@ -468,6 +476,7 @@ function App() {
 
                             <p style={{margin: 0}}>{`Versão: ${VERSION}`}</p>
 
+                            {/* TODO: update help document */}
                             <Button
                                 variant="text"
                                 onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}

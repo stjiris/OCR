@@ -5,7 +5,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Button from '@mui/material/Button';
-import Collapse from '@mui/material/Collapse';
 
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
@@ -14,19 +13,12 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 import calculateEstimatedTime from '../../../utils/waitingTime';
 import loadComponent from '../../../utils/loadComponents';
-const Notification = loadComponent('Notification', 'Notifications');
 const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
 const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
 const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 const FileIcon = loadComponent('CustomIcons', 'FileIcon');
 const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
 const LayoutIcon = loadComponent('CustomIcons', 'LayoutIcon');
-const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
-const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
-const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
-const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
-const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
-const AltoIcon = loadComponent('CustomIcons', 'AltoIcon');
 
 
 class DocumentRow extends React.Component {
@@ -97,6 +89,7 @@ class DocumentRow extends React.Component {
         return (
             <>
                 <TableRow className="explorerRow"
+                    sx={{":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}
                     onClick={() => { if (!buttonsDisabled) this.documentClicked() }}
                 >
                     <TableCell className="explorerCell nameCell">
