@@ -773,7 +773,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " pdf_indexed"}
-                        name={"TEMP NAME pdf indexed"}
+                        name={"PDF com texto e índice"}
                         filename={this.state.fileOpened}
                         info={docInfo["pdf_indexed"]}
                         fileIcon={<PdfIcon />}
@@ -788,7 +788,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " pdf"}
-                        name={"TEMP NAME pdf"}
+                        name={"PDF com texto"}
                         filename={this.state.fileOpened}
                         info={docInfo["pdf"]}
                         fileIcon={<PdfIcon />}
@@ -803,7 +803,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " txt"}
-                        name={"TEMP NAME txt"}
+                        name={"Texto"}
                         filename={this.state.fileOpened}
                         info={docInfo["txt"]}
                         fileIcon={<TxtIcon />}
@@ -818,7 +818,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " txt_delimited"}
-                        name={"TEMP NAME txt_delimited"}
+                        name={"Texto com separadores de páginas"}
                         filename={this.state.fileOpened}
                         info={docInfo["txt_delimited"]}
                         fileIcon={<TxtIcon />}
@@ -833,7 +833,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " csv"}
-                        name={"TEMP NAME csv index"}
+                        name={"Índice de palavras"}
                         filename={this.state.fileOpened}
                         info={docInfo["csv"]}
                         fileIcon={<CsvIcon />}
@@ -848,7 +848,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " ner"}
-                        name={"TEMP NAME NER"}
+                        name={"Entidades"}
                         filename={this.state.fileOpened}
                         info={docInfo["ner"]}
                         fileIcon={<JsonIcon />}
@@ -863,7 +863,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " hocr"}
-                        name={"TEMP NAME hOCR"}
+                        name={"hOCR"}
                         filename={this.state.fileOpened}
                         info={docInfo["hocr"]}
                         fileIcon={<AltoIcon />}
@@ -878,7 +878,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " xml"}
-                        name={"TEMP NAME ALTO"}
+                        name={"ALTO"}
                         filename={this.state.fileOpened}
                         info={docInfo["xml"]}
                         fileIcon={<AltoIcon />}
@@ -893,7 +893,7 @@ class FileExplorer extends React.Component {
                     <StaticFileRow
                         ref={ref}
                         key={this.state.fileOpened + " zip"}
-                        name={"TEMP NAME zip"}
+                        name={"Imagens extraídas"}
                         filename={this.state.fileOpened}
                         info={docInfo["zip"]}
                         fileIcon={<ZipIcon />}
