@@ -16,6 +16,8 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
+const ArrowDownAZIcon = loadComponent('Icons', 'ArrowDownAZIcon');
+const ArrowUpZAIcon = loadComponent('Icons', 'ArrowUpZAIcon');
 const DocumentRow = loadComponent('FileSystem', 'DocumentRow');
 const StaticFileRow = loadComponent('FileSystem', 'StaticFileRow');
 const FileIcon = loadComponent('CustomIcons', 'FileIcon');
@@ -61,6 +63,7 @@ class FileExplorer extends React.Component {
             // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
             current_folder: props.current_folder.join('/').replace(/^\//, ''),
             components: [],
+            sorting: 0,
 
             updatingRows: [],
             updatingRate: 15,
@@ -718,27 +721,21 @@ class FileExplorer extends React.Component {
         return folders.concat(files);
     }
 
-    sortByName(contents) {  // TODO: sort folders separately from files, like in operating system file explorers
-        /**
-         * Order 'Nome' column
-         * by A-Z or Z-A when
-         * the  column is clicked
-         */
+    toggleSortByName() {
+        this.setState({ sorting: (this.state.sorting + 1) % 3 });
+    }
 
-        const isSorted = (a) => {
-            let sorted = true;
-            if (a.length > 1) {
-                if (a[0].key.localeCompare(a[1].key) === 1){
-                    sorted = false;
-                }
-            }
-            return sorted;
-        }
-
-        if (isSorted(contents)) {
-            this.setState({components: contents.sort((a, b) => (b.key).localeCompare(a.key))});
-        } else {
-            this.setState({components: contents.sort((a, b) => (a.key).localeCompare(b.key))});
+    sortByName() {
+        switch (this.state.sorting) {
+            case 0:
+                // Default server-provided order
+                return this.state.components;
+            case 1:
+                // Sort in alphabetical order
+                return this.state.components.toSorted((a, b) => (a.key).localeCompare(b.key));
+            case 2:
+                // Sort in reverse alphabetical order
+                return this.state.components.toSorted((a, b) => (b.key).localeCompare(a.key));
         }
     }
 
@@ -984,9 +981,15 @@ class FileExplorer extends React.Component {
                         <TableRow>
                             <TableCell className="explorerCell nameCell" sx={{width: "26%", borderLeft:"1px solid #aaa"}}>
                                 <Button
-                                    startIcon={<SwapVertIcon />}
+                                    startIcon={
+                                        this.state.sorting === 0
+                                            ? <SwapVertIcon />
+                                        : this.state.sorting === 1
+                                            ? <ArrowDownAZIcon />
+                                        : <ArrowUpZAIcon />
+                                    }
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
-                                    onClick={() => this.sortByName(this.state.components)}>
+                                    onClick={() => this.toggleSortByName()}>
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
@@ -1005,7 +1008,7 @@ class FileExplorer extends React.Component {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {this.state.components}
+                        {this.sortByName()}
                     </TableBody>
                 </Table>
             </TableContainer>
