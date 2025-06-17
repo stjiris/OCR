@@ -25,7 +25,6 @@ import {
     ocrMenuState
 } from "./states";
 
-const Notification = loadComponent('Notification', 'Notifications');
 const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 const LogsMenu = loadComponent('Form', 'LogsMenu');
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
@@ -120,49 +119,6 @@ function App() {
             return this.state.sessionId;
         }
 
-        //editFile(path, file) {
-        //    /**
-        //     * Open a file in the text editor
-        //     *
-        //     * @param {string} path - The path of the file
-        //     * @param {string} file - The name of the file
-        //     */
-        //    this.setState({path: path, fileOpened: file, fileSystemMode: false, editingMenu: true});
-        //    this.textEditor.current.setFile(path, file);
-        //    this.textEditor.current.toggleOpen();
-        //}
-        //viewFile(file, algorithm, config) {
-            /**
-             * View a file in ES page
-             *
-             * @param {string} file - The name of the file
-             */
-            /*
-            this.setState(
-                {
-                    fileSystemMode: false,
-                    editingMenu: false,
-                    filesChoice: [{name: file, code: file}],
-                    algorithmChoice: [{name: algorithm, code: algorithm}],
-                    configChoice: [{name: config, code: config}]
-                }
-            );
-        }
-            */
-        /*
-        updateContents(event, index) {
-             //
-             //Update the content of the text editor
-             //
-             //@param {event} event - The event
-             //@param {int} index - The index of the text field changed
-             //
-            let contents = this.state.contents;
-            contents[index]["content"] = event.target.value;
-            this.setState({contents: contents});
-        }
-         */
-
         redirectHome() {
             const currentURL = window.location.href;
 
@@ -191,37 +147,6 @@ function App() {
              */
             this.logsMenu.current.toggleOpen();
         }
-
-        /*
-        sendChanges() {
-             //
-             //Send the changes to the server
-             //
-            fetch(process.env.REACT_APP_API_URL + 'submit-text', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "text": this.state.contents
-                })
-            })
-            .then(response => {return response.json()})
-            .then(data => {
-                if (data.success) {
-                    this.successNot.current.setMessage("Texto submetido com sucesso");
-                    this.successNot.current.open();
-                    this.setState(fileSystemState);
-
-                    const info = data["info"];
-                    this.fileSystem.current.setState({info: info});
-                } else {
-                    this.errorNot.current.setMessage(data.error);
-                    this.errorNot.current.open();
-                }
-            });
-        }
-         */
 
         createPrivateSession() {
             fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
@@ -478,6 +403,7 @@ function App() {
 
                             {/* TODO: update help document */}
                             <Button
+                                disabled={true}
                                 variant="text"
                                 onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
                                 startIcon={<HelpIcon/>}
