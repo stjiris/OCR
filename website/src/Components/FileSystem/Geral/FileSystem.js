@@ -196,7 +196,7 @@ class FileExplorer extends React.Component {
             || this.state.files !== prevState.files                 // created/deleted document or folder
             || this.state.fileOpened !== prevState.fileOpened) {    // exited menu or entered/exited document "folder"
             this.displayFileSystem();
-        } else if (this.state.info !== prevState.info || this.state.components !== prevState.components) {
+        } else if (this.state.info !== prevState.info) { //|| this.state.components !== prevState.components) {
             this.updateInfo();
         }
     }
@@ -772,6 +772,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " pdf_indexed"}
                         name={"PDF com texto e índice"}
                         filename={this.state.fileOpened}
+                        type="pdf_indexed"
                         info={docInfo["pdf_indexed"]}
                         fileIcon={<PdfIcon />}
                         downloadFile={this.getPdfIndexed}
@@ -787,6 +788,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " pdf"}
                         name={"PDF com texto"}
                         filename={this.state.fileOpened}
+                        type="pdf"
                         info={docInfo["pdf"]}
                         fileIcon={<PdfIcon />}
                         downloadFile={this.getPdfSimple}
@@ -802,6 +804,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " txt"}
                         name={"Texto"}
                         filename={this.state.fileOpened}
+                        type="txt"
                         info={docInfo["txt"]}
                         fileIcon={<TxtIcon />}
                         downloadFile={this.getTxt}
@@ -817,6 +820,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " txt_delimited"}
                         name={"Texto com separadores de páginas"}
                         filename={this.state.fileOpened}
+                        type="txt_delimited"
                         info={docInfo["txt_delimited"]}
                         fileIcon={<TxtIcon />}
                         downloadFile={this.getDelimiterTxt}
@@ -832,6 +836,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " csv"}
                         name={"Índice de palavras"}
                         filename={this.state.fileOpened}
+                        type="csv"
                         info={docInfo["csv"]}
                         fileIcon={<CsvIcon />}
                         downloadFile={this.getCSV}
@@ -847,6 +852,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " ner"}
                         name={"Entidades"}
                         filename={this.state.fileOpened}
+                        type="ner"
                         info={docInfo["ner"]}
                         fileIcon={<JsonIcon />}
                         downloadFile={this.getEntities /* TODO: request and endpoint may need updating */ }
@@ -862,6 +868,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " hocr"}
                         name={"hOCR"}
                         filename={this.state.fileOpened}
+                        type="hocr"
                         info={docInfo["hocr"]}
                         fileIcon={<AltoIcon />}
                         downloadFile={this.getHocr}
@@ -877,6 +884,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " xml"}
                         name={"ALTO"}
                         filename={this.state.fileOpened}
+                        type="xml"
                         info={docInfo["xml"]}
                         fileIcon={<AltoIcon />}
                         downloadFile={this.getAlto}
@@ -892,6 +900,7 @@ class FileExplorer extends React.Component {
                         key={this.state.fileOpened + " zip"}
                         name={"Imagens extraídas"}
                         filename={this.state.fileOpened}
+                        type="zip"
                         info={docInfo["zip"]}
                         fileIcon={<ZipIcon />}
                         downloadFile={this.getImages}

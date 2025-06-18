@@ -18,7 +18,11 @@ class StaticFileRow extends React.Component {
     }
 
     updateInfo(info) {
-      this.setState({info: info});
+        if (this.props.type) {
+            this.setState({info: info[this.props.type]});
+        } else {
+            this.setState({info: info});
+        }
     }
 
     render() {
@@ -72,6 +76,7 @@ StaticFileRow.defaultProps = {
     info: null,
     name: null,
     filename: null,
+    type: null,
     fileIcon: null,
     // functions:
     downloadFile: null,
