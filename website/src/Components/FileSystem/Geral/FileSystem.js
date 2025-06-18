@@ -1005,6 +1005,12 @@ class FileExplorer extends React.Component {
                             <TableCell className="explorerCell actionsCell" align='center'>
                                 <b>Ações</b>
                             </TableCell>
+                            { !this.state.fileOpened
+                                ? <TableCell className="explorerCell stateCell" align='center'>
+                                    <b>Estado</b>
+                                </TableCell>
+                                : null
+                            }
                             <TableCell className="explorerCell dateCreatedCell" align='center'>
                                 <b>Data de criação</b>
                             </TableCell>

@@ -113,14 +113,14 @@ class DocumentRow extends React.Component {
                                             <Box>
                                                 <TooltipIcon
                                                     key="delete"
-                                                    color="#f00"
+                                                    className="negActionButton"
                                                     message="Apagar"
                                                     clickFunction={(e) => this.delete(e)}
                                                     icon={<DeleteForeverIcon/>}
                                                 />
                                             </Box>
                                         </TableCell>
-                                        <TableCell colSpan={3} className="explorerCell errorCell" align='center'>
+                                        <TableCell colSpan={4} className="explorerCell errorCell" align='center'>
                                             <Box>
                                                 <span>Erro ao carregar ficheiro</span>
                                             </Box>
@@ -128,9 +128,8 @@ class DocumentRow extends React.Component {
                                     </>
 
                                     : this.state.info["stored"] !== 100.00
-                                        ? <TableCell colSpan={4} className="explorerCell infoCell" align='center'>
-                                            <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                                                <span>Carregamento</span>
+                                        ? <TableCell colSpan={5} className="explorerCell infoCell" align='center'>
+                                            <Box sx={{display: 'flex', flexDirection: 'column'}}>                                                <span>Carregamento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
                                                     <span>{this.state.info["stored"]}%</span>
                                                     <CircularProgress sx={{ml: '1rem'}} size='0.8rem' />
@@ -138,7 +137,7 @@ class DocumentRow extends React.Component {
                                             </Box>
                                         </TableCell>
 
-                                        : <TableCell colSpan={4} className="explorerCell infoCell" align='center'>
+                                        : <TableCell colSpan={5} className="explorerCell infoCell" align='center'>
                                             <Box>
                                                 <span>A preparar o documento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
@@ -223,25 +222,40 @@ class DocumentRow extends React.Component {
                             </TableCell>
 
                             {
-                                this.state.info?.["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"]
-                                ? <>
-                                    <TableCell className="explorerCell dateCreatedCell" align='center'><span>{this.state.info["creation"]}</span></TableCell>
-                                    <TableCell className="explorerCell detailsCell" align='center'><span>{this.state.info["pages"]} página(s)</span></TableCell>
-                                    <TableCell className="explorerCell sizeCell" align='center'><span>{this.state.info["size"]}</span></TableCell>
-                                </>
+                                this.state.info?.["ocr"] === undefined
+                                    ? <TableCell className="explorerCell stateCell waitingCell" align='center'>
+                                        <Box className="stateBox">
+                                            <span>Aguarda pedido de OCR</span>
+                                        </Box>
+                                    </TableCell>
+
+                                : this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                                    ? <TableCell className="explorerCell stateCell successCell" align='center'>
+                                        <Box className="stateBox">
+                                          <span>OCR concluído</span>
+                                        </Box>
+                                    </TableCell>
+
                                 : this.state.info?.["ocr"]["exceptions"]
-                                    ? <TableCell colSpan={3} className="explorerCell errorCell" align='center'>
-                                        <Box sx={{overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent:'space-evenly' }}>
-                                            <span>Erro ao fazer OCR</span>
+                                    ? <TableCell className="explorerCell stateCell errorCell" align='center'>
+                                        <Box className="stateBox">
+                                          <span>Erro ao fazer OCR</span>
                                         </Box>
                                     </TableCell>
-                                    : <TableCell colSpan={3} className="explorerCell infoCell" align='center'>
-                                        <Box sx={{overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
-                                            <span>{this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)</span>
-                                            <CircularProgress sx={{ml: '1rem'}} size='1rem' />
-                                        </Box>
-                                    </TableCell>
+
+                                : <TableCell className="explorerCell stateCell infoCell" align='center'>
+                                    <Box className="stateBox">
+                                      <span>
+                                        {this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)
+                                      </span>
+                                      <CircularProgress sx={{ml: '1rem'}} size='1rem' />
+                                    </Box>
+                                </TableCell>
                             }
+
+                            <TableCell className="explorerCell dateCreatedCell" align='center'><span>{this.state.info["creation"]}</span></TableCell>
+                            <TableCell className="explorerCell detailsCell" align='center'><span>{this.state.info["pages"]} página(s)</span></TableCell>
+                            <TableCell className="explorerCell sizeCell" align='center'><span>{this.state.info["size"]}</span></TableCell>
                         </>
                     }
                 </TableRow>
