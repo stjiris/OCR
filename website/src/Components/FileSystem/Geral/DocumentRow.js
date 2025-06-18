@@ -99,21 +99,7 @@ class DocumentRow extends React.Component {
                             alignItems: 'center',
                         }}>
                             <FileIcon extension={this.state.info["extension"]}/>
-                            {
-                                this.state.info?.["stored"] === true
-                                ? <Button
-                                    onClick={(e) => this.getOriginalFile(e)}
-                                    sx={{
-                                        p: 0,
-                                        textTransform: 'none',
-                                        display: "flex",
-                                        textAlign: "left",
-                                    }}
-                                >
-                                    {this.props.name}
-                                </Button>
-                                : <span>{this.props.name}</span>
-                            }
+                            <span>{this.props.name}</span>
                         </Box>
                     </TableCell>
 
