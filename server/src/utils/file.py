@@ -314,7 +314,7 @@ def get_folder_info(path, private_session=None):
     info = {}
     try:
         data = get_data(f"{path}/_data.json")
-    except FileNotFoundError:
+    except (FileNotFoundError, JSONDecodeError):
         return {}
 
     if "type" not in data:
@@ -382,8 +382,8 @@ def get_structure(path, private_session=None, is_private=False):
 
         try:
             data = get_data(f"{path}/_data.json")
-        except FileNotFoundError:
-            return {}
+        except (FileNotFoundError, JSONDecodeError):
+            return None
 
         if "type" not in data:
             return None
