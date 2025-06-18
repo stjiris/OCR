@@ -67,7 +67,12 @@ class FolderRow extends React.Component {
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell detailsCell" align='center'>—</TableCell>
+                <TableCell className="explorerCell detailsCell" align='center'>
+                    <span>
+                        {this.state.info["contents"]} ficheiro(s) ou sub-pasta(s)
+                    </span>
+                </TableCell>
+
                 <TableCell className="explorerCell sizeCell" align='center'>—</TableCell>
             </TableRow>
         )

@@ -323,6 +323,10 @@ def get_folder_info(path, private_session=None):
     if data["type"] == "file" and ("stored" not in data or data["stored"] == True):
         data["size"] = get_size(path)
 
+    elif data["type"] == "folder":
+        n_files = len([f for f in os.scandir(path) if not f.name.startswith('_')])
+        data["contents"] = n_files
+
     # sanitize important paths from the info key
     path = path.replace(f"{PRIVATE_PATH}/{private_session}", "").replace(PRIVATE_PATH, "").replace(FILES_PATH, "").strip('/')
     info[path] = data
