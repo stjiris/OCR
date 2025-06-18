@@ -58,7 +58,10 @@ class StaticFileRow extends React.Component {
 
                 <TableCell className="explorerCell detailsCell" align='center'>
                     <span>
-                        {this.state.info["pages"]} página(s)
+                        {this.state.info["pages"]
+                            ? this.state.info["pages"] + " página(s)"
+                            : "—"
+                        }
                     </span>
                 </TableCell>
 
