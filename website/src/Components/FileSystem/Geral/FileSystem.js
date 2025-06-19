@@ -988,7 +988,7 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell className="explorerCell nameCell" sx={{width: "26%", borderLeft:"1px solid #aaa"}}>
+                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticNameCell" : "nameCell")}>
                                 <Button
                                     startIcon={
                                         this.state.sorting === 0
@@ -1002,22 +1002,22 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell className="explorerCell actionsCell" align='center'>
+                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticActionsCell" : "actionsCell")}>
                                 <b>Ações</b>
                             </TableCell>
                             { !this.state.fileOpened
-                                ? <TableCell className="explorerCell stateCell" align='center'>
+                                ? <TableCell className="explorerCell stateCell">
                                     <b>Estado</b>
                                 </TableCell>
                                 : null
                             }
-                            <TableCell className="explorerCell dateCreatedCell" align='center'>
+                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticDateCreatedCell" : "dateCreatedCell")}>
                                 <b>Data de criação</b>
                             </TableCell>
-                            <TableCell className="explorerCell detailsCell" align='center'>
+                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticDetailsCell" : "detailsCell")}>
                                 <b>Detalhes</b>
                             </TableCell>
-                            <TableCell className="explorerCell sizeCell" align='center'>
+                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticSizeCell" : "sizeCell")}>
                                 <b>Tamanho</b>
                             </TableCell>
                         </TableRow>

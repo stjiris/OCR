@@ -145,27 +145,56 @@ body {
 }
 
 .MuiTableCell-root.nameCell {
-    width: 26%;
+    width: 30%;
+}
+
+.MuiTableCell-root.staticNameCell {
+    width: 38%;
 }
 
 .MuiTableCell-root.actionsCell {
     width: 20%;
+    text-align: center;
+}
+
+.MuiTableCell-root.staticActionsCell {
+    width: 20%;
+    text-align: center;
 }
 
 .MuiTableCell-root.stateCell {
     width: 8%;
+    text-align: center;
 }
 
 .MuiTableCell-root.dateCreatedCell {
     width: 15%;
+    text-align: center;
+}
+
+.MuiTableCell-root.staticDateCreatedCell {
+    width: 15%;
+    text-align: center;
 }
 
 .MuiTableCell-root.detailsCell {
     width: 20%;
+    text-align: center;
+}
+
+.MuiTableCell-root.staticDetailsCell {
+    width: 20%;
+    text-align: center;
 }
 
 .MuiTableCell-root.sizeCell {
     width: 12%;
+    text-align: center;
+}
+
+.MuiTableCell-root.staticSizeCell {
+    width: 12%;
+    text-align: center;
 }
 
 .page-div {

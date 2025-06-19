@@ -28,7 +28,7 @@ class StaticFileRow extends React.Component {
     render() {
         return (
             <TableRow className="explorerRow">
-                <TableCell className="explorerCell nameCell">
+                <TableCell className="explorerCell staticNameCell">
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -39,7 +39,7 @@ class StaticFileRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell actionsCell" align='center'>
+                <TableCell className="explorerCell staticActionsCell">
                     <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
                         <TooltipIcon
                             className="actionButton"
@@ -50,13 +50,13 @@ class StaticFileRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell dateCreatedCell" align='center'>
+                <TableCell className="explorerCell staticDateCreatedCell">
                     <span>
                         {this.state.info["creation"]}
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell detailsCell" align='center'>
+                <TableCell className="explorerCell staticDetailsCell">
                     <span>
                         {this.state.info["pages"]
                             ? this.state.info["pages"] + " página(s)"
@@ -65,7 +65,7 @@ class StaticFileRow extends React.Component {
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell sizeCell" align='center'>
+                <TableCell className="explorerCell staticSizeCell">
                     <span>
                         {this.state.info["size"]}
                     </span>
