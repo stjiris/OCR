@@ -225,7 +225,7 @@ def task_file_ocr(path: str, config: dict | None):
         with open(DEFAULT_CONFIG_FILE) as f:
             default_config = json.load(f)
 
-        if config is None:
+        if config is None or config == "default":  # TODO: accept other strings for preset config files
             config = default_config
         else:
             # Build string with Tesseract run configuration

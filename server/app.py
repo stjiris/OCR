@@ -604,7 +604,7 @@ def configure_ocr():
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)  # TODO: improve feedback to users on error
 
-    if isinstance(req_data["config"], dict) or req_data["config"] == "useDefault":
+    if isinstance(req_data["config"], dict) or req_data["config"] == "default":
         data["config"] = req_data["config"]
     else:
         # TODO: accept and verify other strings as config file names
