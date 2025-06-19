@@ -85,7 +85,7 @@ class DocumentRow extends React.Component {
 
     render() {
         const buttonsDisabled = !(this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"])
-        const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "useDefault";
+        const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
         return (
             <>
                 <TableRow className="explorerRow"
@@ -129,7 +129,8 @@ class DocumentRow extends React.Component {
 
                                     : this.state.info["stored"] !== 100.00
                                         ? <TableCell colSpan={5} className="explorerCell infoCell" align='center'>
-                                            <Box sx={{display: 'flex', flexDirection: 'column'}}>                                                <span>Carregamento</span>
+                                            <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                                <span>Carregamento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
                                                     <span>{this.state.info["stored"]}%</span>
                                                     <CircularProgress sx={{ml: '1rem'}} size='0.8rem' />
