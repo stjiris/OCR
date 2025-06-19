@@ -39,7 +39,7 @@ const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
 const FullStorageMenu = loadComponent('Notifications', 'FullStorageMenu');
 
 const UPDATE_TIME = 15;
-const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
+const STUCK_UPDATE_TIME = 20 * 60; // 20 Minutes
 
 const validExtensions = ["application/pdf",
                                 "image/jpeg",
@@ -136,7 +136,6 @@ class FileExplorer extends React.Component {
 
         // functions for menus
         this.fetchFiles = this.fetchFiles.bind(this);
-        this.updateFiles = this.updateFiles.bind(this);
     }
 
     componentDidMount() {
@@ -169,7 +168,7 @@ class FileExplorer extends React.Component {
                             const currentTime = new Date();
                             const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
 
-                            if (timeDiffMinutes >= 10) {
+                            if (timeDiffMinutes >= STUCK_UPDATE_TIME) {
                                 fetch(API_URL + '/set-upload-stuck', {
                                     method: 'POST',
                                     headers: {
@@ -187,7 +186,7 @@ class FileExplorer extends React.Component {
                         }
                     }
                 }
-                this.setState({info: info, updateCount: 0});
+                this.fetchInfo();
             });
         }, 1000 * STUCK_UPDATE_TIME);
     }
@@ -229,6 +228,11 @@ class FileExplorer extends React.Component {
             });
     }
 
+    /**
+     * Fetch updated information about existing files and metadata.
+     *
+     * Call after actions that create or delete documents/folders.
+     */
     fetchFiles() {
         axios.get(API_URL + '/files', {
             params: {
@@ -252,9 +256,15 @@ class FileExplorer extends React.Component {
     }
 
     createFetchInfoInterval() {
-        this.interval = setInterval(this.fetchInfo, 1000 * UPDATE_TIME);
+        this.infoInterval = setInterval(this.fetchInfo, 1000 * UPDATE_TIME);
     }
 
+    /**
+     * Fetch updated metadata from the server.
+     *
+     * Call occasionally for updated info,
+     * and after actions on existing files, that don't create or delete documents/folders.
+     */
     fetchInfo() {
         axios.get(API_URL + '/info', {
             params: {
@@ -276,6 +286,9 @@ class FileExplorer extends React.Component {
             });
     }
 
+    /**
+     * Update the info of each row being displayed.
+     */
     updateInfo() {
         if (this.state.ocrMenu || this.state.layoutMenu || this.state.editingMenu) return;
         if (this.state.fileOpened) {
@@ -304,15 +317,6 @@ class FileExplorer extends React.Component {
             clearInterval(this.infoInterval);
         if (this.stuckInterval)
             clearInterval(this.stuckInterval);
-    }
-
-    /**
-     * Update the files and info
-     */
-    updateFiles(data) {
-        const files = data['files'];
-        const info = data['info'];
-        this.setState({ files: files, info: info });
     }
 
     /**
@@ -1097,7 +1101,7 @@ class FileExplorer extends React.Component {
                 this.errorNot.current.openNotif(data.message);
             }
 
-            this.updateFiles(data.files);
+            this.fetchInfo();
         })
     }
 
@@ -1122,7 +1126,7 @@ class FileExplorer extends React.Component {
                 this.errorNot.current.openNotif(data.message);
             }
 
-            this.updateFiles(data.files);
+            this.fetchInfo();
         })
     }
 

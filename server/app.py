@@ -136,10 +136,11 @@ def bad_request(message: str = 'Bad request syntax or unsupported method'):
 def format_path(request_data):
     is_private = "_private" in request_data and (request_data["_private"] == 'true' or request_data["_private"] == True)
     if is_private:
-        private_session = request_data["path"].strip("/").split("/")[0]
+        stripped_path = request_data["path"].strip("/")
+        private_session = stripped_path.split("/")[0]
         if private_session == "":  # path for private session must start with session ID
             return bad_request("Path in private session must start with session ID")
-        return safe_join(PRIVATE_PATH, request_data["path"].strip("/")), True
+        return safe_join(PRIVATE_PATH, stripped_path), True
     else:
         return safe_join(FILES_PATH, request_data["path"].strip("/")), False
 
@@ -150,13 +151,13 @@ def format_filesystem_path(request_data):
     filesystem_path = FILES_PATH
     if is_private:
         stripped_path = request_data["path"].strip("/")
-        path = safe_join(PRIVATE_PATH, stripped_path)
         private_session = stripped_path.split("/")[0]
         if private_session == "":  # path for private session must start with session ID
             return bad_request("Path in private session must start with session ID")
         filesystem_path = safe_join(PRIVATE_PATH, private_session)
         if filesystem_path is None:
             abort(HTTPStatus.NOT_FOUND)
+        path = safe_join(PRIVATE_PATH, stripped_path)
     else:
         path = safe_join(FILES_PATH, request_data["path"].strip("/"))
 
@@ -268,7 +269,10 @@ def create_folder():
         or "folder" not in data or data["folder"] == ''):
         return bad_request("Missing parameter 'path' or 'folder'")
 
-    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
+    path, _ = format_path(data)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
     folder = data["folder"]
 
     if folder.startswith("_"):
@@ -443,7 +447,7 @@ def get_original():
 @app.route("/delete-path", methods=["POST"])
 @requires_json_path
 def delete_path():
-    path, filesystem_path, private_session, is_private = format_filesystem_path(request.json)
+    path, filesystem_path, private_session, _ = format_filesystem_path(request.json)
     try:
         # avoid deleting roots
         # filesystem_path is either FILES_PATH or PRIVATE_PATH/private_session -> another endpoint deletes priv. sessions
@@ -466,7 +470,10 @@ def delete_path():
 @app.route("/set-upload-stuck", methods=["POST"])
 @requires_json_path
 def set_upload_stuck():
-    path, filesystem_path, private_session, is_private = format_filesystem_path(request.json)
+    path, _ = format_path(request.json)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
     try:
         data = get_data(f"{path}/_data.json")
     except FileNotFoundError:
@@ -477,7 +484,6 @@ def set_upload_stuck():
     return {
         "success": True,
         "message": "O upload do ficheiro falhou",
-        "files": get_filesystem(filesystem_path, private_session, is_private),
     }
 
 
@@ -654,7 +660,10 @@ def configure_ocr():
     req_data = request.json
     if "config" not in req_data:
         return bad_request("Missing parameter 'config'")
-    path, filesystem_path, private_session, is_private = format_filesystem_path(req_data)
+    path, _ = format_path(req_data)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
     data_path = f"{path}/_data.json"
     try:
         data = get_data(data_path)
@@ -687,7 +696,9 @@ def perform_ocr():
         return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
 
     data = request.json
-    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
+    path, _ = format_path(data)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
 
     config = data["config"] if "config" in data else None
     multiple = data["multiple"] if "multiple" in data else False
@@ -754,7 +765,10 @@ def index_doc():
     @param multiple: if it is a folder or not
     """
     data = request.json
-    path, filesystem_path, private_session, _ = format_filesystem_path(data)
+    path, _ = format_path(data)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
     if PRIVATE_PATH in path:  # avoid indexing private sessions
         abort(HTTPStatus.NOT_FOUND)
     multiple = data["multiple"]
@@ -807,7 +821,6 @@ def index_doc():
         return {
             "success": True,
             "message": "Documento indexado",
-            "files": get_filesystem(filesystem_path, private_session, False),
         }
 
 
@@ -820,7 +833,10 @@ def remove_index_doc():
     @param multiple: if it is a folder or not
     """
     data = request.json
-    path, filesystem_path, private_session, _ = format_filesystem_path(data)
+    path, _ = format_path(data)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
     if PRIVATE_PATH in path:
         abort(HTTPStatus.NOT_FOUND)
     multiple = data["multiple"]
@@ -848,7 +864,6 @@ def remove_index_doc():
         return {
             "success": True,
             "message": "Documento removido",
-            "files": get_filesystem(filesystem_path, private_session, False),
         }
 
 
@@ -864,15 +879,12 @@ def submit_text():
     data_folder = '/'.join(data_folder_list)
 
     is_private = "_private" in data and (data["_private"] == 'true' or data["_private"] == True)
-    private_session = None
-    filesystem_path = FILES_PATH
     if is_private:
         path = safe_join(PRIVATE_PATH, data_folder)
         data_path = path + "/_data.json"
         private_session = data_folder_list[0]
         if private_session == "":  # path for private session must start with session ID
             return bad_request("Path to private session must start with session ID")
-        filesystem_path = safe_join(PRIVATE_PATH, private_session)
     else:
         path = safe_join(FILES_PATH, data_folder)
         data_path = path + "/_data.json"
@@ -900,7 +912,7 @@ def submit_text():
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
 
-    return {"success": True, "files": get_filesystem(filesystem_path, private_session, is_private)}
+    return {"success": True}
 
 
 @app.route("/check-sintax", methods=["POST"])
@@ -1030,6 +1042,7 @@ def save_layouts():
     return {"success": True}
 
 
+# TODO: (FIXME) automatic layout generation is relying on fetching async task, may not work if server is under load
 @app.route("/generate-automatic-layouts", methods=["GET"])
 @requires_arg_path
 def generate_automatic_layouts():
