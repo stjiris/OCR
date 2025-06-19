@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from json import JSONDecodeError
 from os import environ
-from string import punctuation
+# from string import punctuation
 
 import pytz
 import requests
@@ -16,7 +16,7 @@ FILES_PATH = environ.get("FILES_PATH", "_files")
 TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
 PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
 
-ALLOWED_EXTENSIONS = {'pdf',
+ALLOWED_EXTENSIONS = ('pdf',
                       'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp',  # JPEG
                       'png',
                       'tiff', 'tif',  # TIFF
@@ -26,7 +26,7 @@ ALLOWED_EXTENSIONS = {'pdf',
                       'pnm',  # image/x-portable-anymap
                       'jp2',  # JPEG 2000
                       'zip',
-                      }
+                      )
 
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
@@ -49,8 +49,8 @@ log.basicConfig(level=log.INFO, format=f'%(asctime)s %(levelname)s : %(message)s
 
 def get_ner_file(path):
     r = requests.post(
-        "https://iris.sysresearch.org/absconditus/from-text",
-        files={"file": open(f"{path}/_text.txt", "rb")},
+        "https://iris.sysresearch.org/anonimizador/from-text",
+        files={"file": open(f"{path}/_export/_txt.txt", "rb")},
     )
     try:
         ner = r.json()
@@ -58,14 +58,13 @@ def get_ner_file(path):
         return False
 
     if r.status_code == 200:
-        with open(f"{path}/_entities.json", "w", encoding="utf-8") as f:
+        with open(f"{path}/_export/_entities.json", "w", encoding="utf-8") as f:
             json.dump(ner, f, indent=2, ensure_ascii=False)
         return True
     else:
         return False
 
 
-# DONE
 def get_current_time():
     """
     Get the current time in the correct format
@@ -74,7 +73,7 @@ def get_current_time():
     """
     return datetime.now().astimezone(TIMEZONE).strftime("%d/%m/%Y %H:%M:%S")
 
-# TODO
+
 def get_file_parsed(path, is_private):
     """
     Return the text off all the pages of the file
@@ -155,7 +154,7 @@ def get_file_parsed(path, is_private):
             )
     return data, words
 
-# TODO
+
 def get_file_layouts(path, is_private):
     data = get_data(f"{path}/_data.json")
     layouts = []
@@ -190,7 +189,7 @@ def get_file_layouts(path, is_private):
 
     return layouts
 
-# TODO
+
 def save_file_layouts(path, layouts):
     data = get_data(f"{path}/_data.json")
     if data["type"] != "file":
@@ -207,7 +206,7 @@ def save_file_layouts(path, layouts):
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(layouts, f, indent=2, ensure_ascii=False)
 
-# DONE
+
 def generate_uuid(path):
     random.seed(path)
     return str(
@@ -217,7 +216,7 @@ def generate_uuid(path):
 def generate_random_uuid():
     return uuid.uuid4().hex
 
-# TODO
+
 def delete_structure(client, path):
     """
     Delete all the files in the structure
@@ -257,7 +256,7 @@ def get_filesystem(path, private_session: str = None, is_private: bool = False) 
     return {**files, "info": info}
 
 
-# TODO
+
 def get_ocr_size(path):
     """
     Get the size of the hocr files
@@ -284,7 +283,7 @@ def get_ocr_size(path):
     else:
         return f"{size / 1024 ** 3:.2f} GB"
 
-# TODO
+
 def get_size(path, path_complete=False):
     """
     Get the size of the file
@@ -308,7 +307,7 @@ def get_size(path, path_complete=False):
     else:
         return f"{size / 1024 ** 3:.2f} GB"
 
-# TODO
+
 def get_folder_info(path, private_session=None):
     """
     Get the info of the folder
@@ -317,7 +316,7 @@ def get_folder_info(path, private_session=None):
     info = {}
     try:
         data = get_data(f"{path}/_data.json")
-    except FileNotFoundError:
+    except (FileNotFoundError, JSONDecodeError):
         return {}
 
     if "type" not in data:
@@ -326,12 +325,16 @@ def get_folder_info(path, private_session=None):
     if data["type"] == "file" and ("stored" not in data or data["stored"] == True):
         data["size"] = get_size(path)
 
+    elif data["type"] == "folder":
+        n_files = len([f for f in os.scandir(path) if not f.name.startswith('_')])
+        data["contents"] = n_files
+
     # sanitize important paths from the info key
     path = path.replace(f"{PRIVATE_PATH}/{private_session}", "").replace(PRIVATE_PATH, "").replace(FILES_PATH, "").strip('/')
     info[path] = data
     return info
 
-# TODO
+
 def get_structure_info(path, private_session=None, is_private=False):
     """
     Get the info of each file/folder
@@ -358,7 +361,7 @@ def get_structure_info(path, private_session=None, is_private=False):
 
     return info
 
-# TODO
+
 def get_structure(path, private_session=None, is_private=False):
     """
     Put the file system structure in a dict
@@ -385,8 +388,8 @@ def get_structure(path, private_session=None, is_private=False):
 
         try:
             data = get_data(f"{path}/_data.json")
-        except FileNotFoundError:
-            return {}
+        except (FileNotFoundError, JSONDecodeError):
+            return None
 
         if "type" not in data:
             return None
@@ -414,7 +417,7 @@ def get_structure(path, private_session=None, is_private=False):
 ##################################################
 # FILES UTILS
 ##################################################
-# DONE
+
 def get_page_count(target_path, extension):
     """
     Get the number of pages of a file
@@ -423,8 +426,9 @@ def get_page_count(target_path, extension):
         return len(os.listdir(f"{target_path}/_pages"))
     elif extension in ALLOWED_EXTENSIONS:  # some other than pdf or zip
         return 1
+    return None
 
-# DONE
+
 def get_file_basename(filename):
     """
     Get the basename of a file
@@ -434,7 +438,7 @@ def get_file_basename(filename):
     """
     return ".".join(filename.replace("\\", "/").split("/")[-1].split(".")[:-1])
 
-# DONE
+
 def get_file_extension(filename):
     """
     Get the extension of a file
@@ -460,7 +464,7 @@ def json_to_text(json_d):
 ##################################################
 # OCR UTILS
 ##################################################
-# DONE
+
 def get_data(file):
     if not os.path.exists(file): raise FileNotFoundError
     with open(file, encoding="utf-8") as f:
@@ -469,7 +473,15 @@ def get_data(file):
             return {}
         return json.loads(text)
 
-# DONE
+
+def get_doc_len(file):
+    with open(file, encoding="utf-8") as f:
+        text = f.read()
+        if text == "":
+            return {}
+        return json.loads(text)["pages"]
+
+
 def update_data(file, data):
     """
     Update the data file
@@ -477,6 +489,7 @@ def update_data(file, data):
     @param data: data to update
     """
 
+    # TODO: ensure atomic operations to handle multiple users making changes to the same files/folders
     previous_data = get_data(file)
     with open(file, "w", encoding="utf-8") as f:
         previous_data.update(data)

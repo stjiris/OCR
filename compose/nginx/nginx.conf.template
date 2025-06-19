@@ -16,6 +16,8 @@ http {
     #}
 
     server {
+        include /etc/nginx/mime.types;
+
         listen 80;
         # Use this instead to serve HTTPS:
         #listen              443 ssl;
@@ -32,8 +34,12 @@ http {
 
         location / {
             root /usr/share/nginx/html/;
-            include /etc/nginx/mime.types;
             try_files $uri $uri/ /index.html;
+        }
+
+        # Don't serve the shared folder directly
+        location /files/ {
+            return 404;
         }
 
         location /api/ {
@@ -54,14 +60,29 @@ http {
             client_max_body_size $CLIENT_MAX_BODY_SIZE;
         }
 
-
         location /images/ {
-        # Remove /images/ to /files/
             alias /usr/share/nginx/html/files/;
+
+            # Don't serve private session images through this location
+            location ~* /images/_private_sessions/.* {
+                return 404;
+            }
+
+            # Serve only extensions that may be stored as document pages, from "_pages" folders
+            location ~* /_pages/.+\.(jpg|jpeg|jfif|pjpeg|pjp|png|tif|tiff|bmp|gif|webp|pnm|jp2)$ {
+                try_files $uri =404;
+            }
+            return 404;
         }
 
         location /private/ {  # TODO: secure private session images
             alias /usr/share/nginx/html/files/_private_sessions/;
+
+            # Serve only extensions that may be stored as document pages, from "_pages" folders
+            location ~* /_pages/.+\.(jpg|jpeg|jfif|pjpeg|pjp|png|tif|tiff|bmp|gif|webp|pnm|jp2)$ {
+                try_files $uri =404;
+            }
+            return 404;
         }
     }
 }

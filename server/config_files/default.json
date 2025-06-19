@@ -1,0 +1,8 @@
+{
+    "engine": "tesseract",
+    "lang": ["por"],
+    "outputs": ["pdf", "txt"],
+    "engineMode": 3,
+    "segmentMode": 3,
+    "thresholdMethod": 0
+}

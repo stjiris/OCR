@@ -46,23 +46,28 @@ def get_file_basename(filename):
 ####################################################
 # GENERAL FUNCTION
 ####################################################
-def export_file(path, filetype, delimiter=False, force_recreate=False, simple=False):
+def export_file(path, filetype, delimiter=False, force_recreate=False, simple=False, get_csv=False):
     """
     Direct to the correct function based on the filetype
 
     :param path: the path to the file
     :param filetype: the filetype to export to
-    :param delimiter: the delimiter to use between pages
+    :param delimiter: for a txt file, whether a delimiter should be added between pages
+    :param force_recreate: whether the file should be recreated, if it already exists
+    :param simple: for a PDF, whether it should be simple, rather than with index
+    :param get_csv: for a PDF, whether a CSV should be generated additionally
     """
 
+    if simple or get_csv:
+        return export_pdf(path, force_recreate=force_recreate, simple=simple, get_csv=get_csv)
+
     func = globals()[f"export_{filetype}"]
-    if simple:
-        return export_pdf(path, force_recreate, simple)
 
     if not delimiter:
-        return func(path, force_recreate)
+        return func(path, force_recreate=force_recreate)
 
-    return func(path, delimiter, force_recreate)
+    return func(path, delimiter=delimiter, force_recreate=force_recreate)
+
 
 ####################################################
 # EXPORT TXT FUNCTIONS
@@ -76,7 +81,7 @@ def export_imgs(path, force_recreate=False):
 
     :return: the path to the exported file
     """
-    filename = f"{path}/_images.zip"
+    filename = f"{path}/_export/_images.zip"
     if os.path.exists(filename) and not force_recreate:
         return filename
 
@@ -88,13 +93,17 @@ def export_txt(path, delimiter=False, force_recreate=False):
     Export the file as a .txt file
 
     :param path: the path to the file
-    :param delimiter: the delimiter to use between pages
+    :param delimiter: whether a delimiter should be added between pages
+    :param force_recreate: force the recreation of the file
+
     :return: the path to the exported file
     """
 
-    filename = f"{path}/_text.txt"
+    filename = f"{path}/_export/_txt.txt"
     if delimiter:
-        filename = f"{path}/_text_delimiter.txt"
+        filename = f"{path}/_export/_txt_delimited.txt"
+    if os.path.exists(filename) and not force_recreate:
+        return filename
 
     ocr_folder = f"{path}/_ocr_results"
 
@@ -119,10 +128,33 @@ def export_txt(path, delimiter=False, force_recreate=False):
 
     return filename
 
+
 ####################################################
 # EXPORT CSV FUNCTIONS
 ####################################################
-def export_csv(filename_csv, index_data):
+def export_csv(path, force_recreate=False):
+    filename_csv = f"{path}/_export/_index.csv"
+    if os.path.exists(filename_csv) and not force_recreate:
+        return filename_csv
+
+    filenames_asterisk = [x for x in os.listdir(f"{path}/_ocr_results/") if x.endswith(".json")]
+    #pages = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)', x).group(1)))
+    #for page in pages:
+
+    words = {}
+    for page in filenames_asterisk:
+        page_basename = get_file_basename(page)
+        hocr_path = f"{path}/_ocr_results/{page_basename}.json"
+
+        index_words = find_index_words(hocr_path)
+        for word in index_words:
+            words[word] = words.get(word, 0) + index_words[word]
+    # Sort the `words` dict by key
+    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
+    return export_csv_from_words(filename_csv, words)
+
+
+def export_csv_from_words(filename_csv, index_data):
     with open(filename_csv, mode='w', encoding='utf-8') as csvfile:
         csv_out = csv.writer(csvfile)
         csv_out.writerow(['Word', 'Count'])
@@ -134,20 +166,20 @@ def export_csv(filename_csv, index_data):
 ####################################################
 # EXPORT PDF FUNCTIONS
 ####################################################
-def export_pdf(path, force_recreate=False, simple=False):
+def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
     """
     Export the file as a .pdf file
     """
-    filename = f"{path}/_search.pdf"
-    simple_filename = f"{path}/_simple.pdf"
-    filename_csv = f"{path}/_index.csv"
+    filename = f"{path}/_export/_pdf_indexed.pdf"
+    simple_filename = f"{path}/_export/_pdf.pdf"
+    filename_csv = f"{path}/_export/_index.csv"
 
     dpi_original = 300
     dpi_compressed = OUT_DEFAULT_DPI  # TODO: variable output DPI
 
     target = filename if not simple else simple_filename
 
-    if os.path.exists(target) and os.path.exists(filename_csv) and not force_recreate:
+    if os.path.exists(target) and not force_recreate:
         return target
 
     else:
@@ -207,7 +239,9 @@ def export_pdf(path, force_recreate=False, simple=False):
 
         # Sort the `words` dict by key
         words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
-        export_csv(filename_csv, words)
+
+        if get_csv:
+            export_csv_from_words(filename_csv, words)
 
         if not simple:
             rows = 100
@@ -336,8 +370,6 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
 
     return index_words
 
-def polyval(poly, x):
-    return x * poly[0] + poly[1]
 
 # Glyphless variation of vedaal's invisible font retrieved from
 # http://www.angelfire.com/pr/pgpf/if.html, which says:

@@ -13,10 +13,17 @@ import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
 
-import {fileSystemState, layoutMenuState, editingMenuState, searchMenuState, closeFileSystemMenus} from "./states";
 import {BrowserRouter, Outlet, Route, Routes, useNavigate, useParams} from "react-router";
 
-const Notification = loadComponent('Notification', 'Notifications');
+import {
+    fileSystemState,
+    layoutMenuState,
+    editingMenuState,
+    searchMenuState,
+    closeFileSystemMenus,
+    ocrMenuState
+} from "./states";
+
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 const LoginPage = loadComponent('Admin', 'LoginPage');
@@ -77,10 +84,8 @@ function App() {
                 editingMenu: false,
                 layoutMenu: false,
 
-                fileOpened: "",
+                fileOpened: null,
                 currentFolderPathList: [""],
-
-                contents: [],
 
                 filesChoice: [],
                 algorithmChoice: [],
@@ -92,9 +97,12 @@ function App() {
                 freeSpacePercentage: props.freeSpacePercentage || 0,
             }
 
+            this.header = React.createRef();
+
             this.fileSystem = React.createRef();
 
             this.setCurrentPath = this.setCurrentPath.bind(this);
+            this.enterOcrMenu = this.enterOcrMenu.bind(this);
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
             this.enterEditingMenu = this.enterEditingMenu.bind(this);
             this.exitMenus = this.exitMenus.bind(this);
@@ -106,49 +114,7 @@ function App() {
             return this.props.sessionId;
         }
 
-        //editFile(path, file) {
-        //    /**
-        //     * Open a file in the text editor
-        //     *
-        //     * @param {string} path - The path of the file
-        //     * @param {string} file - The name of the file
-        //     */
-        //    this.setState({path: path, fileOpened: file, fileSystemMode: false, editingMenu: true});
-        //    this.textEditor.current.setFile(path, file);
-        //    this.textEditor.current.toggleOpen();
-        //}
-        //viewFile(file, algorithm, config) {
-            /**
-             * View a file in ES page
-             *
-             * @param {string} file - The name of the file
-             */
-            /*
-            this.setState(
-                {
-                    fileSystemMode: false,
-                    editingMenu: false,
-                    filesChoice: [{name: file, code: file}],
-                    algorithmChoice: [{name: algorithm, code: algorithm}],
-                    configChoice: [{name: config, code: config}]
-                }
-            );
-        }
-            */
         /*
-        updateContents(event, index) {
-             //
-             //Update the content of the text editor
-             //
-             //@param {event} event - The event
-             //@param {int} index - The index of the text field changed
-             //
-            let contents = this.state.contents;
-            contents[index]["content"] = event.target.value;
-            this.setState({contents: contents});
-        }
-         */
-
         redirectHome() {
             const currentURL = window.location.href;
 
@@ -163,68 +129,60 @@ function App() {
                 window.location.href = 'http://localhost:' + port + '/';
             }
         }
-
-        /*
-        sendChanges() {
-             //
-             //Send the changes to the server
-             //
-            fetch(API_URL + '/submit-text', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "text": this.state.contents
-                })
-            })
-            .then(response => {return response.json()})
-            .then(data => {
-                if (data.success) {
-                    this.successNot.current.setMessage("Texto submetido com sucesso");
-                    this.successNot.current.open();
-                    this.setState(fileSystemState);
-
-                    const info = data["info"];
-                    this.fileSystem.current.setState({info: info});
-                } else {
-                    this.errorNot.current.setMessage(data.error);
-                    this.errorNot.current.open();
-                }
-            });
-        }
          */
 
         createPrivateSession() {
-            return fetch(API_URL + '/create-private-session', {
-                method: 'GET'
-            })
-            .then(response => {return response.json()})
-            .then(data => {return data["sessionId"]});
+            return axios.get(API_URL + '/create-private-session')
+            .then(({data}) => {return data["sessionId"]});
         }
 
-        setCurrentPath(new_path_list) {
+        setCurrentPath(new_path_list, isDocument=false) {
             // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
-            this.setState({...fileSystemState, currentFolderPathList: new_path_list},
-                () => this.fileSystem.current.setState({...closeFileSystemMenus, current_folder: new_path_list.join('/').replace(/^\//, '')})
+            let fileOpened = null;
+            if (isDocument) {
+                fileOpened = new_path_list.pop();
+            }
+            // ensure empty root item, lost if the path was joined into a string and split again
+            if (new_path_list[0] !== "") new_path_list.unshift("");
+
+            this.setState({...fileSystemState, currentFolderPathList: new_path_list, fileOpened: fileOpened},
+                () => this.fileSystem.current.setState({
+                    ...closeFileSystemMenus,
+                    current_folder: new_path_list.join('/').replace(/^\//, ''),
+                    fileOpened: fileOpened,
+                })
             );
         }
 
-        enterLayoutMenu(filename = null) {
+        enterOcrMenu(filename, isFolder=false, isSinglePage=false, customConfig=null) {
+            this.setState({...ocrMenuState, fileOpened: filename},
+                () => this.fileSystem.current.setState(
+                    {
+                        ...ocrMenuState,
+                        fileOpened: filename,
+                        isFolder: isFolder,
+                        isSinglePage: isSinglePage,
+                        customConfig: customConfig
+                    })
+            );
+        }
+
+        enterLayoutMenu(filename) {
             this.setState({...layoutMenuState, fileOpened: filename},
                 () => this.fileSystem.current.setState({...layoutMenuState, fileOpened: filename})
             );
         }
 
-        enterEditingMenu(filename = null) {
+        enterEditingMenu(filename) {
             this.setState({...editingMenuState, fileOpened: filename},
                 () => this.fileSystem.current.setState({...editingMenuState, fileOpened: filename})
             );
         }
 
-        exitMenus() {
+        exitMenus(callback) {
             this.setState({...fileSystemState, fileOpened: null},
-                () => this.fileSystem.current.setState({...closeFileSystemMenus})
+        () => this.fileSystem.current.setState({...closeFileSystemMenus},
+                    () => { if (callback) callback(); })
             );
         }
 
@@ -239,12 +197,9 @@ function App() {
         }
 
         render() {
-            const buttonsDisabled = this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
+            const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: '100vh'}}>
-                    <Notification message={""} severity={"success"} ref={this.successNot}/>
-                    <Notification message={""} severity={"error"} ref={this.errorNot}/>
-
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -308,6 +263,7 @@ function App() {
                                         if (this.state.searchMenu && index > 0)
                                             return null;
 
+                                        // Show hint of collapsed names when inside deep folder
                                         if (folderDepth > 3 && index === 1) {
                                             return (
                                                 <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
@@ -316,9 +272,16 @@ function App() {
                                             )
                                         }
 
+                                        // Hide intermediate folder names when inside deep folder
                                         if (folderDepth > 3 && index > 0 && index < folderDepth - 2) return null;
 
-                                        return (
+                                        // If not in menu or inside document "folder" containing original and results,
+                                        // make current folder non-clickable (folder names are clickable to go back)
+                                        if (!this.state.fileOpened && index > 0 && index === folderDepth - 1) {
+                                            return <p className="pathElement">
+                                                {name}
+                                            </p>
+                                        } else return (
                                             <Box
                                                 sx={{
                                                     display: 'flex',
@@ -358,7 +321,9 @@ function App() {
                                 </p>
                                 {
                                     // in private session, root level can have docs
-                                    (!buttonsDisabled && (this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession())))
+                                    (!buttonsDisabled
+                                        && !this.state.fileOpened
+                                        && (this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession())))
                                         ? <Button
                                             variant="text"
                                             startIcon={<NoteAddIcon/>}
@@ -393,7 +358,9 @@ function App() {
 
                             <p style={{margin: 0}}>{`Versão: ${VERSION}`}</p>
 
+                            {/* TODO: update help document */}
                             <Button
+                                disabled={true}
                                 variant="text"
                                 onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
                                 startIcon={<HelpIcon/>}
@@ -416,6 +383,7 @@ function App() {
                                             sessionId={this.props.sessionId || ""}  // sessionId or empty str if null
                                             current_folder={this.state.currentFolderPathList}
                                             setCurrentPath={this.setCurrentPath}
+                                            enterOcrMenu={this.enterOcrMenu}
                                             enterLayoutMenu={this.enterLayoutMenu}
                                             enterEditingMenu={this.enterEditingMenu}
                                             exitMenus={this.exitMenus}/>

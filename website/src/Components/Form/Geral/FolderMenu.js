@@ -47,12 +47,12 @@ class FolderMenu extends React.Component {
         this.errorNot = React.createRef();
     }
 
-    setPath(path) {
-        this.setState({ path: path });
+    openMenu(path) {
+        this.setState({ path: path, open: true });
     }
 
-    toggleOpen() {
-        this.setState({ open: !this.state.open });
+    closeMenu(callback = null) {
+        this.setState({ open: false }, callback);
     }
 
     textFieldUpdate = event => {
@@ -76,15 +76,11 @@ class FolderMenu extends React.Component {
         .then(data => {
             this.setState({ buttonDisabled: false });
             if (data.success) {
-                this.props.updateFiles(data.files);
+                this.successNot.current.openNotif("Pasta criada com sucesso");
 
-                this.successNot.current.setMessage("Pasta criada com sucesso");
-                this.successNot.current.open();
-
-                this.toggleOpen();
+                this.closeMenu(this.props.submitCallback);
             } else {
-                this.errorNot.current.setMessage(data.error);
-                this.errorNot.current.open();
+                this.errorNot.current.openNotif(data.error);
             }
         });
     }
@@ -110,7 +106,7 @@ class FolderMenu extends React.Component {
                             Criar
                         </Button>
 
-                        <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                        <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.closeMenu()}>
                             <CloseRoundedIcon />
                         </IconButton>
                     </Box>
@@ -123,7 +119,7 @@ class FolderMenu extends React.Component {
 FolderMenu.defaultProps = {
     _private: false,
     // functions:
-    updateFiles: null
+    submitCallback: null,
 }
 
 export default FolderMenu;
