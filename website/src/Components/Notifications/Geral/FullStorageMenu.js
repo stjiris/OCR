@@ -38,12 +38,8 @@ class FullStorageMenu extends React.Component {
         }
     }
 
-    setMessage(message) {
-        this.setState({ message: message });
-    }
-
-    toggleOpen() {
-        this.setState({ open: !this.state.open });
+    openWithMessage(message = "") {
+        this.setState({ open: true, message: message });
     }
 
     render() {
@@ -56,7 +52,7 @@ class FullStorageMenu extends React.Component {
                             {this.state.message}
                         </Typography>
 
-                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
+                        <IconButton sx={crossStyle} aria-label="close" onClick={() => this.setState({open: false})}>
                             <CloseRoundedIcon />
                         </IconButton>
                     </Box>

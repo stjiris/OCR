@@ -22,8 +22,8 @@ import loadComponent from '../../../utils/loadComponents';
 import {CircularProgress, TextareaAutosize} from '@mui/material';
 
 const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
-const Notification = loadComponent('Notification', 'Notifications');
-const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
+const Notification = loadComponent('Notifications', 'Notification');
+const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;

@@ -29,14 +29,14 @@ const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
 const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
 const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
 const FolderRow = loadComponent('FileSystem', 'FolderRow');
-const Notification = loadComponent('Notification', 'Notifications');
+const Notification = loadComponent('Notifications', 'Notification');
 const FolderMenu = loadComponent('Form', 'FolderMenu');
 const DeletePopup = loadComponent('Form', 'DeletePopup');
 const OcrPopup = loadComponent('Form', 'OcrPopup');
 const OcrMenu = loadComponent('OcrMenu', 'OcrMenu');
 const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
 const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
-const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
+const FullStorageMenu = loadComponent('Notifications', 'FullStorageMenu');
 
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
@@ -222,8 +222,7 @@ class FileExplorer extends React.Component {
                 this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
             })
             .catch(err => {
-                this.storageMenu.current.setMessage(err.message);
-                this.storageMenu.current.toggleOpen();
+                this.storageMenu.current.openWithMessage(err.message);
             });
     }
 
@@ -308,8 +307,8 @@ class FileExplorer extends React.Component {
     }
 
     showStorageForm(errorMessage) {
-        this.storageMenu.current.setMessage(errorMessage);
-        this.storageMenu.current.toggleOpen();
+        this.storageMenu.current.openWithMessage(errorMessage);
+
     }
 
     performOCR(filename, isFolder=false, alreadyOcr=false, customConfig=null) {
@@ -350,8 +349,7 @@ class FileExplorer extends React.Component {
                     this.setState({updateCount: this.state.updateCount + 1});
                 }
             } else {
-                this.storageMenu.current.setMessage(data.error);
-                this.storageMenu.current.toggleOpen();
+                this.storageMenu.current.openWithMessage(data.error);
             }
         })
         .catch(error => {
@@ -425,8 +423,7 @@ class FileExplorer extends React.Component {
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
                     } else {
-                        this.storageMenu.current.setMessage(data.error);
-                        this.storageMenu.current.toggleOpen();
+                        this.storageMenu.current.openWithMessage(data.error);
                     }
                 });
 

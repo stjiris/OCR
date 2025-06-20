@@ -16,8 +16,8 @@ import Radio from "@mui/material/Radio";
 import FormControl from "@mui/material/FormControl";
 
 import loadComponent from '../../../utils/loadComponents';
-const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
-const Notification = loadComponent('Notification', 'Notifications');
+const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
+const Notification = loadComponent('Notifications', 'Notification');
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
 const CheckboxList = loadComponent('OcrMenu', 'CheckboxList');
 

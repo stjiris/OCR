@@ -10,7 +10,7 @@ import footerBanner from "../../../static/footerBanner.png";
 import loadComponent from "../../../utils/loadComponents";
 // const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 // const LogsMenu = loadComponent('Form', 'LogsMenu');
-const Notification = loadComponent('Notification', 'Notifications');
+const Notification = loadComponent('Notifications', 'Notification');
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
