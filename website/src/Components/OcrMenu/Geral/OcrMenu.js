@@ -42,7 +42,7 @@ const tesseractOutputsList = [
     { value: "txt", description: "Texto"},
     { value: "txt_delimited", description: "Texto com separador por página"},
     { value: "csv", description: "Índice de palavras"},
-    //{ value: "ner", description: "Entidades (NER)"},
+    { value: "ner", description: "Entidades (NER)"},
     { value: "hocr", description: "hOCR (apenas documentos com 1 página)", disabled: true},
     { value: "xml", description: "ALTO (apenas documentos com 1 página)", disabled: true},
 ]
@@ -50,7 +50,7 @@ const tesseractOutputsList = [
 const defaultEngine = "tesseract";
 const engineList = [
     { value: "tesseract", description: "PyTesseract"},
-    //{ value: "tesserOCR", description: "TesserOCR"},
+    { value: "tesserOCR", description: "TesserOCR"},
 ]
 
 const defaultEngineMode = 3;
