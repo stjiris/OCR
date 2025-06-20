@@ -23,7 +23,7 @@ import { CircularProgress } from '@mui/material';
 import loadComponent from '../../../utils/loadComponents';
 const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
 const LayoutTable = loadComponent('LayoutMenu', 'LayoutTable');
-const ConfirmLeave = loadComponent('EditingMenu', 'ConfirmLeave');
+const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
 const Notification = loadComponent('Notification', 'Notifications');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
 
@@ -64,7 +64,6 @@ class LayoutMenu extends React.Component {
 		this.menu = React.createRef();
 		this.confirmLeave = React.createRef();
 
-		this.warningNot = React.createRef();
 		this.successNot = React.createRef();
 
         this.updateBoxes = this.updateBoxes.bind(this);
@@ -413,11 +412,10 @@ class LayoutMenu extends React.Component {
 				if (data["success"]) {
                     this.setState({ uncommittedChanges: false });
 
-					this.successNot.current.setMessage("Layout guardado com sucesso.");
-					this.successNot.current.open();
+					this.successNot.current.openNotif("Layout guardado com sucesso.");
 
 					if (closeWindow) {
-						this.props.closeLayoutMenu();
+						this.leave();
 					}
 				} else {
 					alert("Erro inesperado ao guardar o layout.")
@@ -427,8 +425,7 @@ class LayoutMenu extends React.Component {
 
 	GenerateLayoutAutomatically() {
 		this.setState({ segmentLoading: true });
-		this.successNot.current.setMessage("A gerar layouts automaticamente... Por favor aguarde.");
-		this.successNot.current.open();
+		this.successNot.current.openNotif("A gerar layouts automaticamente... Por favor aguarde.");
 
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
@@ -450,11 +447,6 @@ class LayoutMenu extends React.Component {
 			contents[i]["boxes"] = [];
 		}
 		this.setState({ contents: contents, uncommittedChanges: true });
-	}
-
-	showWarningNotification(message) {
-		this.warningNot.current.setMessage(message);
-		this.warningNot.current.open();
 	}
 
 	commitAllCheckBoxes(e) {
@@ -772,7 +764,6 @@ class LayoutMenu extends React.Component {
 
 		return (
 			<>
-				<Notification message={""} severity={"warning"} ref={this.warningNot} />
 				<Notification message={""} severity={"success"} ref={this.successNot} />
 				<ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
 				<Box sx={{

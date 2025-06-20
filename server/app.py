@@ -142,42 +142,27 @@ def abort_bad_request():
 
 @app.route("/files", methods=["GET"])
 def get_file_system():
-    is_private = "_private" in request.values and (request.values["_private"] == 'true')
-    private_session = None
-
     try:
+        # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
             return get_filesystem(FILES_PATH)
 
-        path = request.values["path"].strip("/")
-        log.info(f'Request values: {request.values}')
-        if is_private:
-            log.info(f'Is private? {is_private}')
-            private_session = path.split('/')[-1]
-            path = safe_join(PRIVATE_PATH, private_session)
-        else:
-            path = safe_join(FILES_PATH, path)
-
-        return get_filesystem(path, private_session, is_private)
+        path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
+        log.info(f"Getting info of {filesystem_path}, priv session {private_session}")
+        return get_filesystem(filesystem_path, private_session, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
 
 @app.route("/info", methods=["GET"])
 def get_info():
-    is_private = "_private" in request.values and (request.values["_private"] == 'true')
     try:
+        # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
             return get_filesystem(FILES_PATH)
 
-        path = request.values["path"].strip("/")
-        if is_private:
-            private_session = path.split('/')[-1]
-            path = safe_join(PRIVATE_PATH, private_session)
-            return {"info": get_structure_info(path, private_session, is_private)}
-        else:
-            path = safe_join(FILES_PATH, path)  # TODO: alter front-end and response to get info only from current folder
-            return {"info": get_structure_info(FILES_PATH)}
+        path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
+        return {"info": get_structure_info(filesystem_path, private_session, is_private)}
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
@@ -226,7 +211,10 @@ def create_folder():
         )
 
     # TODO: alter front-end and response to get info only from current folder
-    return {"success": True, "files": get_filesystem(filesystem_path, private_session, is_private)}
+    return {
+        "success": True,
+        "message": f"Pasta {folder} criada com sucesso",
+    }
 
 
 @app.route("/get-file", methods=["GET"])
@@ -240,13 +228,13 @@ def get_file():
     return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
 
 
-@app.route("/get_txt_delimitado", methods=["GET"])
+@app.route("/get_txt_delimited", methods=["GET"])
 @requires_arg_path
-def get_txt_delimitado():
+def get_txt_delimited():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_text_delimiter.txt")
+    return send_file(f"{path}/_export/_txt_delimited.txt")
 
 
 @app.route("/get_txt", methods=["GET"])
@@ -255,7 +243,7 @@ def get_txt():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_text.txt")
+    return send_file(f"{path}/_export/_txt.txt")
 
 
 @app.route("/get_entities", methods=["GET"])
@@ -264,7 +252,7 @@ def get_entities():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_entities.json")
+    return send_file(f"{path}/_export/_entities.json")
 
 
 @app.route("/request_entities", methods=["GET"])
@@ -299,9 +287,9 @@ def get_zip():
     return send_file(safe_join(path, f"{path.split('/')[-1]}.zip"))  # filename == folder name
 
 
-@app.route("/get_pdf", methods=["GET"])
+@app.route("/get_pdf_indexed", methods=["GET"])
 @requires_arg_path
-def get_pdf():
+def get_pdf_indexed():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
@@ -310,9 +298,9 @@ def get_pdf():
     return send_file(file)
 
 
-@app.route("/get_pdf_simples", methods=["GET"])
+@app.route("/get_pdf", methods=["GET"])
 @requires_arg_path
-def get_pdf_simples():
+def get_pdf_simple():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
@@ -328,7 +316,25 @@ def get_csv():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return send_file(f"{path}/_index.csv")
+    return send_file(f"{path}/_export/_index.csv")
+
+
+@app.route("/get_hocr", methods=["GET"])
+@requires_arg_path
+def get_hocr():
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+    return send_file(f"{path}/_export/_hocr.hocr")
+
+
+@app.route("/get_alto", methods=["GET"])
+@requires_arg_path
+def get_alto():
+    path, _ = format_path(request.values)
+    if path is None:
+        abort(HTTPStatus.NOT_FOUND)
+    return send_file(f"{path}/_export/_xml.xml")
 
 
 @app.route("/get_images", methods=["GET"])
@@ -373,7 +379,6 @@ def delete_path():
     return {
         "success": True,
         "message": "Apagado com sucesso",
-        "files": get_filesystem(filesystem_path, private_session, is_private),
     }
 
 
@@ -459,6 +464,7 @@ def find_valid_filename(path, basename, extension):
         id += 1
 
     return f"{basename} ({id}).{extension}"
+
 
 @app.route("/prepare-upload", methods=["POST"])
 @requires_json_path
@@ -585,6 +591,30 @@ def upload_file():
     return {"success": True, "finished": False, "info": get_folder_info(target_path, private_session)}
 
 
+@app.route("/save-config", methods=["POST"])
+@requires_json_path
+def configure_ocr():
+    req_data = request.json
+    if "config" not in req_data:
+        abort(HTTPStatus.BAD_REQUEST)
+    path, filesystem_path, private_session, is_private = format_filesystem_path(req_data)
+    data_path = f"{path}/_data.json"
+    try:
+        data = get_data(data_path)
+    except FileNotFoundError:
+        abort(HTTPStatus.NOT_FOUND)  # TODO: improve feedback to users on error
+
+    if isinstance(req_data["config"], dict) or req_data["config"] == "default":
+        data["config"] = req_data["config"]
+    else:
+        # TODO: accept and verify other strings as config file names
+        abort(HTTPStatus.BAD_REQUEST)
+
+    update_data(data_path, data)
+
+    return {"success": True}
+
+
 @app.route("/perform-ocr", methods=["POST"])
 @requires_json_path
 def perform_ocr():
@@ -601,12 +631,9 @@ def perform_ocr():
 
     data = request.json
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
-    algorithm = data["algorithm"]
-    config = data["config"]
-    multiple = data["multiple"]
 
-    # ocr_algorithm = "tesserOCR"
-    ocr_algorithm = "tesseract"
+    config = data["config"] if "config" in data else None
+    multiple = data["multiple"] if "multiple" in data else False
 
     if multiple:
         files = [
@@ -623,37 +650,41 @@ def perform_ocr():
         except FileNotFoundError:
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)  # TODO: improve feedback to users on error
 
+        # TODO: handle default or preset name configs in celery tasks
+        # Replace specified config with saved config, if exists
+        if config is None and "config" in data:
+            config = data["config"]
+
         # Delete previous results
         if os.path.exists(f"{f}/_ocr_results"):
             shutil.rmtree(f"{f}/_ocr_results")
+        if os.path.exists(f"{f}/_export"):
+            shutil.rmtree(f"{f}/_export")
         os.mkdir(f"{f}/_ocr_results")
+        os.mkdir(f"{f}/_export")
 
-        # Update the information related to the OCR
-        data["ocr"] = {
-            "algorithm": algorithm,
-            "config": "_".join(config),
-            "progress": 0,
-        }
-        data["txt"] = {"complete": False}
-        data["delimiter_txt"] = {"complete": False}
-        data["pdf"] = {"complete": False}
-        data["csv"] = {"complete": False}
-        data["ner"] = {"complete": False}
-        data["zip"] = {"complete": False}
-        data["pdf_simples"] = {"complete": False}
+        data.update({
+            "ocr": {"progress": 0},
+            "pdf": {"complete": False},
+            "pdf_indexed": {"complete": False},
+            "txt": {"complete": False},
+            "txt_delimited": {"complete": False},
+            "csv": {"complete": False},
+            "ner": {"complete": False},
+            "hocr": {"complete": False},
+            "xml": {"complete": False},
+            "zip": {"complete": False},
+        })
         update_data(f"{f}/_data.json", data)
 
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        celery.send_task('file_ocr', kwargs={'path': f, 'config': config, 'ocr_algorithm': ocr_algorithm})
-        # Thread(target=task_file_ocr, args=(f, config, ocr_algorithm, True)).start()
-        # task_file_ocr(f, config, ocr_algorithm, True)
+        celery.send_task('file_ocr', kwargs={'path': f, 'config': config})
 
     return {
         "success": True,
         "message": "O OCR começou, por favor aguarde",
-        "files": get_filesystem(filesystem_path, private_session, is_private),
     }
 
 
@@ -695,8 +726,8 @@ def index_doc():
             if data["pages"] > 1:
                 doc = create_document(
                     file_path,
-                    "Tesseract",
-                    "pt",
+                    data["ocr"]["config"]["engine"],
+                    data["ocr"]["config"],
                     text,
                     extension,
                     i + 1,
@@ -705,7 +736,7 @@ def index_doc():
                 doc = create_document(
                     file_path,
                     "Tesseract",
-                    "pt",
+                    data["ocr"]["config"],
                     text,
                     extension
                 )
@@ -808,12 +839,7 @@ def submit_text():
             json.dump(text, f, indent=2, ensure_ascii=False)
 
     if remake_files:
-        update_data(
-            data_path,
-            {"txt": {"complete": False}, "delimiter_txt": {"complete": False}, "pdf": {"complete": False}, "pdf_simples": {"complete": False}},
-        )
-
-        celery.send_task('make_changes', kwargs={'data_folder': path,  'data': data})
+        celery.send_task('make_changes', kwargs={'path': path,  'data': data})
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
 

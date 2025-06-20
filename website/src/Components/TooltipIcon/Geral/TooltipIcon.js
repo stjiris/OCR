@@ -1,5 +1,7 @@
-import { Box, IconButton } from '@mui/material';
 import React from 'react';
+
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
 
 class TooltipIcon extends React.Component {
     constructor(props) {
@@ -11,7 +13,7 @@ class TooltipIcon extends React.Component {
 
     render() {
         return (
-            <Box sx={{position: "relative"}}>
+            <Box className={this.props.className} sx={{...this.props.sx, position: "relative"}}>
                 {
                     this.state.showTooltip && !this.props.disabled
                     ? <>
@@ -24,12 +26,12 @@ class TooltipIcon extends React.Component {
                             left: "50%",
                             transform: "translate(-50%, -100%)",
                             borderRadius: "3px",
-                            border: `1px solid ${this.props.color}`,
+                            border: "1px solid currentColor",
                             backgroundColor: '#f5f5f5',
                             padding: "2px 2px",
 
                         }}>
-                            <span style={{fontSize: "9px"}}>{this.props.message}</span>
+                            <span style={{fontSize: "smaller"}}>{this.props.message}</span>
                         </Box>
                         <Box sx={{
                             position: 'absolute',
@@ -38,13 +40,13 @@ class TooltipIcon extends React.Component {
                             marginLeft: "-5px",
                             borderWidth: "5px",
                             borderStyle: "solid",
-                            borderColor: `${this.props.color} transparent transparent transparent`,
+                            borderColor: "currentColor transparent transparent transparent",
                         }}></Box>
                     </>
                     : null
                 }
                 <IconButton disabled={this.props.disabled} sx={{
-                    color: this.props.color,
+                    color: "inherit",
                 }}
                     onClick={this.props.clickFunction}
                     onMouseEnter={() => this.setState({ showTooltip: true })}
@@ -59,9 +61,10 @@ class TooltipIcon extends React.Component {
 
 TooltipIcon.defaultProps = {
     message: "",
-    color: 'black',
     icon: null,
     disabled: false,
+    className: "",
+    sx: {},
     // functions:
     clickFunction: null,
 }

@@ -2,6 +2,7 @@ import * as React from "react";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from '@mui/material/Alert';
 
+// TODO: React 19 will deprecate forwardRef, and ref can be taken as a prop
 const Alert = React.forwardRef(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -15,12 +16,8 @@ class Notification extends React.Component {
         }
     }
 
-    setMessage(message) {
-        this.setState({ message: message });
-    }
-
-    open() {
-        this.setState({ open: true });
+    openNotif(message = "") {
+        this.setState({ open: true, message: message });
     }
 
     close(event, reason) {

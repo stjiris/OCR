@@ -33,11 +33,11 @@ class FolderRow extends React.Component {
 
     render() {
         return (
-            <TableRow
+            <TableRow className="explorerRow"
                 sx={{":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}
                 onClick={() => this.folderClicked()}
             >
-                <TableCell sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
+                <TableCell className="explorerCell nameCell">
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -48,23 +48,32 @@ class FolderRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
-                    <span>
-                        {this.state.info["creation"]}
-                    </span>
-                </TableCell>
-
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>-</TableCell>
-
-                <TableCell align='center' sx={{paddingTop: 0, paddingBottom: 0, borderLeft:"1px solid #aaa"}}>
+                <TableCell className="explorerCell actionsCell" align='center'>
                     <TooltipIcon
-                        color="#f00"
+                        className="negActionButton"
                         message="Apagar"
                         clickFunction={(e) => this.delete(e)}
                         icon={<DeleteForeverIcon/>}
                     />
                 </TableCell>
+
+                <TableCell className="explorerCell stateCell" align='center'>
+                    <b>—</b>
+                </TableCell>
+
+                <TableCell className="explorerCell dateCreatedCell" align='center'>
+                    <span>
+                        {this.state.info["creation"]}
+                    </span>
+                </TableCell>
+
+                <TableCell className="explorerCell detailsCell" align='center'>
+                    <span>
+                        {this.state.info["contents"]} ficheiro(s) ou sub-pasta(s)
+                    </span>
+                </TableCell>
+
+                <TableCell className="explorerCell sizeCell" align='center'>—</TableCell>
             </TableRow>
         )
     }

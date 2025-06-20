@@ -3,6 +3,7 @@ import SvgIcon from '@mui/material/SvgIcon';
 
 export default function TxtIcon(props) {
     return (
+    <div className="fileIcon">
         <SvgIcon
             {...props}
             width="800px" height="800px" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
@@ -15,5 +16,6 @@ export default function TxtIcon(props) {
 
             {/* </g> */}
         </SvgIcon>
+    </div>
     )
 }

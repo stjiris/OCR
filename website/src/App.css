@@ -25,6 +25,18 @@ body {
     color: black;
 }
 
+.actionButton {
+    color: #1976d2;
+}
+
+.actionButton.altColor {
+    color: #19a942;
+}
+
+.negActionButton {
+    color: #f00;
+}
+
 .MuiButton-contained.menuFunctionButton {
     border: 1px solid black;
     height: 2rem;
@@ -40,6 +52,12 @@ body {
 .fileIcon {
     font-size: 25px;
     margin: 0.5rem 0.5rem 0.5rem 0.2rem;  /* 0.2rem left */
+}
+
+.MuiButton-text.resultButton {
+    padding: 0;
+    justify-content: left;
+    text-transform: none;
 }
 
 .pageImageContainer {
@@ -68,6 +86,115 @@ body {
 
 .menuFunctionButton.noMargin {
     margin-right: 0
+}
+
+.MuiFormControl-root.simpleInput {
+    margin-bottom: 0.3rem;
+    margin-top: 0.5rem;
+}
+
+.MuiFormControl-root.simpleDropdown {
+    margin-bottom: 0.3rem;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.MuiFormControl-root.borderTop {
+    padding-top: 0.5rem;
+    border-top: 1px solid black;
+}
+
+/*
+  File Explorer table formatting
+*/
+.MuiTableRow-root.explorerRow {
+    height: 4rem;
+}
+
+.MuiTableCell-root.explorerCell {
+    border-left: 1px solid #aaa;
+}
+
+.MuiTableCell-root.MuiTableCell-body.explorerCell {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.explorerCell.errorCell {
+    background-color: #f44336;
+}
+
+.explorerCell.infoCell {
+    background-color: #ffed7a;
+}
+
+.explorerCell.successCell {
+    background-color: #19a942;
+}
+
+.explorerCell.waitingCell {
+    background-color: #a6a6a6;
+}
+
+.stateCell .stateBox {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+.MuiTableCell-root.nameCell {
+    width: 30%;
+}
+
+.MuiTableCell-root.staticNameCell {
+    width: 38%;
+}
+
+.MuiTableCell-root.actionsCell {
+    width: 20%;
+    text-align: center;
+}
+
+.MuiTableCell-root.staticActionsCell {
+    width: 20%;
+    text-align: center;
+}
+
+.MuiTableCell-root.stateCell {
+    width: 8%;
+    text-align: center;
+}
+
+.MuiTableCell-root.dateCreatedCell {
+    width: 15%;
+    text-align: center;
+}
+
+.MuiTableCell-root.staticDateCreatedCell {
+    width: 15%;
+    text-align: center;
+}
+
+.MuiTableCell-root.detailsCell {
+    width: 20%;
+    text-align: center;
+}
+
+.MuiTableCell-root.staticDetailsCell {
+    width: 20%;
+    text-align: center;
+}
+
+.MuiTableCell-root.sizeCell {
+    width: 12%;
+    text-align: center;
+}
+
+.MuiTableCell-root.staticSizeCell {
+    width: 12%;
+    text-align: center;
 }
 
 .page-div {

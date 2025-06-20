@@ -6,7 +6,7 @@ from src.utils.file import FILES_PATH
 
 ES_URL = environ.get("ES_URL", "http://elasticsearch:9200/")
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
-ES_INDEX = "jornais.0.1"
+ES_INDEX = "documents"
 
 settings = {
     "analysis": {
@@ -80,13 +80,13 @@ mapping = {
                 },
             },
         },
-        "Algorithm": {
+        "Engine": {
             "type": "keyword",
             "normalizer": "term_normalizer"
         },
-        "Config": {  # TODO: improve for tokenizing future config params
-            "type": "text",
-            "analyzer": "standard"
+        "Config": {  # TODO: store configs differently and allow querying with them
+            "type": "object",
+            "dynamic": False
         },
         "Page Image": {"enabled": False},
     }
@@ -230,9 +230,9 @@ class ElasticSearchClient:
         return results
 
 
-def create_document(path, algorithm, config, text, extension="pdf", page=None):
+def create_document(path: str, engine: str, config: dict, text: str, extension: str = "pdf", page: int = None):
     basename = get_file_basename(path)
-    page_extension = ".jpg" if extension == "pdf" else ".png" if extension == "zip" else f".{extension}"
+    page_extension = ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
 
     page_url = (IMAGE_PREFIX
                 + "/images/"
@@ -245,7 +245,7 @@ def create_document(path, algorithm, config, text, extension="pdf", page=None):
             "Document": path.split("/")[-3],
             "Path": path,
             "Text": text,
-            "Algorithm": algorithm,
+            "Engine": engine,
             "Config": config,
             "Page Image": page_url,
         }
@@ -255,7 +255,7 @@ def create_document(path, algorithm, config, text, extension="pdf", page=None):
             "Path": path,
             "Page": page,
             "Text": text,
-            "Algorithm": algorithm,
+            "Engine": engine,
             "Config": config,
             "Page Image": page_url,
         }

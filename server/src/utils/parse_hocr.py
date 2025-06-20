@@ -39,8 +39,6 @@ def parse_hocr(hocr, segment_box):
     :param segment_box: Bounding box of the segment, if applicable.
     :return: List of lines, each containing words with text and coordinates.
     """
-    hocr = etree.fromstring(hocr, html.XHTMLParser())
-
     lines = []
 
     for line in hocr.xpath('//*[@class="ocr_line"]'):

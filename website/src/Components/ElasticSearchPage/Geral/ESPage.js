@@ -289,7 +289,7 @@ class ESPage extends React.Component {
                         ref={this.document}
                         label={"Documento"}
                         options={this.state.documentList}
-                        choice={[]}
+                        defaultChoice={[]}
                         onCloseFunc={() => this.search()}/>
                     {/* <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.fileType} label={"Tipo de Ficheiro"} options={[]} choice={[]} />
                     <ChecklistDropdown parentfunc={() => this.filterPages()} ref={this.algorithm} label={"Algoritmo"} options={[]} choice={[]} />
