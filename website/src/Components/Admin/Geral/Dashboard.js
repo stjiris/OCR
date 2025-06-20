@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {Link} from "react-router";
 import axios from "axios";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -24,8 +25,8 @@ const Dashboard = (props) => {
 
     // const versionsMenu = useRef(null);
     // const logsMenu = useRef(null);
-    const successNot = useRef(null);
-    const errorNot = useRef(null);
+    const successNotif = useRef(null);
+    const errorNotif = useRef(null);
 
     function getSystemInfo() {
         axios.get(API_URL + '/admin/system-info')
@@ -72,8 +73,8 @@ const Dashboard = (props) => {
 
     return (
         <Box className="App" sx={{height: '100vh'}}>
-            <Notification message={""} severity={"success"} ref={successNot}/>
-            <Notification message={""} severity={"error"} ref={errorNot}/>
+            <Notification message={""} severity={"success"} ref={successNotif}/>
+            <Notification message={""} severity={"error"} ref={errorNotif}/>
 
             {/* <VersionsMenu ref={versionsMenu}/> */}
             {/* <LogsMenu ref={logsMenu}/> */}
@@ -185,14 +186,64 @@ const Dashboard = (props) => {
                             </Button> */}
 
                         <span>Armazenamento livre: {freeSpace} ({freeSpacePercent}%)</span>
+
+                        <Button
+                            variant="contained"
+                            onClick={() => {
+                                axios.post(API_URL + "/account/logout")
+                                    .then(() => window.location.href = '/admin');
+                            }}
+                            sx={{
+                                border: '1px solid black',
+                                height: '2rem',
+                                textTransform: 'none',
+                                ml: '0.5rem',
+                                fontSize: '0.75rem'
+                            }}
+                        >
+                            Sair
+                        </Button>
                 </Box>
+            </Box>
+
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                margin: 'auto',
+                width: '30vw',
+                height: '80vh',
+                justifyContent: 'space-evenly',
+            }}>
+                <Button
+                    variant="contained"
+                    className="adminMenuButton"
+                >
+                    Gerir Armazenamento
+                </Button>
+
+                <Button
+                    variant="contained"
+                    className="adminMenuButton"
+                >
+                    Configurar Predefinições OCR
+                </Button>
+
+                <Link to="/admin/flower" target="_blank" rel="noreferrer">
+                    <Button
+                        variant="contained"
+                        className="adminMenuButton"
+                        sx={{width: '100%'}}
+                    >
+                        Gerir Workers e Processos
+                    </Button>
+                </Link>
+            </Box>
 
             <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
                 <a href={footerBanner} target='_blank' rel="noreferrer">
                     <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
                 </a>
             </Box>
-        </Box>
         </Box>
     );
 }

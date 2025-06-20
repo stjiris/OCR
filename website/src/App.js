@@ -408,7 +408,6 @@ function App() {
                 <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} setLoggedIn={login} />} >
                     <Route exact path="/admin" element={<AdminDashboard />} />
                 </Route>
-                <Route exact path="/login" element={"TEMP LOGIN ROUTE"} />
                 <Route index element={<WrappedForm />} />
                 <Route path="/session/:sessionId" element={<WrappedForm />} />
             </Routes>

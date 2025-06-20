@@ -37,6 +37,12 @@ body {
     color: #f00;
 }
 
+.MuiButton-contained.adminMenuButton {
+    border: 1px solid black;
+    text-transform: none;
+    font-size: 2rem;
+}
+
 .MuiButton-contained.menuFunctionButton {
     border: 1px solid black;
     height: 2rem;
