@@ -68,9 +68,8 @@ services:
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-      # NO AUTHENTICATION BY DEFAULT; BASIC AUTH IS UNSAFE
-      #FLOWER_BASIC_AUTH: TEMP:PWD
-    command: celery -A celery_app.celery flower --port=5050
+      FLOWER_UNAUTHENTICATED_API: true  # authentication managed through Flask
+    command: celery -A celery_app.celery flower --port=5050 --url_prefix="admin/flower"
     expose:
       - "5050"  # exposed only to other services
     depends_on:

@@ -51,13 +51,19 @@ http {
             client_max_body_size  $CLIENT_MAX_BODY_SIZE;
         }
 
-        location /flower/ {
-            proxy_pass http://flower:5050/flower/;
-            proxy_read_timeout 1800;
+        # Don't serve Flower as an API endpoint: it's a browser tool
+        location /api/admin/flower/ {
+             try_files $uri =404;
+        }
+
+        # Direct Flower URLs to Flask endpoint
+        location /admin/flower/ {
+            proxy_pass            http://server:5001/admin/flower/;
+            proxy_read_timeout    1800;
             proxy_connect_timeout 1800;
-            proxy_send_timeout 1800;
-            send_timeout 1800;
-            client_max_body_size $CLIENT_MAX_BODY_SIZE;
+            proxy_send_timeout    1800;
+            send_timeout          1800;
+            client_max_body_size  $CLIENT_MAX_BODY_SIZE;
         }
 
         location /images/ {
