@@ -48,7 +48,6 @@ const Dashboard = (props) => {
     function deletePrivateSession(e, privateSession) {
         e.stopPropagation();
         axios.post(API_URL + "/admin/delete-private-session", {
-            method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -56,10 +55,18 @@ const Dashboard = (props) => {
                 "sessionId": privateSession
             })
         })
-            .then(data => {
-                if (data.success) {
-                    setPrivateSessions(data["private_sessions"]);
+            .then(response => {
+                if (response.status !== 200) {
+                  throw new Error("Não foi possível concluir o pedido.");
                 }
+                if (response.data["success"]) {
+                    setPrivateSessions(response.data["private_sessions"]);
+                } else {
+                  throw new Error(response.data["message"])
+                }
+            })
+            .catch(err => {
+                errorNotif.current.openNotif(err.message);
             });
     }
 

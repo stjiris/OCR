@@ -148,13 +148,19 @@ class FileExplorer extends React.Component {
 
         // Check for stuck uploads every STUCK_UPDATE_TIME seconds
         this.stuckInterval = setInterval(() => {
-            axios.get(API_URL + '/info?'
-                        + '_private=' + this.props._private
-                        + '&path=' + (this.props._private
-                                        ? this.props.sessionId
-                                        : this.state.current_folder))
-            .then(({ data }) => {
-                const info = data["info"];
+            axios.get(API_URL + '/info', {
+                params: {
+                    _private: this.props._private,
+                    path: (this.props._private
+                            ? this.props.sessionId
+                            : this.state.current_folder)
+                }
+            })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error("Não foi possível obter os dados do servidor.");
+                }
+                const info = response.data["info"];
                 // Find if a upload is stuck
                 for (const [path, value] of Object.entries(info)) {
                     if (value.type === "file") {
@@ -199,26 +205,23 @@ class FileExplorer extends React.Component {
     }
 
     fetchFileSystem() {
-        fetch(API_URL + '/files?'
-            + '_private=' + this.props._private
-            + '&path=' + (this.props._private ? this.props.sessionId : ""), {
-            method: 'GET'
+        axios.get(API_URL + '/files', {
+            params: {
+                    _private: this.props._private,
+                    path: this.props._private ? this.props.sessionId : ""
+            }
         })
-            .then(async response => {
-                if (!response.ok) {
+            .then(response => {
+                if (response.status !== 200) {
                     if (response.status === 404) {
-                        throw new Error("Esta sessão privada não existe.");
+                        throw new Error("Esta pasta ou sessão privada não existe.");
                     } else {
                         throw new Error("Não foi possível obter os dados do servidor.");
                     }
-                } else {
-                    return response.json()
                 }
-            })
-            .then(data => {
-                const info = data["info"];
-                const files = data["files"];
-                const maxAge = data["maxAge"];
+                const info = response.data["info"];
+                const files = response.data["files"];
+                const maxAge = response.data["maxAge"];
                 this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
             })
             .catch(err => {
@@ -227,7 +230,7 @@ class FileExplorer extends React.Component {
     }
 
     fetchFiles() {
-        axios.get(API_URL + '/files?', {
+        axios.get(API_URL + '/files', {
             params: {
                 _private: this.props.private,
                 path: (this.props._private
@@ -235,10 +238,16 @@ class FileExplorer extends React.Component {
                         : this.state.current_folder)
             }
         })
-            .then(({ data }) => {
-                const files = data['files'];
-                const info = data["info"];
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error("Não foi possível obter os dados do servidor.");
+                }
+                const files = response.data['files'];
+                const info = response.data["info"];
                 this.setState({files: files, info: info, updateCount: 0});
+            })
+            .catch(err => {
+                this.storageMenu.current.openWithMessage(err.message);
             });
     }
 
@@ -247,15 +256,24 @@ class FileExplorer extends React.Component {
     }
 
     fetchInfo() {
-        axios.get(API_URL + '/info?'
-                    + '_private=' + this.props._private
-                    + '&path=' + (this.props._private
-                                    ? this.props.sessionId + '/' + this.state.current_folder
-                                    : this.state.current_folder))
-        .then(({ data }) => {
-            const info = data["info"];
-            this.setState({info: info, updateCount: 0});
-        });
+        axios.get(API_URL + '/info', {
+            params: {
+                _private: this.props._private,
+                path: (this.props._private
+                        ? this.props.sessionId + '/' + this.state.current_folder
+                        : this.state.current_folder)
+            }
+        })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error("Não foi possível obter os dados do servidor.");
+                }
+                const info = response.data["info"];
+                this.setState({info: info, updateCount: 0});
+            })
+            .catch(err => {
+                this.storageMenu.current.openWithMessage(err.message);
+            });
     }
 
     updateInfo() {
