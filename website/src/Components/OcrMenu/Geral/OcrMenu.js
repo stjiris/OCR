@@ -271,7 +271,7 @@ class OcrMenu extends React.Component {
             && this.state.dpiVal !== "" && !this.state.dpiVal.match("[1-9][0-9]*"))) {
             this.errorNot.current.openNotif("O valor de DPI deve ser um número inteiro!");
         }
-        this.setState({ dpiVal: value, usingDefault: false, uncommittedChanges: true });
+        this.setState({ dpiVal: Number(value), usingDefault: false, uncommittedChanges: true });
     }
 
     changeEngine(value) {
@@ -279,15 +279,15 @@ class OcrMenu extends React.Component {
     }
 
     changeEngineMode(value) {
-        this.setState({ engineMode: value, usingDefault: false, uncommittedChanges: true });
+        this.setState({ engineMode: Number(value), usingDefault: false, uncommittedChanges: true });
     }
 
     changeSegmentationMode(value) {
-        this.setState({ segmentMode: value, usingDefault: false, uncommittedChanges: true });
+        this.setState({ segmentMode: Number(value), usingDefault: false, uncommittedChanges: true });
     }
 
     changeThresholdingMethod(value) {
-        this.setState({ thresholdMethod: value, usingDefault: false, uncommittedChanges: true });
+        this.setState({ thresholdMethod: Number(value), usingDefault: false, uncommittedChanges: true });
     }
 
     changeAdditionalParams(value) {
