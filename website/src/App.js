@@ -13,7 +13,15 @@ import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
 
-import {BrowserRouter, Outlet, Route, Routes, useNavigate, useParams} from "react-router";
+import {
+    BrowserRouter,
+    Navigate,
+    Outlet,
+    Route,
+    Routes, useLocation,
+    useNavigate,
+    useParams
+} from "react-router";
 
 import {
     fileSystemState,
@@ -59,10 +67,11 @@ function App() {
             .catch(e=>{});
     }, []);
 
-    const ProtectedRoute = ({ isAuthenticated, setLoggedIn }) => {
+    const ProtectedRoute = ({ isAuthenticated }) => {
+        const location = useLocation();
         return (isAuthenticated
         ? <Outlet/>
-        : <LoginPage setLoggedIn={setLoggedIn}/>);
+        : <Navigate to="/admin/login" state={{ originPath: location.pathname }} replace />);
     };
 
     // Allow Form to get the session ID parameter from the route URL
@@ -109,8 +118,7 @@ function App() {
         }
 
         getPrivateSession() {
-            if (["", "ocr", "ocr-dev", "ocr-prod", process.env.REACT_APP_ADMIN].includes(this.props.sessionId)) return null;
-            // if (this.state.sessionId.startsWith("localhost")) return null;
+            if (["", "ocr", "ocr-dev", "ocr-prod"].includes(this.props.sessionId)) return null;
             return this.props.sessionId;
         }
 
@@ -403,13 +411,15 @@ function App() {
     }
 
     return (
-        <BrowserRouter>
+        <BrowserRouter basename={process.env.REACT_APP_PUBLIC_URL}>
             <Routes>
-                <Route element={<ProtectedRoute isAuthenticated={isAuthenticated} setLoggedIn={login} />} >
-                    <Route exact path="/admin" element={<AdminDashboard />} />
-                </Route>
                 <Route index element={<WrappedForm />} />
                 <Route path="/session/:sessionId" element={<WrappedForm />} />
+
+                <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
+                    <Route exact path="/admin" element={<AdminDashboard />} />
+                </Route>
+                <Route exact path="/admin/login" element={<LoginPage isAuthenticated={isAuthenticated} setLoggedIn={login}/>} />
             </Routes>
         </BrowserRouter>
     );
