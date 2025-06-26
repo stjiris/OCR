@@ -210,6 +210,7 @@ const Dashboard = (props) => {
                 <Button
                     variant="contained"
                     className="adminMenuButton"
+                    onClick={() => navigate('/admin/storage')}
                 >
                     Gerir Armazenamento
                 </Button>

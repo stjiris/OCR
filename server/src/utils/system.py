@@ -3,6 +3,7 @@ import os
 import psutil
 
 from src.utils.file import PRIVATE_PATH
+from src.utils.file import get_data
 
 
 def get_logs(
@@ -46,13 +47,30 @@ def get_logs(
 
     return logs
 
+
 def get_private_sessions():
     # Get the private sessions
     private_sessions = [
-        session for session in os.listdir(PRIVATE_PATH)
-        if os.path.isdir(f"{PRIVATE_PATH}/{session}") and session not in ['.pytest_cache', '__pycache__', 'src', 'files', 'pending-files']
+        session.name for session in os.scandir(PRIVATE_PATH)
+        if session.is_dir()
     ]
     return private_sessions
+
+
+def get_size_private_sessions():
+    # Get the private sessions
+    private_sessions = {}
+    for session in os.scandir(PRIVATE_PATH):
+        if session.is_dir():
+            size = 0
+            for dirpath, dirnames, filenames in os.walk(session.path):
+                for f in filenames:
+                    path = os.path.join(dirpath, f)
+                    if not os.path.islink(path):
+                        size += os.path.getsize(path)
+            private_sessions[session.name] = {"size": format_size(size), "creation": get_data(f"{session.path}/_data.json")["creation"]}
+    return private_sessions
+
 
 def get_free_space():
     # Get the free space of the disk and its percentage
@@ -66,15 +84,24 @@ def get_free_space():
     free_space_percentage = free_space / total_space * 100
 
     # Convert the free space to the closest size format (B, KB, MB, GB, TB)
-    if free_space < 1024:
-        free_space = f'{free_space} B'
-    elif free_space < 1024 ** 2:
-        free_space = f'{free_space / 1024:.2f} KB'
-    elif free_space < 1024 ** 3:
-        free_space = f'{free_space / 1024 ** 2:.2f} MB'
-    elif free_space < 1024 ** 4:
-        free_space = f'{free_space / 1024 ** 3:.2f} GB'
-    else:
-        free_space = f'{free_space / 1024 ** 4:.2f} TB'
 
-    return free_space, f"{free_space_percentage:.2f}"
+    return format_size(free_space), f"{free_space_percentage:.2f}"
+
+
+def format_size(size: int) -> str:
+    """
+    Convert the given size in bytes to a string of the value in the most appropriate unit
+    :param size: size in bytes
+    :return: string formatted as "{value rounded to 2 cases} {unit}"
+    """
+    if size < 1024:
+        size = f'{size} B'
+    elif size < 1024 ** 2:
+        size = f'{size / 1024:.2f} KB'
+    elif size < 1024 ** 3:
+        size = f'{size / 1024 ** 2:.2f} MB'
+    elif size < 1024 ** 4:
+        size = f'{size / 1024 ** 3:.2f} GB'
+    else:
+        size = f'{size / 1024 ** 4:.2f} TB'
+    return size

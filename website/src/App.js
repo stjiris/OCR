@@ -31,6 +31,7 @@ import {
     closeFileSystemMenus,
     ocrMenuState
 } from "./states";
+import StorageManager from "./Components/Admin/Geral/StorageManager";
 
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
@@ -418,6 +419,7 @@ function App() {
 
                 <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
                     <Route exact path="/admin" element={<AdminDashboard />} />
+                    <Route exact path="/admin/storage" element={<StorageManager />} />
                 </Route>
                 <Route exact path="/admin/login" element={<LoginPage isAuthenticated={isAuthenticated} setLoggedIn={login}/>} />
             </Routes>
