@@ -16,6 +16,7 @@ from PIL import Image
 from PIL import ImageDraw
 import pypdfium2 as pdfium
 from celery.schedules import crontab
+from redbeat import RedBeatSchedulerEntry
 
 from src.engines import tesserocr
 from src.engines import tesseract
@@ -775,20 +776,25 @@ def task_export_results(path: str, output_types: list[str]):
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
     # Clean up old private sessions daily at midnight
-    sender.add_periodic_task(crontab(minute='0', hour='0'), delete_old_private_sessions.s(), name='cleanup private sessions every midnight')
+    entry = RedBeatSchedulerEntry(
+        'cleanup_private_sessions',
+        delete_old_private_sessions.s().task,
+        crontab(minute='0', hour='0'),
+        #args=["first", "second"], # example of sending args to task scheduled with redbeat
+        app=celery
+    )
+    entry.save()
+    log.info(f"Created task {entry}")
 
 
-@celery.task
+@celery.task(name="cleanup_private_sessions")
 def delete_old_private_sessions():
     log.debug("Deleting old private sessions")
     priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
     for folder in priv_sessions:
-        #log.warning(f"CHECKING {folder}")
         data = get_data(f"{folder}/_data.json")
         created_time = data["creation"]
-        #log.warning(f'{folder} CREATED ON {created_time}')
         as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(TIMEZONE)
-        #log.warning(f'{folder} DATETIME IS {as_datetime}')
         now = datetime.now().astimezone(TIMEZONE)
-        #log.warning(f'CURRENT DATETIME IS {now}')
         log.warning(f'{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > MAX_PRIVATE_SESSION_AGE}')
+    update_data(f"./{PRIVATE_PATH}/_data.json", { "last_cleanup": get_current_time() })
