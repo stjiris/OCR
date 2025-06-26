@@ -15,8 +15,8 @@ from PIL import Image
 from PIL import ImageDraw
 import pypdfium2 as pdfium
 
-from src.engines import tesserocr
-from src.engines import tesseract
+from src.engines import ocr_tesserocr
+from src.engines import ocr_pytesseract
 
 from src.utils.export import export_csv
 from src.utils.export import export_file
@@ -37,8 +37,8 @@ from src.utils.file import update_data
 from src.utils.image import parse_images
 
 OCR_ENGINES = (
-    "tesseract",
-    "tesserOCR",
+    "pytesseract",
+    "tesserocr",
 )
 
 DEFAULT_CONFIG_FILE = os.environ.get('DEFAULT_CONFIG_FILE', "config_files/default.json")
@@ -246,7 +246,7 @@ def task_file_ocr(path: str, config: dict | None):
                 config["outputs"] = default_config["outputs"]
 
         # Verify parameter values
-        ocr_engine = globals()[config["engine"].lower()]
+        ocr_engine = globals()[f"ocr_{config["engine"]}".lower()]
         valid, errors = ocr_engine.verify_params(config)
         if not valid:
             data = get_data(data_folder)
@@ -338,7 +338,7 @@ def task_file_ocr(path: str, config: dict | None):
             task_page_ocr.s(
                 path=path,
                 filename=image,
-                ocr_engine_name=config["engine"],
+                ocr_engine_name=f"ocr_{config["engine"]}",
                 lang=lang,
                 config_str=config_str,
                 output_types=config["outputs"]
