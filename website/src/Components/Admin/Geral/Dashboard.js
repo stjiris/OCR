@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Link} from "react-router";
+import {Link, useNavigate} from "react-router";
 import axios from "axios";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -18,6 +18,8 @@ const API_URL = `${window.location.protocol}//${window.location.host}/${process.
 const UPDATE_TIME = 30;  // period of fetching system info, in seconds
 
 const Dashboard = (props) => {
+    const navigate = useNavigate();
+
     const [privateSessionsOpen, setPrivateSessionsOpen] = useState(false);
     const [freeSpace, setFreeSpace] = useState("");
     const [freeSpacePercent, setFreeSpacePercent] = useState("");
@@ -79,26 +81,19 @@ const Dashboard = (props) => {
             {/* <VersionsMenu ref={versionsMenu}/> */}
             {/* <LogsMenu ref={logsMenu}/> */}
             <Box sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                zIndex: '5',
-                // border: '1px solid #000000',
-                pt: '0.5rem',
-                pl: '0.5rem',
-                pb: '0.5rem',
-                pr: '0.5rem',
-            }}>
-                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: "center",
+                    zIndex: '5',
+                    padding: '0.5rem',
+                    paddingRight: '2rem',
+                    paddingTop: '1rem',
+                }}>
+                    <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
-                        justifyContent: 'right',
                         alignItems: "center",
-                        zIndex: '5',
-                        pt: '0.5rem',
-                        pl: '0.5rem',
-                        pb: '0.5rem',
-                        pr: '0.5rem',
                     }}>
                         <Box sx={{display: "flex", flexDirection: "column"}}>
                             <Button
@@ -132,7 +127,6 @@ const Dashboard = (props) => {
                                             top: "5.5rem",
                                             p: "0rem 1rem",
                                             width: "8rem",
-
                                         }}
                                     >
                                         {
@@ -159,7 +153,7 @@ const Dashboard = (props) => {
                                                     >
                                                         <span>{privateSession}</span>
                                                         <TooltipIcon
-                                                            color="#f00"
+                                                            className="negActionButton"
                                                             message="Apagar"
                                                             clickFunction={(e) => deletePrivateSession(e, privateSession)}
                                                             icon={<DeleteForeverIcon />}
@@ -186,24 +180,23 @@ const Dashboard = (props) => {
                             </Button> */}
 
                         <span>Armazenamento livre: {freeSpace} ({freeSpacePercent}%)</span>
+                    </Box>
 
-                        <Button
-                            variant="contained"
-                            onClick={() => {
-                                axios.post(API_URL + "/account/logout")
-                                    .then(() => window.location.href = '/admin');
-                            }}
-                            sx={{
-                                border: '1px solid black',
-                                height: '2rem',
-                                textTransform: 'none',
-                                ml: '0.5rem',
-                                fontSize: '0.75rem'
-                            }}
-                        >
-                            Sair
-                        </Button>
-                </Box>
+                    <Button
+                        variant="contained"
+                        onClick={() => {
+                            axios.post(API_URL + "/account/logout")
+                                .then(() => window.location.href = '/admin');
+                        }}
+                        sx={{
+                            border: '1px solid black',
+                            height: '2rem',
+                            textTransform: 'none',
+                            ml: '0.5rem',
+                        }}
+                    >
+                        <span>Sair</span>
+                    </Button>
             </Box>
 
             <Box sx={{
