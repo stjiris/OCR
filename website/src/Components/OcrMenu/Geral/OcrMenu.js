@@ -244,6 +244,8 @@ class OcrMenu extends React.Component {
             engineMode: this.state.engineMode,
             segmentMode: this.state.segmentMode,
             thresholdMethod: this.state.thresholdMethod,
+            dpi: this.state.dpiVal,
+            otherParams: this.state.otherParams,
         }
     }
 

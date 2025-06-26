@@ -245,6 +245,9 @@ def task_file_ocr(path: str, config: dict | None):
             if "outputs" not in config:
                 config["outputs"] = default_config["outputs"]
 
+            if "dpi" not in config and "dpi" in default_config:
+                config["dpi"] = default_config["dpi"]
+
         # Verify parameter values
         ocr_engine = globals()[f"ocr_{config["engine"]}".lower()]
         valid, errors = ocr_engine.verify_params(config)
@@ -265,7 +268,7 @@ def task_file_ocr(path: str, config: dict | None):
         config_str = ""
 
         if "dpi" in config:
-            ' '.join([config_str, f'--dpi {config["dpi"]}'])
+            ' '.join([config_str, f'--dpi {int(config["dpi"])}'])
 
         ' '.join([config_str,
                  f'--oem {config["engineMode"]}',
@@ -273,7 +276,7 @@ def task_file_ocr(path: str, config: dict | None):
                  f'-c thresholding_method={config["thresholdMethod"]}',
                  ])
 
-        if "otherParams" in config:
+        if "otherParams" in config and isinstance(config["otherParams"], str):
             ' '.join([config_str, config["otherParams"]])
 
         # Update the information related to the OCR
