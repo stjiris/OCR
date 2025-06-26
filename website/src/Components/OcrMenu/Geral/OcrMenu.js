@@ -267,8 +267,7 @@ class OcrMenu extends React.Component {
     changeDpi(value) {
         value = value.trim()
         if (isNaN(value)
-            || (this.state.dpiVal !== null
-            && this.state.dpiVal !== "" && !this.state.dpiVal.match("[1-9][0-9]*"))) {
+            || (value !== null && value !== "" && !(/^[1-9][0-9]*$/.test(value)))) {
             this.errorNot.current.openNotif("O valor de DPI deve ser um número inteiro!");
         }
         this.setState({ dpiVal: Number(value), usingDefault: false, uncommittedChanges: true });
@@ -340,7 +339,7 @@ class OcrMenu extends React.Component {
 
     render() {
         const valid = (
-            (!isNaN(this.state.dpiVal) || (this.state.dpiVal !== "" && this.state.dpiVal.match("[1-9][0-9]*")))
+            (!isNaN(this.state.dpiVal) || (this.state.dpiVal !== "" && /^[1-9][0-9]*$/.test(this.state.dpiVal)))
             && this.state.lang.length !== 0
             && this.state.outputs.length !== 0
         );
@@ -469,7 +468,7 @@ class OcrMenu extends React.Component {
                                inputProps={{ inputMode: "numeric", pattern: "[1-9][0-9]*" }}
                                error={isNaN(this.state.dpiVal)
                                    || (this.state.dpiVal !== null
-                                   && this.state.dpiVal !== "" && !this.state.dpiVal.match("[1-9][0-9]*"))}
+                                   && this.state.dpiVal !== "" && !(/^[1-9][0-9]*$/.test(this.state.dpiVal)))}
                                value={this.state.dpiVal}
                                onChange={(e) => this.changeDpi(e.target.value)}
                                variant='outlined'
@@ -538,6 +537,7 @@ class OcrMenu extends React.Component {
 
                     <TextField ref={this.moreParams}
                                label="Parâmetros adicionais"
+                               value={this.state.otherParams}
                                onChange={(e) => this.changeAdditionalParams(e.target.value)}
                                variant='outlined'
                                className="simpleInput borderTop"
