@@ -267,7 +267,7 @@ def task_file_ocr(path: str, config: dict | None):
         lang = '+'.join(config["lang"])
         config_str = ""
 
-        if "dpi" in config:
+        if "dpi" in config and config["dpi"] != "":  # typecheck expected in ocr_engine.verify_params()
             ' '.join([config_str, f'--dpi {int(config["dpi"])}'])
 
         ' '.join([config_str,
