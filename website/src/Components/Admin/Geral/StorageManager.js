@@ -203,11 +203,7 @@ const StorageManager = (props) => {
                                         cursor: "pointer"
                                     }}
                                     onClick={() => {
-                                        if (window.location.href.endsWith("/")) {
-                                            window.location.href += privateSession
-                                        } else {
-                                            window.location.href += "/" + privateSession
-                                        }
+                                        navigate(`/session/${privateSession}`);
                                     }}
                                 >
                                     <span>{privateSession} – {info["size"]} – {info["creation"]}</span>

@@ -144,11 +144,7 @@ const Dashboard = (props) => {
                                                             cursor: "pointer"
                                                         }}
                                                         onClick={() => {
-                                                            if (window.location.href.endsWith("/")) {
-                                                                window.location.href += privateSession
-                                                            } else {
-                                                                window.location.href += "/" + privateSession
-                                                            }
+                                                            navigate(`/session/${privateSession}`);
                                                         }}
                                                     >
                                                         <span>{privateSession}</span>
