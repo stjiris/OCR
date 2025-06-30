@@ -10,6 +10,7 @@ import UndoIcon from "@mui/icons-material/Undo";
 import Typography from "@mui/material/Typography";
 import {useNavigate} from "react-router";
 const Notification = loadComponent('Notifications', 'Notification');
+const DeleteSessionPopup = loadComponent('Form', 'DeleteSessionPopup');
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
@@ -22,6 +23,9 @@ const StorageManager = (props) => {
     const [freeSpacePercent, setFreeSpacePercent] = useState("");
     const [privateSessions, setPrivateSessions] = useState([]);
     const [lastCleanup, setLastCleanup] = useState("nunca");
+
+    const [deletePopupOpened, setDeletePopupOpened] = useState(null);
+    const [deleteSessionId, setDeleteSessionId] = useState(null);
 
     const successNotif = useRef(null);
     const errorNotif = useRef(null);
@@ -44,19 +48,25 @@ const StorageManager = (props) => {
         }
     }, []);
 
-    function deletePrivateSession(e, privateSession) {
+    function openDeletePopup(e, privateSession) {
         e.stopPropagation();
-        axios.post(API_URL + "/admin/delete-private-session", {
-            headers: {
-                'Content-Type': 'application/json'
+        setDeleteSessionId(privateSession);
+        setDeletePopupOpened(true);
+    }
+
+    function deletePrivateSession() {
+        axios.post(API_URL + "/admin/delete-private-session",
+            {
+                "sessionId": deleteSessionId
             },
-            body: JSON.stringify({
-                "sessionId": privateSession
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
             })
-        })
             .then(response => {
                 if (response.status !== 200) {
-                    throw new Error("Não foi possível concluir o pedido.");
+                    throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
                 }
                 if (response.data["success"]) {
                     setPrivateSessions(response.data["private_sessions"]);
@@ -73,6 +83,13 @@ const StorageManager = (props) => {
         <Box className="App" sx={{height: '100vh'}}>
             <Notification message={""} severity={"success"} ref={successNotif}/>
             <Notification message={""} severity={"error"} ref={errorNotif}/>
+
+            <DeleteSessionPopup
+                open={deletePopupOpened}
+                sessionId={deleteSessionId}
+                submitDelete={() => deletePrivateSession()}
+                cancelDelete={() => { setDeletePopupOpened(false); setDeleteSessionId(null); }}
+            />
 
             {/* <VersionsMenu ref={versionsMenu}/> */}
             {/* <LogsMenu ref={logsMenu}/> */}
@@ -210,7 +227,7 @@ const StorageManager = (props) => {
                                     <TooltipIcon
                                         className="negActionButton"
                                         message="Apagar"
-                                        clickFunction={(e) => deletePrivateSession(e, privateSession)}
+                                        clickFunction={(e) => openDeletePopup(e, privateSession)}
                                         icon={<DeleteForeverIcon />}
                                     />
                                 </Box>

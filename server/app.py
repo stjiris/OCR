@@ -56,6 +56,7 @@ from src.utils.file import FILES_PATH, TEMP_PATH, PRIVATE_PATH, ALLOWED_EXTENSIO
 from src.utils.system import get_free_space
 #from src.utils.system import get_logs
 from src.utils.system import get_private_sessions
+from src.utils.system import get_size_private_sessions
 
 from src.utils.text import compare_dicts_words
 
@@ -1067,6 +1068,22 @@ def get_system_info():
     }
 
 
+@app.route("/admin/storage-info", methods=["GET"])
+@auth_required()
+@roles_required('Admin')
+def get_storage_info():
+    free_space, free_space_percentage = get_free_space()
+    data = get_data(f"./{PRIVATE_PATH}/_data.json")
+    if "last_cleanup" not in data.keys():
+        last_cleanup = "nunca"
+    else:
+        last_cleanup = data["last_cleanup"]
+    return {
+        "free_space": free_space,
+        "free_space_percentage": free_space_percentage,
+        "private_sessions": get_size_private_sessions(),
+        "last_cleanup": last_cleanup,
+    }
 @app.route("/admin/delete-private-session", methods=["POST"])
 @auth_required()
 @roles_required('Admin')
@@ -1087,7 +1104,7 @@ def delete_private_session():
     return {
         "success": True,
         "message": "Apagado com sucesso",
-        "private_sessions": get_private_sessions(),
+        "private_sessions": get_size_private_sessions(),
     }
 
 
