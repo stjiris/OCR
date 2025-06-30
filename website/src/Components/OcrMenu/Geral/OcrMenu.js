@@ -19,7 +19,7 @@ import loadComponent from '../../../utils/loadComponents';
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
 const Notification = loadComponent('Notifications', 'Notification');
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
-const CheckboxList = loadComponent('OcrMenu', 'CheckboxList');
+const CheckboxList = loadComponent('Form', 'CheckboxList');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

@@ -105,6 +105,10 @@ body {
     width: 100%;
 }
 
+.MuiFormControl-root.hourInput {
+    width: 6rem;
+}
+
 .MuiFormControl-root.borderTop {
     padding-top: 0.5rem;
     border-top: 1px solid black;

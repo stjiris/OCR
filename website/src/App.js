@@ -1,6 +1,9 @@
 import './App.css';
 import React, {useEffect, useState} from 'react';
 import axios from "axios";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import "dayjs/locale/pt";
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -412,18 +415,20 @@ function App() {
     }
 
     return (
-        <BrowserRouter basename={process.env.REACT_APP_PUBLIC_URL}>
-            <Routes>
-                <Route index element={<WrappedForm />} />
-                <Route path="/session/:sessionId" element={<WrappedForm />} />
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt">
+            <BrowserRouter basename={process.env.REACT_APP_PUBLIC_URL}>
+                <Routes>
+                    <Route index element={<WrappedForm />} />
+                    <Route path="/session/:sessionId" element={<WrappedForm />} />
 
-                <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
-                    <Route exact path="/admin" element={<AdminDashboard />} />
-                    <Route exact path="/admin/storage" element={<StorageManager />} />
-                </Route>
-                <Route exact path="/admin/login" element={<LoginPage isAuthenticated={isAuthenticated} setLoggedIn={login}/>} />
-            </Routes>
-        </BrowserRouter>
+                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
+                        <Route exact path="/admin" element={<AdminDashboard />} />
+                        <Route exact path="/admin/storage" element={<StorageManager />} />
+                    </Route>
+                    <Route exact path="/admin/login" element={<LoginPage isAuthenticated={isAuthenticated} setLoggedIn={login}/>} />
+                </Routes>
+            </BrowserRouter>
+        </LocalizationProvider>
     );
 }
 

@@ -8,14 +8,12 @@ import MenuItem from "@mui/material/MenuItem";
 import {Checkbox, FormHelperText} from "@mui/material";
 import ListItemText from "@mui/material/ListItemText";
 
-
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
 const MenuProps = {
   PaperProps: {
     style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-      width: 250,
+      //maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+      width: 'auto',
+      maxHeight: '70%',
     },
   },
 };
