@@ -27,6 +27,8 @@ from flask_security import Security
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.models import fsqla_v3 as fsqla
 from flask_sqlalchemy import SQLAlchemy
+from redbeat import RedBeatSchedulerEntry
+from redbeat.schedulers import RedBeatConfig
 from werkzeug.utils import safe_join
 
 from src.elastic_search import create_document
@@ -116,6 +118,14 @@ private_sessions = dict()
 
 
 #####################################
+# ERROR HANDLING
+#####################################
+def bad_request(message: str = 'Bad request syntax or unsupported method'):
+    response = jsonify({"message": message})
+    response.status_code = 400
+    return response
+
+#####################################
 # REQUEST HANDLING
 #####################################
 
@@ -124,7 +134,7 @@ def format_path(request_data):
     if is_private:
         private_session = request_data["path"].strip("/").split("/")[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(HTTPStatus.BAD_REQUEST)
+            return bad_request("Path in private session must start with session ID")
         return safe_join(PRIVATE_PATH, request_data["path"].strip("/")), True
     else:
         return safe_join(FILES_PATH, request_data["path"].strip("/")), False
@@ -139,7 +149,7 @@ def format_filesystem_path(request_data):
         path = safe_join(PRIVATE_PATH, stripped_path)
         private_session = stripped_path.split("/")[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(HTTPStatus.BAD_REQUEST)
+            return bad_request("Path in private session must start with session ID")
         filesystem_path = safe_join(PRIVATE_PATH, private_session)
         if filesystem_path is None:
             abort(HTTPStatus.NOT_FOUND)
@@ -181,16 +191,16 @@ def abort_bad_request():
         view_func = app.view_functions[request.endpoint]
         if hasattr(view_func, '_requires_arg_path'):
             if "path" not in request.values or request.values["path"] == "":
-                abort(HTTPStatus.BAD_REQUEST)
+                return bad_request("Missing 'path' argument")
         elif hasattr(view_func, '_requires_json_path'):
             if "path" not in request.json or request.json["path"] == "":
-                abort(HTTPStatus.BAD_REQUEST)
+                return bad_request("Missing 'path' parameter")
         elif hasattr(view_func, '_requires_form_path'):
             if "path" not in request.form or request.form["path"] == "":
-                abort(HTTPStatus.BAD_REQUEST)
+                return bad_request("Missing 'path' in form")
         elif hasattr(view_func, '_requires_allowed_file'):
             if "name" not in request.form:
-                abort(HTTPStatus.BAD_REQUEST)
+                return bad_request("Missing 'name' in form")
             if request.form["name"].split(".")[-1].lower() not in ALLOWED_EXTENSIONS:
                 abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
 
@@ -237,7 +247,7 @@ def create_folder():
 
     if ("path" not in data  # empty path is valid: new top-level public session folder
         or "folder" not in data or data["folder"] == ''):
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'path' or 'folder'")
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     folder = data["folder"]
@@ -504,7 +514,7 @@ def prepare_upload():
 
     data = request.json
     if "name" not in data or data["name"] == '':
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'name'")
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     filename = data["name"]
@@ -556,7 +566,7 @@ def upload_file():
         or "name" not in request.form
         or "counter" not in request.form
         or "totalCount" not in request.form):
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing file or parameter 'name', 'counter', or 'totalCount'")
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(request.form)
     file = request.files["file"]
@@ -627,7 +637,7 @@ def upload_file():
 def configure_ocr():
     req_data = request.json
     if "config" not in req_data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'config'")
     path, filesystem_path, private_session, is_private = format_filesystem_path(req_data)
     data_path = f"{path}/_data.json"
     try:
@@ -639,7 +649,7 @@ def configure_ocr():
         data["config"] = req_data["config"]
     else:
         # TODO: accept and verify other strings as config file names
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Config must be dictionary or \"default\"")
 
     update_data(data_path, data)
 
@@ -830,7 +840,7 @@ def remove_index_doc():
 def submit_text():
     data = request.json
     if "text" not in data or "remakeFiles" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'text' or 'remakeFiles'")
 
     texts = data["text"]  # estrutura com texto, nome do ficheiro e url da imagem
     remake_files = data["remakeFiles"]
@@ -845,7 +855,7 @@ def submit_text():
         data_path = path + "/_data.json"
         private_session = data_folder_list[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(HTTPStatus.BAD_REQUEST)
+            return bad_request("Path to private session must start with session ID")
         filesystem_path = safe_join(PRIVATE_PATH, private_session)
     else:
         path = safe_join(FILES_PATH, data_folder)
@@ -881,7 +891,7 @@ def submit_text():
 def check_sintax():
     if ("words" not in request.json
         or "languages" not in request.json):
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'words' or 'languages'")
 
     words = request.json["words"].keys()
     languages = request.json["languages"]
@@ -902,7 +912,7 @@ def get_docs_list():
 def search():
     data = request.json
     if "query" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'query'")
 
     query = data["query"]
     docs = None
@@ -958,7 +968,7 @@ def create_private_session():
 def validate_private_session():
     data = request.json
     if "sessionId" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'sessionId'")
 
     session_id = data["sessionId"]
 
@@ -991,7 +1001,7 @@ def get_layouts():
 def save_layouts():
     data = request.json
     if "layouts" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'layouts'")
 
     path, _ = format_path(data)
     if path is None:
@@ -1090,7 +1100,7 @@ def get_storage_info():
 def delete_private_session():
     data = request.json
     if "sessionId" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'sessionId'")
     session_id = data["sessionId"]
 
     session_path = safe_join(PRIVATE_PATH, session_id)
