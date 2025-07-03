@@ -68,7 +68,6 @@ from src.utils.text import compare_dicts_words
 
 load_dotenv()
 
-MAX_PRIVATE_SESSION_AGE = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 
@@ -219,13 +218,13 @@ def get_file_system():
         # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
             filesystem = get_filesystem(FILES_PATH)
-            filesystem["maxAge"] = MAX_PRIVATE_SESSION_AGE
+            filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
             return filesystem
 
         path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
         log.info(f"Getting info of {filesystem_path}, priv session {private_session}")
         filesystem = get_filesystem(filesystem_path, private_session, is_private)
-        filesystem["maxAge"] = MAX_PRIVATE_SESSION_AGE
+        filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
         return filesystem
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
@@ -1168,6 +1167,27 @@ def get_scheduled_tasks():
     entries = {el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements}
     log.info(entries)
     return f"{entries}"
+
+
+@app.route("/admin/set-max-private-session-age", methods=["POST"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def set_max_private_session_age():
+    data = request.json
+    if "new_max_age" not in data:
+        return bad_request("Missing parameter 'new_max_age'")
+
+    new_max_age = data["new_max_age"]
+    try:
+        if int(new_max_age) < 1:
+            return {"success": False, "message": f"Invalid number of days: \"{new_max_age}\", must be positive integer"}
+
+        result = celery.send_task('set_max_private_session_age', kwargs={'new_max_age': new_max_age}).get()
+        if result["status"] == "success":
+            os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
+            return {"success": True, "message": f"New max private session age: {new_max_age} days"}
+    except ValueError:
+        return {"success": False, "message": f"Invalid number of days: \"{new_max_age}\", must be positive integer"}
 
 
 @app.route("/admin/delete-private-session", methods=["POST"])

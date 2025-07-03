@@ -46,7 +46,6 @@ OCR_ENGINES = (
     "tesserOCR",
 )
 
-MAX_PRIVATE_SESSION_AGE = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))  # days
 DEFAULT_CONFIG_FILE = os.environ.get('DEFAULT_CONFIG_FILE', "config_files/default.json")
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
@@ -787,8 +786,25 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     log.info(f"Created task {entry}")
 
 
+@celery.task(name="temp")
+def temp():
+    log.error(f"TEMP TEST TASK: {int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))}")
+    return "TEMP RESULT"
+
+
+@celery.task(name="set_max_private_session_age")
+def set_max_private_session_age(new_max_age: int | str):
+    try:
+        os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
+        return {"status": "success"}
+    except ValueError:
+        return {"status": "error"}
+
+
 @celery.task(name="cleanup_private_sessions")
 def delete_old_private_sessions():
+    MAX_PRIVATE_SESSION_AGE = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))  # days
+
     log.debug("Deleting old private sessions")
     priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
     for folder in priv_sessions:
