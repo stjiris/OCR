@@ -3,13 +3,17 @@ import os
 import random
 import shutil
 import string
+from datetime import timedelta
 from http import HTTPStatus
 
 from threading import Lock, Thread
 
 import flask_wtf
+import redbeat
 import requests
 from celery import Celery
+from celery.schedules import crontab
+from celery.schedules import schedule
 from dotenv import load_dotenv
 from flask import Flask
 from flask import Response
@@ -1094,6 +1098,78 @@ def get_storage_info():
         "private_sessions": get_size_private_sessions(),
         "last_cleanup": last_cleanup,
     }
+
+
+@app.route("/admin/schedule-cleanup", methods=["POST"])
+@auth_required()
+@roles_required('Admin')
+def schedule_private_session_cleanup():
+    data = request.json
+    log.info(data)
+    if "type" not in data:
+        return bad_request("Missing parameter 'type'")
+
+    if data["type"] == "interval":
+        if "run_every" not in data or not isinstance(data["run_every"], (int, str)):
+            return bad_request("Parameter 'run_every' must be positive whole number as integer or string")
+        if data["run_every"] == 0:
+            return bad_request("Number of hours between cleanups cannot be zero")
+        delta = timedelta(hours=int(data["run_every"]))
+        new_schedule = schedule(run_every=delta, app=celery)
+
+    elif data["type"] == "monthly":
+        # Default to first minute of the first day of every month
+        hour = data["hour"] if "hour" in data else 0
+        minute = data["minute"] if "minute" in data else 1
+        day_of_month = data["day_of_month"] if "day_of_month" in data else 1
+        new_schedule = crontab(minute=minute, hour=hour, day_of_month=day_of_month)
+
+    elif data["type"] == "weekly":
+        if "day_of_week" not in data or not isinstance(data["day_of_week"], (int,str)):
+            return bad_request("Parameter 'day_of_week' must be a number between 0 (Sunday) and 6 as integer or string")
+        if ("hour" in data and not isinstance(data["hour"], (int,str)))\
+            or ("minute" in data and not isinstance(data["minute"], (int,str))):
+            return bad_request("Parameters 'hour' and 'minute' must be numbers as integer or string")
+
+        # Default to first minute of every saturday
+        hour = data["hour"] if "hour" in data else 0
+        minute = data["minute"] if "minute" in data else 1
+        day_of_week = data["day_of_week"] if "day_of_week" in data else 1
+        new_schedule = crontab(minute=minute, hour=hour, day_of_week=day_of_week)
+    else:
+        return bad_request("Unrecognized schedule type")
+
+    entry = RedBeatSchedulerEntry.from_key('redbeat:cleanup_private_sessions', app=celery)
+    entry.schedule = new_schedule
+    entry = entry.save()
+    return {
+        "success": True,
+        "message": f"Novo agendamento da limpeza de sessões privadas: {entry}"
+    }
+
+
+@app.route("/admin/cleanup-sessions", methods=["GET"])
+@auth_required()
+@roles_required('Admin')
+def perform_private_session_cleanup():
+    celery.send_task('cleanup_private_sessions')
+    return {"success": True, "message": "O sistema irá apagar as sessões privadas mais antigas."}
+
+
+@app.route("/admin/get-scheduled", methods=["GET"])
+@auth_required()
+@roles_required('Admin')
+def get_scheduled_tasks():
+    config = RedBeatConfig(celery)
+    schedule_key = config.schedule_key
+    log.info(f"Schedule key: {schedule_key}")
+    redis = redbeat.schedulers.get_redis(celery)
+    elements = redis.zrange(schedule_key, 0, -1, withscores=False)
+    entries = {el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements}
+    log.info(entries)
+    return f"{entries}"
+
+
 @app.route("/admin/delete-private-session", methods=["POST"])
 @auth_required()
 @roles_required('Admin')
@@ -1168,6 +1244,7 @@ if not os.path.exists(f"./{PRIVATE_PATH}/"):
             {
                 "type": "folder",
                 "creation": get_current_time(),
+                "last_cleanup": "nunca",
             },
             f,
             indent=2,
