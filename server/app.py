@@ -16,6 +16,7 @@ from celery.schedules import crontab
 from celery.schedules import schedule
 from dotenv import load_dotenv
 from flask import Flask
+from flask import g
 from flask import Response
 from flask import abort
 from flask import jsonify
@@ -188,6 +189,12 @@ def requires_allowed_file(func):
     return func
 
 
+# Endpoint is exempt from CSRF; used to bypass csrf.exempt decorator not working
+def csrf_exempt(func):
+    func._csrf_exempt = True  # value unimportant
+    return func
+
+
 @app.before_request
 def abort_bad_request():
     if request.endpoint in app.view_functions:
@@ -206,6 +213,16 @@ def abort_bad_request():
                 return bad_request("Missing 'name' in form")
             if request.form["name"].split(".")[-1].lower() not in ALLOWED_EXTENSIONS:
                 abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+
+
+# Bypass CSRF check by changing the context flag, due to flask-wtf's "exempt" decorator not working
+@app.before_request
+def ignore_csrf_if_exempt():
+    log.info(f"Request type: {request.method}")
+    if request.method != "GET" and request.endpoint in app.view_functions:
+        view_func = app.view_functions[request.endpoint]
+        if hasattr(view_func, '_csrf_exempt'):
+            g.csrf_valid = True
 
 
 #####################################
@@ -1035,7 +1052,7 @@ def generate_automatic_layouts():
 # LOGIN MANAGEMENT
 #####################################
 @app.route('/account/check-auth')
-@auth_required()
+@auth_required('token', 'session')
 @roles_required('Admin')
 def check_authorized():
     if current_user.is_authenticated:
@@ -1069,7 +1086,7 @@ def register_user():
 #####################################
 
 @app.route("/admin/system-info", methods=["GET"])
-@auth_required()
+@auth_required('token', 'session')
 @roles_required('Admin')
 def get_system_info():
     free_space, free_space_percentage = get_free_space()
@@ -1082,7 +1099,7 @@ def get_system_info():
 
 
 @app.route("/admin/storage-info", methods=["GET"])
-@auth_required()
+@auth_required('token', 'session')
 @roles_required('Admin')
 def get_storage_info():
     free_space, free_space_percentage = get_free_space()
@@ -1100,7 +1117,7 @@ def get_storage_info():
 
 
 @app.route("/admin/schedule-cleanup", methods=["POST"])
-@auth_required()
+@auth_required('token', 'session')
 @roles_required('Admin')
 def schedule_private_session_cleanup():
     data = request.json
@@ -1148,7 +1165,7 @@ def schedule_private_session_cleanup():
 
 
 @app.route("/admin/cleanup-sessions", methods=["GET"])
-@auth_required()
+@auth_required('token', 'session')
 @roles_required('Admin')
 def perform_private_session_cleanup():
     celery.send_task('cleanup_private_sessions')
@@ -1156,7 +1173,7 @@ def perform_private_session_cleanup():
 
 
 @app.route("/admin/get-scheduled", methods=["GET"])
-@auth_required()
+@auth_required('token', 'session')
 @roles_required('Admin')
 def get_scheduled_tasks():
     config = RedBeatConfig(celery)
@@ -1191,7 +1208,7 @@ def set_max_private_session_age():
 
 
 @app.route("/admin/delete-private-session", methods=["POST"])
-@auth_required()
+@auth_required('token', 'session')
 @roles_required('Admin')
 def delete_private_session():
     data = request.json
@@ -1216,8 +1233,9 @@ def delete_private_session():
 
 @app.route('/admin/flower/', defaults={'fullpath': ''}, methods=["GET", "POST"])
 @app.route('/admin/flower/<path:fullpath>', methods=["GET", "POST"])
-@auth_required()
+@auth_required('token', 'session')
 @roles_required('Admin')
+@csrf_exempt  # csrf token cannot be added to AJAX requests sent from flower's views
 def proxy_flower(fullpath):
     """
     Proxy requests to the Flower Celery manager. Flower can be setup to allow operations without authentication,
