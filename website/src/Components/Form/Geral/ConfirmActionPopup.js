@@ -30,20 +30,20 @@ const crossStyle = {
     right: '0.5rem'
 }
 
-function DeleteSessionPopup(
+function ConfirmActionPopup(
     {
         open = false,
-        sessionId = null,
+        message = "",
         // functions:
-        submitDelete = null,  // required
-        cancelDelete = null,  // required
+        submitCallback = null,  // required
+        cancelCallback = null,  // required
     }) {
         const successNotif = useRef(null);
         const errorNotif = useRef(null);
 
         function handleClickOutsideMenu() {
             if (open) {
-                cancelDelete();
+                cancelCallback();
             }
         }
 
@@ -59,7 +59,7 @@ function DeleteSessionPopup(
                     >
                         <Box sx={style}>
                             <Typography id="modal-modal-title" variant="h6" component="h2">
-                                Tem a certeza que quer apagar a sessão <b>{sessionId}</b>?
+                                {message}
                             </Typography>
 
                             <Box sx={{
@@ -70,13 +70,13 @@ function DeleteSessionPopup(
                                     color="error"
                                     variant="contained"
                                     sx={{border: '1px solid black', mt: '0.5rem'}}
-                                    onClick={() => submitDelete()}
+                                    onClick={() => submitCallback()}
                                 >
                                     Apagar
                                 </Button>
                             </Box>
 
-                            <IconButton sx={crossStyle} aria-label="close" onClick={() => cancelDelete()}>
+                            <IconButton sx={crossStyle} aria-label="close" onClick={() => cancelCallback()}>
                                 <CloseRoundedIcon />
                             </IconButton>
                         </Box>
@@ -86,4 +86,4 @@ function DeleteSessionPopup(
         )
 }
 
-export default DeleteSessionPopup;
+export default ConfirmActionPopup;

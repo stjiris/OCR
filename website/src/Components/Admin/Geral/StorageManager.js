@@ -18,7 +18,7 @@ import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import footerBanner from "../../../static/footerBanner.png";
 import loadComponent from "../../../utils/loadComponents";
 const Notification = loadComponent('Notifications', 'Notification');
-const DeleteSessionPopup = loadComponent('Form', 'DeleteSessionPopup');
+const ConfirmActionPopup = loadComponent('Form', 'ConfirmActionPopup');
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 const CheckboxList = loadComponent("Form", "CheckboxList");
 
@@ -56,8 +56,11 @@ const StorageManager = (props) => {
     const [weekTime, setWeekTime] = useState(null);
     const [weekDays, setWeekDays] = useState([]);
 
-    const [deletePopupOpened, setDeletePopupOpened] = useState(null);
     const [deleteSessionId, setDeleteSessionId] = useState(null);
+
+    const [confirmPopupOpened, setConfirmPopupOpened] = useState(false);
+    const [confirmPopupMessage, setConfirmPopupMessage] = useState("");
+    const [confirmPopupSubmitCallback, setConfirmPopupSubmitCallback] = useState(null);
 
     const successNotif = useRef(null);
     const errorNotif = useRef(null);
@@ -79,6 +82,18 @@ const StorageManager = (props) => {
             clearInterval(interval);
         }
     }, []);
+
+    // setup confirmation popup after deleteSessionId is set by openDeletePopup()
+    useEffect(() => {
+        if (deleteSessionId !== null) {
+            console.log(`Before opening: ${deleteSessionId}`);
+            setConfirmPopupOpened(true);
+            setConfirmPopupMessage(`Tem a certeza que quer apagar a sessão ${deleteSessionId}?`);
+            console.log(`Before callback: ${deleteSessionId}`);
+            setConfirmPopupSubmitCallback(() => deletePrivateSession);  // set value as function deletePrivateSession
+            console.log(`After callback: ${deleteSessionId}`);
+        }
+    }, [deleteSessionId])
 
     function handleScheduleTypeChange(newType) {
         switch (newType) {
@@ -124,10 +139,17 @@ const StorageManager = (props) => {
     function openDeletePopup(e, privateSession) {
         e.stopPropagation();
         setDeleteSessionId(privateSession);
-        setDeletePopupOpened(true);
+        // confirm popup is set up in useEffect
     }
 
-    function deletePrivateSession() {
+    function closeConfirmationPopup() {
+        setDeleteSessionId(null);  // needed when closing or cancelling popup for deletion of single private session
+        setConfirmPopupOpened(false);
+        setConfirmPopupMessage("");
+        setConfirmPopupSubmitCallback(null);
+    }
+
+    const deletePrivateSession = () => {
         axios.post(API_URL + "/admin/delete-private-session",
             {
                 "sessionId": deleteSessionId
@@ -144,11 +166,13 @@ const StorageManager = (props) => {
                 if (response.data["success"]) {
                     setPrivateSessions(response.data["private_sessions"]);
                 } else {
-                    throw new Error(response.data["message"])
+                    throw new Error(response.data["message"]);
                 }
+                closeConfirmationPopup();
             })
             .catch(err => {
                 errorNotif.current.openNotif(err.message);
+                closeConfirmationPopup();
             });
     }
 
@@ -205,11 +229,11 @@ const StorageManager = (props) => {
             <Notification message={""} severity={"success"} ref={successNotif}/>
             <Notification message={""} severity={"error"} ref={errorNotif}/>
 
-            <DeleteSessionPopup
-                open={deletePopupOpened}
-                sessionId={deleteSessionId}
-                submitDelete={() => deletePrivateSession()}
-                cancelDelete={() => { setDeletePopupOpened(false); setDeleteSessionId(null); }}
+            <ConfirmActionPopup
+                open={confirmPopupOpened}
+                message={confirmPopupMessage}
+                submitCallback={confirmPopupSubmitCallback}
+                cancelCallback={closeConfirmationPopup}
             />
 
             {/* <VersionsMenu ref={versionsMenu}/> */}
