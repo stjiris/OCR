@@ -218,7 +218,6 @@ def abort_bad_request():
 # Bypass CSRF check by changing the context flag, due to flask-wtf's "exempt" decorator not working
 @app.before_request
 def ignore_csrf_if_exempt():
-    log.info(f"Request type: {request.method}")
     if request.method != "GET" and request.endpoint in app.view_functions:
         view_func = app.view_functions[request.endpoint]
         if hasattr(view_func, '_csrf_exempt'):
@@ -239,7 +238,7 @@ def get_file_system():
             return filesystem
 
         path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
-        log.info(f"Getting info of {filesystem_path}, priv session {private_session}")
+        log.debug(f"Getting info of {filesystem_path}, priv session {private_session}")
         filesystem = get_filesystem(filesystem_path, private_session, is_private)
         filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
         return filesystem
@@ -263,7 +262,7 @@ def get_info():
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
-    log.info(data)
+    log.debug(data)
 
     if ("path" not in data  # empty path is valid: new top-level public session folder
         or "folder" not in data or data["folder"] == ''):
@@ -568,11 +567,8 @@ def join_chunks(target_path, filename, total_count, temp_file_path):
         for i in range(total_count):
             with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
-
     celery.send_task('prepare_file', kwargs={'path': target_path})
-
     shutil.rmtree(temp_file_path)
-    log.info(f"Finished uploading file {filename}")
 
 
 @app.route("/upload-file", methods=["POST"])
@@ -635,7 +631,7 @@ def upload_file():
         chunks_saved = len(os.listdir(f"{temp_file_path}"))
         stored = round(100 * chunks_saved / total_count, 2)
 
-        log.info(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
+        log.debug(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
 
         update_data(f"{target_path}/_data.json", {"stored": stored})
 
@@ -1051,7 +1047,7 @@ def generate_automatic_layouts():
 #####################################
 # LOGIN MANAGEMENT
 #####################################
-@app.route('/account/check-auth')
+@app.route('/account/check-auth', methods=["GET"])
 @auth_required('token', 'session')
 @roles_required('Admin')
 def check_authorized():
@@ -1121,7 +1117,7 @@ def get_storage_info():
 @roles_required('Admin')
 def schedule_private_session_cleanup():
     data = request.json
-    log.info(data)
+    log.debug(data)
     if "type" not in data:
         return bad_request("Missing parameter 'type'")
 
@@ -1178,11 +1174,11 @@ def perform_private_session_cleanup():
 def get_scheduled_tasks():
     config = RedBeatConfig(celery)
     schedule_key = config.schedule_key
-    log.info(f"Schedule key: {schedule_key}")
+    log.debug(f"Schedule key: {schedule_key}")
     redis = redbeat.schedulers.get_redis(celery)
     elements = redis.zrange(schedule_key, 0, -1, withscores=False)
     entries = {el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements}
-    log.info(entries)
+    log.debug(entries)
     return f"{entries}"
 
 
@@ -1243,7 +1239,7 @@ def proxy_flower(fullpath):
     :param fullpath: rest of the path to the Flower API
     :return: response from Flower
     """
-    log.info(f'Requesting to flower {request.base_url.replace(request.host_url, "http://flower:5050/")}')
+    log.debug(f'Requesting to flower {request.base_url.replace(request.host_url, "http://flower:5050/")}')
     res = requests.request(
         method=request.method,
         url=request.base_url.replace(request.host_url, 'http://flower:5050/'),

@@ -1,5 +1,4 @@
 import json
-import logging as log
 import os
 import random
 import re
@@ -30,8 +29,6 @@ ALLOWED_EXTENSIONS = ('pdf',
 
 IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
-
-log.basicConfig(level=log.INFO, format=f'%(asctime)s %(levelname)s : %(message)s')
 
 ##################################################
 # FILESYSTEM UTILS

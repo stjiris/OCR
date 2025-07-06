@@ -783,7 +783,7 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
         app=celery
     )
     entry.save()
-    log.info(f"Created task {entry}")
+    log.info(f"Created periodic task {entry}")
 
 
 @celery.task(name="temp")
@@ -803,7 +803,7 @@ def set_max_private_session_age(new_max_age: int | str):
 
 @celery.task(name="cleanup_private_sessions")
 def delete_old_private_sessions():
-    MAX_PRIVATE_SESSION_AGE = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))  # days
+    max_private_session_age = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))  # days
 
     log.debug("Deleting old private sessions")
     priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
@@ -812,5 +812,5 @@ def delete_old_private_sessions():
         created_time = data["creation"]
         as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(TIMEZONE)
         now = datetime.now().astimezone(TIMEZONE)
-        log.warning(f'{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > MAX_PRIVATE_SESSION_AGE}')
+        log.warning(f'{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_session_age}')
     update_data(f"./{PRIVATE_PATH}/_data.json", { "last_cleanup": get_current_time() })
