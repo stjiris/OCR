@@ -72,12 +72,7 @@ const Dashboard = (props) => {
                             axios.post(API_URL + "/account/logout")
                                 .then(() => window.location.href = '/admin');
                         }}
-                        sx={{
-                            border: '1px solid black',
-                            height: '2rem',
-                            textTransform: 'none',
-                            ml: '0.5rem',
-                        }}
+                        className="menuButton"
                     >
                         <span>Sair</span>
                     </Button>

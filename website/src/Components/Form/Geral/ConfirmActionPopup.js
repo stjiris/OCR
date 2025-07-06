@@ -34,6 +34,7 @@ function ConfirmActionPopup(
     {
         open = false,
         message = "",
+        confirmButtonColor = null,
         // functions:
         submitCallback = null,  // required
         cancelCallback = null,  // required
@@ -67,12 +68,12 @@ function ConfirmActionPopup(
                                 flexDirection: 'row'
                             }}>
                                 <Button
-                                    color="error"
+                                    color={confirmButtonColor ? confirmButtonColor : "info"}
                                     variant="contained"
                                     sx={{border: '1px solid black', mt: '0.5rem'}}
                                     onClick={() => submitCallback()}
                                 >
-                                    Apagar
+                                    Confirmar
                                 </Button>
                             </Box>
 
@@ -83,7 +84,7 @@ function ConfirmActionPopup(
                     </ClickAwayListener>
                 </Modal>
             </Box>
-        )
+        );
 }
 
 export default ConfirmActionPopup;

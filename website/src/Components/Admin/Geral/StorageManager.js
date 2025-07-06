@@ -260,6 +260,7 @@ const StorageManager = (props) => {
             <ConfirmActionPopup
                 open={confirmPopupOpened}
                 message={confirmPopupMessage}
+                confirmButtonColor="error"
                 submitCallback={confirmPopupSubmitCallback}
                 cancelCallback={closeConfirmationPopup}
             />
@@ -308,12 +309,7 @@ const StorageManager = (props) => {
                             axios.post(API_URL + "/account/logout")
                                 .then(() => window.location.href = '/admin');
                         }}
-                        sx={{
-                            border: '1px solid black',
-                            height: '2rem',
-                            textTransform: 'none',
-                            ml: '0.5rem',
-                        }}
+                        className="menuButton"
                     >
                         <span>Sair</span>
                     </Button>
@@ -339,11 +335,8 @@ const StorageManager = (props) => {
                     variant="contained"
                     startIcon={<UndoIcon />}
                     onClick={() => navigate('/admin')}
+                    className="menuFunctionButton noMarginRight"
                     sx={{
-                        border: '1px solid black',
-                        height: '2rem',
-                        textTransform: 'none',
-                        fontSize: '0.75rem',
                         backgroundColor: '#ffffff',
                         color: '#000000',
                         ':hover': { bgcolor: '#ddd' }
@@ -356,7 +349,7 @@ const StorageManager = (props) => {
                     disabled={!valid}
                     color="success"
                     variant="contained"
-                    className="menuFunctionButton"
+                    className="menuFunctionButton noMarginRight"
                     startIcon={<CheckRoundedIcon />}
                     onClick={(e) => updateSchedule(e)}
                 >
@@ -374,50 +367,66 @@ const StorageManager = (props) => {
                 margin: 'auto',
                 /*overflow: 'scroll'*/
             }}>
-                <Box
-                    sx = {{
-                        display: "flex",
-                        flexDirection: "column",
-                        zIndex: "1",
-                        backgroundColor: "#fff",
-                        border: "1px solid black",
-                        borderRadius: '0.5rem',
-                        top: "5.5rem",
-                        p: "0rem 1rem",
-                        width: "fit-content",
-                        height: "fit-content",
-                    }}
-                >
-                    <span>Sessões Privadas</span>
-                    {
-                        Object.entries(privateSessions).map(([privateSession, info], index) => {
-                            return (
-                                <Box
-                                    key={index}
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "row",
-                                        justifyContent: "space-between",
-                                        height: "2rem",
-                                        lineHeight: "2rem",
-                                        borderTop: index !== 0 ? "1px solid black" : "0px solid black",
-                                        cursor: "pointer"
-                                    }}
-                                    onClick={() => {
-                                        navigate(`/session/${privateSession}`);
-                                    }}
-                                >
-                                    <span>{privateSession} – {info["size"]} – {info["creation"]}</span>
-                                    <TooltipIcon
-                                        className="negActionButton"
-                                        message="Apagar"
-                                        clickFunction={(e) => openDeletePopup(e, privateSession)}
-                                        icon={<DeleteForeverIcon />}
-                                    />
-                                </Box>
-                            )
-                        })
-                    }
+
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    <Button
+                        variant="contained"
+                        onClick={(e) => openCleanupPopup(e)}
+                        className="menuButton"
+                        sx={{alignSelf: 'center'}}
+                    >
+                        Remover sessões com mais de {maxPrivateSessionAge} dias
+                    </Button>
+
+                    <Box sx = {{
+                            display: "flex",
+                            flexDirection: "column",
+                            zIndex: "1",
+                            backgroundColor: "#fff",
+                            border: "1px solid black",
+                            borderRadius: '0.5rem',
+                            position: 'relative',
+                            top: "0.5rem",
+                            p: "0.5rem 1rem",
+                            width: "fit-content",
+                            height: "fit-content",
+                    }}>
+                        <span>Sessões Privadas</span>
+                        {
+                            Object.entries(privateSessions).map(([privateSession, info], index) => {
+                                return (
+                                    <Box
+                                        key={index}
+                                        sx={{
+                                            display: "flex",
+                                            flexDirection: "row",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            height: "2rem",
+                                            lineHeight: "2rem",
+                                            borderTop: index !== 0 ? "1px solid black" : "0px solid black",
+                                            cursor: "pointer"
+                                        }}
+                                        onClick={() => {
+                                            navigate(`/session/${privateSession}`);
+                                        }}
+                                    >
+                                        <code>{privateSession}</code>
+                                        <span>&nbsp;–&nbsp;{info["size"]}&nbsp;–&nbsp;{info["creation"]}</span>
+                                        <TooltipIcon
+                                            className="negActionButton"
+                                            message="Apagar"
+                                            clickFunction={(e) => openDeletePopup(e, privateSession)}
+                                            icon={<DeleteForeverIcon />}
+                                        />
+                                    </Box>
+                                )
+                            })
+                        }
+                    </Box>
                 </Box>
 
                 <Box sx={{

@@ -838,7 +838,7 @@ class LayoutMenu extends React.Component {
 						<Button
 							variant="contained"
 							color="success"
-                            className="menuFunctionButton noMargin"
+                            className="menuFunctionButton noMarginRight"
                             startIcon={<CheckRoundedIcon />}
 							onClick={() => this.saveLayout(true)}
 						>

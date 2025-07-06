@@ -407,7 +407,7 @@ class OcrMenu extends React.Component {
                         disabled={!valid}
                         variant="contained"
                         color="success"
-                        className="menuFunctionButton noMargin"
+                        className="menuFunctionButton noMarginRight"
                         startIcon={<CheckRoundedIcon />}
                         onClick={() => this.saveConfig(true)}
                     >

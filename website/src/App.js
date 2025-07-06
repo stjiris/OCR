@@ -233,12 +233,7 @@ function App() {
                                         this.props.navigate(`/session/${sessionId}`);
                                     });
                                 }}
-                                sx={{
-                                    border: '1px solid black',
-                                    height: '2rem',
-                                    textTransform: 'none',
-                                    fontSize: '0.75rem'
-                                }}
+                                className="menuButton"
                             >
                                 Sessão Privada
                             </Button>
@@ -248,13 +243,8 @@ function App() {
                                 variant="contained"
                                 startIcon={<CreateNewFolderIcon/>}
                                 onClick={() => this.fileSystem.current.createFolder()}
-                                sx={{
-                                    border: '1px solid black',
-                                    height: '2rem',
-                                    textTransform: 'none',
-                                    ml: '0.5rem',
-                                    fontSize: '0.75rem'
-                                }}
+                                className="menuButton"
+                                sx={{ml: '0.5rem'}}
                             >
                                 Nova Pasta
                             </Button>

@@ -911,7 +911,7 @@ class EditingMenu extends React.Component {
                             <Button
                                 variant="contained"
                                 color="success"
-                                className="menuFunctionButton noMargin"
+                                className="menuFunctionButton noMarginRight"
                                 onClick={() => this.saveChanges(true)}
                                 startIcon={<CheckRoundedIcon />
                                 }>
