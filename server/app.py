@@ -1109,6 +1109,7 @@ def get_storage_info():
         "free_space_percentage": free_space_percentage,
         "private_sessions": get_size_private_sessions(),
         "last_cleanup": last_cleanup,
+        "max_age": os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
     }
 
 
@@ -1160,7 +1161,7 @@ def schedule_private_session_cleanup():
     }
 
 
-@app.route("/admin/cleanup-sessions", methods=["GET"])
+@app.route("/admin/cleanup-sessions", methods=["POST"])
 @auth_required('token', 'session')
 @roles_required('Admin')
 def perform_private_session_cleanup():

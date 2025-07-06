@@ -45,6 +45,7 @@ const StorageManager = (props) => {
     const [freeSpacePercent, setFreeSpacePercent] = useState("");
     const [privateSessions, setPrivateSessions] = useState([]);
     const [lastCleanup, setLastCleanup] = useState("nunca");
+    const [maxPrivateSessionAge, setMaxPrivateSessionAge] = useState("5");
 
     const [scheduleType, setScheduleType] = useState("monthly");
 
@@ -72,6 +73,7 @@ const StorageManager = (props) => {
                 setFreeSpacePercent(data["free_space_percentage"]);
                 setPrivateSessions(data["private_sessions"]);
                 setLastCleanup(data["last_cleanup"]);
+                setMaxPrivateSessionAge(data["max_age"]);
             });
     }
 
@@ -142,6 +144,13 @@ const StorageManager = (props) => {
         // confirm popup is set up in useEffect
     }
 
+    function openCleanupPopup(e) {
+        e.stopPropagation();
+        setConfirmPopupOpened(true);
+        setConfirmPopupMessage(`Tem a certeza que quer remover as sessões com mais de ${maxPrivateSessionAge} dias?`);
+        setConfirmPopupSubmitCallback(() => runPrivateSessionCleanup);  // set value as function runPrivateSessionCleanup
+    }
+
     function closeConfirmationPopup() {
         setDeleteSessionId(null);  // needed when closing or cancelling popup for deletion of single private session
         setConfirmPopupOpened(false);
@@ -165,6 +174,25 @@ const StorageManager = (props) => {
                 }
                 if (response.data["success"]) {
                     setPrivateSessions(response.data["private_sessions"]);
+                } else {
+                    throw new Error(response.data["message"]);
+                }
+                closeConfirmationPopup();
+            })
+            .catch(err => {
+                errorNotif.current.openNotif(err.message);
+                closeConfirmationPopup();
+            });
+    }
+
+    const runPrivateSessionCleanup = () => {
+        axios.post(API_URL + "/admin/cleanup-sessions")
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error("Não foi possível concluir o pedido.");
+                }
+                if (response.data["success"]) {
+                    successNotif.current.openNotif(response.data["message"]);
                 } else {
                     throw new Error(response.data["message"]);
                 }

@@ -786,12 +786,6 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     log.info(f"Created periodic task {entry}")
 
 
-@celery.task(name="temp")
-def temp():
-    log.error(f"TEMP TEST TASK: {int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))}")
-    return "TEMP RESULT"
-
-
 @celery.task(name="set_max_private_session_age")
 def set_max_private_session_age(new_max_age: int | str):
     try:
