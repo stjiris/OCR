@@ -1287,15 +1287,25 @@ if not os.path.exists(f"./{PRIVATE_PATH}/"):
         )
 
 with app.app_context():
+    # drop and rebuild database to ensure only the credentials currently in environment allow admin access
+    # FIXME: allowing creation of more users will require better way of managing admins, to ensure credentials can be revoked without interfering with other users
+    db.drop_all()
+    db.session.commit()
+
     db.create_all()
     if not security.datastore.find_role("Admin"):
         security.datastore.create_role(name="Admin")
 
-    if app.debug:
-        if not security.datastore.find_user(email="test@home.com"):
-            security.datastore.create_user(email="test@home.com", password=hash_password("password"), roles=["Admin"])
+    admin_email = os.environ["ADMIN_EMAIL"]
+    admin_pass = os.environ["ADMIN_PASS"]
+    del os.environ["ADMIN_EMAIL"]
+    del os.environ["ADMIN_PASS"]
+
+    if not security.datastore.find_user(email=admin_email):
+        security.datastore.create_user(email=admin_email, password=hash_password(admin_pass), roles=["Admin"])
 
     db.session.commit()
+
 
 if __name__ == "__main__":
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
