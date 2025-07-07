@@ -5,10 +5,10 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 
 import footerBanner from "../../../static/footerBanner.png";
-import loadComponent from "../../../utils/loadComponents";
+// import loadComponent from "../../../utils/loadComponents";
 // const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 // const LogsMenu = loadComponent('Form', 'LogsMenu');
-const Notification = loadComponent('Notifications', 'Notification');
+// const Notification = loadComponent('Notifications', 'Notification');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const UPDATE_TIME = 30;  // period of fetching system info, in seconds
@@ -21,8 +21,8 @@ const Dashboard = (props) => {
 
     // const versionsMenu = useRef(null);
     // const logsMenu = useRef(null);
-    const successNotif = useRef(null);
-    const errorNotif = useRef(null);
+    // const successNotif = useRef(null);
+    // const errorNotif = useRef(null);
 
     function getSystemInfo() {
         axios.get(API_URL + '/admin/system-info')
@@ -43,8 +43,8 @@ const Dashboard = (props) => {
 
     return (
         <Box className="App" sx={{height: '100vh'}}>
-            <Notification message={""} severity={"success"} ref={successNotif}/>
-            <Notification message={""} severity={"error"} ref={errorNotif}/>
+            {/* <Notification message={""} severity={"success"} ref={successNotif}/> */}
+            {/* <Notification message={""} severity={"error"} ref={errorNotif}/> */}
 
             {/* <VersionsMenu ref={versionsMenu}/> */}
             {/* <LogsMenu ref={logsMenu}/> */}

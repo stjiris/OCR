@@ -1,15 +1,20 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import axios from 'axios';
 import {useLocation, useNavigate} from "react-router";
 
+import loadComponent from "../../../utils/loadComponents";
+const Notification = loadComponent('Notifications', 'Notification');
+
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
-const LoginPage = ({ isAuthenticated, setLoggedIn }) => {
+const LoginPage = ({ isAuthenticated = false, setLoggedIn = null }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
+    const errorNotif = useRef(null);
 
     const logInUser = () => {
         axios.post(API_URL + "/account/login", {
@@ -21,6 +26,11 @@ const LoginPage = ({ isAuthenticated, setLoggedIn }) => {
             })
             .catch((error) => {
                 console.log(error);
+                if (error.status === 400) {
+                    errorNotif.current.openNotif("Email ou password incorretos");
+                } else {
+                    errorNotif.current.openNotif(error.message);
+                }
             });
     }
 
@@ -32,6 +42,8 @@ const LoginPage = ({ isAuthenticated, setLoggedIn }) => {
     }
     else return (
         <div style={{ marginLeft: "2%" }}>
+            <Notification message={""} severity={"error"} ref={errorNotif}/>
+
             <h1>OCR Admin Login</h1>
             <form>
                 <div>
@@ -56,8 +68,5 @@ const LoginPage = ({ isAuthenticated, setLoggedIn }) => {
     );
 }
 
-LoginPage.defaultProps = {
-    setLoggedIn: ()=>{}
-}
 
 export default LoginPage;
