@@ -172,5 +172,8 @@ def verify_params(config):
         for format in config["outputs"]:
             if format not in OUTPUTS:
                 errors.append(f'Formato de resultado: "{config["outputs"]}"')
+    if "dpi" in config:
+        if not isinstance(config["dpi"], (int, str)):
+            errors.append(f'DPI: "{config["outputs"]}"')
 
     return len(errors) == 0, errors
