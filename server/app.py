@@ -1113,6 +1113,23 @@ def get_storage_info():
     }
 
 
+@app.route("/admin/cancel-cleanup", methods=["POST"])
+def cancel_cleanup():
+    """
+    For now, use to quickly cancel all scheduling of private session cleanups.
+    Schedule can be recreated by restarting worker or flower.
+
+    TODO: allow recreating schedule through another endpoint,
+    or make calls to /admin/schedule-cleanup re-create the schedule if it doesn't exist.
+    """
+    entry = RedBeatSchedulerEntry.from_key('redbeat:cleanup_private_sessions', app=celery)
+    entry.delete()
+    return {
+        "success": True,
+        "message": "Limpeza regular de sessões privadas cancelada."
+    }
+
+
 @app.route("/admin/schedule-cleanup", methods=["POST"])
 @auth_required('token', 'session')
 @roles_required('Admin')
