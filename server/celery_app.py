@@ -53,6 +53,8 @@ CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6
 
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
 
+# celery.conf.beat_max_loop_interval = 30  # in seconds; default 5 seconds or 5 minutes depending on task schedule
+
 load_invisible_font()
 
 
@@ -798,13 +800,19 @@ def set_max_private_session_age(new_max_age: int | str):
 @celery.task(name="cleanup_private_sessions")
 def delete_old_private_sessions():
     max_private_session_age = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))  # days
+    log.info(f"Deleting private sessions older than {max_private_session_age} days")
 
-    log.debug("Deleting old private sessions")
     priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
+    n_deleted = 0
     for folder in priv_sessions:
         data = get_data(f"{folder}/_data.json")
         created_time = data["creation"]
         as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(TIMEZONE)
         now = datetime.now().astimezone(TIMEZONE)
-        log.warning(f'{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_session_age}')
+        log.debug(f'{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_session_age}')
+        if (now - as_datetime).days > max_private_session_age:
+            shutil.rmtree(folder)
+            n_deleted += 1
+
     update_data(f"./{PRIVATE_PATH}/_data.json", { "last_cleanup": get_current_time() })
+    return f"{n_deleted} private session(s) deleted"
