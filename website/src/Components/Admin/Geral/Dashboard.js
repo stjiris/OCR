@@ -95,6 +95,7 @@ const Dashboard = (props) => {
                 </Button>
 
                 <Button
+                    disabled
                     variant="contained"
                     className="adminMenuButton"
                 >
