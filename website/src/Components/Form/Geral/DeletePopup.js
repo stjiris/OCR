@@ -9,8 +9,9 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 
 import loadComponent from '../../../utils/loadComponents';
-const Notification = loadComponent('Notification', 'Notifications');
+const Notification = loadComponent('Notifications', 'Notification');
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const style = {
     position: 'absolute',
     top: '50%',
@@ -65,7 +66,7 @@ class DeletePopup extends React.Component {
     deleteItem() {
         this.setState({ buttonDisabled: true });
         const path = this.state.path + '/' + this.state.filename;
-        fetch(process.env.REACT_APP_API_URL + 'delete-path', {
+        fetch(API_URL + '/delete-path', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

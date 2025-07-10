@@ -23,6 +23,9 @@ PRIVATE_PATH = _files/_private_sessions
 FLASK_DEBUG = False
 FLASK_SECRET_KEY = something_very_long_and_complex # (for example, use python's secrets.token_hex())
 FLASK_SECURITY_PASSWORD_SALT = a_big_number_for_HMAC_salt # (for example, use python's secrets.SystemRandom().getrandbits(128))
+
+ADMIN_EMAIL = put_admin_email_or_username@here.spam
+ADMIN_PASSWORD = put_admin_password_here
 ```
 
 ## Environment variables recommended for local development

@@ -10,6 +10,8 @@ import loadComponent from '../../../utils/loadComponents';
 const PageDisplayer = loadComponent('Displayer', 'PageDisplayer');
 const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+
 class ESItem extends React.Component {
     // This component is used to display a single page from the ElasticSearch database
     constructor(props) {
@@ -106,7 +108,7 @@ class ESPage extends React.Component {
         /**
          * When the component is mounted, get the list of indexed documents from the database
          */
-        fetch(process.env.REACT_APP_API_URL + "get-docs-list", {
+        fetch(API_URL + "/get-docs-list", {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -193,7 +195,7 @@ class ESPage extends React.Component {
         // Cancel empty search request
         if (this.state.query === "" && filteredDocs.length === 0) return;
 
-        fetch(process.env.REACT_APP_API_URL + "search", {
+        fetch(API_URL + "/search", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

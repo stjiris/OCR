@@ -9,8 +9,9 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 
 import loadComponent from '../../../utils/loadComponents';
-const Notification = loadComponent('Notification', 'Notifications');
+const Notification = loadComponent('Notifications', 'Notification');
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const style = {
     position: 'absolute',
     top: '50%',
@@ -99,7 +100,7 @@ class OcrPopup extends React.Component {
             body["config"] = this.state.customConfig;
         }
 
-        fetch(process.env.REACT_APP_API_URL + 'perform-ocr', {
+        fetch(API_URL + '/perform-ocr', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

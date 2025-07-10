@@ -16,11 +16,12 @@ import Radio from "@mui/material/Radio";
 import FormControl from "@mui/material/FormControl";
 
 import loadComponent from '../../../utils/loadComponents';
-const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
-const Notification = loadComponent('Notification', 'Notifications');
+const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
+const Notification = loadComponent('Notifications', 'Notification');
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
-const CheckboxList = loadComponent('OcrMenu', 'CheckboxList');
+const CheckboxList = loadComponent('Form', 'CheckboxList');
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
 // TODO: always get the most updated default config from an API endpoint
 
@@ -317,8 +318,8 @@ class OcrMenu extends React.Component {
     saveConfig(exit = false) {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const config = this.state.usingDefault ? "default" : this.getConfig();
-        axios.post(process.env.REACT_APP_API_URL + 'save-config',
-            {
+        axios.post(API_URL + '/save-config',
+            JSON.stringify({
                 _private: this.props._private,
                 path: path,
                 config: config,
@@ -411,7 +412,7 @@ class OcrMenu extends React.Component {
                         disabled={!valid}
                         variant="contained"
                         color="success"
-                        className="menuFunctionButton noMargin"
+                        className="menuFunctionButton noMarginRight"
                         startIcon={<CheckRoundedIcon />}
                         onClick={() => this.saveConfig(true)}
                     >

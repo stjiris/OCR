@@ -9,7 +9,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import loadComponent from '../../../utils/loadComponents';
-const Notification = loadComponent('Notification', 'Notifications');
+const Notification = loadComponent('Notifications', 'Notification');
 
 const style = {
     position: 'absolute',
@@ -67,6 +67,7 @@ class PrivateSessionMenu extends React.Component {
                         </Typography>
                         <Typography variant="body1" component="p" sx={{mt: '1rem', mb: '1rem'}}>
                             Para poder aceder a esta sessão novamente no futuro, certifique-se que guarda o link da sessão privada num lugar seguro.
+                            As sessões privadas são removidas ao fim de {this.props.maxAge} dias.
                         </Typography>
                         <Button
                             disabled={this.state.buttonDisabled}
@@ -108,6 +109,7 @@ class PrivateSessionMenu extends React.Component {
 }
 
 PrivateSessionMenu.defaultProps = {
+    maxAge: null,
     rowRefsLength: null,
     // functions:
     createFile: null

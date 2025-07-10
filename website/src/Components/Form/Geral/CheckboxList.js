@@ -13,6 +13,7 @@ function CheckboxList(
         checked = [],
         title = "",
         required = false,
+        disabled = false,
         helperText = null,
         errorText = null,
         // functions:
@@ -38,6 +39,7 @@ function CheckboxList(
     return (
         <FormControl
             required={required}
+            disabled={disabled}
             error={error}
             component="fieldset"
             variant="standard"
@@ -45,21 +47,21 @@ function CheckboxList(
             <FormLabel component="legend">{title}</FormLabel>
             <FormGroup>
             {/*<List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>*/}
-                {options.map(({ value, description, disabled }, index) => {
+                {options.map((option, index) => {
                     return (
                         <FormControlLabel
-                            disabled={disabled}
+                            disabled={option.disabled}
                             control={
                                 <Checkbox
                                     edge="start"
-                                    checked={checked.includes(value)}
-                                    value={value}
+                                    checked={checked.includes(option.value)}
+                                    value={option.value}
                                     onChange={handleChange}
                                     tabIndex={-1}
                                     disableRipple
                                 />
                             }
-                            label={description}
+                            label={option.description}
                         />
                     );
                 })}

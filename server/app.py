@@ -3,17 +3,37 @@ import os
 import random
 import shutil
 import string
+from datetime import timedelta
 from http import HTTPStatus
 
 from threading import Lock, Thread
 
+import flask_wtf
+import redbeat
+import requests
 from celery import Celery
+from celery.schedules import crontab
+from celery.schedules import schedule
+from dotenv import load_dotenv
 from flask import Flask
+from flask import g
+from flask import Response
 from flask import abort
 from flask import jsonify
 from flask import request
 from flask import send_file
 from flask_cors import CORS
+from flask_login import current_user
+from flask_mailman import Mail
+from flask_security import auth_required
+from flask_security import hash_password
+from flask_security import roles_required
+from flask_security import Security
+from flask_security import SQLAlchemyUserDatastore
+from flask_security.models import fsqla_v3 as fsqla
+from flask_sqlalchemy import SQLAlchemy
+from redbeat import RedBeatSchedulerEntry
+from redbeat.schedulers import RedBeatConfig
 from werkzeug.utils import safe_join
 
 from src.elastic_search import create_document
@@ -43,16 +63,55 @@ from src.utils.file import FILES_PATH, TEMP_PATH, PRIVATE_PATH, ALLOWED_EXTENSIO
 from src.utils.system import get_free_space
 #from src.utils.system import get_logs
 from src.utils.system import get_private_sessions
+from src.utils.system import get_size_private_sessions
 
 from src.utils.text import compare_dicts_words
 
-app = Flask(__name__)
-CORS(app)
+load_dotenv()
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+
+app = Flask(__name__)
+CORS(app, supports_credentials=True)
+
+#app.config["APPLICATION_ROOT"] = "/api"
+app.config["APPLICATION_ROOT"] = "/"
+
+# Set secret key and salt (required)
+app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
+app.config["SECURITY_PASSWORD_SALT"] = os.environ["FLASK_SECURITY_PASSWORD_SALT"]
+
+# Get configs from file
+app.config.from_pyfile('app.cfg')
+
+# Enable CSRF on all api endpoints
+flask_wtf.CSRFProtect(app)
+
+# Setup authentication DB
+db = SQLAlchemy(app)
+fsqla.FsModels.set_db_info(db)
+
+# Setup mail service - must be configured for production!!!
+#mail = Mail(app)
+
+
+class Role(db.Model, fsqla.FsRoleMixin):
+    pass
+
+
+class User(db.Model, fsqla.FsUserMixin):
+    pass
+
+
+# Setup Flask-Security
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+security = Security(app, user_datastore)
+
+# Setup connection to celery
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
 
+# Setup connection to ElasticSearch
 es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 # logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
@@ -62,12 +121,24 @@ lock_system = dict()
 private_sessions = dict()
 
 
+#####################################
+# ERROR HANDLING
+#####################################
+def bad_request(message: str = 'Bad request syntax or unsupported method'):
+    response = jsonify({"message": message})
+    response.status_code = 400
+    return response
+
+#####################################
+# REQUEST HANDLING
+#####################################
+
 def format_path(request_data):
     is_private = "_private" in request_data and (request_data["_private"] == 'true' or request_data["_private"] == True)
     if is_private:
         private_session = request_data["path"].strip("/").split("/")[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(HTTPStatus.BAD_REQUEST)
+            return bad_request("Path in private session must start with session ID")
         return safe_join(PRIVATE_PATH, request_data["path"].strip("/")), True
     else:
         return safe_join(FILES_PATH, request_data["path"].strip("/")), False
@@ -82,7 +153,7 @@ def format_filesystem_path(request_data):
         path = safe_join(PRIVATE_PATH, stripped_path)
         private_session = stripped_path.split("/")[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(HTTPStatus.BAD_REQUEST)
+            return bad_request("Path in private session must start with session ID")
         filesystem_path = safe_join(PRIVATE_PATH, private_session)
         if filesystem_path is None:
             abort(HTTPStatus.NOT_FOUND)
@@ -99,19 +170,28 @@ def requires_arg_path(func):
     func._requires_arg_path = True  # value unimportant
     return func
 
+
 # Endpoint requires a non-empty 'path' JSON value
 def requires_json_path(func):
     func._requires_json_path = True  # value unimportant
     return func
+
 
 # Endpoint requires a non-empty 'path' form value
 def requires_form_path(func):
     func._requires_form_path = True  # value unimportant
     return func
 
+
 # Endpoint requires an allowed file type
 def requires_allowed_file(func):
     func._requires_allowed_file = True  # value unimportant
+    return func
+
+
+# Endpoint is exempt from CSRF; used to bypass csrf.exempt decorator not working
+def csrf_exempt(func):
+    func._csrf_exempt = True  # value unimportant
     return func
 
 
@@ -121,19 +201,27 @@ def abort_bad_request():
         view_func = app.view_functions[request.endpoint]
         if hasattr(view_func, '_requires_arg_path'):
             if "path" not in request.values or request.values["path"] == "":
-                abort(HTTPStatus.BAD_REQUEST)
+                return bad_request("Missing 'path' argument")
         elif hasattr(view_func, '_requires_json_path'):
             if "path" not in request.json or request.json["path"] == "":
-                abort(HTTPStatus.BAD_REQUEST)
+                return bad_request("Missing 'path' parameter")
         elif hasattr(view_func, '_requires_form_path'):
             if "path" not in request.form or request.form["path"] == "":
-                abort(HTTPStatus.BAD_REQUEST)
+                return bad_request("Missing 'path' in form")
         elif hasattr(view_func, '_requires_allowed_file'):
             if "name" not in request.form:
-                abort(HTTPStatus.BAD_REQUEST)
+                return bad_request("Missing 'name' in form")
             if request.form["name"].split(".")[-1].lower() not in ALLOWED_EXTENSIONS:
                 abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
 
+
+# Bypass CSRF check by changing the context flag, due to flask-wtf's "exempt" decorator not working
+@app.before_request
+def ignore_csrf_if_exempt():
+    if request.method != "GET" and request.endpoint in app.view_functions:
+        view_func = app.view_functions[request.endpoint]
+        if hasattr(view_func, '_csrf_exempt'):
+            g.csrf_valid = True
 
 
 #####################################
@@ -145,11 +233,15 @@ def get_file_system():
     try:
         # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
-            return get_filesystem(FILES_PATH)
+            filesystem = get_filesystem(FILES_PATH)
+            filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
+            return filesystem
 
         path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
-        log.info(f"Getting info of {filesystem_path}, priv session {private_session}")
-        return get_filesystem(filesystem_path, private_session, is_private)
+        log.debug(f"Getting info of {filesystem_path}, priv session {private_session}")
+        filesystem = get_filesystem(filesystem_path, private_session, is_private)
+        filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
+        return filesystem
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
@@ -167,25 +259,14 @@ def get_info():
         abort(HTTPStatus.NOT_FOUND)
 
 
-@app.route("/system-info", methods=["GET"])
-def get_system_info():
-    free_space, free_space_percentage = get_free_space()
-    return {
-        "free_space": free_space,
-        "free_space_percentage": free_space_percentage,
-        # "logs": get_logs(),
-        "private_sessions": get_private_sessions(),
-    }
-
-
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
-    log.info(data)
+    log.debug(data)
 
     if ("path" not in data  # empty path is valid: new top-level public session folder
         or "folder" not in data or data["folder"] == ''):
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'path' or 'folder'")
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     folder = data["folder"]
@@ -305,7 +386,7 @@ def get_pdf_simple():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    promise = celery.send_task('export_file', kwargs={'path':path, 'filetype': "pdf", 'simple': True})
+    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "pdf", 'simple': True})
     file = promise.get()
     return send_file(file)
 
@@ -382,28 +463,6 @@ def delete_path():
     }
 
 
-@app.route("/delete-private-session", methods=["POST"])
-def delete_private_session():
-    data = request.json
-    if "sessionId" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
-    session_id = data["sessionId"]
-
-    session_path = safe_join(PRIVATE_PATH, session_id)
-    if session_path is None:
-        abort(HTTPStatus.NOT_FOUND)
-
-    shutil.rmtree(session_path)
-    if session_id in private_sessions:
-        del private_sessions[session_id]
-
-    return {
-        "success": True,
-        "message": "Apagado com sucesso",
-        "private_sessions": get_private_sessions(),
-    }
-
-
 @app.route("/set-upload-stuck", methods=["POST"])
 @requires_json_path
 def set_upload_stuck():
@@ -437,15 +496,15 @@ def is_filename_reserved(path, filename):
 
     :return: True if reserved, False otherwise
     """
-    for f in os.listdir(path):
-        # If f is a folder
-        if not os.path.isdir(f"{path}/{f}"): continue
-        if f == filename: return True
+    with os.scandir(path) as dir_content:
+        for f in dir_content:
+            # If f is a folder
+            if not f.is_dir(): continue
+            if f.name == filename: return True
 
-        data = get_data(f"{path}/{f}/_data.json")
-        if "original_filename" in data and data["original_filename"] == filename:
-            return True
-
+            data = get_data(f"{f.path}/_data.json")
+            if "original_filename" in data and data["original_filename"] == filename:
+                return True
     return False
 
 
@@ -474,7 +533,7 @@ def prepare_upload():
 
     data = request.json
     if "name" not in data or data["name"] == '':
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'name'")
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
     filename = data["name"]
@@ -498,7 +557,8 @@ def prepare_upload():
             ensure_ascii=False,
         )
 
-    return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private), "filename": filename}
+    return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private),
+            "filename": filename}
 
 
 def join_chunks(target_path, filename, total_count, temp_file_path):
@@ -507,11 +567,8 @@ def join_chunks(target_path, filename, total_count, temp_file_path):
         for i in range(total_count):
             with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
-
     celery.send_task('prepare_file', kwargs={'path': target_path})
-
     shutil.rmtree(temp_file_path)
-    log.info(f"Finished uploading file {filename}")
 
 
 @app.route("/upload-file", methods=["POST"])
@@ -525,7 +582,7 @@ def upload_file():
         or "name" not in request.form
         or "counter" not in request.form
         or "totalCount" not in request.form):
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing file or parameter 'name', 'counter', or 'totalCount'")
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(request.form)
     file = request.files["file"]
@@ -533,7 +590,7 @@ def upload_file():
     counter = int(request.form["counter"])
     total_count = int(request.form["totalCount"])
 
-    temp_filename = safe_join(path,  f"_{filename}").replace("/", "_")
+    temp_filename = safe_join(path, f"_{filename}").replace("/", "_")
     target_path = safe_join(path, filename)  # path for document data is "path/filename"
     file_path = safe_join(target_path, filename)  # file stored as "path/filename/filename"
 
@@ -572,9 +629,9 @@ def upload_file():
 
         # Number of chunks saved
         chunks_saved = len(os.listdir(f"{temp_file_path}"))
-        stored = round(100 * chunks_saved/total_count, 2)
+        stored = round(100 * chunks_saved / total_count, 2)
 
-        log.info(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
+        log.debug(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
 
         update_data(f"{target_path}/_data.json", {"stored": stored})
 
@@ -596,7 +653,7 @@ def upload_file():
 def configure_ocr():
     req_data = request.json
     if "config" not in req_data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'config'")
     path, filesystem_path, private_session, is_private = format_filesystem_path(req_data)
     data_path = f"{path}/_data.json"
     try:
@@ -608,7 +665,7 @@ def configure_ocr():
         data["config"] = req_data["config"]
     else:
         # TODO: accept and verify other strings as config file names
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Config must be dictionary or \"default\"")
 
     update_data(data_path, data)
 
@@ -799,7 +856,7 @@ def remove_index_doc():
 def submit_text():
     data = request.json
     if "text" not in data or "remakeFiles" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'text' or 'remakeFiles'")
 
     texts = data["text"]  # estrutura com texto, nome do ficheiro e url da imagem
     remake_files = data["remakeFiles"]
@@ -814,7 +871,7 @@ def submit_text():
         data_path = path + "/_data.json"
         private_session = data_folder_list[0]
         if private_session == "":  # path for private session must start with session ID
-            abort(HTTPStatus.BAD_REQUEST)
+            return bad_request("Path to private session must start with session ID")
         filesystem_path = safe_join(PRIVATE_PATH, private_session)
     else:
         path = safe_join(FILES_PATH, data_folder)
@@ -850,13 +907,14 @@ def submit_text():
 def check_sintax():
     if ("words" not in request.json
         or "languages" not in request.json):
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'words' or 'languages'")
 
     words = request.json["words"].keys()
     languages = request.json["languages"]
 
     result = compare_dicts_words(words, languages)
     return {"success": True, "result": result}
+
 
 #####################################
 # ELASTICSEARCH
@@ -865,11 +923,12 @@ def check_sintax():
 def get_docs_list():
     return es.get_all_docs_names()
 
+
 @app.route("/search", methods=["POST"])
 def search():
     data = request.json
     if "query" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'query'")
 
     query = data["query"]
     docs = None
@@ -882,6 +941,7 @@ def search():
         return jsonify(es.get_docs(docs))
     else:
         return jsonify(es.search(query, docs))
+
 
 #####################################
 # PRIVATE SESSIONS
@@ -924,7 +984,7 @@ def create_private_session():
 def validate_private_session():
     data = request.json
     if "sessionId" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'sessionId'")
 
     session_id = data["sessionId"]
 
@@ -957,7 +1017,7 @@ def get_layouts():
 def save_layouts():
     data = request.json
     if "layouts" not in data:
-        abort(HTTPStatus.BAD_REQUEST)
+        return bad_request("Missing parameter 'layouts'")
 
     path, _ = format_path(data)
     if path is None:
@@ -985,6 +1045,241 @@ def generate_automatic_layouts():
 
 
 #####################################
+# LOGIN MANAGEMENT
+#####################################
+@app.route('/account/check-auth', methods=["GET"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def check_authorized():
+    if current_user.is_authenticated:
+        return {"status": "Logged in"}
+    else:
+        abort(HTTPStatus.FORBIDDEN)
+
+"""
+@app.route("/register", methods=["POST"])
+def register_user():
+    email = request.json["email"]
+    password = request.json["password"]
+    user_exists = User.query.filter_by(email=email).first() is not None
+
+    if user_exists:
+        return jsonify({"error": "Utilizador já registado com este email."}), 409
+
+    new_user = User(email=email, password=password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    session["user_id"] = new_user.id
+    return jsonify({
+        "id": new_user.id,
+        "email": new_user.email
+    })
+"""
+
+#####################################
+# ADMIN ROUTES
+#####################################
+
+@app.route("/admin/system-info", methods=["GET"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def get_system_info():
+    free_space, free_space_percentage = get_free_space()
+    return {
+        "free_space": free_space,
+        "free_space_percentage": free_space_percentage,
+        # "logs": get_logs(),
+        "private_sessions": get_private_sessions(),
+    }
+
+
+@app.route("/admin/storage-info", methods=["GET"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def get_storage_info():
+    free_space, free_space_percentage = get_free_space()
+    data = get_data(f"./{PRIVATE_PATH}/_data.json")
+    if "last_cleanup" not in data.keys():
+        last_cleanup = "nunca"
+    else:
+        last_cleanup = data["last_cleanup"]
+    return {
+        "free_space": free_space,
+        "free_space_percentage": free_space_percentage,
+        "private_sessions": get_size_private_sessions(),
+        "last_cleanup": last_cleanup,
+        "max_age": os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
+    }
+
+
+@app.route("/admin/cancel-cleanup", methods=["POST"])
+def cancel_cleanup():
+    """
+    For now, use to quickly cancel all scheduling of private session cleanups.
+    Schedule can be recreated by restarting worker or flower.
+
+    TODO: allow recreating schedule through another endpoint,
+    or make calls to /admin/schedule-cleanup re-create the schedule if it doesn't exist.
+    """
+    entry = RedBeatSchedulerEntry.from_key('redbeat:cleanup_private_sessions', app=celery)
+    entry.delete()
+    return {
+        "success": True,
+        "message": "Limpeza regular de sessões privadas cancelada."
+    }
+
+
+@app.route("/admin/schedule-cleanup", methods=["POST"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def schedule_private_session_cleanup():
+    data = request.json
+    log.debug(data)
+    if "type" not in data:
+        return bad_request("Missing parameter 'type'")
+
+    if data["type"] == "interval":
+        if "run_every" not in data or not isinstance(data["run_every"], (int, str)):
+            return bad_request("Parameter 'run_every' must be positive whole number as integer or string")
+        if data["run_every"] == 0:
+            return bad_request("Number of hours between cleanups cannot be zero")
+        delta = timedelta(hours=int(data["run_every"]))
+        new_schedule = schedule(run_every=delta, app=celery)
+
+    elif data["type"] == "monthly":
+        # Default to first minute of the first day of every month
+        hour = data["hour"] if "hour" in data else 0
+        minute = data["minute"] if "minute" in data else 1
+        day_of_month = data["day_of_month"] if "day_of_month" in data else 1
+        new_schedule = crontab(minute=minute, hour=hour, day_of_month=day_of_month)
+
+    elif data["type"] == "weekly":
+        if "day_of_week" not in data or not isinstance(data["day_of_week"], (int,str)):
+            return bad_request("Parameter 'day_of_week' must be a number between 0 (Sunday) and 6 as integer or string")
+        if ("hour" in data and not isinstance(data["hour"], (int,str)))\
+            or ("minute" in data and not isinstance(data["minute"], (int,str))):
+            return bad_request("Parameters 'hour' and 'minute' must be numbers as integer or string")
+
+        # Default to first minute of every saturday
+        hour = data["hour"] if "hour" in data else 0
+        minute = data["minute"] if "minute" in data else 1
+        day_of_week = data["day_of_week"] if "day_of_week" in data else 1
+        new_schedule = crontab(minute=minute, hour=hour, day_of_week=day_of_week)
+    else:
+        return bad_request("Unrecognized schedule type")
+
+    entry = RedBeatSchedulerEntry.from_key('redbeat:cleanup_private_sessions', app=celery)
+    entry.schedule = new_schedule
+    entry = entry.save()
+    return {
+        "success": True,
+        "message": f"Novo agendamento da limpeza de sessões privadas: {entry}"
+    }
+
+
+@app.route("/admin/cleanup-sessions", methods=["POST"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def perform_private_session_cleanup():
+    celery.send_task('cleanup_private_sessions')
+    return {"success": True, "message": "O sistema irá apagar as sessões privadas mais antigas."}
+
+
+@app.route("/admin/get-scheduled", methods=["GET"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def get_scheduled_tasks():
+    config = RedBeatConfig(celery)
+    schedule_key = config.schedule_key
+    log.debug(f"Schedule key: {schedule_key}")
+    redis = redbeat.schedulers.get_redis(celery)
+    elements = redis.zrange(schedule_key, 0, -1, withscores=False)
+    entries = {el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements}
+    log.debug(entries)
+    return f"{entries}"
+
+
+@app.route("/admin/set-max-private-session-age", methods=["POST"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def set_max_private_session_age():
+    data = request.json
+    if "new_max_age" not in data:
+        return bad_request("Missing parameter 'new_max_age'")
+
+    new_max_age = data["new_max_age"]
+    try:
+        if int(new_max_age) < 1:
+            return {"success": False, "message": f"Invalid number of days: \"{new_max_age}\", must be positive integer"}
+
+        result = celery.send_task('set_max_private_session_age', kwargs={'new_max_age': new_max_age}).get()
+        if result["status"] == "success":
+            os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
+            return {"success": True, "message": f"New max private session age: {new_max_age} days"}
+    except ValueError:
+        return {"success": False, "message": f"Invalid number of days: \"{new_max_age}\", must be positive integer"}
+
+
+@app.route("/admin/delete-private-session", methods=["POST"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+def delete_private_session():
+    data = request.json
+    if "sessionId" not in data:
+        return bad_request("Missing parameter 'sessionId'")
+    session_id = data["sessionId"]
+
+    session_path = safe_join(PRIVATE_PATH, session_id)
+    if session_path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
+    shutil.rmtree(session_path)
+    if session_id in private_sessions:
+        del private_sessions[session_id]
+
+    return {
+        "success": True,
+        "message": "Apagado com sucesso",
+        "private_sessions": get_size_private_sessions(),
+    }
+
+
+@app.route('/admin/flower/', defaults={'fullpath': ''}, methods=["GET", "POST"])
+@app.route('/admin/flower/<path:fullpath>', methods=["GET", "POST"])
+@auth_required('token', 'session')
+@roles_required('Admin')
+@csrf_exempt  # csrf token cannot be added to AJAX requests sent from flower's views
+def proxy_flower(fullpath):
+    """
+    Proxy requests to the Flower Celery manager. Flower can be setup to allow operations without authentication,
+    as authentication can be ensured through this endpoint.
+    :param fullpath: rest of the path to the Flower API
+    :return: response from Flower
+    """
+    log.debug(f'Requesting to flower {request.base_url.replace(request.host_url, "http://flower:5050/")}')
+    res = requests.request(
+        method=request.method,
+        url=request.base_url.replace(request.host_url, 'http://flower:5050/'),
+        params=request.query_string,
+        headers={k: v for k, v in request.headers if k.lower() != 'host'},
+        data=request.get_data(),
+        cookies=request.cookies,
+        allow_redirects=False,
+    )
+
+    # exclude "hop-by-hop headers" defined by RFC 2616 section 13.5.1 ref. https://www.rfc-editor.org/rfc/rfc2616#section-13.5.1
+    excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+    headers = [
+        (k, v) for k, v in res.raw.headers.items()
+        if k.lower() not in excluded_headers
+    ]
+
+    response = Response(res.content, res.status_code, headers)
+    return response
+
+
+#####################################
 # MAIN
 #####################################
 if not os.path.exists(f"./{FILES_PATH}/"):
@@ -1001,12 +1296,34 @@ if not os.path.exists(f"./{PRIVATE_PATH}/"):
             {
                 "type": "folder",
                 "creation": get_current_time(),
+                "last_cleanup": "nunca",
             },
             f,
             indent=2,
             ensure_ascii=False,
         )
 
+with app.app_context():
+    # drop and rebuild database to ensure only the credentials currently in environment allow admin access
+    # FIXME: allowing creation of more users will require better way of managing admins, to ensure credentials can be revoked without interfering with other users
+    db.drop_all()
+    db.session.commit()
+
+    db.create_all()
+    if not security.datastore.find_role("Admin"):
+        security.datastore.create_role(name="Admin")
+
+    admin_email = os.environ["ADMIN_EMAIL"]
+    admin_pass = os.environ["ADMIN_PASS"]
+    del os.environ["ADMIN_EMAIL"]
+    del os.environ["ADMIN_PASS"]
+
+    if not security.datastore.find_user(email=admin_email):
+        security.datastore.create_user(email=admin_email, password=hash_password(admin_pass), roles=["Admin"])
+
+    db.session.commit()
+
+
 if __name__ == "__main__":
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
-    app.run(host='0.0.0.0', port=5001, threaded=True)
+    app.run(host='0.0.0.0', port=5001, threaded=True, use_reloader=False)

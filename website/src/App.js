@@ -1,5 +1,9 @@
 import './App.css';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+import axios from "axios";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import "dayjs/locale/pt";
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -11,10 +15,16 @@ import LockIcon from '@mui/icons-material/Lock';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
-import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
-import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+import {
+    BrowserRouter,
+    Navigate,
+    Outlet,
+    Route,
+    Routes, useLocation,
+    useNavigate,
+    useParams
+} from "react-router";
 
 import {
     fileSystemState,
@@ -24,13 +34,14 @@ import {
     closeFileSystemMenus,
     ocrMenuState
 } from "./states";
+import StorageManager from "./Components/Admin/Geral/StorageManager";
 
-const VersionsMenu = loadComponent('Form', 'VersionsMenu');
-const LogsMenu = loadComponent('Form', 'LogsMenu');
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
+const LoginPage = loadComponent('Admin', 'LoginPage');
+const AdminDashboard = loadComponent('Admin', 'Dashboard');
 
-const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
 /**
  * About Versioning:
@@ -40,16 +51,48 @@ const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "1.0.0";
-const UPDATE_TIME = 30;
+const VERSION = "1.1.0";
 
 function App() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const login = () => {
+        setIsAuthenticated(true);
+    };
+    const logout = () => {
+        setIsAuthenticated(false);
+    };
+
+    useEffect(() => {
+        // Check if session already logged in
+        axios.get(API_URL + "/account/check-auth")
+            .then(r => {
+                login();
+            })
+            .catch(e=>{});
+    }, []);
+
+    const ProtectedRoute = ({ isAuthenticated }) => {
+        const location = useLocation();
+        return (isAuthenticated
+        ? <Outlet/>
+        : <Navigate to="/admin/login" state={{ originPath: location.pathname }} replace />);
+    };
+
+    // Allow Form to get the session ID parameter from the route URL
+    const WrappedForm = (props) => {
+        const { sessionId } = useParams();
+        const navigate = useNavigate();
+        return <Form sessionId={sessionId} navigate={navigate} />;
+    }
+
     class Form extends React.Component {
+        static defaultProps = {
+            sessionId: null,
+            navigate: null,
+        }
         constructor(props) {
             super(props);
             this.state = {
-                sessionId: window.location.href.split("/").pop(),
-
                 searchMenu: false,
                 editingMenu: false,
                 layoutMenu: false,
@@ -69,9 +112,6 @@ function App() {
 
             this.header = React.createRef();
 
-            this.versionsMenu = React.createRef();
-            this.logsMenu = React.createRef();
-
             this.fileSystem = React.createRef();
 
             this.setCurrentPath = this.setCurrentPath.bind(this);
@@ -81,44 +121,12 @@ function App() {
             this.exitMenus = this.exitMenus.bind(this);
         }
 
-        componentDidMount() {
-            if (window.location.href.includes(process.env.REACT_APP_ADMIN)) {
-                fetch(process.env.REACT_APP_API_URL + 'system-info', {
-                    method: 'GET'
-                })
-                .then(response => {return response.json()})
-                .then(data => {
-                    // if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
-                    this.setState({
-                        freeSpace: data["free_space"],
-                        freeSpacePercentage: data["free_space_percentage"],
-                        privateSessions: data["private_sessions"]
-                    });
-                });
-
-                this.interval = setInterval(() => {
-                    fetch(process.env.REACT_APP_API_URL + 'system-info', {
-                        method: 'GET'
-                    })
-                    .then(response => {return response.json()})
-                    .then(data => {
-                        // if (this.logsMenu.current !== null) this.logsMenu.current.setLogs(data["logs"]);
-                        this.setState({
-                            freeSpace: data["free_space"],
-                            freeSpacePercentage: data["free_space_percentage"],
-                            privateSessions: data["private_sessions"]
-                        });
-                    });
-                }, 1000 * UPDATE_TIME);
-            }
-        }
-
         getPrivateSession() {
-            if (["", "ocr", "ocr-dev", "ocr-prod", process.env.REACT_APP_ADMIN].includes(this.state.sessionId)) return null;
-            // if (this.state.sessionId.startsWith("localhost")) return null;
-            return this.state.sessionId;
+            if (["", "ocr", "ocr-dev", "ocr-prod"].includes(this.props.sessionId)) return null;
+            return this.props.sessionId;
         }
 
+        /*
         redirectHome() {
             const currentURL = window.location.href;
 
@@ -133,34 +141,11 @@ function App() {
                 window.location.href = 'http://localhost:' + port + '/';
             }
         }
-
-        openVersionsMenu() {
-            /**
-             * Open the versions menu
-             */
-            this.versionsMenu.current.toggleOpen();
-        }
-
-        openLogsMenu() {
-            /**
-             * Open the logs menu
-             */
-            this.logsMenu.current.toggleOpen();
-        }
+         */
 
         createPrivateSession() {
-            fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
-                method: 'GET'
-            })
-            .then(response => {return response.json()})
-            .then(data => {
-                const sessionId = data["sessionId"];
-                if (window.location.href.endsWith('/')) {
-                    window.location.href = window.location.href + `${sessionId}`;
-                } else {
-                    window.location.href = window.location.href + `/${sessionId}`;
-                }
-            });
+            return axios.get(API_URL + '/create-private-session')
+            .then(({data}) => {return data["sessionId"]});
         }
 
         setCurrentPath(new_path_list, isDocument=false) {
@@ -223,31 +208,10 @@ function App() {
             this.setCurrentPath(current_list);
         }
 
-        deletePrivateSession(e, privateSession) {
-            e.stopPropagation();
-            fetch(process.env.REACT_APP_API_URL + "/delete-private-session", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "sessionId": privateSession
-                })
-            })
-            .then(response => {return response.json()})
-            .then(data => {
-                if (data.success) {
-                    this.setState({privateSessions: data["private_sessions"]})
-                }
-            });
-        }
-
         render() {
             const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: '100vh'}}>
-                    <VersionsMenu ref={this.versionsMenu}/>
-                    <LogsMenu ref={this.logsMenu}/>
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -264,13 +228,12 @@ function App() {
                                 disabled={buttonsDisabled}
                                 variant="contained"
                                 startIcon={<LockIcon/>}
-                                onClick={() => this.createPrivateSession()}
-                                sx={{
-                                    border: '1px solid black',
-                                    height: '2rem',
-                                    textTransform: 'none',
-                                    fontSize: '0.75rem'
+                                onClick={() => {
+                                    this.createPrivateSession().then((sessionId) => {
+                                        this.props.navigate(`/session/${sessionId}`);
+                                    });
                                 }}
+                                className="menuButton"
                             >
                                 Sessão Privada
                             </Button>
@@ -280,13 +243,8 @@ function App() {
                                 variant="contained"
                                 startIcon={<CreateNewFolderIcon/>}
                                 onClick={() => this.fileSystem.current.createFolder()}
-                                sx={{
-                                    border: '1px solid black',
-                                    height: '2rem',
-                                    textTransform: 'none',
-                                    ml: '0.5rem',
-                                    fontSize: '0.75rem'
-                                }}
+                                className="menuButton"
+                                sx={{ml: '0.5rem'}}
                             >
                                 Nova Pasta
                             </Button>
@@ -364,9 +322,10 @@ function App() {
                                     {this.state.fileOpened}
                                 </p>
                                 {
+                                    // in private session, root level can have docs
                                     (!buttonsDisabled
                                         && !this.state.fileOpened
-                                        && (this.state.currentFolderPathList.length > 1 || this.getPrivateSession() != null))  // in private session, root level can have docs
+                                        && (this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession())))
                                         ? <Button
                                             variant="text"
                                             startIcon={<NoteAddIcon/>}
@@ -382,7 +341,7 @@ function App() {
 
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
                             <Button
-                                disabled={buttonsDisabled || this.getPrivateSession() !== null}
+                                disabled={buttonsDisabled || Boolean(this.getPrivateSession())}
                                 variant="text"
                                 onClick={() => {
                                     this.setState(searchMenuState)
@@ -418,115 +377,12 @@ function App() {
                         </Box>
                     </Box>
 
-                    {
-                        window.location.href.includes(process.env.REACT_APP_ADMIN)
-                        ? <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            justifyContent: 'right',
-                            alignItems: "center",
-                            zIndex: '5',
-                            pt: '0.5rem',
-                            pl: '0.5rem',
-                            pb: '0.5rem',
-                            pr: '0.5rem',
-                        }}>
-                            <Box sx={{display: "flex", flexDirection: "column"}}>
-                                <Button
-                                    sx={{
-                                        alignItems: "center",
-                                        textTransform: "none",
-                                        height: "2rem",
-                                        mr: "1.5rem"
-                                    }}
-                                    onClick={() => this.setState({privateSessionsOpen: !this.state.privateSessionsOpen})}
-                                >
-                                    Sessões Privadas
-                                    {
-                                        this.state.privateSessionsOpen
-                                        ? <KeyboardArrowUpRoundedIcon sx={{ml: '0.3rem'}} />
-                                        : <KeyboardArrowDownRoundedIcon sx={{ml: '0.3rem'}} />
-                                    }
-                                </Button>
-
-                                {
-                                    this.state.privateSessionsOpen
-                                    ? <Box
-                                        sx = {{
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            position: 'absolute',
-                                            zIndex: "1",
-                                            backgroundColor: "#fff",
-                                            border: "1px solid black",
-                                            borderRadius: '0.5rem',
-                                            top: "5.5rem",
-                                            p: "0rem 1rem",
-                                            width: "8rem",
-
-                                        }}
-                                    >
-                                        {
-                                            this.state.privateSessions.map((privateSession, index) => {
-                                                return (
-                                                    <Box
-                                                        key={index}
-                                                        sx={{
-                                                            display: "flex",
-                                                            flexDirection: "row",
-                                                            justifyContent: "space-between",
-                                                            height: "2rem",
-                                                            lineHeight: "2rem",
-                                                            borderTop: index !== 0 ? "1px solid black" : "0px solid black",
-                                                            cursor: "pointer"
-                                                        }}
-                                                        onClick={() => {
-                                                            if (window.location.href.endsWith("/")) {
-                                                                window.location.href += privateSession
-                                                            } else {
-                                                                window.location.href += "/" + privateSession
-                                                            }
-                                                        }}
-                                                    >
-                                                        <span>{privateSession}</span>
-                                                        <TooltipIcon
-                                                            color="#f00"
-                                                            message="Apagar"
-                                                            clickFunction={(e) => this.deletePrivateSession(e, privateSession)}
-                                                            icon={<DeleteForeverIcon />}
-                                                        />
-                                                    </Box>
-                                                )
-                                            })
-                                        }
-                                    </Box>
-                                    : null
-                                }
-                            </Box>
-
-                            {/* <Button
-                                sx={{
-                                    p: 0,
-                                    mr: "1.5rem",
-                                    textTransform: "none",
-                                }}
-                                onClick={() => this.openLogsMenu()}
-                            >
-                                <AssignmentRoundedIcon sx={{mr: "0.3rem"}} />
-                                Logs
-                            </Button> */}
-
-                            <span>Free Space: {this.state.freeSpace} ({this.state.freeSpacePercentage}%)</span>
-                        </Box>
-                        : null
-                    }
-
                     <Box>
                         {
                             !this.state.searchMenu
                             ? <FileExplorer ref={this.fileSystem}
-                                            _private={this.getPrivateSession() !== null}
-                                            sessionId={this.state.sessionId || ""}  // sessionId or empty str if null
+                                            _private={Boolean(this.getPrivateSession())}
+                                            sessionId={this.props.sessionId || ""}  // sessionId or empty str if null
                                             current_folder={this.state.currentFolderPathList}
                                             setCurrentPath={this.setCurrentPath}
                                             enterOcrMenu={this.enterOcrMenu}
@@ -549,8 +405,21 @@ function App() {
     }
 
     return (
-        <Form />
-    )
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt">
+            <BrowserRouter basename={process.env.REACT_APP_PUBLIC_URL}>
+                <Routes>
+                    <Route index element={<WrappedForm />} />
+                    <Route path="/session/:sessionId" element={<WrappedForm />} />
+
+                    <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
+                        <Route exact path="/admin" element={<AdminDashboard />} />
+                        <Route exact path="/admin/storage" element={<StorageManager />} />
+                    </Route>
+                    <Route exact path="/admin/login" element={<LoginPage isAuthenticated={isAuthenticated} setLoggedIn={login}/>} />
+                </Routes>
+            </BrowserRouter>
+        </LocalizationProvider>
+    );
 }
 
 export default App;

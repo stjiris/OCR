@@ -22,9 +22,11 @@ import loadComponent from '../../../utils/loadComponents';
 import {CircularProgress, TextareaAutosize} from '@mui/material';
 
 const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
-const Notification = loadComponent('Notification', 'Notifications');
-const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
+const Notification = loadComponent('Notifications', 'Notification');
+const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
+
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
 class Word extends React.Component {
     /*
@@ -148,7 +150,7 @@ class EditingMenu extends React.Component {
     getContents(page = 1) {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
-        fetch(process.env.REACT_APP_API_URL + 'get-file?' + is_private + 'path=' + path + '&page=' + page, {
+        fetch(API_URL + '/get-file?' + is_private + 'path=' + path + '&page=' + page, {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -289,7 +291,7 @@ class EditingMenu extends React.Component {
     requestSyntax() {
 
         this.setState({ loadingSintax: true });
-        fetch(process.env.REACT_APP_API_URL + 'check-sintax', {
+        fetch(API_URL + '/check-sintax', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -735,7 +737,7 @@ class EditingMenu extends React.Component {
      */
     saveChanges(remakeFiles = false) {
 
-        fetch(process.env.REACT_APP_API_URL + 'submit-text', {
+        fetch(API_URL + '/submit-text', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -909,7 +911,7 @@ class EditingMenu extends React.Component {
                             <Button
                                 variant="contained"
                                 color="success"
-                                className="menuFunctionButton noMargin"
+                                className="menuFunctionButton noMarginRight"
                                 onClick={() => this.saveChanges(true)}
                                 startIcon={<CheckRoundedIcon />
                                 }>

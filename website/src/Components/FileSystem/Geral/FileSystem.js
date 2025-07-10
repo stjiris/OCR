@@ -29,14 +29,14 @@ const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
 const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
 const PrivateSessionMenu = loadComponent('Form', 'PrivateSessionMenu');
 const FolderRow = loadComponent('FileSystem', 'FolderRow');
-const Notification = loadComponent('Notification', 'Notifications');
+const Notification = loadComponent('Notifications', 'Notification');
 const FolderMenu = loadComponent('Form', 'FolderMenu');
 const DeletePopup = loadComponent('Form', 'DeletePopup');
 const OcrPopup = loadComponent('Form', 'OcrPopup');
 const OcrMenu = loadComponent('OcrMenu', 'OcrMenu');
 const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
 const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
-const FullStorageMenu = loadComponent('Form', 'FullStorageMenu');
+const FullStorageMenu = loadComponent('Notifications', 'FullStorageMenu');
 
 const UPDATE_TIME = 15;
 const STUCK_UPDATE_TIME = 10 * 60; // 10 Minutes
@@ -54,12 +54,15 @@ const validExtensions = ["application/pdf",
 
 const chunkSize = 1024 * 1024 * 3; // 3 MB
 
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+
 class FileExplorer extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             files: null,
             info: null,
+            maxAge: null,
             // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
             current_folder: props.current_folder.join('/').replace(/^\//, ''),
             components: [],
@@ -69,7 +72,7 @@ class FileExplorer extends React.Component {
             updatingRate: 15,
             updateCount: 0,
 
-            loading: false,
+            fetched: false,
 
             ocrMenu: false,
             layoutMenu: false,
@@ -91,7 +94,8 @@ class FileExplorer extends React.Component {
         this.successNot = React.createRef();
         this.errorNot = React.createRef();
 
-        this.interval = null;
+        this.infoInterval = null;
+        this.stuckInterval = null;
         this.rowRefs = [];
 
         this.fetchInfo = this.fetchInfo.bind(this);
@@ -136,30 +140,27 @@ class FileExplorer extends React.Component {
     }
 
     componentDidMount() {
-        /**
-         * Fetch the files and info from the server
-         */
-        axios.get(process.env.REACT_APP_API_URL + 'files?'
-            + '_private=' + this.props._private
-            + '&path=' + (this.props._private ? this.props.sessionId : ""))
-        .then(({ data }) => {
-            const info = data["info"];
-            const files = data["files"];
-            this.setState({files: files, info: info, loading: false});
-        });
+         // Fetch the files and info from the server
+        this.fetchFileSystem();
 
         // Update the info every UPDATE_TIME seconds
         this.createFetchInfoInterval();
 
         // Check for stuck uploads every STUCK_UPDATE_TIME seconds
-        this.interval = setInterval(() => {
-            axios.get(process.env.REACT_APP_API_URL + 'info?'
-                        + '_private=' + this.props._private
-                        + '&path=' + (this.props._private
-                                        ? this.props.sessionId
-                                        : this.state.current_folder))
-            .then(({ data }) => {
-                const info = data["info"];
+        this.stuckInterval = setInterval(() => {
+            axios.get(API_URL + '/info', {
+                params: {
+                    _private: this.props._private,
+                    path: (this.props._private
+                            ? this.props.sessionId
+                            : this.state.current_folder)
+                }
+            })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error("Não foi possível obter os dados do servidor.");
+                }
+                const info = response.data["info"];
                 // Find if a upload is stuck
                 for (const [path, value] of Object.entries(info)) {
                     if (value.type === "file") {
@@ -169,7 +170,7 @@ class FileExplorer extends React.Component {
                             const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
 
                             if (timeDiffMinutes >= 10) {
-                                fetch(process.env.REACT_APP_API_URL + 'set-upload-stuck', {
+                                fetch(API_URL + '/set-upload-stuck', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -192,13 +193,62 @@ class FileExplorer extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (this.state.current_folder !== prevState.current_folder  // moved to different folder
+        if (prevProps._private !== this.props._private) {  // moved to private session
+            this.fetchFileSystem();
+        } else if (this.state.current_folder !== prevState.current_folder  // moved to different folder
             || this.state.files !== prevState.files                 // created/deleted document or folder
             || this.state.fileOpened !== prevState.fileOpened) {    // exited menu or entered/exited document "folder"
             this.displayFileSystem();
-        } else if (this.state.info !== prevState.info) { //|| this.state.components !== prevState.components) {
+        } else if (this.state.info !== prevState.info) {  // fetched updated info
             this.updateInfo();
         }
+    }
+
+    fetchFileSystem() {
+        axios.get(API_URL + '/files', {
+            params: {
+                    _private: this.props._private,
+                    path: this.props._private ? this.props.sessionId : ""
+            }
+        })
+            .then(response => {
+                if (response.status !== 200) {
+                    if (response.status === 404) {
+                        throw new Error("Esta pasta ou sessão privada não existe.");
+                    } else {
+                        throw new Error("Não foi possível obter os dados do servidor.");
+                    }
+                }
+                const info = response.data["info"];
+                const files = response.data["files"];
+                const maxAge = response.data["maxAge"];
+                this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
+            })
+            .catch(err => {
+                this.storageMenu.current.openWithMessage(err.message);
+            });
+    }
+
+    fetchFiles() {
+        axios.get(API_URL + '/files', {
+            params: {
+                _private: this.props.private,
+                path: (this.props._private
+                        ? this.props.sessionId + '/' + this.state.current_folder
+                        : this.state.current_folder)
+            }
+        })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error("Não foi possível obter os dados do servidor.");
+                }
+                const files = response.data['files'];
+                const info = response.data["info"];
+                this.setState({files: files, info: info, updateCount: 0});
+            })
+            .catch(err => {
+                this.storageMenu.current.openWithMessage(err.message);
+            });
     }
 
     createFetchInfoInterval() {
@@ -206,15 +256,24 @@ class FileExplorer extends React.Component {
     }
 
     fetchInfo() {
-        axios.get(process.env.REACT_APP_API_URL + 'info?'
-                    + '_private=' + this.props._private
-                    + '&path=' + (this.props._private
-                                    ? this.props.sessionId + '/' + this.state.current_folder
-                                    : this.state.current_folder))
-        .then(({ data }) => {
-            const info = data["info"];
-            this.setState({info: info, updateCount: 0});
-        });
+        axios.get(API_URL + '/info', {
+            params: {
+                _private: this.props._private,
+                path: (this.props._private
+                        ? this.props.sessionId + '/' + this.state.current_folder
+                        : this.state.current_folder)
+            }
+        })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error("Não foi possível obter os dados do servidor.");
+                }
+                const info = response.data["info"];
+                this.setState({info: info, updateCount: 0});
+            })
+            .catch(err => {
+                this.storageMenu.current.openWithMessage(err.message);
+            });
     }
 
     updateInfo() {
@@ -241,21 +300,10 @@ class FileExplorer extends React.Component {
     }
 
     componentWillUnmount() {
-        if (this.interval)
-            clearInterval(this.interval);
-    }
-
-    fetchFiles() {
-        axios.get(process.env.REACT_APP_API_URL + 'files?'
-            + '_private=' + this.props._private
-            + '&path=' + (this.props._private
-                ? this.props.sessionId + '/' + this.state.current_folder
-                : this.state.current_folder))
-            .then(({ data }) => {
-                const files = data['files'];
-                const info = data["info"];
-                this.setState({files: files, info: info, updateCount: 0});
-            });
+        if (this.infoInterval)
+            clearInterval(this.infoInterval);
+        if (this.stuckInterval)
+            clearInterval(this.stuckInterval);
     }
 
     /**
@@ -277,8 +325,8 @@ class FileExplorer extends React.Component {
     }
 
     showStorageForm(errorMessage) {
-        this.storageMenu.current.setMessage(errorMessage);
-        this.storageMenu.current.toggleOpen();
+        this.storageMenu.current.openWithMessage(errorMessage);
+
     }
 
     performOCR(filename, isFolder=false, alreadyOcr=false, customConfig=null) {
@@ -300,7 +348,7 @@ class FileExplorer extends React.Component {
         formData.append('counter', i+1);
         formData.append('totalCount', _totalCount);
 
-        fetch(process.env.REACT_APP_API_URL + 'upload-file', {
+        fetch(API_URL + '/upload-file', {
             method: 'POST',
             body: formData
         }).then(response => {return response.json()})
@@ -319,8 +367,7 @@ class FileExplorer extends React.Component {
                     this.setState({updateCount: this.state.updateCount + 1});
                 }
             } else {
-                this.storageMenu.current.setMessage(data.error);
-                this.storageMenu.current.toggleOpen();
+                this.storageMenu.current.openWithMessage(data.error);
             }
         })
         .catch(error => {
@@ -363,7 +410,7 @@ class FileExplorer extends React.Component {
 
                 const _fileID = uuidv4() + "." + fileName.split('.').pop();
 
-                fetch(process.env.REACT_APP_API_URL + 'prepare-upload', {
+                fetch(API_URL + '/prepare-upload', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -394,8 +441,7 @@ class FileExplorer extends React.Component {
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
                     } else {
-                        this.storageMenu.current.setMessage(data.error);
-                        this.storageMenu.current.toggleOpen();
+                        this.storageMenu.current.openWithMessage(data.error);
                     }
                 });
 
@@ -405,7 +451,7 @@ class FileExplorer extends React.Component {
     }
 
     createPrivateSession() {
-        fetch(process.env.REACT_APP_API_URL + 'create-private-session', {
+        fetch(API_URL + '/create-private-session', {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -437,7 +483,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'get_' + type + '?_private=' + this.props._private + '&path=' + path, {
+        fetch(API_URL + '/get_' + type + '?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
@@ -458,7 +504,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'get_entities?_private=' + this.props._private + '&path=' + path, {
+        fetch(API_URL + '/get_entities?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
@@ -477,7 +523,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'request_entities?_private=' + this.props._private + '&path=' + path, {
+        fetch( API_URL + '/request_entities?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -499,7 +545,7 @@ class FileExplorer extends React.Component {
          //
         const path = this.state.current_folder.replace(/^\//, '');
 
-        fetch(process.env.REACT_APP_API_URL + "get_zip?path=" + path, {
+        fetch(API_URL + "get_zip?path=" + path, {
             method: 'GET'
         })
         .then(response => {
@@ -535,7 +581,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'get_original?_private=' + this.props._private + '&path=' + path, {
+        fetch(API_URL + '/get_original?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
@@ -580,7 +626,7 @@ class FileExplorer extends React.Component {
         let path = this.state.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        fetch(process.env.REACT_APP_API_URL + 'get_images?_private=' + this.props._private + '&path=' + path, {
+        fetch(API_URL + '/get_images?_private=' + this.props._private + '&path=' + path, {
             method: 'GET'
         })
         .then(response => {return response.blob()})
@@ -1033,7 +1079,7 @@ class FileExplorer extends React.Component {
     indexFile(file, multiple) {
         const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
 
-        fetch(process.env.REACT_APP_API_URL + 'index-doc', {
+        fetch(API_URL + '/index-doc', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1058,7 +1104,7 @@ class FileExplorer extends React.Component {
     removeIndexFile(file, multiple) {
         const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
 
-        fetch(process.env.REACT_APP_API_URL + 'remove-index-doc', {
+        fetch(API_URL + '/remove-index-doc', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1202,8 +1248,9 @@ class FileExplorer extends React.Component {
                                      _private={this.props._private}
                                      submitCallback={this.fetchFiles}/>
                         {
-                            this.props._private
+                            this.props._private && this.state.fetched
                             ? <PrivateSessionMenu ref={this.privateSessionMenu}
+                                                  maxAge={this.state.maxAge}
                                                   rowRefsLength={this.rowRefs.length}
                                                   createFile={this.createFile}/>
                             : null

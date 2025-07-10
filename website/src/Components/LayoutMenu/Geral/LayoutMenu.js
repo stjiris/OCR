@@ -23,9 +23,11 @@ import { CircularProgress } from '@mui/material';
 import loadComponent from '../../../utils/loadComponents';
 const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
 const LayoutTable = loadComponent('LayoutMenu', 'LayoutTable');
-const ConfirmLeave = loadComponent('Notification', 'ConfirmLeave');
-const Notification = loadComponent('Notification', 'Notifications');
+const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
+const Notification = loadComponent('Notifications', 'Notification');
 const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
+
+const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
 const cannotAutoSegment = new Set(["gif"]);
 /*
@@ -89,7 +91,7 @@ class LayoutMenu extends React.Component {
 	componentDidMount() {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
-        fetch(process.env.REACT_APP_API_URL + 'get-layouts?' + is_private + 'path=' + path, {
+        fetch(API_URL + '/get-layouts?' + is_private + 'path=' + path, {
 			method: 'GET'
 		}).then(response => { return response.json() })
 			.then(data => {
@@ -114,7 +116,7 @@ class LayoutMenu extends React.Component {
 
             const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
             const is_private = this.props._private ? '_private=true&' : '';
-            fetch(process.env.REACT_APP_API_URL + 'get-layouts?' + is_private + 'path=' + path, {
+            fetch(API_URL + '/get-layouts?' + is_private + 'path=' + path, {
 				method: 'GET'
 			}).then(response => { return response.json() })
 				.then(data => {
@@ -397,7 +399,7 @@ class LayoutMenu extends React.Component {
 
 	saveLayout(closeWindow = false) {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-		fetch(process.env.REACT_APP_API_URL + 'save-layouts', {
+		fetch(API_URL + '/save-layouts', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -429,7 +431,7 @@ class LayoutMenu extends React.Component {
 
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
-		fetch(process.env.REACT_APP_API_URL + 'generate-automatic-layouts?' + is_private + 'path=' + path, {
+		fetch(API_URL + '/generate-automatic-layouts?' + is_private + 'path=' + path, {
 			method: 'GET'
 		}).then(response => { return response.json() })
 			.then(data => {
@@ -836,7 +838,7 @@ class LayoutMenu extends React.Component {
 						<Button
 							variant="contained"
 							color="success"
-                            className="menuFunctionButton noMargin"
+                            className="menuFunctionButton noMarginRight"
                             startIcon={<CheckRoundedIcon />}
 							onClick={() => this.saveLayout(true)}
 						>

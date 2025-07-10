@@ -7,6 +7,7 @@ import tempfile
 #import time
 import traceback
 import zipfile
+from datetime import datetime
 
 from celery import Celery
 from celery import chord
@@ -14,6 +15,8 @@ from celery import group
 from PIL import Image
 from PIL import ImageDraw
 import pypdfium2 as pdfium
+from celery.schedules import crontab
+from redbeat import RedBeatSchedulerEntry
 
 from src.engines import ocr_tesserocr
 from src.engines import ocr_pytesseract
@@ -23,6 +26,8 @@ from src.utils.export import export_file
 from src.utils.export import load_invisible_font
 
 from src.utils.file import ALLOWED_EXTENSIONS
+from src.utils.file import PRIVATE_PATH
+from src.utils.file import TIMEZONE
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_doc_len
@@ -45,7 +50,10 @@ DEFAULT_CONFIG_FILE = os.environ.get('DEFAULT_CONFIG_FILE', "config_files/defaul
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
+
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
+
+# celery.conf.beat_max_loop_interval = 30  # in seconds; default 5 seconds or 5 minutes depending on task schedule
 
 load_invisible_font()
 
@@ -276,6 +284,7 @@ def task_file_ocr(path: str, config: dict | None):
                  f'-c thresholding_method={config["thresholdMethod"]}',
                  ])
 
+        # TODO: implement accepting additional string params in TesserOCR; currently only having effect in PyTesseract
         if "otherParams" in config and isinstance(config["otherParams"], str):
             ' '.join([config_str, config["otherParams"]])
 
@@ -763,3 +772,50 @@ def task_export_results(path: str, output_types: list[str]):
 
         #return {"status": "error", "metricas": page_metrics}
         return {"status": "error"}
+
+
+#####################################
+# SCHEDULED TASKS
+#####################################
+@celery.on_after_configure.connect
+def setup_periodic_tasks(sender: Celery, **kwargs):
+    # Clean up old private sessions daily at midnight
+    entry = RedBeatSchedulerEntry(
+        'cleanup_private_sessions',
+        delete_old_private_sessions.s().task,
+        crontab(minute='0', hour='0'),
+        #args=["first", "second"], # example of sending args to task scheduled with redbeat
+        app=celery
+    )
+    entry.save()
+    log.info(f"Created periodic task {entry}")
+
+
+@celery.task(name="set_max_private_session_age")
+def set_max_private_session_age(new_max_age: int | str):
+    try:
+        os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
+        return {"status": "success"}
+    except ValueError:
+        return {"status": "error"}
+
+
+@celery.task(name="cleanup_private_sessions")
+def delete_old_private_sessions():
+    max_private_session_age = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))  # days
+    log.info(f"Deleting private sessions older than {max_private_session_age} days")
+
+    priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
+    n_deleted = 0
+    for folder in priv_sessions:
+        data = get_data(f"{folder}/_data.json")
+        created_time = data["creation"]
+        as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(TIMEZONE)
+        now = datetime.now().astimezone(TIMEZONE)
+        log.debug(f'{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_session_age}')
+        if (now - as_datetime).days > max_private_session_age:
+            shutil.rmtree(folder)
+            n_deleted += 1
+
+    update_data(f"./{PRIVATE_PATH}/_data.json", { "last_cleanup": get_current_time() })
+    return f"{n_deleted} private session(s) deleted"

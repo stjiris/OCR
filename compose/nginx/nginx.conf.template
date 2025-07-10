@@ -1,11 +1,36 @@
+# worker_processes auto;
+
 events {
-    worker_connections  1024;  # Default: 1024
+    worker_connections  1024;
 }
 
 http {
+    # ssl_session_cache   shared:SSL:10m;
+    # ssl_session_timeout 10m;
+
+    # Uncomment to force upgrade HTTP to HTTPS:
+    #server {
+    #    listen 80;
+    #    server_name _;
+    #    return 301 https://$host$request_uri;
+    #}
+
     server {
-        listen 80;
         include /etc/nginx/mime.types;
+
+        listen 80;
+        # Use this instead to serve HTTPS:
+        #listen              443 ssl;
+        #http2 on;
+        #ssl_certificate     /etc/ssl/certs/nginx-selfsigned.crt;
+        #ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+        #ssl_protocols       TLSv1.2 TLSv1.3;
+
+        keepalive_timeout   70;
+
+        server_name localhsot;
+
+        add_header X-Content-Type-Options "nosniff";
 
         location / {
             root /usr/share/nginx/html/;
@@ -18,21 +43,27 @@ http {
         }
 
         location /api/ {
-            proxy_pass http://server:5001/;
-            proxy_read_timeout 1800;
+            proxy_pass            http://server:5001/;
+            proxy_read_timeout    1800;
             proxy_connect_timeout 1800;
-            proxy_send_timeout 1800;
-            send_timeout 1800;
-            client_max_body_size $CLIENT_MAX_BODY_SIZE;
+            proxy_send_timeout    1800;
+            send_timeout          1800;
+            client_max_body_size  $CLIENT_MAX_BODY_SIZE;
         }
 
-        location /flower/ {
-            proxy_pass http://flower:5050/flower/;
-            proxy_read_timeout 1800;
+        # Don't serve Flower as an API endpoint: it's a browser tool
+        location /api/admin/flower/ {
+             try_files $uri =404;
+        }
+
+        # Direct Flower URLs to Flask endpoint
+        location /admin/flower/ {
+            proxy_pass            http://server:5001/admin/flower/;
+            proxy_read_timeout    1800;
             proxy_connect_timeout 1800;
-            proxy_send_timeout 1800;
-            send_timeout 1800;
-            client_max_body_size $CLIENT_MAX_BODY_SIZE;
+            proxy_send_timeout    1800;
+            send_timeout          1800;
+            client_max_body_size  $CLIENT_MAX_BODY_SIZE;
         }
 
         location /images/ {
