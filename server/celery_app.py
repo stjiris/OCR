@@ -18,8 +18,8 @@ import pypdfium2 as pdfium
 from celery.schedules import crontab
 from redbeat import RedBeatSchedulerEntry
 
-from src.engines import tesserocr
-from src.engines import tesseract
+from src.engines import ocr_tesserocr
+from src.engines import ocr_pytesseract
 
 from src.utils.export import export_csv
 from src.utils.export import export_file
@@ -42,8 +42,8 @@ from src.utils.file import update_data
 from src.utils.image import parse_images
 
 OCR_ENGINES = (
-    "tesseract",
-    "tesserOCR",
+    "pytesseract",
+    "tesserocr",
 )
 
 DEFAULT_CONFIG_FILE = os.environ.get('DEFAULT_CONFIG_FILE', "config_files/default.json")
@@ -253,8 +253,11 @@ def task_file_ocr(path: str, config: dict | None):
             if "outputs" not in config:
                 config["outputs"] = default_config["outputs"]
 
+            if "dpi" not in config and "dpi" in default_config:
+                config["dpi"] = default_config["dpi"]
+
         # Verify parameter values
-        ocr_engine = globals()[config["engine"].lower()]
+        ocr_engine = globals()[f"ocr_{config["engine"]}".lower()]
         valid, errors = ocr_engine.verify_params(config)
         if not valid:
             data = get_data(data_folder)
@@ -272,8 +275,8 @@ def task_file_ocr(path: str, config: dict | None):
         lang = '+'.join(config["lang"])
         config_str = ""
 
-        if "dpi" in config:
-            ' '.join([config_str, f'--dpi {config["dpi"]}'])
+        if "dpi" in config and config["dpi"] != "":  # typecheck expected in ocr_engine.verify_params()
+            ' '.join([config_str, f'--dpi {int(config["dpi"])}'])
 
         ' '.join([config_str,
                  f'--oem {config["engineMode"]}',
@@ -282,7 +285,7 @@ def task_file_ocr(path: str, config: dict | None):
                  ])
 
         # TODO: implement accepting additional string params in TesserOCR; currently only having effect in PyTesseract
-        if "otherParams" in config:
+        if "otherParams" in config and isinstance(config["otherParams"], str):
             ' '.join([config_str, config["otherParams"]])
 
         # Update the information related to the OCR
@@ -347,7 +350,7 @@ def task_file_ocr(path: str, config: dict | None):
             task_page_ocr.s(
                 path=path,
                 filename=image,
-                ocr_engine_name=config["engine"],
+                ocr_engine_name=f"ocr_{config["engine"]}",
                 lang=lang,
                 config_str=config_str,
                 output_types=config["outputs"]

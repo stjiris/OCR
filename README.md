@@ -1,21 +1,20 @@
-# OCR
+# OCR – 1.0
 
 # Setup
-## Example production `.env` file for the `website` folder
-```sh
-PUBLIC_URL = /endpoint-that-serves-website/
-GENERATE_SOURCEMAP = false
+For a prepared server, the only required setup is the creation of `.env` files in the `website` and `server` folders. If the server is behind a proxy and must be accessed through a specific path, this path must be placed where `/path-that-serves-website/` is specified.
 
-REACT_APP_API_URL = /endpoint-that-serves-website/api
-REACT_APP_HEADER_STYLE = ''
-REACT_APP_ADMIN = "?perfil=admin"
+## Example production `website/.env` file
+```sh
+PUBLIC_URL = /path-that-serves-website/
+REACT_APP_API_URL = /path-that-serves-website/api
+GENERATE_SOURCEMAP = false
 ```
 
-## Example production `.env` file for the `server` folder
+## Example production `server/.env` file
 ```sh
 CELERY_BROKER_URL = redis://redis:6379/0
 CELERY_RESULT_BACKEND = redis://redis:6379/0
-ES_URL=http://elasticsearch:9200
+ES_URL = http://elasticsearch:9200/
 
 # IMAGE_PREFIX must be set to the same value as website's PUBLIC_URL if PUBLIC_URL is not '/' 
 FILES_PATH = _files
@@ -29,11 +28,11 @@ ADMIN_EMAIL = put_admin_email_or_username@here.spam
 ADMIN_PASSWORD = put_admin_password_here
 ```
 
-## Environment variables recommended for development
-```
+## Environment variables recommended for local development
+```sh
 # website:
 PUBLIC_URL = /
-DEBUG=True
+DEBUG = True
 GENERATE_SOURCEMAP = true
 REACT_APP_API_URL = /api
 
@@ -42,59 +41,21 @@ FLASK_DEBUG = True
 ```
 
 ## NGINX config file
-After downloading, you should go to `path/to/NGINX/conf/nginx.conf` and replace its contents with something similar to (`path/to/` should be replaced with the path from your own PC):
-
-```
-worker_processes  1;
-
-events {
-    worker_connections  1024;
-}
-
-
-http {
-    include       mime.types;
-    default_type  application/octet-stream;
-
-    sendfile        on;
-    keepalive_timeout  65;
-
-    server {
-        listen       80;
-        server_name  localhost;
-
-        location / {
-            root path/to/OCR/website/build;
-            index index.html;
-        }
-
-        location /api/ {
-            proxy_pass http://localhost:5001/;
-            client_max_body_size 0;
-        }
-
-        location /images/ {
-            alias path/to/OCR/server/files/;
-        }
-    }
-
-}
-
-```
+The config file for NGINX is generated from `compose/nginx/nginx.conf.template` and does not need changes. Eventual alterations to NGINX's configuration should be done on this file.
 
 # Running the system
 
-## First-time startup
+## Installation and first-time startup
 
 Run the following command from the project root:
-`docker-compose -f docker-compose.yml up -d --force-recreate --build`
+`docker-compose -f docker-compose.production.yml up -d --force-recreate --build`
 
 ## Shutting down
 
 Run the following command from the project root:
-`docker-compose -f docker-compose.yml down`
+`docker-compose -f docker-compose.production.yml down`
 
-## Restarting
+## Restarting after shutdown
 
 Run the following command from the project root:
-`docker-compose -f docker-compose.yml up -d`
+`docker-compose -f docker-compose.production.yml up -d`
