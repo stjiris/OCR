@@ -563,8 +563,7 @@ def prepare_upload():
             ensure_ascii=False,
         )
 
-    return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private),
-            "filename": filename}
+    return {"success": True, "filename": filename}
 
 
 def join_chunks(target_path, filename, total_count, temp_file_path):

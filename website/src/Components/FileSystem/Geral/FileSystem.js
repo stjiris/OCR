@@ -427,28 +427,22 @@ class FileExplorer extends React.Component {
                 }).then(response => {return response.json()})
                 .then(data => {
                     if (data['success']) {
-                        var filesystem = data["filesystem"];
-                        var info = filesystem["info"];
-                        var files = filesystem["files"];
-                        this.setState({files: files, info: info});
                         fileName = data["filename"];
 
                         // Send chunks
-                        var startChunk = 0;
-                        var endChunk = chunkSize;
-
+                        let startChunk = 0;
+                        let endChunk = chunkSize;
                         for (let i = 0; i < _totalCount; i++) {
-                            var chunk = fileBlob.slice(startChunk, endChunk, fileType);
+                            let chunk = fileBlob.slice(startChunk, endChunk, fileType);
                             startChunk = endChunk;
                             endChunk = endChunk + chunkSize;
-
                             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
                         }
                     } else {
                         this.storageMenu.current.openWithMessage(data.error);
                     }
+                    this.fetchFiles();
                 });
-
             }
         });
         el.click();
