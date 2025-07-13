@@ -239,7 +239,10 @@ def task_file_ocr(path: str, config: dict | None):
             # Build string with Tesseract run configuration
             if "engine" in config:
                 if config["engine"].lower() not in OCR_ENGINES:
-                    raise ValueError("Invalid OCR engine value", config["engine"])
+                    raise ValueError(
+                        f"Invalid OCR engine value; possible values are {OCR_ENGINES}",
+                        config["engine"],
+                    )
             else:
                 config["engine"] = default_config["engine"]
             if "lang" not in config:

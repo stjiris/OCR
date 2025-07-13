@@ -1,5 +1,5 @@
 {
-    "engine": "tesseract",
+    "engine": "pytesseract",
     "lang": ["por"],
     "outputs": ["pdf", "txt"],
     "engineMode": 3,
