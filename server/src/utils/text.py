@@ -17,6 +17,7 @@ def clear_text(text):
 
     return text
 
+
 def compare_dicts_words(words, corpus):
     """
     Function used to compare the words of a dictionary with the words of the OCR
@@ -28,7 +29,7 @@ def compare_dicts_words(words, corpus):
 
     dict_words = set()
     for c in corpus:
-        with open(f"./corpus/{c}.txt", "r", encoding="utf-8") as f:
+        with open(f"./corpus/{c}.txt", encoding="utf-8") as f:
             for line in f:
                 dict_words.add(line.strip())
 

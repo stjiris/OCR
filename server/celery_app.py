@@ -1,44 +1,39 @@
-from io import BytesIO
 import json
 import logging as log
 import os
 import shutil
 import tempfile
-#import time
 import traceback
 import zipfile
 from datetime import datetime
+from io import BytesIO
 
+import pypdfium2 as pdfium
 from celery import Celery
 from celery import chord
 from celery import group
+from celery.schedules import crontab
 from PIL import Image
 from PIL import ImageDraw
-import pypdfium2 as pdfium
-from celery.schedules import crontab
 from redbeat import RedBeatSchedulerEntry
-
-from src.engines import ocr_tesserocr
 from src.engines import ocr_pytesseract
-
+from src.engines import ocr_tesserocr
 from src.utils.export import export_csv
 from src.utils.export import export_file
 from src.utils.export import load_invisible_font
-
 from src.utils.file import ALLOWED_EXTENSIONS
-from src.utils.file import PRIVATE_PATH
-from src.utils.file import TIMEZONE
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
-from src.utils.file import get_doc_len
 from src.utils.file import get_data
+from src.utils.file import get_doc_len
 from src.utils.file import get_file_basename
 from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
 from src.utils.file import get_size
+from src.utils.file import PRIVATE_PATH
+from src.utils.file import TIMEZONE
 from src.utils.file import update_data
-
 from src.utils.image import parse_images
 
 OCR_ENGINES = (
@@ -46,7 +41,7 @@ OCR_ENGINES = (
     "tesserocr",
 )
 
-DEFAULT_CONFIG_FILE = os.environ.get('DEFAULT_CONFIG_FILE', "config_files/default.json")
+DEFAULT_CONFIG_FILE = os.environ.get("DEFAULT_CONFIG_FILE", "config_files/default.json")
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
@@ -78,7 +73,7 @@ def task_make_changes(path, data):
         data["txt"] = {
             "complete": True,
             "size": get_size(export_folder + "/_txt.txt", path_complete=True),
-            "creation": created_time
+            "creation": created_time,
         }
 
     if data["txt_delimited"]["complete"]:
@@ -86,7 +81,7 @@ def task_make_changes(path, data):
         data["txt_delimited"] = {
             "complete": True,
             "size": get_size(export_folder + "/_txt_delimited.txt", path_complete=True),
-            "creation": created_time
+            "creation": created_time,
         }
 
     if data["pdf_indexed"]["complete"]:
@@ -96,7 +91,7 @@ def task_make_changes(path, data):
         data["pdf_indexed"] = {
             "complete": True,
             "size": get_size(export_folder + "/_pdf_indexed.pdf", path_complete=True),
-            "creation": created_time
+            "creation": created_time,
         }
 
     if data["pdf"]["complete"]:
@@ -106,17 +101,19 @@ def task_make_changes(path, data):
         data["pdf"] = {
             "complete": True,
             "size": get_size(export_folder + "/_pdf.pdf", path_complete=True),
-            "creation": created_time
+            "creation": created_time,
         }
 
-    if data["csv"]["complete"] and not (data["pdf_indexed"]["complete"] or data["pdf"]["complete"]):
+    if data["csv"]["complete"] and not (
+        data["pdf_indexed"]["complete"] or data["pdf"]["complete"]
+    ):
         export_csv(path, force_recreate=True)
 
     if data["csv"]["complete"]:
         data["csv"] = {
             "complete": True,
             "size": get_size(export_folder + "/_index.csv", path_complete=True),
-            "creation": created_time
+            "creation": created_time,
         }
 
     try:
@@ -137,11 +134,14 @@ def count_doc_pages(_, path, extension):
     :param path: the document's path
     :param extension: the document's extension
     """
-    update_data(f"{path}/_data.json", {
-        "pages": get_page_count(path, extension),
-        "stored": True,
-        "creation": get_current_time()
-    })
+    update_data(
+        f"{path}/_data.json",
+        {
+            "pages": get_page_count(path, extension),
+            "stored": True,
+            "creation": get_current_time(),
+        },
+    )
 
 
 @celery.task(name="prepare_file")
@@ -161,13 +161,15 @@ def task_prepare_file_ocr(path):
             pdf.close()
 
             callback = count_doc_pages.s(path=path, extension=extension)
-            chord(task_extract_pdf_page.s(path, basename, i) for i in range(num_pages))(callback)
+            chord(task_extract_pdf_page.s(path, basename, i) for i in range(num_pages))(
+                callback
+            )
 
         elif extension == "zip":
             temp_folder_name = f"{path}/{generate_random_uuid()}"
             os.mkdir(temp_folder_name)
 
-            with zipfile.ZipFile(f"{path}/{basename}.zip", 'r') as zip_ref:
+            with zipfile.ZipFile(f"{path}/{basename}.zip", "r") as zip_ref:
                 zip_ref.extractall(temp_folder_name)
 
             page_paths = [
@@ -182,7 +184,9 @@ def task_prepare_file_ocr(path):
 
             for i, page in enumerate(page_paths):
                 im = Image.open(page)
-                im.save(f"{path}/_pages/{basename}_{i}.png", format="PNG")  # using PNG to keep RGBA
+                im.save(
+                    f"{path}/_pages/{basename}_{i}.png", format="PNG"
+                )  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
             count_doc_pages(path=path, extension=extension, _=None)
 
@@ -213,7 +217,7 @@ def task_request_ner(path):
         data["ner"] = {
             "complete": True,
             "size": get_size(f"{path}/_export/_entities.json", path_complete=True),
-            "creation": creation_date
+            "creation": creation_date,
         }
     else:
         data["ner"] = {"complete": False, "error": True}
@@ -233,7 +237,9 @@ def task_file_ocr(path: str, config: dict | None):
         with open(DEFAULT_CONFIG_FILE) as f:
             default_config = json.load(f)
 
-        if config is None or config == "default":  # TODO: accept other strings for preset config files
+        if (
+            config is None or config == "default"
+        ):  # TODO: accept other strings for preset config files
             config = default_config
         else:
             # Build string with Tesseract run configuration
@@ -260,36 +266,40 @@ def task_file_ocr(path: str, config: dict | None):
                 config["dpi"] = default_config["dpi"]
 
         # Verify parameter values
-        ocr_engine = globals()[f"ocr_{config["engine"]}".lower()]
+        ocr_engine = globals()[f'ocr_{config["engine"]}'.lower()]
         valid, errors = ocr_engine.verify_params(config)
         if not valid:
             data = get_data(data_folder)
-            data["ocr"].update({
-                "progress": 0,
-                "exceptions": {
-                    "Parâmetros inválidos:" : errors
-                }
-            })
+            data["ocr"].update(
+                {"progress": 0, "exceptions": {"Parâmetros inválidos:": errors}}
+            )
             update_data(data_folder, data)
-            log.error(f'Error in performing OCR for file at {path}: {data["ocr"]["exceptions"]}')
+            log.error(
+                f'Error in performing OCR for file at {path}: {data["ocr"]["exceptions"]}'
+            )
             return {"status": "error", "errors": errors}
 
         # Join langs with pluses, expected by tesseract
-        lang = '+'.join(config["lang"])
+        lang = "+".join(config["lang"])
         config_str = ""
 
-        if "dpi" in config and config["dpi"] != "":  # typecheck expected in ocr_engine.verify_params()
-            ' '.join([config_str, f'--dpi {int(config["dpi"])}'])
+        if (
+            "dpi" in config and config["dpi"] != ""
+        ):  # typecheck expected in ocr_engine.verify_params()
+            " ".join([config_str, f'--dpi {int(config["dpi"])}'])
 
-        ' '.join([config_str,
-                 f'--oem {config["engineMode"]}',
-                 f'--psm {config["segmentMode"]}',
-                 f'-c thresholding_method={config["thresholdMethod"]}',
-                 ])
+        " ".join(
+            [
+                config_str,
+                f'--oem {config["engineMode"]}',
+                f'--psm {config["segmentMode"]}',
+                f'-c thresholding_method={config["thresholdMethod"]}',
+            ]
+        )
 
         # TODO: implement accepting additional string params in TesserOCR; currently only having effect in PyTesseract
         if "otherParams" in config and isinstance(config["otherParams"], str):
-            ' '.join([config_str, config["otherParams"]])
+            " ".join([config_str, config["otherParams"]])
 
         # Update the information related to the OCR
         data = get_data(data_folder)
@@ -340,12 +350,12 @@ def task_file_ocr(path: str, config: dict | None):
             os.mkdir(f"{path}/_export")
 
         # This should not be necessary as images for OCR are extracted on document upload
-        #task_prepare_file_ocr(path)
+        # task_prepare_file_ocr(path)
         pages_path = f"{path}/_pages"
         images = sorted([x for x in os.listdir(pages_path)])
 
         if not images:
-            raise FileNotFoundError('Page folder is empty')
+            raise FileNotFoundError("Page folder is empty")
 
         log.debug(f"{path}: A começar OCR")
 
@@ -353,11 +363,12 @@ def task_file_ocr(path: str, config: dict | None):
             task_page_ocr.s(
                 path=path,
                 filename=image,
-                ocr_engine_name=f"ocr_{config["engine"]}",
+                ocr_engine_name=f'ocr_{config["engine"]}',
                 lang=lang,
                 config_str=config_str,
-                output_types=config["outputs"]
-            ) for image in images
+                output_types=config["outputs"],
+            )
+            for image in images
         )
         tasks.apply_async()
 
@@ -382,7 +393,9 @@ def task_extract_pdf_page(path, basename, i):
     try:
         pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
         page = pdf[i]
-        bitmap = page.render(300 / 72)  # You can adjust DPI here (e.g., 150 / 72 for smaller files)
+        bitmap = page.render(
+            300 / 72
+        )  # You can adjust DPI here (e.g., 150 / 72 for smaller files)
         pdf.close()
         pil_image = bitmap.to_pil()
         output_path = f"{path}/_pages/{basename}_{i}.png"
@@ -393,7 +406,7 @@ def task_extract_pdf_page(path, basename, i):
         buffer.seek(0)
 
         # Use temporary file for atomic write
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.png', dir=path) as temp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png", dir=path) as temp:
             temp.write(buffer.getvalue())
 
         # Atomically move the temporary file to the final location
@@ -403,7 +416,9 @@ def task_extract_pdf_page(path, basename, i):
         try:
             with Image.open(output_path) as img:
                 img.load()  # Force load to check for truncation
-            log.debug(f"Verified page {i} from {basename}.pdf is valid (size: {os.path.getsize(output_path)} bytes)")
+            log.debug(
+                f"Verified page {i} from {basename}.pdf is valid (size: {os.path.getsize(output_path)} bytes)"
+            )
         except Exception as e:
             log.error(f"Invalid PNG generated for page {i}: {e}")
             os.remove(output_path)  # Remove truncated file
@@ -475,7 +490,8 @@ def task_page_ocr(
     ocr_engine_name: str,
     lang: list[str],
     output_types: list[str],
-    config_str: str = '',):
+    config_str: str = "",
+):
     """
     Perform the page OCR
 
@@ -486,7 +502,8 @@ def task_page_ocr(
     :param config_str: config string to use
     :param output_types: output types to generate directly, if the file is a single page without user-defined text boxes
     """
-    if filename.split(".")[0][-1] == "$": return None
+    if filename.split(".")[0][-1] == "$":
+        return None
 
     data_file = f"{path}/_data.json"
     # hacky way of aborting if another task_page_ocr previously raised an error
@@ -512,7 +529,7 @@ def task_page_ocr(
 
         parsed_json = []
         if os.path.exists(layout_path):
-            with open(layout_path, "r", encoding="utf-8") as json_file:
+            with open(layout_path, encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
                 all_but_ignore = [x for x in parsed_json if x["type"] != "remove"]
@@ -522,10 +539,10 @@ def task_page_ocr(
 
         if not segment_ocr_flag:
             # Measure image load time
-            #load_start = time.time()
+            # load_start = time.time()
             image = Image.open(f"{path}/_pages/{filename}")
-            #load_time = time.time() - load_start
-            #page_metrics["image_load_time"] = load_time
+            # load_time = time.time() - load_start
+            # page_metrics["image_load_time"] = load_time
 
             for item in [x for x in parsed_json if x["type"] == "remove"]:
                 for sq in item["squares"]:
@@ -539,25 +556,31 @@ def task_page_ocr(
                     img_draw.rectangle(box_coords, fill="white")
 
             # Perform OCR
-            #ocr_start = time.time()
+            # ocr_start = time.time()
             # If single-page document, take advantage of output types to immediately generate results with Tesseract
             if n_doc_pages == 1:
-                json_d, raw_results = ocr_engine.get_structure(image, lang, config_str, output_types=output_types)
+                json_d, raw_results = ocr_engine.get_structure(
+                    image, lang, config_str, output_types=output_types
+                )
             else:
                 json_d, _ = ocr_engine.get_structure(image, lang, config_str)
-            #ocr_time = time.time() - ocr_start
-            #page_metrics["ocr_time"] = ocr_time
+            # ocr_time = time.time() - ocr_start
+            # page_metrics["ocr_time"] = ocr_time
             json_d = [[x] for x in json_d]
             # Save results
-            #save_start = time.time()
+            # save_start = time.time()
 
             # Store formatted OCR output for the page in JSON
-            with open(f"{path}/_ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
+            with open(
+                f"{path}/_ocr_results/{get_file_basename(filename)}.json",
+                "w",
+                encoding="utf-8",
+            ) as f:
                 json.dump(json_d, f, indent=2, ensure_ascii=False)
-            #save_time = time.time() - save_start
-            #page_metrics["save_time"] = save_time
+            # save_time = time.time() - save_start
+            # page_metrics["save_time"] = save_time
         else:
-            with open(layout_path, "r", encoding="utf-8") as json_file:
+            with open(layout_path, encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
             text_groups = [x for x in parsed_json if x["type"] == "text"]
@@ -593,7 +616,9 @@ def task_page_ocr(
 
                         box_coords = (left, top, right, bottom)
                         cropped_image = image.crop(box_coords)
-                        cropped_image.save(f"{path}/_images/page{page_id}_{id+1}.{filename.split('.')[-1].lower()}")
+                        cropped_image.save(
+                            f"{path}/_images/page{page_id}_{id + 1}.{filename.split('.')[-1].lower()}"
+                        )
 
             box_coordinates_list = []
             for item in text_groups:
@@ -610,11 +635,13 @@ def task_page_ocr(
 
             all_jsons = []
             for box in box_coordinates_list:
-                #Perform OCR
-                #ocr_start = time.time()
-                json_d, _ = ocr_engine.get_structure(image, lang, config_str, segment_box=box)
-                #ocr_time = time.time() - ocr_start
-                #page_metrics["ocr_time"] = ocr_time
+                # Perform OCR
+                # ocr_start = time.time()
+                json_d, _ = ocr_engine.get_structure(
+                    image, lang, config_str, segment_box=box
+                )
+                # ocr_time = time.time() - ocr_start
+                # page_metrics["ocr_time"] = ocr_time
                 if json_d:
                     all_jsons.append(json_d)
 
@@ -623,11 +650,15 @@ def task_page_ocr(
                 page_json.append(sublist)
 
             # Save results
-            #save_start = time.time()
-            with open(f"{path}/_ocr_results/{get_file_basename(filename)}.json", "w", encoding="utf-8") as f:
+            # save_start = time.time()
+            with open(
+                f"{path}/_ocr_results/{get_file_basename(filename)}.json",
+                "w",
+                encoding="utf-8",
+            ) as f:
                 json.dump(page_json, f, indent=2, ensure_ascii=False)
-            #save_time = time.time() - save_start
-            #page_metrics["save_time"] = save_time
+            # save_time = time.time() - save_start
+            # page_metrics["save_time"] = save_time
 
         files = os.listdir(f"{path}/_ocr_results")
 
@@ -639,11 +670,13 @@ def task_page_ocr(
         if len(files) == n_doc_pages:
             log.debug(f"{path}: Acabei OCR")
 
-            data["ocr"].update({
-                "progress": len(files),
-                "size": get_ocr_size(f"{path}/_ocr_results"),
-                "creation": get_current_time(),
-            })
+            data["ocr"].update(
+                {
+                    "progress": len(files),
+                    "size": get_ocr_size(f"{path}/_ocr_results"),
+                    "creation": get_current_time(),
+                }
+            )
             update_data(data_file, data)
 
             # If single-page document, directly store results generated by Tesseract
@@ -683,7 +716,9 @@ def task_export_results(path: str, output_types: list[str]):
     data = get_data(data_file)
 
     try:
-        if ("ner" in output_types or "txt" in output_types) and not data["txt"]["complete"]:
+        if ("ner" in output_types or "txt" in output_types) and not data["txt"][
+            "complete"
+        ]:
             export_file(path, "txt")
             data["txt"] = {
                 "complete": True,
@@ -695,7 +730,9 @@ def task_export_results(path: str, output_types: list[str]):
             export_file(path, "txt", delimiter=True)
             data["txt_delimited"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_txt_delimited.txt", path_complete=True),
+                "size": get_size(
+                    f"{path}/_export/_txt_delimited.txt", path_complete=True
+                ),
                 "creation": get_current_time(),
             }
 
@@ -712,7 +749,9 @@ def task_export_results(path: str, output_types: list[str]):
             creation_time = get_current_time()
             data["pdf_indexed"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_pdf_indexed.pdf", path_complete=True),
+                "size": get_size(
+                    f"{path}/_export/_pdf_indexed.pdf", path_complete=True
+                ),
                 "creation": creation_time,
                 "pages": get_page_count(path, "pdf") + 1,
             }
@@ -754,17 +793,16 @@ def task_export_results(path: str, output_types: list[str]):
             if success:
                 data["ner"] = {
                     "complete": True,
-                    "size": get_size(f"{path}/_export/_entities.json", path_complete=True),
+                    "size": get_size(
+                        f"{path}/_export/_entities.json", path_complete=True
+                    ),
                     "creation": get_current_time(),
                 }
             else:
-                data["ner"] = {
-                    "complete": False,
-                    "error": True
-                }
+                data["ner"] = {"complete": False, "error": True}
 
         update_data(data_file, data)
-        #return {"status": "success", "metricas": page_metrics}
+        # return {"status": "success", "metricas": page_metrics}
         return {"status": "success"}
     except Exception as e:
         traceback.print_exc()
@@ -773,7 +811,7 @@ def task_export_results(path: str, output_types: list[str]):
         update_data(data_file, data)
         log.error(f"Error in exporting results for file at {path}: {e}")
 
-        #return {"status": "error", "metricas": page_metrics}
+        # return {"status": "error", "metricas": page_metrics}
         return {"status": "error"}
 
 
@@ -784,11 +822,11 @@ def task_export_results(path: str, output_types: list[str]):
 def setup_periodic_tasks(sender: Celery, **kwargs):
     # Clean up old private sessions daily at midnight
     entry = RedBeatSchedulerEntry(
-        'cleanup_private_sessions',
+        "cleanup_private_sessions",
         delete_old_private_sessions.s().task,
-        crontab(minute='0', hour='0'),
-        #args=["first", "second"], # example of sending args to task scheduled with redbeat
-        app=celery
+        crontab(minute="0", hour="0"),
+        # args=["first", "second"], # example of sending args to task scheduled with redbeat
+        app=celery,
     )
     entry.save()
     log.info(f"Created periodic task {entry}")
@@ -805,7 +843,9 @@ def set_max_private_session_age(new_max_age: int | str):
 
 @celery.task(name="cleanup_private_sessions")
 def delete_old_private_sessions():
-    max_private_session_age = int(os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"))  # days
+    max_private_session_age = int(
+        os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
+    )  # days
     log.info(f"Deleting private sessions older than {max_private_session_age} days")
 
     priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
@@ -813,12 +853,16 @@ def delete_old_private_sessions():
     for folder in priv_sessions:
         data = get_data(f"{folder}/_data.json")
         created_time = data["creation"]
-        as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(TIMEZONE)
+        as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(
+            TIMEZONE
+        )
         now = datetime.now().astimezone(TIMEZONE)
-        log.debug(f'{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_session_age}')
+        log.debug(
+            f"{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_session_age}"
+        )
         if (now - as_datetime).days > max_private_session_age:
             shutil.rmtree(folder)
             n_deleted += 1
 
-    update_data(f"./{PRIVATE_PATH}/_data.json", { "last_cleanup": get_current_time() })
+    update_data(f"./{PRIVATE_PATH}/_data.json", {"last_cleanup": get_current_time()})
     return f"{n_deleted} private session(s) deleted"

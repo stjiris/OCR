@@ -5,8 +5,8 @@ import shutil
 import string
 from datetime import timedelta
 from http import HTTPStatus
-
-from threading import Lock, Thread
+from threading import Lock
+from threading import Thread
 
 import flask_wtf
 import redbeat
@@ -15,12 +15,12 @@ from celery import Celery
 from celery.schedules import crontab
 from celery.schedules import schedule
 from dotenv import load_dotenv
+from flask import abort
 from flask import Flask
 from flask import g
-from flask import Response
-from flask import abort
 from flask import jsonify
 from flask import request
+from flask import Response
 from flask import send_file
 from flask_cors import CORS
 from flask_login import current_user
@@ -34,16 +34,15 @@ from flask_security.models import fsqla_v3 as fsqla
 from flask_sqlalchemy import SQLAlchemy
 from redbeat import RedBeatSchedulerEntry
 from redbeat.schedulers import RedBeatConfig
-from werkzeug.utils import safe_join
-
 from src.elastic_search import create_document
 from src.elastic_search import ElasticSearchClient
-from src.elastic_search import ES_URL
 from src.elastic_search import ES_INDEX
+from src.elastic_search import ES_URL
 from src.elastic_search import mapping
 from src.elastic_search import settings
-
+from src.utils.file import ALLOWED_EXTENSIONS
 from src.utils.file import delete_structure
+from src.utils.file import FILES_PATH
 from src.utils.file import generate_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -55,17 +54,17 @@ from src.utils.file import get_filesystem
 from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
-from src.utils.file import update_data
+from src.utils.file import PRIVATE_PATH
 from src.utils.file import save_file_layouts
-
-from src.utils.file import FILES_PATH, TEMP_PATH, PRIVATE_PATH, ALLOWED_EXTENSIONS
-
+from src.utils.file import TEMP_PATH
+from src.utils.file import update_data
 from src.utils.system import get_free_space
-#from src.utils.system import get_logs
 from src.utils.system import get_private_sessions
 from src.utils.system import get_size_private_sessions
-
 from src.utils.text import compare_dicts_words
+from werkzeug.utils import safe_join
+
+# from src.utils.system import get_logs
 
 load_dotenv()
 
@@ -75,7 +74,7 @@ CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-#app.config["APPLICATION_ROOT"] = "/api"
+# app.config["APPLICATION_ROOT"] = "/api"
 app.config["APPLICATION_ROOT"] = "/"
 
 # Set secret key and salt (required)
@@ -83,7 +82,7 @@ app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
 app.config["SECURITY_PASSWORD_SALT"] = os.environ["FLASK_SECURITY_PASSWORD_SALT"]
 
 # Get configs from file
-app.config.from_pyfile('app.cfg')
+app.config.from_pyfile("app.cfg")
 
 # Enable CSRF on all api endpoints
 flask_wtf.CSRFProtect(app)
@@ -93,7 +92,7 @@ db = SQLAlchemy(app)
 fsqla.FsModels.set_db_info(db)
 
 # Setup mail service - must be configured for production!!!
-#mail = Mail(app)
+# mail = Mail(app)
 
 
 class Role(db.Model, fsqla.FsRoleMixin):
@@ -124,17 +123,21 @@ private_sessions = dict()
 #####################################
 # ERROR HANDLING
 #####################################
-def bad_request(message: str = 'Bad request syntax or unsupported method'):
+def bad_request(message: str = "Bad request syntax or unsupported method"):
     response = jsonify({"message": message})
     response.status_code = 400
     return response
+
 
 #####################################
 # REQUEST HANDLING
 #####################################
 
+
 def format_path(request_data):
-    is_private = "_private" in request_data and (request_data["_private"] == 'true' or request_data["_private"] == True)
+    is_private = "_private" in request_data and (
+        request_data["_private"] == "true" or request_data["_private"] is True
+    )
     if is_private:
         stripped_path = request_data["path"].strip("/")
         private_session = stripped_path.split("/")[0]
@@ -146,7 +149,9 @@ def format_path(request_data):
 
 
 def format_filesystem_path(request_data):
-    is_private = "_private" in request_data and (request_data["_private"] == 'true' or request_data["_private"] == True)
+    is_private = "_private" in request_data and (
+        request_data["_private"] == "true" or request_data["_private"] is True
+    )
     private_session = None
     filesystem_path = FILES_PATH
     if is_private:
@@ -200,16 +205,16 @@ def csrf_exempt(func):
 def abort_bad_request():
     if request.endpoint in app.view_functions:
         view_func = app.view_functions[request.endpoint]
-        if hasattr(view_func, '_requires_arg_path'):
+        if hasattr(view_func, "_requires_arg_path"):
             if "path" not in request.values or request.values["path"] == "":
                 return bad_request("Missing 'path' argument")
-        elif hasattr(view_func, '_requires_json_path'):
+        elif hasattr(view_func, "_requires_json_path"):
             if "path" not in request.json or request.json["path"] == "":
                 return bad_request("Missing 'path' parameter")
-        elif hasattr(view_func, '_requires_form_path'):
+        elif hasattr(view_func, "_requires_form_path"):
             if "path" not in request.form or request.form["path"] == "":
                 return bad_request("Missing 'path' in form")
-        elif hasattr(view_func, '_requires_allowed_file'):
+        elif hasattr(view_func, "_requires_allowed_file"):
             if "name" not in request.form:
                 return bad_request("Missing 'name' in form")
             if request.form["name"].split(".")[-1].lower() not in ALLOWED_EXTENSIONS:
@@ -221,13 +226,14 @@ def abort_bad_request():
 def ignore_csrf_if_exempt():
     if request.method != "GET" and request.endpoint in app.view_functions:
         view_func = app.view_functions[request.endpoint]
-        if hasattr(view_func, '_csrf_exempt'):
+        if hasattr(view_func, "_csrf_exempt"):
             g.csrf_valid = True
 
 
 #####################################
 # FILE SYSTEM ROUTES
 #####################################
+
 
 @app.route("/files", methods=["GET"])
 def get_file_system():
@@ -238,7 +244,9 @@ def get_file_system():
             filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
             return filesystem
 
-        path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
+        path, filesystem_path, private_session, is_private = format_filesystem_path(
+            request.values
+        )
         log.debug(f"Getting info of {filesystem_path}, priv session {private_session}")
         filesystem = get_filesystem(filesystem_path, private_session, is_private)
         filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
@@ -254,8 +262,12 @@ def get_info():
         if "path" not in request.values or request.values["path"] == "":
             return get_filesystem(FILES_PATH)
 
-        path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
-        return {"info": get_structure_info(filesystem_path, private_session, is_private)}
+        path, filesystem_path, private_session, is_private = format_filesystem_path(
+            request.values
+        )
+        return {
+            "info": get_structure_info(filesystem_path, private_session, is_private)
+        }
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
@@ -265,8 +277,11 @@ def create_folder():
     data = request.json
     log.debug(data)
 
-    if ("path" not in data  # empty path is valid: new top-level public session folder
-        or "folder" not in data or data["folder"] == ''):
+    if (
+        "path" not in data  # empty path is valid: new top-level public session folder
+        or "folder" not in data
+        or data["folder"] == ""
+    ):
         return bad_request("Missing parameter 'path' or 'folder'")
 
     path, _ = format_path(data)
@@ -310,7 +325,12 @@ def get_file():
         abort(HTTPStatus.NOT_FOUND)
     totalPages = len(os.listdir(path + "/_ocr_results"))
     doc, words = get_file_parsed(path, is_private)
-    return {"pages": totalPages, "doc": doc, "words": words, "corpus": [x[:-4] for x in os.listdir("corpus")]}
+    return {
+        "pages": totalPages,
+        "doc": doc,
+        "words": words,
+        "corpus": [x[:-4] for x in os.listdir("corpus")],
+    }
 
 
 @app.route("/get_txt_delimited", methods=["GET"])
@@ -343,7 +363,9 @@ def get_entities():
 @app.route("/request_entities", methods=["GET"])
 @requires_arg_path
 def request_entities():
-    path, filesystem_path, private_session, is_private = format_filesystem_path(request.values)
+    path, filesystem_path, private_session, is_private = format_filesystem_path(
+        request.values
+    )
     data = get_data(path + "/_data.json")
 
     data["ner"] = {
@@ -353,9 +375,12 @@ def request_entities():
 
     update_data(f"{path}/_data.json", data)
 
-    celery.send_task('request_ner', kwargs={'data_folder': path})
+    celery.send_task("request_ner", kwargs={"data_folder": path})
     # Thread(target=request_ner, args=(path,)).start()
-    return {"success": True, "filesystem": get_filesystem(filesystem_path, private_session, is_private)}
+    return {
+        "success": True,
+        "filesystem": get_filesystem(filesystem_path, private_session, is_private),
+    }
 
 
 # TODO: check if used
@@ -366,10 +391,15 @@ def get_zip():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
-        celery.send_task('export_file', kwargs={'path': path, 'filetype': "zip"}).get()
-    except Exception as e:
-        return {"success": False, "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde"}
-    return send_file(safe_join(path, f"{path.split('/')[-1]}.zip"))  # filename == folder name
+        celery.send_task("export_file", kwargs={"path": path, "filetype": "zip"}).get()
+    except Exception:
+        return {
+            "success": False,
+            "message": "Pelo menos um ficheiro está a ser processado. Tente mais tarde",
+        }
+    return send_file(
+        safe_join(path, f"{path.split('/')[-1]}.zip")
+    )  # filename == folder name
 
 
 @app.route("/get_pdf_indexed", methods=["GET"])
@@ -378,7 +408,7 @@ def get_pdf_indexed():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "pdf"})
+    promise = celery.send_task("export_file", kwargs={"path": path, "filetype": "pdf"})
     file = promise.get()
     return send_file(file)
 
@@ -390,7 +420,9 @@ def get_pdf_simple():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "pdf", 'simple': True})
+    promise = celery.send_task(
+        "export_file", kwargs={"path": path, "filetype": "pdf", "simple": True}
+    )
     file = promise.get()
     return send_file(file)
 
@@ -429,7 +461,7 @@ def get_images():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    promise = celery.send_task('export_file', kwargs={'path': path, 'filetype': "imgs"})
+    promise = celery.send_task("export_file", kwargs={"path": path, "filetype": "imgs"})
     file = promise.get()
     return send_file(file)
 
@@ -440,7 +472,7 @@ def get_original():
     path, _ = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    file_path = safe_join(path, path.split('/')[-1])  # filename == folder name
+    file_path = safe_join(path, path.split("/")[-1])  # filename == folder name
     return send_file(file_path)
 
 
@@ -451,9 +483,11 @@ def delete_path():
     try:
         # avoid deleting roots
         # filesystem_path is either FILES_PATH or PRIVATE_PATH/private_session -> another endpoint deletes priv. sessions
-        if (os.path.samefile(FILES_PATH, path)
+        if (
+            os.path.samefile(FILES_PATH, path)
             or os.path.samefile(PRIVATE_PATH, path)
-            or os.path.samefile(path, filesystem_path)):
+            or os.path.samefile(path, filesystem_path)
+        ):
             abort(HTTPStatus.NOT_FOUND)
 
         delete_structure(es, path)
@@ -505,8 +539,10 @@ def is_filename_reserved(path, filename):
     with os.scandir(path) as dir_content:
         for f in dir_content:
             # If f is a folder
-            if not f.is_dir(): continue
-            if f.name == filename: return True
+            if not f.is_dir():
+                continue
+            if f.name == filename:
+                return True
 
             data = get_data(f"{f.path}/_data.json")
             if "original_filename" in data and data["original_filename"] == filename:
@@ -535,10 +571,13 @@ def find_valid_filename(path, basename, extension):
 @requires_json_path
 def prepare_upload():
     if float(get_free_space()[1]) < 10:
-        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+        return {
+            "success": False,
+            "error": "O servidor não tem espaço suficiente. Por favor informe o administrador",
+        }
 
     data = request.json
-    if "name" not in data or data["name"] == '':
+    if "name" not in data or data["name"] == "":
         return bad_request("Missing parameter 'name'")
 
     path, filesystem_path, private_session, is_private = format_filesystem_path(data)
@@ -572,7 +611,7 @@ def join_chunks(target_path, filename, total_count, temp_file_path):
         for i in range(total_count):
             with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
-    celery.send_task('prepare_file', kwargs={'path': target_path})
+    celery.send_task("prepare_file", kwargs={"path": target_path})
     shutil.rmtree(temp_file_path)
 
 
@@ -581,13 +620,20 @@ def join_chunks(target_path, filename, total_count, temp_file_path):
 @requires_allowed_file
 def upload_file():
     if float(get_free_space()[1]) < 10:
-        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+        return {
+            "success": False,
+            "error": "O servidor não tem espaço suficiente. Por favor informe o administrador",
+        }
 
-    if ("file" not in request.files
+    if (
+        "file" not in request.files
         or "name" not in request.form
         or "counter" not in request.form
-        or "totalCount" not in request.form):
-        return bad_request("Missing file or parameter 'name', 'counter', or 'totalCount'")
+        or "totalCount" not in request.form
+    ):
+        return bad_request(
+            "Missing file or parameter 'name', 'counter', or 'totalCount'"
+        )
 
     path, _ = format_path(request.form)
     file = request.files["file"]
@@ -597,21 +643,28 @@ def upload_file():
 
     temp_filename = safe_join(path, f"_{filename}").replace("/", "_")
     target_path = safe_join(path, filename)  # path for document data is "path/filename"
-    file_path = safe_join(target_path, filename)  # file stored as "path/filename/filename"
+    file_path = safe_join(
+        target_path, filename
+    )  # file stored as "path/filename/filename"
 
     with open(f"{target_path}/_data.json", "w", encoding="utf-8") as f:
         extension = filename.split(".")[-1].lower()
-        json.dump({
-            "type": "file",
-            "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
-            "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
-        }, f, indent=2, ensure_ascii=False)
+        json.dump(
+            {
+                "type": "file",
+                "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
+                "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
 
     # If only one chunk, save the file directly
     if total_count == 1:
         file.save(file_path)
 
-        celery.send_task('prepare_file', kwargs={'path': target_path})
+        celery.send_task("prepare_file", kwargs={"path": target_path})
 
         return {"success": True, "finished": True}
 
@@ -645,7 +698,7 @@ def upload_file():
 
             Thread(
                 target=join_chunks,
-                args=(target_path, filename, total_count, temp_file_path)
+                args=(target_path, filename, total_count, temp_file_path),
             ).start()
 
             return {"success": True, "finished": True}
@@ -673,7 +726,7 @@ def configure_ocr():
         data["config"] = req_data["config"]
     else:
         # TODO: accept and verify other strings as config file names
-        return bad_request("Config must be dictionary or \"default\"")
+        return bad_request('Config must be dictionary or "default"')
 
     update_data(data_path, data)
 
@@ -692,7 +745,10 @@ def perform_ocr():
     """
 
     if float(get_free_space()[1]) < 10:
-        return {"success": False, "error": "O servidor não tem espaço suficiente. Por favor informe o administrador"}
+        return {
+            "success": False,
+            "error": "O servidor não tem espaço suficiente. Por favor informe o administrador",
+        }
 
     data = request.json
     path, _ = format_path(data)
@@ -715,7 +771,9 @@ def perform_ocr():
         try:
             data = get_data(f"{f}/_data.json")
         except FileNotFoundError:
-            abort(HTTPStatus.INTERNAL_SERVER_ERROR)  # TODO: improve feedback to users on error
+            abort(
+                HTTPStatus.INTERNAL_SERVER_ERROR
+            )  # TODO: improve feedback to users on error
 
         # TODO: handle default or preset name configs in celery tasks
         # Replace specified config with saved config, if exists
@@ -730,24 +788,26 @@ def perform_ocr():
         os.mkdir(f"{f}/_ocr_results")
         os.mkdir(f"{f}/_export")
 
-        data.update({
-            "ocr": {"progress": 0},
-            "pdf": {"complete": False},
-            "pdf_indexed": {"complete": False},
-            "txt": {"complete": False},
-            "txt_delimited": {"complete": False},
-            "csv": {"complete": False},
-            "ner": {"complete": False},
-            "hocr": {"complete": False},
-            "xml": {"complete": False},
-            "zip": {"complete": False},
-        })
+        data.update(
+            {
+                "ocr": {"progress": 0},
+                "pdf": {"complete": False},
+                "pdf_indexed": {"complete": False},
+                "txt": {"complete": False},
+                "txt_delimited": {"complete": False},
+                "csv": {"complete": False},
+                "ner": {"complete": False},
+                "hocr": {"complete": False},
+                "xml": {"complete": False},
+                "zip": {"complete": False},
+            }
+        )
         update_data(f"{f}/_data.json", data)
 
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        celery.send_task('file_ocr', kwargs={'path': f, 'config': config})
+        celery.send_task("file_ocr", kwargs={"path": f, "config": config})
 
     return {
         "success": True,
@@ -804,11 +864,7 @@ def index_doc():
                 )
             else:
                 doc = create_document(
-                    file_path,
-                    "Tesseract",
-                    data["ocr"]["config"],
-                    text,
-                    extension
+                    file_path, "Tesseract", data["ocr"]["config"], text, extension
                 )
 
             doc_id = generate_uuid(file_path)
@@ -875,9 +931,11 @@ def submit_text():
     texts = data["text"]  # estrutura com texto, nome do ficheiro e url da imagem
     remake_files = data["remakeFiles"]
     data_folder_list = texts[0]["original_file"].strip("/").split("/")[:-2]
-    data_folder = '/'.join(data_folder_list)
+    data_folder = "/".join(data_folder_list)
 
-    is_private = "_private" in data and (data["_private"] == 'true' or data["_private"] == True)
+    is_private = "_private" in data and (
+        data["_private"] == "true" or data["_private"] is True
+    )
     if is_private:
         path = safe_join(PRIVATE_PATH, data_folder)
         data_path = path + "/_data.json"
@@ -907,7 +965,7 @@ def submit_text():
             json.dump(text, f, indent=2, ensure_ascii=False)
 
     if remake_files:
-        celery.send_task('make_changes', kwargs={'path': path,  'data': data})
+        celery.send_task("make_changes", kwargs={"path": path, "data": data})
         # Thread(target=make_changes, args=(data_folder, data)).start()
         # make_changes(data_folder, data)
 
@@ -916,8 +974,7 @@ def submit_text():
 
 @app.route("/check-sintax", methods=["POST"])
 def check_sintax():
-    if ("words" not in request.json
-        or "languages" not in request.json):
+    if "words" not in request.json or "languages" not in request.json:
         return bad_request("Missing parameter 'words' or 'languages'")
 
     words = request.json["words"].keys()
@@ -959,7 +1016,7 @@ def search():
 #####################################
 @app.route("/create-private-session", methods=["GET"])
 def create_private_session():
-    session_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    session_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
     private_sessions[session_id] = {}
 
     if not os.path.isdir(PRIVATE_PATH):
@@ -991,7 +1048,7 @@ def create_private_session():
     return {"success": True, "sessionId": session_id}
 
 
-@app.route('/validate-private-session', methods=['POST'])
+@app.route("/validate-private-session", methods=["POST"])
 def validate_private_session():
     data = request.json
     if "sessionId" not in data:
@@ -1049,7 +1106,7 @@ def generate_automatic_layouts():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
-        celery.send_task('auto_segment', kwargs={'path': path}).get()
+        celery.send_task("auto_segment", kwargs={"path": path}).get()
         layouts = get_file_layouts(path, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
@@ -1059,14 +1116,15 @@ def generate_automatic_layouts():
 #####################################
 # LOGIN MANAGEMENT
 #####################################
-@app.route('/account/check-auth', methods=["GET"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@app.route("/account/check-auth", methods=["GET"])
+@auth_required("token", "session")
+@roles_required("Admin")
 def check_authorized():
     if current_user.is_authenticated:
         return {"status": "Logged in"}
     else:
         abort(HTTPStatus.FORBIDDEN)
+
 
 """
 @app.route("/register", methods=["POST"])
@@ -1093,9 +1151,10 @@ def register_user():
 # ADMIN ROUTES
 #####################################
 
+
 @app.route("/admin/system-info", methods=["GET"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@auth_required("token", "session")
+@roles_required("Admin")
 def get_system_info():
     free_space, free_space_percentage = get_free_space()
     return {
@@ -1107,21 +1166,18 @@ def get_system_info():
 
 
 @app.route("/admin/storage-info", methods=["GET"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@auth_required("token", "session")
+@roles_required("Admin")
 def get_storage_info():
     free_space, free_space_percentage = get_free_space()
     data = get_data(f"./{PRIVATE_PATH}/_data.json")
-    if "last_cleanup" not in data.keys():
-        last_cleanup = "nunca"
-    else:
-        last_cleanup = data["last_cleanup"]
+    last_cleanup = data.keys().get("last_cleanup", "nunca")
     return {
         "free_space": free_space,
         "free_space_percentage": free_space_percentage,
         "private_sessions": get_size_private_sessions(),
         "last_cleanup": last_cleanup,
-        "max_age": os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
+        "max_age": os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"),
     }
 
 
@@ -1134,17 +1190,19 @@ def cancel_cleanup():
     TODO: allow recreating schedule through another endpoint,
     or make calls to /admin/schedule-cleanup re-create the schedule if it doesn't exist.
     """
-    entry = RedBeatSchedulerEntry.from_key('redbeat:cleanup_private_sessions', app=celery)
+    entry = RedBeatSchedulerEntry.from_key(
+        "redbeat:cleanup_private_sessions", app=celery
+    )
     entry.delete()
     return {
         "success": True,
-        "message": "Limpeza regular de sessões privadas cancelada."
+        "message": "Limpeza regular de sessões privadas cancelada.",
     }
 
 
 @app.route("/admin/schedule-cleanup", methods=["POST"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@auth_required("token", "session")
+@roles_required("Admin")
 def schedule_private_session_cleanup():
     data = request.json
     log.debug(data)
@@ -1153,7 +1211,9 @@ def schedule_private_session_cleanup():
 
     if data["type"] == "interval":
         if "run_every" not in data or not isinstance(data["run_every"], (int, str)):
-            return bad_request("Parameter 'run_every' must be positive whole number as integer or string")
+            return bad_request(
+                "Parameter 'run_every' must be positive whole number as integer or string"
+            )
         if data["run_every"] == 0:
             return bad_request("Number of hours between cleanups cannot be zero")
         delta = timedelta(hours=int(data["run_every"]))
@@ -1167,11 +1227,16 @@ def schedule_private_session_cleanup():
         new_schedule = crontab(minute=minute, hour=hour, day_of_month=day_of_month)
 
     elif data["type"] == "weekly":
-        if "day_of_week" not in data or not isinstance(data["day_of_week"], (int,str)):
-            return bad_request("Parameter 'day_of_week' must be a number between 0 (Sunday) and 6 as integer or string")
-        if ("hour" in data and not isinstance(data["hour"], (int,str)))\
-            or ("minute" in data and not isinstance(data["minute"], (int,str))):
-            return bad_request("Parameters 'hour' and 'minute' must be numbers as integer or string")
+        if "day_of_week" not in data or not isinstance(data["day_of_week"], (int, str)):
+            return bad_request(
+                "Parameter 'day_of_week' must be a number between 0 (Sunday) and 6 as integer or string"
+            )
+        if ("hour" in data and not isinstance(data["hour"], (int, str))) or (
+            "minute" in data and not isinstance(data["minute"], (int, str))
+        ):
+            return bad_request(
+                "Parameters 'hour' and 'minute' must be numbers as integer or string"
+            )
 
         # Default to first minute of every saturday
         hour = data["hour"] if "hour" in data else 0
@@ -1181,40 +1246,47 @@ def schedule_private_session_cleanup():
     else:
         return bad_request("Unrecognized schedule type")
 
-    entry = RedBeatSchedulerEntry.from_key('redbeat:cleanup_private_sessions', app=celery)
+    entry = RedBeatSchedulerEntry.from_key(
+        "redbeat:cleanup_private_sessions", app=celery
+    )
     entry.schedule = new_schedule
     entry = entry.save()
     return {
         "success": True,
-        "message": f"Novo agendamento da limpeza de sessões privadas: {entry}"
+        "message": f"Novo agendamento da limpeza de sessões privadas: {entry}",
     }
 
 
 @app.route("/admin/cleanup-sessions", methods=["POST"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@auth_required("token", "session")
+@roles_required("Admin")
 def perform_private_session_cleanup():
-    celery.send_task('cleanup_private_sessions')
-    return {"success": True, "message": "O sistema irá apagar as sessões privadas mais antigas."}
+    celery.send_task("cleanup_private_sessions")
+    return {
+        "success": True,
+        "message": "O sistema irá apagar as sessões privadas mais antigas.",
+    }
 
 
 @app.route("/admin/get-scheduled", methods=["GET"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@auth_required("token", "session")
+@roles_required("Admin")
 def get_scheduled_tasks():
     config = RedBeatConfig(celery)
     schedule_key = config.schedule_key
     log.debug(f"Schedule key: {schedule_key}")
     redis = redbeat.schedulers.get_redis(celery)
     elements = redis.zrange(schedule_key, 0, -1, withscores=False)
-    entries = {el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements}
+    entries = {
+        el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements
+    }
     log.debug(entries)
     return f"{entries}"
 
 
 @app.route("/admin/set-max-private-session-age", methods=["POST"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@auth_required("token", "session")
+@roles_required("Admin")
 def set_max_private_session_age():
     data = request.json
     if "new_max_age" not in data:
@@ -1223,19 +1295,30 @@ def set_max_private_session_age():
     new_max_age = data["new_max_age"]
     try:
         if int(new_max_age) < 1:
-            return {"success": False, "message": f"Invalid number of days: \"{new_max_age}\", must be positive integer"}
+            return {
+                "success": False,
+                "message": f'Invalid number of days: "{new_max_age}", must be positive integer',
+            }
 
-        result = celery.send_task('set_max_private_session_age', kwargs={'new_max_age': new_max_age}).get()
+        result = celery.send_task(
+            "set_max_private_session_age", kwargs={"new_max_age": new_max_age}
+        ).get()
         if result["status"] == "success":
             os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
-            return {"success": True, "message": f"New max private session age: {new_max_age} days"}
+            return {
+                "success": True,
+                "message": f"New max private session age: {new_max_age} days",
+            }
     except ValueError:
-        return {"success": False, "message": f"Invalid number of days: \"{new_max_age}\", must be positive integer"}
+        return {
+            "success": False,
+            "message": f'Invalid number of days: "{new_max_age}", must be positive integer',
+        }
 
 
 @app.route("/admin/delete-private-session", methods=["POST"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@auth_required("token", "session")
+@roles_required("Admin")
 def delete_private_session():
     data = request.json
     if "sessionId" not in data:
@@ -1257,10 +1340,10 @@ def delete_private_session():
     }
 
 
-@app.route('/admin/flower/', defaults={'fullpath': ''}, methods=["GET", "POST"])
-@app.route('/admin/flower/<path:fullpath>', methods=["GET", "POST"])
-@auth_required('token', 'session')
-@roles_required('Admin')
+@app.route("/admin/flower/", defaults={"fullpath": ""}, methods=["GET", "POST"])
+@app.route("/admin/flower/<path:fullpath>", methods=["GET", "POST"])
+@auth_required("token", "session")
+@roles_required("Admin")
 @csrf_exempt  # csrf token cannot be added to AJAX requests sent from flower's views
 def proxy_flower(fullpath):
     """
@@ -1269,22 +1352,28 @@ def proxy_flower(fullpath):
     :param fullpath: rest of the path to the Flower API
     :return: response from Flower
     """
-    log.debug(f'Requesting to flower {request.base_url.replace(request.host_url, "http://flower:5050/")}')
+    log.debug(
+        f'Requesting to flower {request.base_url.replace(request.host_url, "http://flower:5050/")}'
+    )
     res = requests.request(
         method=request.method,
-        url=request.base_url.replace(request.host_url, 'http://flower:5050/'),
+        url=request.base_url.replace(request.host_url, "http://flower:5050/"),
         params=request.query_string,
-        headers={k: v for k, v in request.headers if k.lower() != 'host'},
+        headers={k: v for k, v in request.headers if k.lower() != "host"},
         data=request.get_data(),
         cookies=request.cookies,
         allow_redirects=False,
     )
 
     # exclude "hop-by-hop headers" defined by RFC 2616 section 13.5.1 ref. https://www.rfc-editor.org/rfc/rfc2616#section-13.5.1
-    excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+    excluded_headers = [
+        "content-encoding",
+        "content-length",
+        "transfer-encoding",
+        "connection",
+    ]
     headers = [
-        (k, v) for k, v in res.raw.headers.items()
-        if k.lower() not in excluded_headers
+        (k, v) for k, v in res.raw.headers.items() if k.lower() not in excluded_headers
     ]
 
     response = Response(res.content, res.status_code, headers)
@@ -1331,11 +1420,13 @@ with app.app_context():
     del os.environ["ADMIN_PASS"]
 
     if not security.datastore.find_user(email=admin_email):
-        security.datastore.create_user(email=admin_email, password=hash_password(admin_pass), roles=["Admin"])
+        security.datastore.create_user(
+            email=admin_email, password=hash_password(admin_pass), roles=["Admin"]
+        )
 
     db.session.commit()
 
 
 if __name__ == "__main__":
     # app.config['DEBUG'] = os.environ.get('DEBUG', False)
-    app.run(host='0.0.0.0', port=5001, threaded=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=5001, threaded=True, use_reloader=False)
