@@ -48,9 +48,9 @@ const tesseractOutputsList = [
     { value: "xml", description: "ALTO (apenas documentos com 1 página)", disabled: true},
 ]
 
-const defaultEngine = "tesseract";
+const defaultEngine = "pytesseract";
 const engineList = [
-    { value: "tesseract", description: "PyTesseract"},
+    { value: "pytesseract", description: "PyTesseract"},
     { value: "tesserOCR", description: "TesserOCR"},
 ]
 
