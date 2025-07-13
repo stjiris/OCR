@@ -284,11 +284,12 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
                 rows = min(max_rows, rows)
 
                 # Write index title
-                title = pdf.beginText(x, h - margin_y_title)
-                title.setTextRenderMode(0)
-                title.setFont("Helvetica", title_size)
-                title.textOut("Índice de palavras")
-                pdf.drawText(title)
+                if i == 0:
+                    title = pdf.beginText(x, h - margin_y_title)
+                    title.setTextRenderMode(0)
+                    title.setFont("Helvetica", title_size)
+                    title.textOut("Índice de palavras")
+                    pdf.drawText(title)
 
                 # TODO: ensure full index is written (possibly in multiple pages) if number of words exceeds rows*cols
 
