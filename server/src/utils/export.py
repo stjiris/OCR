@@ -24,7 +24,7 @@ from PIL import Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import A4
 
 from src.utils.file import json_to_text
 
@@ -142,24 +142,29 @@ def export_csv(path, force_recreate=False):
     #for page in pages:
 
     words = {}
-    for page in filenames_asterisk:
+    for i, page in enumerate(filenames_asterisk):
         page_basename = get_file_basename(page)
         hocr_path = f"{path}/_ocr_results/{page_basename}.json"
-
         index_words = find_index_words(hocr_path)
         for word in index_words:
-            words[word] = words.get(word, 0) + index_words[word]
+            if word not in words:
+                words[word] = {"count": index_words[word], "pages": str(i+1)}
+            else:
+                words[word]["count"] += index_words[word]
+                words[word]["pages"] += f", {i+1}"
+
     # Sort the `words` dict by key
-    words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
+    words = [item for item in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
     return export_csv_from_words(filename_csv, words)
 
 
 def export_csv_from_words(filename_csv, index_data):
     with open(filename_csv, mode='w', encoding='utf-8') as csvfile:
         csv_out = csv.writer(csvfile)
-        csv_out.writerow(['Word', 'Count'])
+        csv_out.writerow(['Palavra', 'Ocorrências', 'Páginas'])
         csv_out.writerow([' '])
-        csv_out.writerows(index_data)
+        for word in index_data:
+            csv_out.writerow([word[0], word[1]["count"], f'\"{word[1]["pages"]}\"'])
 
     return filename_csv
 
@@ -185,6 +190,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
     else:
         original_extension = path.split('.')[-1].lower()
 
+        # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         if original_extension == 'pdf':
             page_extension = "png"
             pdf_basename = get_file_basename(path)
@@ -198,28 +204,30 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
 
             pdf.close()
 
+        # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         elif original_extension == 'zip':
-            page_extension = "png"  # TODO: compress images taken from zips when creating pdf
+            page_extension = "png"
             img_basename = get_file_basename(path)
             pages_list = [p for p in os.listdir(f"{path}/_pages") if os.path.isfile(os.path.join(f"{path}/_pages", p))]
             pages_list.sort(key=lambda s: (s.casefold(), s))
             for i, page in enumerate(pages_list):
                 os.link(f"{path}/_pages/{page}", f"{path}/{img_basename}_{i}$.{page_extension}")
 
-        else:  # TODO: compress images when creating pdf
+        # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
+        else:
             page_extension = original_extension
             img_basename = get_file_basename(path)
             os.link(f"{path}/{img_basename}.{original_extension}", f"{path}/{img_basename}_0$.{page_extension}")
 
         words = {}
 
-        pdf = Canvas(target, pageCompression=1, pagesize=letter)
+        pdf = Canvas(target, pageCompression=1, pagesize=A4)
         pdf.setCreator("hocr-tools")
         pdf.setTitle(target)
 
         filenames_asterisk = [x for x in os.listdir(path) if x.endswith(f"$.{page_extension}")]
         images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
-        for image in images:
+        for i, image in enumerate(images):
             image_basename = get_file_basename(image)
             image_basename = image_basename[:-1]
 
@@ -233,37 +241,60 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
             new_words = add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
 
             for word in new_words:
-                words[word] = words.get(word, 0) + new_words[word]
+                if word not in words:
+                    words[word] = {"count": new_words[word], "pages": str(i+1)}
+                else:
+                    words[word]["count"] += new_words[word]
+                    words[word]["pages"] += f", {i+1}"
 
             pdf.showPage()
 
         # Sort the `words` dict by key
-        words = [(k, v) for k, v in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
+        words = [item for item in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
 
         if get_csv:
             export_csv_from_words(filename_csv, words)
 
         if not simple:
             rows = 100
-            cols = 3
-            size = 15
-            margin = 20
+            cols = 2
+            title_size = 38
+            size = 20
+            margin_x = 20
+            margin_y_title = 40
+            margin_y = 2 * margin_y_title
 
             word_count = len(words)
 
-            for id in range(0, word_count, rows * cols):
-                pdf.setPageSize((w, h))  # TODO: store page sizes and use for each page; PDFs can have variable size pages
+            for i in range(0, word_count, rows * cols):
+                # print index page as A4 page at 150 PPI/DPI
+                w = 1240
+                h = 1754
+                pdf.setPageSize((w, h))
 
-                x, y = margin, h - margin
+                x, y = margin_x, h - margin_y
 
-                set_words = words[id: id + rows * cols]
+                set_words = words[i: i + rows * cols]
 
-                available_height = h - 2 * margin
+                available_height = h - 5 * margin_y  # ensure there is some margin at the bottom
 
                 max_rows = available_height // size
 
                 rows = (len(set_words) - 1) // cols + 1
                 rows = min(max_rows, rows)
+
+                # Write index title
+                if i == 0:
+                    title = pdf.beginText(x, h - margin_y_title)
+                    title.setTextRenderMode(0)
+                    title.setFont("Helvetica", title_size)
+                    title.textOut("Índice de palavras")
+                    pdf.drawText(title)
+
+                # TODO: ensure full index is written (possibly in multiple pages) if number of words exceeds rows*cols
+
+                # Write index
+                text = pdf.beginText(x, y)
                 for col in range(cols):
                     for row in range(rows):
                         index = col * rows + row
@@ -271,18 +302,26 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
                             break
 
                         word = set_words[index]
-                        text = pdf.beginText()
                         text.setTextRenderMode(0)
+
+                        # Write word
+                        text.setFont("Helvetica-Bold", size)
+                        text.textOut(word[0])
+
+                        # Write rest of line
+                        descript = f': {word[1]["pages"]}'
+                        # not being used: number of word occurrences, word[1]["count"]
                         text.setFont("Helvetica", size)
-                        text.setTextOrigin(x, y)
-                        text.textLine(f"{word[0]} ({word[1]})")
-                        pdf.drawText(text)
+                        #offset = w / 2 - margin_x - stringWidth(word[0], "Helvetica-Bold", size) - stringWidth(descript, "Helvetica", size)
+                        #text.moveCursor(offset, 0)
+                        text.textLine(descript)
+                        #text.moveCursor(-offset, 0)
 
-                        y -= size
+                    y = h - margin_y
+                    x += (w - 2 * margin_x) // cols
+                    text.setTextOrigin(x, y)
 
-                    y = h - margin
-                    x += (w - 2 * margin) // cols
-
+                pdf.drawText(text)
                 pdf.showPage()
 
         pdf.save()
