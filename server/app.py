@@ -589,7 +589,7 @@ def upload_file():
         or "totalCount" not in request.form):
         return bad_request("Missing file or parameter 'name', 'counter', or 'totalCount'")
 
-    path, filesystem_path, private_session, is_private = format_filesystem_path(request.form)
+    path, _ = format_path(request.form)
     file = request.files["file"]
     filename = request.form["name"]
     counter = int(request.form["counter"])
@@ -613,7 +613,7 @@ def upload_file():
 
         celery.send_task('prepare_file', kwargs={'path': target_path})
 
-        return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
+        return {"success": True, "finished": True}
 
     # Create a Lock to process the file
     if temp_filename not in lock_system:
@@ -648,9 +648,9 @@ def upload_file():
                 args=(target_path, filename, total_count, temp_file_path)
             ).start()
 
-            return {"success": True, "finished": True, "info": get_folder_info(target_path, private_session)}
+            return {"success": True, "finished": True}
 
-    return {"success": True, "finished": False, "info": get_folder_info(target_path, private_session)}
+    return {"success": True, "finished": False}
 
 
 @app.route("/save-config", methods=["POST"])

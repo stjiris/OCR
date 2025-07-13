@@ -373,6 +373,11 @@ class FileExplorer extends React.Component {
             } else {
                 this.storageMenu.current.openWithMessage(data.error);
             }
+
+            // Update list of files on screen after upload of first chunk
+            if (i === 0) {
+                this.fetchFiles();
+            }
         })
         .catch(error => {
             // TODO: give feedback to user on communication error
@@ -441,7 +446,6 @@ class FileExplorer extends React.Component {
                     } else {
                         this.storageMenu.current.openWithMessage(data.error);
                     }
-                    this.fetchFiles();
                 });
             }
         });
