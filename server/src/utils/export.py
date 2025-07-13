@@ -276,7 +276,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
 
                 set_words = words[i: i + rows * cols]
 
-                available_height = h - margin_y_title - margin_y
+                available_height = h - 5 * margin_y  # ensure there is some margin at the bottom
 
                 max_rows = available_height // size
 
