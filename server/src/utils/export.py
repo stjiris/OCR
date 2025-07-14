@@ -1,11 +1,3 @@
-"""
-   Functions used to export the files to the client
-
-   Possible formats of output:
-   - pure .txt
-   - .txt with delimiters between pages
-   - .pdf with transparent layer of text
-"""
 import base64
 import csv
 import hashlib
@@ -16,16 +8,15 @@ import re
 import shutil
 import zipfile
 import zlib
+from contextlib import suppress
+from datetime import datetime
 
 import pypdfium2 as pdfium
-
-from datetime import datetime
 from PIL import Image
+from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.lib.pagesizes import A4
-
 from src.utils.file import json_to_text
 
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
@@ -38,15 +29,18 @@ def get_file_basename(filename):
     """
     Get the basename of a file
 
-    :param file: file name
+    :param filename: file name
     :return: basename of the file
     """
     return ".".join(filename.split("/")[-1].split(".")[:-1])
 
+
 ####################################################
 # GENERAL FUNCTION
 ####################################################
-def export_file(path, filetype, delimiter=False, force_recreate=False, simple=False, get_csv=False):
+def export_file(
+    path, filetype, delimiter=False, force_recreate=False, simple=False, get_csv=False
+):
     """
     Direct to the correct function based on the filetype
 
@@ -59,7 +53,9 @@ def export_file(path, filetype, delimiter=False, force_recreate=False, simple=Fa
     """
 
     if simple or get_csv:
-        return export_pdf(path, force_recreate=force_recreate, simple=simple, get_csv=get_csv)
+        return export_pdf(
+            path, force_recreate=force_recreate, simple=simple, get_csv=get_csv
+        )
 
     func = globals()[f"export_{filetype}"]
 
@@ -87,6 +83,7 @@ def export_imgs(path, force_recreate=False):
 
     shutil.make_archive(f"{path}/_images", "zip", path, base_dir="_images")
     return filename
+
 
 def export_txt(path, delimiter=False, force_recreate=False):
     """
@@ -122,7 +119,7 @@ def export_txt(path, delimiter=False, force_recreate=False):
                 hOCR = json.load(_f)
 
             if delimiter:
-                f.write(f"----- PAGE {(id+1):04d} -----\n\n")
+                f.write(f"----- PAGE {(id + 1):04d} -----\n\n")
 
             f.write(json_to_text(hOCR) + "\n\n")
 
@@ -137,9 +134,11 @@ def export_csv(path, force_recreate=False):
     if os.path.exists(filename_csv) and not force_recreate:
         return filename_csv
 
-    filenames_asterisk = [x for x in os.listdir(f"{path}/_ocr_results/") if x.endswith(".json")]
-    #pages = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)', x).group(1)))
-    #for page in pages:
+    filenames_asterisk = [
+        x for x in os.listdir(f"{path}/_ocr_results/") if x.endswith(".json")
+    ]
+    # pages = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)', x).group(1)))
+    # for page in pages:
 
     words = {}
     for i, page in enumerate(filenames_asterisk):
@@ -148,25 +147,29 @@ def export_csv(path, force_recreate=False):
         index_words = find_index_words(hocr_path)
         for word in index_words:
             if word not in words:
-                words[word] = {"count": index_words[word], "pages": str(i+1)}
+                words[word] = {"count": index_words[word], "pages": str(i + 1)}
             else:
                 words[word]["count"] += index_words[word]
-                words[word]["pages"] += f", {i+1}"
+                words[word]["pages"] += f", {i + 1}"
 
     # Sort the `words` dict by key
-    words = [item for item in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
+    words = [
+        item
+        for item in sorted(words.items(), key=lambda item: item[0].lower() + item[0])
+    ]
     return export_csv_from_words(filename_csv, words)
 
 
 def export_csv_from_words(filename_csv, index_data):
-    with open(filename_csv, mode='w', encoding='utf-8') as csvfile:
+    with open(filename_csv, mode="w", encoding="utf-8") as csvfile:
         csv_out = csv.writer(csvfile)
-        csv_out.writerow(['Palavra', 'Ocorrências', 'Páginas'])
-        csv_out.writerow([' '])
+        csv_out.writerow(["Palavra", "Ocorrências", "Páginas"])
+        csv_out.writerow([" "])
         for word in index_data:
-            csv_out.writerow([word[0], word[1]["count"], f'\"{word[1]["pages"]}\"'])
+            csv_out.writerow([word[0], word[1]["count"], f'"{word[1]["pages"]}"'])
 
     return filename_csv
+
 
 ####################################################
 # EXPORT PDF FUNCTIONS
@@ -188,10 +191,10 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         return target
 
     else:
-        original_extension = path.split('.')[-1].lower()
+        original_extension = path.split(".")[-1].lower()
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
-        if original_extension == 'pdf':
+        if original_extension == "pdf":
             page_extension = "png"
             pdf_basename = get_file_basename(path)
 
@@ -205,19 +208,29 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
             pdf.close()
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
-        elif original_extension == 'zip':
+        elif original_extension == "zip":
             page_extension = "png"
             img_basename = get_file_basename(path)
-            pages_list = [p for p in os.listdir(f"{path}/_pages") if os.path.isfile(os.path.join(f"{path}/_pages", p))]
+            pages_list = [
+                p
+                for p in os.listdir(f"{path}/_pages")
+                if os.path.isfile(os.path.join(f"{path}/_pages", p))
+            ]
             pages_list.sort(key=lambda s: (s.casefold(), s))
             for i, page in enumerate(pages_list):
-                os.link(f"{path}/_pages/{page}", f"{path}/{img_basename}_{i}$.{page_extension}")
+                os.link(
+                    f"{path}/_pages/{page}",
+                    f"{path}/{img_basename}_{i}$.{page_extension}",
+                )
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         else:
             page_extension = original_extension
             img_basename = get_file_basename(path)
-            os.link(f"{path}/{img_basename}.{original_extension}", f"{path}/{img_basename}_0$.{page_extension}")
+            os.link(
+                f"{path}/{img_basename}.{original_extension}",
+                f"{path}/{img_basename}_0$.{page_extension}",
+            )
 
         words = {}
 
@@ -225,8 +238,12 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         pdf.setCreator("hocr-tools")
         pdf.setTitle(target)
 
-        filenames_asterisk = [x for x in os.listdir(path) if x.endswith(f"$.{page_extension}")]
-        images = sorted(filenames_asterisk, key=lambda x: int(re.search(r'_(\d+)\$', x).group(1)))
+        filenames_asterisk = [
+            x for x in os.listdir(path) if x.endswith(f"$.{page_extension}")
+        ]
+        images = sorted(
+            filenames_asterisk, key=lambda x: int(re.search(r"_(\d+)\$", x).group(1))
+        )
         for i, image in enumerate(images):
             image_basename = get_file_basename(image)
             image_basename = image_basename[:-1]
@@ -242,15 +259,20 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
 
             for word in new_words:
                 if word not in words:
-                    words[word] = {"count": new_words[word], "pages": str(i+1)}
+                    words[word] = {"count": new_words[word], "pages": str(i + 1)}
                 else:
                     words[word]["count"] += new_words[word]
-                    words[word]["pages"] += f", {i+1}"
+                    words[word]["pages"] += f", {i + 1}"
 
             pdf.showPage()
 
         # Sort the `words` dict by key
-        words = [item for item in sorted(words.items(), key=lambda item: item[0].lower() + item[0])]
+        words = [
+            item
+            for item in sorted(
+                words.items(), key=lambda item: item[0].lower() + item[0]
+            )
+        ]
 
         if get_csv:
             export_csv_from_words(filename_csv, words)
@@ -274,9 +296,10 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
 
                 x, y = margin_x, h - margin_y
 
-                set_words = words[i: i + rows * cols]
+                set_words = words[i : i + rows * cols]
 
-                available_height = h - 5 * margin_y  # ensure there is some margin at the bottom
+                # ensure there is some margin at the bottom
+                available_height = h - 5 * margin_y
 
                 max_rows = available_height // size
 
@@ -312,10 +335,10 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
                         descript = f': {word[1]["pages"]}'
                         # not being used: number of word occurrences, word[1]["count"]
                         text.setFont("Helvetica", size)
-                        #offset = w / 2 - margin_x - stringWidth(word[0], "Helvetica-Bold", size) - stringWidth(descript, "Helvetica", size)
-                        #text.moveCursor(offset, 0)
+                        # offset = w / 2 - margin_x - stringWidth(word[0], "Helvetica-Bold", size) - stringWidth(descript, "Helvetica", size)
+                        # text.moveCursor(offset, 0)
                         text.textLine(descript)
-                        #text.moveCursor(-offset, 0)
+                        # text.moveCursor(-offset, 0)
 
                     y = h - margin_y
                     x += (w - 2 * margin_x) // cols
@@ -329,12 +352,13 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         # Delete compressed images
         for compressed_image in os.listdir(path):
             if compressed_image.endswith(f"$.{page_extension}"):
-                try:
+                with suppress(
+                    OSError
+                ):  # covers both FileNotFound and the OSError for trying to remove directory
                     os.remove(os.path.join(path, compressed_image))
-                except:
-                    pass
 
         return target
+
 
 def find_index_words(hocr_path):
     index_words = {}
@@ -375,6 +399,7 @@ def find_index_words(hocr_path):
                     index_words[w] = index_words.get(w, 0) + 1
 
     return index_words
+
 
 def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
     """Draw an invisible text layer for OCR data"""
@@ -443,6 +468,7 @@ CMGjwvxTsr74/f/F95m3TH9x8o0/TU//N+7/D/ScVcA=
     setattr(ttf, "name", "(invisible.ttf)")
     pdfmetrics.registerFont(TTFont("invisible", ttf))
 
+
 ####################################################
 # EXPORT METS/ALTO FUNCTIONS
 ####################################################
@@ -457,8 +483,13 @@ def get_file_size(path):
 
 
 def generate_file(base_path, path, id, seq, mimetype):
-    return f'<file CHECKSUMTYPE="MD5" CHECKSUM="{get_md5_checksum(path)}" GROUPID="{seq}" ID="{id}{(seq if seq != 0 else 1):05d}" MIMETYPE="{mimetype}" SEQ="{seq if seq != 0 else 1}" SIZE="{get_file_size(path)}">' + "\n\t\t\t\t" + \
-            f'<FLocat LOCTYPE="OTHER" OTHERLOCTYPE="FILE" xlink:href="{path.replace(base_path, "")[1:]}"/>' + "\n\t\t\t</file>"
+    return (
+        f'<file CHECKSUMTYPE="MD5" CHECKSUM="{get_md5_checksum(path)}" GROUPID="{seq}" ID="{id}{(seq if seq != 0 else 1):05d}" MIMETYPE="{mimetype}" SEQ="{seq if seq != 0 else 1}" SIZE="{get_file_size(path)}">'
+        + "\n\t\t\t\t"
+        + f'<FLocat LOCTYPE="OTHER" OTHERLOCTYPE="FILE" xlink:href="{path.replace(base_path, "")[1:]}"/>'
+        + "\n\t\t\t</file>"
+    )
+
 
 def create_mets_files(path):
     files_folders = [x for x in os.listdir(path)]
@@ -468,25 +499,40 @@ def create_mets_files(path):
         create_document_mets(path)
     else:
         for folder in files_folders:
-            if not os.path.isdir(path + "/" + folder): continue
+            if not os.path.isdir(path + "/" + folder):
+                continue
             create_mets_files(f"{path}/{folder}")
 
         create_folder_mets(path)
 
+
 def create_folder_mets(path):
-    if os.path.samefile(path, FILES_PATH) or os.path.samefile(path, PRIVATE_PATH): return
+    if os.path.samefile(path, FILES_PATH) or os.path.samefile(path, PRIVATE_PATH):
+        return
 
     data_path = path + "/_data.json"
     with open(data_path, encoding="utf-8") as f:
         info = json.load(f)
 
-    creation_date = datetime.strptime(info["creation"], "%d/%m/%Y %H:%M:%S").strftime("%Y-%m-%dT%H:%M:%S")
+    creation_date = datetime.strptime(info["creation"], "%d/%m/%Y %H:%M:%S").strftime(
+        "%Y-%m-%dT%H:%M:%S"
+    )
 
-    folders = [x for x in os.listdir(path) if os.path.isdir(path + "/" + x) and x != "_ocr_results" and x != "alto_schemas" and x != "ocr_results.zip" and x != "_mets.xml" and x != "mets.zip" and x != "ocr_results.zip"]
+    folders = [
+        x
+        for x in os.listdir(path)
+        if os.path.isdir(path + "/" + x)
+        and x != "_ocr_results"
+        and x != "alto_schemas"
+        and x != "ocr_results.zip"
+        and x != "_mets.xml"
+        and x != "mets.zip"
+        and x != "ocr_results.zip"
+    ]
 
     fileSec = "\n\t\t".join(
         f"""<fileGrp ID="{f}" USE="TEXT">
-            <file CHECKSUMTYPE="MD5" CHECKSUM="{get_md5_checksum(path + "/" + f + "/_mets.xml")}" GROUPID="0" ID="ALTO{(id+1):05d}" MIMETYPE="text/xml" SEQ="1" SIZE="{get_file_size(path + "/" + f + "/_mets.xml")}">
+            <file CHECKSUMTYPE="MD5" CHECKSUM="{get_md5_checksum(path + "/" + f + "/_mets.xml")}" GROUPID="0" ID="ALTO{(id + 1):05d}" MIMETYPE="text/xml" SEQ="1" SIZE="{get_file_size(path + "/" + f + "/_mets.xml")}">
                 <FLocat LOCTYPE="OTHER" OTHERLOCTYPE="FILE" xlink:href="{f + "/_mets.xml"}" />
             </file>
         </fileGrp>"""
@@ -494,8 +540,8 @@ def create_folder_mets(path):
     )
 
     structMap = "\n\t\t".join(
-        f"""<div TYPE="Folder" ORDER="{id+1}">
-            <fptr FILEID="ALTO{(id+1):05d}"/>
+        f"""<div TYPE="Folder" ORDER="{id + 1}">
+            <fptr FILEID="ALTO{(id + 1):05d}"/>
         </div>"""
         for id, f in enumerate(folders)
     )
@@ -534,19 +580,16 @@ def create_folder_mets(path):
         </techMD>
     </amdSec>
     <fileSec>
-        {
-            fileSec
-        }
+        {fileSec}
     </fileSec>
     <structMap ID="SM1" LABEL="Physical Structure" TYPE="PHYSICAL">
-        {
-            structMap
-        }
+        {structMap}
     </structMap>
 </mets>"""
 
     with open(f"{path}/_mets.xml", "w") as f:
         f.write(xml)
+
 
 def create_document_mets(path):
     if not os.path.isdir(f"{path}/alto_schemas"):
@@ -558,39 +601,67 @@ def create_document_mets(path):
 
     # Check if all files are ready to be extracted
     for k in info:
-        if type(info[k]) == dict:
-            if "complete" in info[k] and info[k]["complete"]: continue
-            if "progress" in info[k] and info[k]["progress"] == info["pages"]: continue
+        if isinstance(info[k], dict):
+            if "complete" in info[k] and info[k]["complete"]:
+                continue
+            if "progress" in info[k] and info[k]["progress"] == info["pages"]:
+                continue
 
             raise ValueError("Error: Not all files are ready to be extracted")
 
-    single_files = [x for x in os.listdir(path) if os.path.isfile(path + "/" + x) and not x.endswith(".json") and not x.endswith(".zip") and not x.endswith(".xml") and not x.endswith(".png")]
+    single_files = [
+        x
+        for x in os.listdir(path)
+        if os.path.isfile(path + "/" + x)
+        and not x.endswith(".json")
+        and not x.endswith(".zip")
+        and not x.endswith(".xml")
+        and not x.endswith(".png")
+    ]
     extensions = [x.split(".")[-1] for x in single_files]
 
     structMap = ""
 
-    files = [f"{path}/_ocr_results/{f}" for f in os.listdir(f"{path}/_ocr_results") if f.endswith(".json")]
+    files = [
+        f"{path}/_ocr_results/{f}"
+        for f in os.listdir(f"{path}/_ocr_results")
+        if f.endswith(".json")
+    ]
 
     for id, file in enumerate(files):
         export_alto(file)
-        structMap += f'\t\t\t<div TYPE="Page" ORDER="{id+1}">' + \
-            f'\n\t\t\t\t<fptr FILEID="PNG{(id+1):05d}"/>' + \
-            f'\n\t\t\t\t<fptr FILEID="ALTO{(id+1):05d}"/>' + \
-            '\n\t\t\t</div>\n'
+        structMap += (
+            f'\t\t\t<div TYPE="Page" ORDER="{id + 1}">'
+            + f'\n\t\t\t\t<fptr FILEID="PNG{(id + 1):05d}"/>'
+            + f'\n\t\t\t\t<fptr FILEID="ALTO{(id + 1):05d}"/>'
+            + "\n\t\t\t</div>\n"
+        )
 
     png_grp = "\n\t\t\t".join(
-        generate_file(path, f.replace("/_ocr_results", "").replace(".json", ".png"), "IMG", id + 1, "image/png")
+        generate_file(
+            path,
+            f.replace("/_ocr_results", "").replace(".json", ".png"),
+            "IMG",
+            id + 1,
+            "image/png",
+        )
         for id, f in enumerate(files)
     )
 
     alto_grp = "\n\t\t\t".join(
-        generate_file(path, f.replace("/_ocr_results", "/alto_schemas").replace(".json", ".xml"), "ALTO", id + 1, "text/xml")
+        generate_file(
+            path,
+            f.replace("/_ocr_results", "/alto_schemas").replace(".json", ".xml"),
+            "ALTO",
+            id + 1,
+            "text/xml",
+        )
         for id, f in enumerate(files)
     )
 
     single_files_grps = "\n\t\t".join(
-        f"""<fileGrp ID="{f.split('.')[-1].upper()}GRP{extensions[:id+1].count(f.split('.')[-1])}" USE="Text">
-            <file CHECKSUM="MD5" CHECKSUM="{get_md5_checksum(path + "/" + f)}" GROUPID="0" ID="{f.split('.')[-1].upper()}{extensions[:id+1].count(f.split('.')[-1]):05d}" SEQ="1" SIZE="{get_file_size(path + "/" + f)}">
+        f"""<fileGrp ID="{f.split('.')[-1].upper()}GRP{extensions[:id + 1].count(f.split('.')[-1])}" USE="Text">
+            <file CHECKSUM="MD5" CHECKSUM="{get_md5_checksum(path + "/" + f)}" GROUPID="0" ID="{f.split('.')[-1].upper()}{extensions[:id + 1].count(f.split('.')[-1]):05d}" SEQ="1" SIZE="{get_file_size(path + "/" + f)}">
                 <FLocat LOCTYPE="OTHER" OTHERLOCTYPE="FILE" xlink:href="{f}"/>
             </file>
         </fileGrp>"""
@@ -598,13 +669,15 @@ def create_document_mets(path):
     )
 
     single_files_struct = "\n\t\t".join(
-        f"""<div ID="DIV{id+1}" TYPE="CompleteObject">
-            <fptr FILEID="{f.split('.')[-1].upper()}{extensions[:id+1].count(f.split('.')[-1]):05d}"/>
+        f"""<div ID="DIV{id + 1}" TYPE="CompleteObject">
+            <fptr FILEID="{f.split('.')[-1].upper()}{extensions[:id + 1].count(f.split('.')[-1]):05d}"/>
         </div>"""
         for id, f in enumerate(single_files)
     )
 
-    creation_date = datetime.strptime(info["creation"], "%d/%m/%Y %H:%M:%S").strftime("%Y-%m-%dT%H:%M:%S")
+    creation_date = datetime.strptime(info["creation"], "%d/%m/%Y %H:%M:%S").strftime(
+        "%Y-%m-%dT%H:%M:%S"
+    )
 
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <mets xsi:schemaLocation="http://www.loc.gov/standards/mets/version18/mets.xsd">
@@ -706,34 +779,28 @@ def create_document_mets(path):
     </amdSec>
     <fileSec>
         <fileGrp ID="PNGGRP" USE="Images">
-            {
-                png_grp
-            }
+            {png_grp}
         </fileGrp>
         <fileGrp ID="ALTOGRP" USE="Text">
-            {
-                alto_grp
-            }
+            {alto_grp}
         </fileGrp>
-        {
-            single_files_grps
-        }
+            {single_files_grps}
     </fileSec>
     <structMap ID="SM1" LABEL="Physical Structure" TYPE="PHYSICAL">
         <div TYPE="Document">
-{structMap}        </div>
+            {structMap}
+        </div>
     </structMap>
     <structMap ID="SM2" LABEL="Logical Structure" TYPE="LOGICAL">
     </structMap>
     <structMap ID="SM3" LABEL="Single File Structure" TYPE="SINGLE_FILE">
-        {
-            single_files_struct
-        }
+        {single_files_struct}
     </structMap>
 </mets>"""
 
     with open(f"{path}/_mets.xml", "w") as f:
         f.write(xml)
+
 
 def export_alto(path):
     with open(path, encoding="utf-8") as f:
@@ -749,11 +816,11 @@ def export_alto(path):
             for w in l:
                 blocks += f"""\t\t\t\t\t\t\t<String ID="word_{word_count}" HPOS="{int(w["box"][0])}" VPOS="{int(w["box"][1])}" WIDTH="{int(w["box"][2] - w["box"][0])}" HEIGHT="{int(w["box"][3] - w["box"][1])}" CONTENT="{w["text"]}"/>\n"""
                 word_count += 1
-            blocks += f"""\t\t\t\t\t\t</TextLine>\n"""
+            blocks += """\t\t\t\t\t\t</TextLine>\n"""
             line_count += 1
-        blocks += f"""\t\t\t\t\t</TextBlock>\n"""
+        blocks += """\t\t\t\t\t</TextBlock>\n"""
 
-    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
 <alto xmlns="http://www.loc.gov/standards/alto/ns-v3#" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/standards/alto/ns-v3# http://www.loc.gov/alto/v3/alto-3-0.xsd">
     <Description>
         <MeasurementUnit>pixel</MeasurementUnit>
@@ -778,16 +845,20 @@ def export_alto(path):
     with open("/".join(path), "w") as f:
         f.write(xml)
 
+
 def export_zip(path, _):
     create_mets_files("_files")
     basename = path.split("/")[-1]
     with zipfile.ZipFile(f"{path}/{basename}.zip", "w") as zipf:
         for root, _, files in os.walk(path):
             for file in files:
-                if file.endswith(".json") or file.endswith(".zip"): continue
-                zipf.write(os.path.join(root, file),
-                       os.path.relpath(os.path.join(root, file),
-                                       os.path.join(path, '..')))
+                if file.endswith(".json") or file.endswith(".zip"):
+                    continue
+                zipf.write(
+                    os.path.join(root, file),
+                    os.path.relpath(os.path.join(root, file), os.path.join(path, "..")),
+                )
+
 
 if __name__ == "__main__":
     export_zip("files/Test Folder")

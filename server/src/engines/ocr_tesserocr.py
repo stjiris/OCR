@@ -1,10 +1,12 @@
 from enum import Enum
 
-from tesserocr import PyTessBaseAPI
-from tesserocr import PSM, OEM
-from PIL import Image, ImageEnhance, ImageFilter
-
+from PIL import Image
+from PIL import ImageEnhance
+from PIL import ImageFilter
 from src.utils.parse_hocr import parse_hocr
+from tesserocr import OEM
+from tesserocr import PSM
+from tesserocr import PyTessBaseAPI
 
 
 class LANGS(Enum):
@@ -39,7 +41,9 @@ api = PyTessBaseAPI(init=False)
 
 def preprocess_image(image):
     # Downscale to 200 DPI (assuming 300 DPI input)
-    image = image.resize((int(image.width * 0.67), int(image.height * 0.67)), Image.Resampling.LANCZOS)
+    image = image.resize(
+        (int(image.width * 0.67), int(image.height * 0.67)), Image.Resampling.LANCZOS
+    )
     # Convert to grayscale, enhance contrast, and binarize
     image = image.convert("L")
     enhancer = ImageEnhance.Contrast(image)
@@ -63,13 +67,12 @@ def get_structure(page, config, segment_box=None):
 
     # Ensure config is a dict, use defaults if not
     if not isinstance(config, dict):
-        config = {"lang": "por"}
-        config["psm"] = PSM.SINGLE_BLOCK if segment_box else PSM.AUTO
+        config = {"lang": "por", "psm": PSM.SINGLE_BLOCK if segment_box else PSM.AUTO}
 
     api.InitFull(
         lang=config.get("lang", "por"),
         oem=config.get("oem", OEM.DEFAULT),
-        psm=config.get("psm", PSM.AUTO)
+        psm=config.get("psm", PSM.AUTO),
     )
     # TODO: receive other variables
 
@@ -82,7 +85,7 @@ def get_structure(page, config, segment_box=None):
                     "left": box[0],
                     "top": box[1],
                     "width": box[2] - box[0],
-                    "height": box[3] - box[1]
+                    "height": box[3] - box[1],
                 }
                 api.SetRectangle(**coords)
                 hocr = api.GetHOCRText(0)
@@ -93,7 +96,7 @@ def get_structure(page, config, segment_box=None):
                 "left": segment_box[0],
                 "top": segment_box[1],
                 "width": segment_box[2] - segment_box[0],
-                "height": segment_box[3] - segment_box[1]
+                "height": segment_box[3] - segment_box[1],
             }
             api.SetRectangle(**coords)
             hocr = api.GetHOCRText(0)
@@ -114,14 +117,16 @@ def verify_params(config):
         errors.append(f'Modo do motor: "{config["engineMode"]}"')
     if "segmentMode" in config and config["segmentMode"] not in PSM:
         errors.append(f'Segmentação: "{config["segmentMode"]}"')
-    if "thresholdMethod" in config and config["thresholdMethod"] not in THRESHOLD_METHODS:
+    if (
+        "thresholdMethod" in config
+        and config["thresholdMethod"] not in THRESHOLD_METHODS
+    ):
         errors.append(f'Thresholding: "{config["thresholdMethod"]}"')
     if "outputs" in config:
         for format in config["outputs"]:
             if format not in OUTPUTS:
                 errors.append(f'Formato de resultado: "{config["outputs"]}"')
-    if "dpi" in config:
-        if not isinstance(config["dpi"], (int, str)):
-            errors.append(f'DPI: "{config["outputs"]}"')
+    if "dpi" in config and not isinstance(config["dpi"], (int, str)):
+        errors.append(f'DPI: "{config["outputs"]}"')
 
     return len(errors) == 0, errors
