@@ -68,14 +68,17 @@ from werkzeug.utils import safe_join
 
 load_dotenv()
 
+APP_BASENAME = os.environ.get("APP_BASENAME", "")
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-# app.config["APPLICATION_ROOT"] = "/api"
-app.config["APPLICATION_ROOT"] = "/"
+if APP_BASENAME == "":
+    app.config["APPLICATION_ROOT"] = "/"
+else:
+    app.config["APPLICATION_ROOT"] = APP_BASENAME
 
 # Set secret key and salt (required)
 app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
@@ -1171,7 +1174,7 @@ def get_system_info():
 def get_storage_info():
     free_space, free_space_percentage = get_free_space()
     data = get_data(f"./{PRIVATE_PATH}/_data.json")
-    last_cleanup = data.keys().get("last_cleanup", "nunca")
+    last_cleanup = data.get("last_cleanup", "nunca")
     return {
         "free_space": free_space,
         "free_space_percentage": free_space_percentage,
@@ -1353,11 +1356,13 @@ def proxy_flower(fullpath):
     :return: response from Flower
     """
     log.debug(
-        f'Requesting to flower {request.base_url.replace(request.host_url, "http://flower:5050/")}'
+        f'Requesting to flower {request.base_url.replace(request.host_url, f"http://flower:5050/{APP_BASENAME}/")}'
     )
     res = requests.request(
         method=request.method,
-        url=request.base_url.replace(request.host_url, "http://flower:5050/"),
+        url=request.base_url.replace(
+            request.host_url, f"http://flower:5050/{APP_BASENAME}/"
+        ),
         params=request.query_string,
         headers={k: v for k, v in request.headers if k.lower() != "host"},
         data=request.get_data(),

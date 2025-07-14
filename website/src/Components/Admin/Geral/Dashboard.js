@@ -102,7 +102,7 @@ const Dashboard = (props) => {
                     Configurar Predefinições OCR
                 </Button>
 
-                <Link to="/admin/flower" target="_blank" rel="noreferrer">
+                <Link to="/admin/flower/" target="_blank" rel="noreferrer">
                     <Button
                         variant="contained"
                         className="adminMenuButton"

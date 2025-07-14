@@ -13,6 +13,7 @@ GENERATE_SOURCEMAP = false
 
 ## Example production `server/.env` file
 ```sh
+APP_BASENAME = path-that-serves-website  # no forward slashes at the start or end
 CELERY_BROKER_URL = redis://redis:6379/0
 CELERY_RESULT_BACKEND = redis://redis:6379/0
 ES_URL = http://elasticsearch:9200/
@@ -32,12 +33,13 @@ ADMIN_PASS = put_admin_password_here
 ## Environment variables recommended for local development
 ```sh
 # website:
-PUBLIC_URL = /
+PUBLIC_URL = http://localhost
 DEBUG = True
 GENERATE_SOURCEMAP = true
 REACT_APP_API_URL = /api
 
 # server:
+APP_BASENAME = ""
 FLASK_DEBUG = True
 ```
 
