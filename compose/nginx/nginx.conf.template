@@ -5,6 +5,7 @@ events {
 }
 
 http {
+    limit_req_zone $binary_remote_addr zone=login:10m rate=1r/s;
     # ssl_session_cache   shared:SSL:10m;
     # ssl_session_timeout 10m;
 
@@ -28,7 +29,7 @@ http {
 
         keepalive_timeout   70;
 
-        server_name localhsot;
+        server_name localhost;
 
         add_header X-Content-Type-Options "nosniff";
 
@@ -44,6 +45,17 @@ http {
 
         location /api/ {
             proxy_pass            http://server:5001/;
+            proxy_read_timeout    1800;
+            proxy_connect_timeout 1800;
+            proxy_send_timeout    1800;
+            send_timeout          1800;
+            client_max_body_size  $CLIENT_MAX_BODY_SIZE;
+        }
+
+        # Rate-limit the login route
+        location /api/account/login {
+            limit_req zone=login;
+            proxy_pass            http://server:5001/account/login;
             proxy_read_timeout    1800;
             proxy_connect_timeout 1800;
             proxy_send_timeout    1800;
