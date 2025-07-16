@@ -36,8 +36,6 @@ services:
     image: ocr-worker
     env_file: "server/.env"
     environment:
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
       C_FORCE_ROOT: true
       PYTHONUNBUFFERED: true
       PYTHONDONTWRITEBYTECODE : true
@@ -55,11 +53,10 @@ services:
 
   flower:
     image: ocr-worker
+    env_file: "server/.env"
     environment:
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
       FLOWER_UNAUTHENTICATED_API: true  # authentication managed through Flask
-    command: celery -A celery_app.celery flower --port=5050 --url_prefix="admin/flower" --enable_events=False
+    command: bash -c "celery -A celery_app.celery flower --port=5050 --url_prefix=$$APP_BASENAME\"/admin/flower\" --enable_events=False"
     expose:
       - "5050"  # exposed only to other services
     depends_on:

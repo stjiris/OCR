@@ -406,7 +406,7 @@ function App() {
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt">
-            <BrowserRouter basename={process.env.REACT_APP_PUBLIC_URL}>
+            <BrowserRouter basename={`/${process.env.REACT_APP_BASENAME}`}>
                 <Routes>
                     <Route index element={<WrappedForm />} />
                     <Route path="/session/:sessionId" element={<WrappedForm />} />
