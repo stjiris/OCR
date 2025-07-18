@@ -100,7 +100,7 @@ class OcrPopup extends React.Component {
             body["config"] = this.state.customConfig;
         }
 
-        fetch(API_URL + '/perform-ocr', {
+        fetch(API_URL + '/request-ocr', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

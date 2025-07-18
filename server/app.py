@@ -41,8 +41,10 @@ from src.elastic_search import ES_URL
 from src.elastic_search import mapping
 from src.elastic_search import settings
 from src.utils.file import ALLOWED_EXTENSIONS
+from src.utils.file import API_TEMP_PATH
 from src.utils.file import delete_structure
 from src.utils.file import FILES_PATH
+from src.utils.file import generate_random_uuid
 from src.utils.file import generate_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -51,7 +53,6 @@ from src.utils.file import get_file_extension
 from src.utils.file import get_file_layouts
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
-from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
 from src.utils.file import PRIVATE_PATH
@@ -321,7 +322,7 @@ def create_folder():
     }
 
 
-@app.route("/get-file", methods=["GET"])
+@app.route("/get-text-content", methods=["GET"])
 @requires_arg_path
 def get_file():
     path, is_private = format_path(request.values)
@@ -737,15 +738,16 @@ def configure_ocr():
     return {"success": True}
 
 
-@app.route("/perform-ocr", methods=["POST"])
+@app.route("/request-ocr", methods=["POST"])
 @requires_json_path
-def perform_ocr():
+def request_ocr():
     """
-    Request to perform OCR on a file/folder
-    @param path: path to the file/folder
-    @param algorithm: algorithm to be used
-    @param data: data to be used
-    @param multiple: if it is a folder or not
+    Request to perform OCR on a file/folder.
+
+    JSON parameters:
+    - path: path to the file/folder\n
+    - config: configuration to be used in OCR\n
+    - multiple: if it is a folder or not\n
     """
 
     if float(get_free_space()[1]) < 10:

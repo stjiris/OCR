@@ -54,7 +54,7 @@ load_invisible_font()
 
 
 @celery.task(name="auto_segment")
-def auto_segment(path):
+def task_auto_segment(path):
     return parse_images(path)
 
 
@@ -127,7 +127,7 @@ def task_make_changes(path, data):
 
 
 @celery.task(name="count_doc_pages")
-def count_doc_pages(_, path, extension):
+def task_count_doc_pages(_, path, extension):
     """
     Updates the metadata of the document at the given path with its page count.
     :param _: first positional parameter expected by the callback of a Celery chord; ignored
@@ -145,7 +145,7 @@ def count_doc_pages(_, path, extension):
 
 
 @celery.task(name="prepare_file")
-def task_prepare_file_ocr(path):
+def task_prepare_file_ocr(path: str):
     try:
         if not os.path.exists(f"{path}/_pages"):
             os.mkdir(f"{path}/_pages")
@@ -160,7 +160,7 @@ def task_prepare_file_ocr(path):
             num_pages = len(pdf)
             pdf.close()
 
-            callback = count_doc_pages.s(path=path, extension=extension)
+            callback = task_count_doc_pages.s(path=path, extension=extension)
             chord(task_extract_pdf_page.s(path, basename, i) for i in range(num_pages))(
                 callback
             )
@@ -188,14 +188,17 @@ def task_prepare_file_ocr(path):
                     f"{path}/_pages/{basename}_{i}.png", format="PNG"
                 )  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
-            count_doc_pages(path=path, extension=extension, _=None)
+            task_count_doc_pages(path=path, extension=extension, _=None)
 
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
-            count_doc_pages(path=path, extension=extension, _=None)
+            task_count_doc_pages(path=path, extension=extension, _=None)
+
+        else:
+            raise FileNotFoundError("No file with a valid extension was found")
 
     except Exception as e:
         data_folder = f"{path}/_data.json"
@@ -823,7 +826,7 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     # Clean up old private sessions daily at midnight
     entry = RedBeatSchedulerEntry(
         "cleanup_private_sessions",
-        delete_old_private_sessions.s().task,
+        task_delete_old_private_sessions.s().task,
         crontab(minute="0", hour="0"),
         # args=["first", "second"], # example of sending args to task scheduled with redbeat
         app=celery,
@@ -833,7 +836,7 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
 
 
 @celery.task(name="set_max_private_session_age")
-def set_max_private_session_age(new_max_age: int | str):
+def task_set_max_private_session_age(new_max_age: int | str):
     try:
         os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
         return {"status": "success"}
@@ -842,7 +845,7 @@ def set_max_private_session_age(new_max_age: int | str):
 
 
 @celery.task(name="cleanup_private_sessions")
-def delete_old_private_sessions():
+def task_delete_old_private_sessions():
     max_private_session_age = int(
         os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
     )  # days

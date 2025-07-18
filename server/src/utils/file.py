@@ -68,7 +68,6 @@ def get_ner_file(path):
             json.dump(ner, f, indent=2, ensure_ascii=False)
         return True
     else:
-
         return False
 
 
