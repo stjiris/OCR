@@ -17,22 +17,14 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
+from src.utils.file import get_data
+from src.utils.file import get_file_basename
 from src.utils.file import json_to_text
 
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
 PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
 
 OUT_DEFAULT_DPI = 150
-
-
-def get_file_basename(filename):
-    """
-    Get the basename of a file
-
-    :param filename: file name
-    :return: basename of the file
-    """
-    return ".".join(filename.split("/")[-1].split(".")[:-1])
 
 
 ####################################################
@@ -191,7 +183,8 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         return target
 
     else:
-        original_extension = path.split(".")[-1].lower()
+        data = get_data(f"{path}/_data.json")
+        original_extension = data["extension"]
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         if original_extension == "pdf":

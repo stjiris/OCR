@@ -15,6 +15,7 @@ import requests
 FILES_PATH = environ.get("FILES_PATH", "_files")
 TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
 PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
+API_TEMP_PATH = environ.get("API_TEMP_PATH", "_files/_tmp")
 
 ALLOWED_EXTENSIONS = (
     "pdf",
@@ -466,7 +467,13 @@ def get_file_basename(filename):
     :param file: file name
     :return: basename of the file
     """
-    return ".".join(filename.replace("\\", "/").split("/")[-1].split(".")[:-1])
+    basename = ".".join(filename.replace("\\", "/").split("/")[-1].split(".")[:-1])
+    if basename == "":
+        # no extension, get entire filename.
+        # files submitted through API call are stored in a folder named with a UUID,
+        # and original document's basename is the same UUID
+        basename = filename.replace("\\", "/").split("/")[-1]
+    return basename
 
 
 def get_file_extension(filename):

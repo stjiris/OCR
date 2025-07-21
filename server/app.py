@@ -22,6 +22,7 @@ from flask import jsonify
 from flask import request
 from flask import Response
 from flask import send_file
+from flask import send_from_directory
 from flask_cors import CORS
 from flask_login import current_user
 from flask_mailman import Mail
@@ -61,6 +62,7 @@ from src.utils.file import TEMP_PATH
 from src.utils.file import update_data
 from src.utils.system import get_free_space
 from src.utils.system import get_private_sessions
+from src.utils.system import get_size_api_files
 from src.utils.system import get_size_private_sessions
 from src.utils.text import compare_dicts_words
 from werkzeug.utils import safe_join
@@ -122,6 +124,17 @@ es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 log = app.logger
 
 lock_system = dict()
+
+RESULT_TYPE_TO_EXTENSION = {
+    "pdf_indexed": "pdf",
+    "pdf": "pdf",
+    "txt": "txt",
+    "txt_delimited": "txt",
+    "csv": "csv",
+    "ner": "json",
+    "hocr": "hocr",
+    "alto": "xml",
+}
 
 
 #####################################
@@ -199,6 +212,12 @@ def requires_allowed_file(func):
     return func
 
 
+# Endpoint requires a document ID argument; used for API calls for OCR of single files, bypassing the creation of workspace folders
+def requires_arg_doc_id(func):
+    func._requires_arg_doc_id = True  # value unimportant
+    return func
+
+
 # Endpoint is exempt from CSRF; used to bypass csrf.exempt decorator not working
 def csrf_exempt(func):
     func._csrf_exempt = True  # value unimportant
@@ -218,6 +237,9 @@ def abort_bad_request():
         elif hasattr(view_func, "_requires_form_path"):
             if "path" not in request.form or request.form["path"] == "":
                 return bad_request("Missing 'path' in form")
+        elif hasattr(view_func, "_requires_arg_doc_id"):
+            if "doc_id" not in request.values or request.values["doc_id"] == "":
+                return bad_request("Missing 'doc_id' argument")
         elif hasattr(view_func, "_requires_allowed_file"):
             if "name" not in request.form:
                 return bad_request("Missing 'name' in form")
@@ -248,7 +270,7 @@ def get_file_system():
             filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
             return filesystem
 
-        path, filesystem_path, private_session, is_private = format_filesystem_path(
+        _, filesystem_path, private_session, is_private = format_filesystem_path(
             request.values
         )
         log.debug(f"Getting info of {filesystem_path}, priv session {private_session}")
@@ -266,7 +288,7 @@ def get_info():
         if "path" not in request.values or request.values["path"] == "":
             return get_filesystem(FILES_PATH)
 
-        path, filesystem_path, private_session, is_private = format_filesystem_path(
+        _, filesystem_path, private_session, is_private = format_filesystem_path(
             request.values
         )
         return {
@@ -1102,6 +1124,108 @@ def generate_automatic_layouts():
 
 
 #####################################
+# API-specific endpoints
+#####################################
+@app.route("/check-status", methods=["GET"])
+@requires_arg_doc_id
+def api_check_status():
+    if "doc_id" not in request.values or request.values["doc_id"] == "":
+        return bad_request("Missing 'doc_id' argument")
+    doc_id = request.values["doc_id"]
+    doc_path = safe_join(API_TEMP_PATH, doc_id)
+    data_path = safe_join(doc_path, "_data.json")
+    try:
+        return get_data(data_path)
+    except FileNotFoundError:
+        abort(HTTPStatus.NOT_FOUND)
+
+
+@app.route("/perform-ocr", methods=["POST"])
+def api_perform_ocr():
+    if float(get_free_space()[1]) < 10:
+        return {
+            "success": False,
+            "error": "O servidor não tem espaço suficiente. Por favor informe o administrador",
+        }
+
+    if "file" not in request.files:
+        return bad_request("Missing file")
+
+    file = request.files["file"]
+    config = request.form.get("config", None)
+
+    doc_id = generate_random_uuid()[:9]
+    doc_path = f"{API_TEMP_PATH}/{doc_id}"
+    file_path = f"{doc_path}/{doc_id}.pdf"
+    os.mkdir(doc_path)
+    with open(f"{doc_path}/_data.json", "w", encoding="utf-8") as f:
+        extension = file.filename.split(".")[-1].lower()
+        json.dump(
+            {
+                "type": "file",
+                "creation": get_current_time(),
+                "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
+                "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
+                "ocr": {"progress": 0},
+                "pdf": {"complete": False},
+                "pdf_indexed": {"complete": False},
+                "txt": {"complete": False},
+                "txt_delimited": {"complete": False},
+                "csv": {"complete": False},
+                "ner": {"complete": False},
+                "hocr": {"complete": False},
+                "xml": {"complete": False},
+                "zip": {"complete": False},
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+    file.save(file_path)
+    # TODO: default to NOT deleting original after OCR?
+    celery.send_task(
+        "ocr_from_api",
+        kwargs={"path": doc_path, "config": config, "delete_on_finish": True},
+    )
+    return {
+        "success": True,
+        "doc_id": doc_id,
+        "message": "OCR has been requested. View progress at /check-status, retrieve results at /get-result",
+    }
+
+
+@app.route("/get-result", methods=["GET"])
+@requires_arg_doc_id
+def api_get_result():
+    doc_id = request.values["doc_id"]
+    if "type" not in request.values or request.values["type"] == "":
+        return bad_request("Missing 'type' argument")
+    type = request.values["type"]
+    if type not in RESULT_TYPE_TO_EXTENSION.keys():
+        return bad_request(f"'{type} is not a supported result format")
+
+    log.debug(f"Requesting result of type {type}")
+
+    doc_path = safe_join(API_TEMP_PATH, doc_id)
+    data_path = safe_join(doc_path, "_data.json")
+    try:
+        data = get_data(data_path)
+    except FileNotFoundError:
+        abort(HTTPStatus.NOT_FOUND)
+
+    log.debug(
+        f"Result is {data.get(type)} at /_export/_{type}.{RESULT_TYPE_TO_EXTENSION[type]}"
+    )
+
+    if not data.get(type, {}).get("complete", False):
+        abort(HTTPStatus.NOT_FOUND)
+
+    return send_from_directory(
+        doc_path, f"_export/_{type}.{RESULT_TYPE_TO_EXTENSION[type]}"
+    )
+
+
+#####################################
 # LOGIN MANAGEMENT
 #####################################
 @app.route("/account/check-auth", methods=["GET"])
@@ -1164,6 +1288,7 @@ def get_storage_info():
         "free_space": free_space,
         "free_space_percentage": free_space_percentage,
         "private_sessions": get_size_private_sessions(),
+        "api_files": get_size_api_files(),
         "last_cleanup": last_cleanup,
         "max_age": os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"),
     }
@@ -1391,6 +1516,9 @@ if not os.path.exists(f"./{PRIVATE_PATH}/"):
             indent=2,
             ensure_ascii=False,
         )
+
+if not os.path.exists(f"./{API_TEMP_PATH}/"):
+    os.mkdir(f"./{API_TEMP_PATH}/")
 
 with app.app_context():
     # drop and rebuild database to ensure only the credentials currently in environment allow admin access

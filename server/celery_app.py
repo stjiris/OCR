@@ -12,6 +12,7 @@ import pypdfium2 as pdfium
 from celery import Celery
 from celery import chord
 from celery import group
+from celery.canvas import Signature
 from celery.schedules import crontab
 from PIL import Image
 from PIL import ImageDraw
@@ -127,10 +128,9 @@ def task_make_changes(path, data):
 
 
 @celery.task(name="count_doc_pages")
-def task_count_doc_pages(_, path, extension):
+def task_count_doc_pages(path: str, extension: str):
     """
     Updates the metadata of the document at the given path with its page count.
-    :param _: first positional parameter expected by the callback of a Celery chord; ignored
     :param path: the document's path
     :param extension: the document's extension
     """
@@ -144,15 +144,31 @@ def task_count_doc_pages(_, path, extension):
     )
 
 
+@celery.task(name="ocr_from_api")
+def task_perform_direct_ocr(
+    path: str, config: dict | None, delete_on_finish: bool = False
+):
+    async_ocr = task_file_ocr.si(
+        path=path, config=config, delete_on_finish=delete_on_finish
+    )
+    task_prepare_file_ocr(path=path, callback=async_ocr)
+
+
 @celery.task(name="prepare_file")
-def task_prepare_file_ocr(path: str):
+def task_prepare_file_ocr(path: str, callback: Signature | None = None):
     try:
+        log.debug(f"Creating {path}/_pages")
         if not os.path.exists(f"{path}/_pages"):
             os.mkdir(f"{path}/_pages")
 
-        extension = path.split(".")[-1].lower()
+        data = get_data(f"{path}/_data.json")
+        extension = data["extension"]
+
         basename = get_file_basename(path)
 
+        log.debug(f"Path: {path}")
+        log.debug(f"Extensao: {extension}")
+        log.debug(f"Basename: {basename}")
         log.debug(f"{path}: A preparar páginas")
 
         if extension == "pdf":
@@ -160,10 +176,12 @@ def task_prepare_file_ocr(path: str):
             num_pages = len(pdf)
             pdf.close()
 
-            callback = task_count_doc_pages.s(path=path, extension=extension)
-            chord(task_extract_pdf_page.s(path, basename, i) for i in range(num_pages))(
-                callback
-            )
+            pdf_prep_callback = task_count_doc_pages.si(
+                path=path, extension=extension
+            ).set(link=callback)
+            chord(
+                task_extract_pdf_page.si(path, basename, i) for i in range(num_pages)
+            )(pdf_prep_callback)
 
         elif extension == "zip":
             temp_folder_name = f"{path}/{generate_random_uuid()}"
@@ -189,6 +207,8 @@ def task_prepare_file_ocr(path: str):
                 )  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
             task_count_doc_pages(path=path, extension=extension, _=None)
+            if callback is not None:
+                callback.apply_async()
 
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
@@ -196,6 +216,8 @@ def task_prepare_file_ocr(path: str):
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
             task_count_doc_pages(path=path, extension=extension, _=None)
+            if callback is not None:
+                callback.apply_async()
 
         else:
             raise FileNotFoundError("No file with a valid extension was found")
@@ -229,11 +251,12 @@ def task_request_ner(path):
 
 
 @celery.task(name="file_ocr")
-def task_file_ocr(path: str, config: dict | None):
+def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False):
     """
     Prepare the OCR of a file
     :param path: path to the file
     :param config: config to use
+    :param delete_on_finish: whether the original file and pages should be deleted after processing, keeping only the results
     """
     data_folder = f"{path}/_data.json"
     try:
@@ -370,6 +393,7 @@ def task_file_ocr(path: str, config: dict | None):
                 lang=lang,
                 config_str=config_str,
                 output_types=config["outputs"],
+                delete_on_finish=delete_on_finish,
             )
             for image in images
         )
@@ -494,6 +518,7 @@ def task_page_ocr(
     lang: list[str],
     output_types: list[str],
     config_str: str = "",
+    delete_on_finish: bool = False,
 ):
     """
     Perform the page OCR
@@ -504,6 +529,7 @@ def task_page_ocr(
     :param lang: string of languages to use
     :param config_str: config string to use
     :param output_types: output types to generate directly, if the file is a single page without user-defined text boxes
+    :param delete_on_finish: whether the original file and pages should be deleted on finish, keeping only the results
     """
     if filename.split(".")[0][-1] == "$":
         return None
@@ -699,7 +725,13 @@ def task_page_ocr(
                             data[extension]["pages"] = get_page_count(path, "pdf")
                         update_data(data_file, data)
 
-            task_export_results.delay(path, output_types)
+            if delete_on_finish:
+                callback = task_delete_file.si(
+                    path=f"{path}/{get_file_basename(path)}.{data['extension']}"
+                )
+                task_export_results.apply_async((path, output_types), link=callback)
+            else:
+                task_export_results.delay(path, output_types)
 
         return {"status": "success"}
 
@@ -816,6 +848,12 @@ def task_export_results(path: str, output_types: list[str]):
 
         # return {"status": "error", "metricas": page_metrics}
         return {"status": "error"}
+
+
+@celery.task(name="async_delete_file")
+def task_delete_file(path: str):
+    log.debug(f"Deleting {path}")
+    os.remove(path)
 
 
 #####################################
