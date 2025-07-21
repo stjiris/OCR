@@ -122,7 +122,6 @@ es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 log = app.logger
 
 lock_system = dict()
-private_sessions = dict()
 
 
 #####################################
@@ -1023,7 +1022,6 @@ def search():
 @app.route("/create-private-session", methods=["GET"])
 def create_private_session():
     session_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
-    private_sessions[session_id] = {}
 
     if not os.path.isdir(PRIVATE_PATH):
         os.mkdir(PRIVATE_PATH)
@@ -1052,22 +1050,6 @@ def create_private_session():
         )
 
     return {"success": True, "sessionId": session_id}
-
-
-@app.route("/validate-private-session", methods=["POST"])
-def validate_private_session():
-    data = request.json
-    if "sessionId" not in data:
-        return bad_request("Missing parameter 'sessionId'")
-
-    session_id = data["sessionId"]
-
-    if session_id in private_sessions:
-        response = {"success": True, "valid": True}
-    else:
-        response = {"success": True, "valid": False}
-
-    return response
 
 
 #####################################
@@ -1336,8 +1318,6 @@ def delete_private_session():
         abort(HTTPStatus.NOT_FOUND)
 
     shutil.rmtree(session_path)
-    if session_id in private_sessions:
-        del private_sessions[session_id]
 
     return {
         "success": True,
