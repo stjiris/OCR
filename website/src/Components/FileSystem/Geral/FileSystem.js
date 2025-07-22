@@ -236,7 +236,7 @@ class FileExplorer extends React.Component {
     fetchFiles() {
         axios.get(API_URL + '/files', {
             params: {
-                _private: this.props.private,
+                _private: this.props._private,
                 path: (this.props._private
                         ? this.props.sessionId + '/' + this.state.current_folder
                         : this.state.current_folder)
