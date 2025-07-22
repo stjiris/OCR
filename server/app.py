@@ -218,6 +218,12 @@ def requires_arg_doc_id(func):
     return func
 
 
+# Endpoint requires a document ID JSON value; used for API calls for OCR of single files, bypassing the creation of workspace folders
+def requires_json_doc_id(func):
+    func._requires_json_doc_id = True  # value unimportant
+    return func
+
+
 # Endpoint is exempt from CSRF; used to bypass csrf.exempt decorator not working
 def csrf_exempt(func):
     func._csrf_exempt = True  # value unimportant
@@ -240,6 +246,9 @@ def abort_bad_request():
         elif hasattr(view_func, "_requires_arg_doc_id"):
             if "doc_id" not in request.values or request.values["doc_id"] == "":
                 return bad_request("Missing 'doc_id' argument")
+        elif hasattr(view_func, "_requires_json_doc_id"):
+            if "doc_id" not in request.json or request.json["doc_id"] == "":
+                return bad_request("Missing 'doc_id' parameter")
         elif hasattr(view_func, "_requires_allowed_file"):
             if "name" not in request.form:
                 return bad_request("Missing 'name' in form")
@@ -1129,8 +1138,6 @@ def generate_automatic_layouts():
 @app.route("/check-status", methods=["GET"])
 @requires_arg_doc_id
 def api_check_status():
-    if "doc_id" not in request.values or request.values["doc_id"] == "":
-        return bad_request("Missing 'doc_id' argument")
     doc_id = request.values["doc_id"]
     doc_path = safe_join(API_TEMP_PATH, doc_id)
     data_path = safe_join(doc_path, "_data.json")
@@ -1223,6 +1230,17 @@ def api_get_result():
     return send_from_directory(
         doc_path, f"_export/_{type}.{RESULT_TYPE_TO_EXTENSION[type]}"
     )
+
+
+@app.route("/delete-results", methods=["POST"])
+@requires_json_doc_id
+def api_delete_results():
+    doc_id = request.json["doc_id"]
+    doc_path = safe_join(API_TEMP_PATH, doc_id)
+    if doc_path is None:
+        abort(HTTPStatus.NOT_FOUND)
+    shutil.rmtree(doc_path)
+    return {"success": True, "message": f"Removed {doc_id}"}
 
 
 #####################################
