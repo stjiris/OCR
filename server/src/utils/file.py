@@ -355,30 +355,27 @@ def get_structure_info(path, private_session=None, is_private=False):
     """
     if not is_private and PRIVATE_PATH in path:
         raise FileNotFoundError
+    if API_TEMP_PATH in path:
+        raise FileNotFoundError
 
     info = {}
 
-    for root, folders, _ in os.walk(path):
+    for root, folders, _ in os.walk(path, topdown=True):
         root = root.replace("\\", "/")
-        for folder in folders:
-            # ignore reserved folders
-            if folder.startswith("_"):
-                continue
-            # ignore possible private path folders
-            if not is_private and (
-                PRIVATE_PATH in root or folder in PRIVATE_PATH.split("/")
-            ):
-                continue
-            # if in a private session, ignore folders not from this private session
-            if is_private and f"{PRIVATE_PATH}/{private_session}" not in root:
-                continue
+        # ignore reserved folders by pruning them from search tree
+        folders[:] = [f for f in folders if not f.startswith("_")]
+        if root.split("/")[-1].startswith("_"):
+            continue
+        # ignore possible private path folders
+        if not is_private and (PRIVATE_PATH in root or root in PRIVATE_PATH.split("/")):
+            continue
+        # if in a private session, ignore folders not from this private session
+        if is_private and f"{PRIVATE_PATH}/{private_session}" not in root:
+            continue
 
-            folder_path = f"{root}/{folder}".replace("\\", "/")
-
-            folder_info = get_folder_info(folder_path, private_session)
-
-            info = {**info, **folder_info}
-
+        folder_path = root.replace("\\", "/")
+        folder_info = get_folder_info(folder_path, private_session)
+        info = {**info, **folder_info}
     return info
 
 
@@ -399,6 +396,8 @@ def get_structure(path, private_session=None, is_private=False):
     :param path: the path to the files
     """
     if not is_private and PRIVATE_PATH in path:
+        raise FileNotFoundError
+    if API_TEMP_PATH in path:
         raise FileNotFoundError
 
     filesystem = {}
