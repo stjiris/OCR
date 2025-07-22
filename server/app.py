@@ -79,6 +79,7 @@ if APP_BASENAME == "":
     app.config["APPLICATION_ROOT"] = "/"
 else:
     app.config["APPLICATION_ROOT"] = APP_BASENAME
+    app.config["SESSION_COOKIE_PATH"] = f"/{APP_BASENAME}"
 
 # Set secret key and salt (required)
 app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
