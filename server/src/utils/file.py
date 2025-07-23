@@ -34,7 +34,7 @@ ALLOWED_EXTENSIONS = (
     "zip",
 )
 
-IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
+IMAGE_PREFIX = environ.get("IMAGE_PREFIX", "")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
 
 ##################################################

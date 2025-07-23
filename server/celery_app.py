@@ -412,6 +412,9 @@ def task_extract_pdf_page(path, basename, i):
         # Atomically move the temporary file to the final location
         shutil.move(temp.name, output_path)
 
+        # Ensure file read access permissions are set
+        os.chmod(output_path, 0o644)  # rw-r--r--
+
         # Verify the PNG to ensure it’s not truncated
         try:
             with Image.open(output_path) as img:
