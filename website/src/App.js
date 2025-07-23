@@ -31,7 +31,6 @@ import {
     layoutMenuState,
     editingMenuState,
     searchMenuState,
-    closeFileSystemMenus,
     ocrMenuState
 } from "./states";
 import StorageManager from "./Components/Admin/Geral/StorageManager";
@@ -97,8 +96,12 @@ function App() {
                 editingMenu: false,
                 layoutMenu: false,
 
-                fileOpened: null,
+                currentFileName: null,
                 currentFolderPathList: [""],
+
+                ocrTargetIsFolder: false,
+                ocrTargetIsSinglePage: false,
+                customConfig: null,
 
                 filesChoice: [],
                 algorithmChoice: [],
@@ -150,50 +153,37 @@ function App() {
 
         setCurrentPath(new_path_list, isDocument=false) {
             // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
-            let fileOpened = null;
+            let currentFileName = null;
             if (isDocument) {
-                fileOpened = new_path_list.pop();
+                currentFileName = new_path_list.pop();
             }
             // ensure empty root item, lost if the path was joined into a string and split again
             if (new_path_list[0] !== "") new_path_list.unshift("");
 
-            this.setState({...fileSystemState, currentFolderPathList: new_path_list, fileOpened: fileOpened},
-                () => this.fileSystem.current.setState({
-                    ...closeFileSystemMenus,
-                    fileOpened: fileOpened,
-                })
-            );
+            this.setState({...fileSystemState, currentFolderPathList: new_path_list, currentFileName: currentFileName});
         }
 
-        enterOcrMenu(filename, isFolder=false, isSinglePage=false, customConfig=null) {
-            this.setState({...ocrMenuState, fileOpened: filename},
-                () => this.fileSystem.current.setState(
-                    {
-                        ...ocrMenuState,
-                        fileOpened: filename,
-                        isFolder: isFolder,
-                        isSinglePage: isSinglePage,
-                        customConfig: customConfig
-                    })
-            );
+        enterOcrMenu(filename, ocrTargetIsFolder=false, ocrTargetIsSinglePage=false, customConfig=null) {
+            this.setState({
+                ...ocrMenuState,
+                currentFileName: filename,
+                ocrTargetIsFolder: ocrTargetIsFolder,
+                ocrTargetIsSinglePage: ocrTargetIsSinglePage,
+                customConfig: customConfig,
+            });
         }
 
         enterLayoutMenu(filename) {
-            this.setState({...layoutMenuState, fileOpened: filename},
-                () => this.fileSystem.current.setState({...layoutMenuState, fileOpened: filename})
-            );
+            this.setState({...layoutMenuState, currentFileName: filename});
         }
 
         enterEditingMenu(filename) {
-            this.setState({...editingMenuState, fileOpened: filename},
-                () => this.fileSystem.current.setState({...editingMenuState, fileOpened: filename})
-            );
+            this.setState({...editingMenuState, currentFileName: filename});
         }
 
         exitMenus(callback) {
-            this.setState({...fileSystemState, fileOpened: null},
-        () => this.fileSystem.current.setState({...closeFileSystemMenus},
-                    () => { if (callback) callback(); })
+            this.setState({...fileSystemState, currentFileName: null},
+                () => { if (callback) callback(); }
             );
         }
 
@@ -280,7 +270,7 @@ function App() {
 
                                         // If not in menu or inside document "folder" containing original and results,
                                         // make current folder non-clickable (folder names are clickable to go back)
-                                        if (!this.state.fileOpened && index > 0 && index === folderDepth - 1) {
+                                        if (!this.state.currentFileName && index > 0 && index === folderDepth - 1) {
                                             return <p className="pathElement">
                                                 {name}
                                             </p>
@@ -320,12 +310,12 @@ function App() {
                                     })
                                 }
                                 <p className="pathElement">
-                                    {this.state.fileOpened}
+                                    {this.state.currentFileName}
                                 </p>
                                 {
                                     // in private session, root level can have docs
                                     (!buttonsDisabled
-                                        && !this.state.fileOpened
+                                        && !this.state.currentFileName
                                         && (this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession())))
                                         ? <Button
                                             variant="text"
@@ -388,6 +378,13 @@ function App() {
                                                 // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
                                                 this.state.currentFolderPathList.join('/').replace(/^\//, '')
                                             }
+                                            current_file_name={this.state.currentFileName}
+                                            ocrTargetIsFolder={this.state.ocrTargetIsFolder}
+                                            ocrTargetIsSinglePage={this.state.ocrTargetIsSinglePage}
+                                            customConfig={this.state.customConfig}
+                                            ocrMenu={this.state.ocrMenu}
+                                            layoutMenu={this.state.layoutMenu}
+                                            editingMenu={this.state.editingMenu}
                                             setCurrentPath={this.setCurrentPath}
                                             enterOcrMenu={this.enterOcrMenu}
                                             enterLayoutMenu={this.enterLayoutMenu}

@@ -71,14 +71,6 @@ class FileExplorer extends React.Component {
             updateCount: 0,
 
             fetched: false,
-
-            ocrMenu: false,
-            layoutMenu: false,
-            editingMenu: false,
-            fileOpened: null,
-            isFolder: false,
-            isSinglePage: false,
-            customConfig: null,
         }
 
         this.folderMenu = React.createRef();
@@ -194,7 +186,7 @@ class FileExplorer extends React.Component {
             this.fetchFileSystem();
         } else if (prevProps.current_folder !== this.props.current_folder  // moved to different folder
             || this.state.files !== prevState.files                 // created/deleted document or folder
-            || this.state.fileOpened !== prevState.fileOpened) {    // exited menu or entered/exited document "folder"
+            || prevProps.current_file_name !== this.props.current_file_name) {    // exited menu or entered/exited document "folder"
             this.displayFileSystem();
         } else if (this.state.info !== prevState.info) {  // fetched updated info
             this.updateInfo();
@@ -288,8 +280,8 @@ class FileExplorer extends React.Component {
      * Update the info of each row being displayed.
      */
     updateInfo() {
-        if (this.state.ocrMenu || this.state.layoutMenu || this.state.editingMenu) return;
-        if (this.state.fileOpened) {
+        if (this.props.ocrMenu || this.props.layoutMenu || this.props.editingMenu) return;
+        if (this.props.current_file_name) {
             // update rows for document's files (original and outputs)
             this.rowRefs.forEach(ref => {
                 const filename = ref.current.props.filename;
@@ -331,10 +323,10 @@ class FileExplorer extends React.Component {
 
     }
 
-    performOCR(filename, isFolder=false, alreadyOcr=false, customConfig=null) {
+    performOCR(filename, ocrTargetIsFolder=false, alreadyOcr=false, customConfig=null) {
         let path = this.props.current_folder;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
-        this.ocrPopup.current.openMenu(path, filename, isFolder, alreadyOcr, customConfig);
+        this.ocrPopup.current.openMenu(path, filename, ocrTargetIsFolder, alreadyOcr, customConfig);
     }
 
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
@@ -462,15 +454,6 @@ class FileExplorer extends React.Component {
             } else {
                 window.location.href = window.location.href + `/${sessionId}`;
             }
-        });
-    }
-
-    goBack(current_folder_path) {
-        /**
-         * Go back to the given folder path
-         */
-        this.setState({layoutMenu: false, editingMenu: false,
-            current_folder: current_folder_path.join('/')
         });
     }
 
@@ -789,21 +772,21 @@ class FileExplorer extends React.Component {
         /**
          * Iterate the contents of the folder and build the components
          */
-        if (this.state.ocrMenu || this.state.layoutMenu || this.state.editingMenu) return;
+        if (this.props.ocrMenu || this.props.layoutMenu || this.props.editingMenu) return;
 
         this.rowRefs = [];
         const items = [];
 
-        if (this.state.fileOpened) {
-            const docInfo = this.getInfo(this.state.fileOpened);
+        if (this.props.current_file_name) {
+            const docInfo = this.getInfo(this.props.current_file_name);
             let ref = React.createRef();
             this.rowRefs.push(ref);
             items.push(
                 <StaticFileRow
                     ref={ref}
-                    key={this.state.fileOpened + " original"}
-                    name={this.state.fileOpened + " (original)"}
-                    filename={this.state.fileOpened}
+                    key={this.props.current_file_name + " original"}
+                    name={this.props.current_file_name + " (original)"}
+                    filename={this.props.current_file_name}
                     info={docInfo}
                     fileIcon={<FileIcon extension={docInfo["extension"]} />}
                     downloadFile={this.getOriginalFile}
@@ -815,9 +798,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " pdf_indexed"}
+                        key={this.props.current_file_name + " pdf_indexed"}
                         name={"PDF com texto e índice"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="pdf_indexed"
                         info={docInfo["pdf_indexed"]}
                         fileIcon={<PdfIcon />}
@@ -831,9 +814,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " pdf"}
+                        key={this.props.current_file_name + " pdf"}
                         name={"PDF com texto"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="pdf"
                         info={docInfo["pdf"]}
                         fileIcon={<PdfIcon />}
@@ -847,9 +830,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " txt"}
+                        key={this.props.current_file_name + " txt"}
                         name={"Texto"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="txt"
                         info={docInfo["txt"]}
                         fileIcon={<TxtIcon />}
@@ -863,9 +846,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " txt_delimited"}
+                        key={this.props.current_file_name + " txt_delimited"}
                         name={"Texto com separadores de páginas"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="txt_delimited"
                         info={docInfo["txt_delimited"]}
                         fileIcon={<TxtIcon />}
@@ -879,9 +862,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " csv"}
+                        key={this.props.current_file_name + " csv"}
                         name={"Índice de palavras"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="csv"
                         info={docInfo["csv"]}
                         fileIcon={<CsvIcon />}
@@ -895,9 +878,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " ner"}
+                        key={this.props.current_file_name + " ner"}
                         name={"Entidades"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="ner"
                         info={docInfo["ner"]}
                         fileIcon={<JsonIcon />}
@@ -911,9 +894,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " hocr"}
+                        key={this.props.current_file_name + " hocr"}
                         name={"hOCR"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="hocr"
                         info={docInfo["hocr"]}
                         fileIcon={<AltoIcon />}
@@ -927,9 +910,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " xml"}
+                        key={this.props.current_file_name + " xml"}
                         name={"ALTO"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="xml"
                         info={docInfo["xml"]}
                         fileIcon={<AltoIcon />}
@@ -943,9 +926,9 @@ class FileExplorer extends React.Component {
                 items.push(
                     <StaticFileRow
                         ref={ref}
-                        key={this.state.fileOpened + " zip"}
+                        key={this.props.current_file_name + " zip"}
                         name={"Imagens extraídas"}
-                        filename={this.state.fileOpened}
+                        filename={this.props.current_file_name}
                         type="zip"
                         info={docInfo["zip"]}
                         fileIcon={<ZipIcon />}
@@ -1004,8 +987,8 @@ class FileExplorer extends React.Component {
         this.setState({components: items});
     }
 
-    configureOCR(filename, isFolder=false, isSinglePage=false, customConfig=null) {
-        this.props.enterOcrMenu(filename, isFolder, isSinglePage, customConfig);
+    configureOCR(filename, ocrTargetIsFolder=false, ocrTargetIsSinglePage=false, customConfig=null) {
+        this.props.enterOcrMenu(filename, ocrTargetIsFolder, ocrTargetIsSinglePage, customConfig);
     }
 
     closeOCRMenu() {
@@ -1034,7 +1017,7 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow>
-                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticNameCell" : "nameCell")}>
+                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticNameCell" : "nameCell")}>
                                 <Button
                                     startIcon={
                                         this.state.sorting === 0
@@ -1048,22 +1031,22 @@ class FileExplorer extends React.Component {
                                     <b>Nome</b>
                                 </Button>
                             </TableCell>
-                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticActionsCell" : "actionsCell")}>
+                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticActionsCell" : "actionsCell")}>
                                 <b>Ações</b>
                             </TableCell>
-                            { !this.state.fileOpened
+                            { !this.props.current_file_name
                                 ? <TableCell className="explorerCell stateCell">
                                     <b>Estado</b>
                                 </TableCell>
                                 : null
                             }
-                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticDateCreatedCell" : "dateCreatedCell")}>
+                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticDateCreatedCell" : "dateCreatedCell")}>
                                 <b>Data de criação</b>
                             </TableCell>
-                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticDetailsCell" : "detailsCell")}>
+                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticDetailsCell" : "detailsCell")}>
                                 <b>Detalhes</b>
                             </TableCell>
-                            <TableCell className={"explorerCell " + (this.state.fileOpened ? "staticSizeCell" : "sizeCell")}>
+                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticSizeCell" : "sizeCell")}>
                                 <b>Tamanho</b>
                             </TableCell>
                         </TableRow>
@@ -1207,27 +1190,27 @@ class FileExplorer extends React.Component {
         return (
             <>
                 {
-                    this.state.ocrMenu
+                    this.props.ocrMenu
                     ? <OcrMenu _private={this.props._private}
                                sessionId={this.props._private ? this.props.sessionId : ""}
                                current_folder={this.props.current_folder}
-                               filename={this.state.fileOpened}
-                               isFolder={this.state.isFolder}
-                               isSinglePage={this.state.isSinglePage}
-                               customConfig={this.state.customConfig}
+                               filename={this.props.current_file_name}
+                               isFolder={this.props.isFolder}
+                               isSinglePage={this.props.ocrTargetIsSinglePage}
+                               customConfig={this.props.customConfig}
                                closeOCRMenu={this.closeOCRMenu}
                                showStorageForm={this.showStorageForm}/>
-                    : this.state.layoutMenu
+                    : this.props.layoutMenu
                     ? <LayoutMenu _private={this.props._private}
                                   sessionId={this.props._private ? this.props.sessionId : ""}
                                   current_folder={this.props.current_folder}
-                                  filename={this.state.fileOpened}
+                                  filename={this.props.current_file_name}
                                   closeLayoutMenu={this.closeLayoutMenu}/>
-                    : this.state.editingMenu
+                    : this.props.editingMenu
                     ? <EditingMenu _private={this.props._private}
                                    sessionId={this.props._private ? this.props.sessionId : ""}
                                    current_folder={this.props.current_folder}
-                                   filename={this.state.fileOpened}
+                                   filename={this.props.current_file_name}
                                    closeEditingMenu={this.closeEditingMenu}/>
                     : <Box sx={{
                         ml: '1.5rem',
@@ -1271,6 +1254,15 @@ FileExplorer.defaultProps = {
     _private: false,
     sessionId: "",
     current_folder: "",
+    current_file_name: null,
+
+    ocrTargetIsFolder: false,
+    ocrTargetIsSinglePage: false,
+    customConfig: null,
+
+    ocrMenu: false,
+    layoutMenu: false,
+    editingMenu: false,
     // functions:
     setCurrentPath: null,
     enterOcrMenu: null,

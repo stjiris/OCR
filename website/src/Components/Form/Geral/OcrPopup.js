@@ -64,12 +64,12 @@ class OcrPopup extends React.Component {
         }
     }
 
-    openMenu(path, filename, isFolder=false, alreadyOcr=false, customConfig=null) {
+    openMenu(path, filename, ocrTargetIsFolder=false, alreadyOcr=false, customConfig=null) {
         this.setState({
             open: true,
             path: path,
             filename: filename,
-            isFolder: isFolder,
+            isFolder: ocrTargetIsFolder,
             alreadyOcr: alreadyOcr,
             customConfig: customConfig,
         });
