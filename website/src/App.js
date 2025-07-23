@@ -160,7 +160,6 @@ function App() {
             this.setState({...fileSystemState, currentFolderPathList: new_path_list, fileOpened: fileOpened},
                 () => this.fileSystem.current.setState({
                     ...closeFileSystemMenus,
-                    current_folder: new_path_list.join('/').replace(/^\//, ''),
                     fileOpened: fileOpened,
                 })
             );
@@ -230,6 +229,8 @@ function App() {
                                 startIcon={<LockIcon/>}
                                 onClick={() => {
                                     this.createPrivateSession().then((sessionId) => {
+                                        //this.setCurrentPath([""]);
+                                        this.setState({currentFolderPathList: [""]});
                                         this.props.navigate(`/session/${sessionId}`);
                                     });
                                 }}
@@ -383,7 +384,10 @@ function App() {
                             ? <FileExplorer ref={this.fileSystem}
                                             _private={Boolean(this.getPrivateSession())}
                                             sessionId={this.props.sessionId || ""}  // sessionId or empty str if null
-                                            current_folder={this.state.currentFolderPathList}
+                                            current_folder={
+                                                // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
+                                                this.state.currentFolderPathList.join('/').replace(/^\//, '')
+                                            }
                                             setCurrentPath={this.setCurrentPath}
                                             enterOcrMenu={this.enterOcrMenu}
                                             enterLayoutMenu={this.enterLayoutMenu}

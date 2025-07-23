@@ -63,8 +63,6 @@ class FileExplorer extends React.Component {
             files: null,
             info: null,
             maxAge: null,
-            // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
-            current_folder: props.current_folder.join('/').replace(/^\//, ''),
             components: [],
             sorting: 0,
 
@@ -152,7 +150,7 @@ class FileExplorer extends React.Component {
                     _private: this.props._private,
                     path: (this.props._private
                             ? this.props.sessionId
-                            : this.state.current_folder)
+                            : this.props.current_folder)
                 }
             })
             .then(response => {
@@ -194,7 +192,7 @@ class FileExplorer extends React.Component {
     componentDidUpdate(prevProps, prevState, snapshot) {
         if (prevProps._private !== this.props._private) {  // moved to private session
             this.fetchFileSystem();
-        } else if (this.state.current_folder !== prevState.current_folder  // moved to different folder
+        } else if (prevProps.current_folder !== this.props.current_folder  // moved to different folder
             || this.state.files !== prevState.files                 // created/deleted document or folder
             || this.state.fileOpened !== prevState.fileOpened) {    // exited menu or entered/exited document "folder"
             this.displayFileSystem();
@@ -238,8 +236,8 @@ class FileExplorer extends React.Component {
             params: {
                 _private: this.props._private,
                 path: (this.props._private
-                        ? this.props.sessionId + '/' + this.state.current_folder
-                        : this.state.current_folder)
+                        ? this.props.sessionId + '/' + this.props.current_folder
+                        : this.props.current_folder)
             }
         })
             .then(response => {
@@ -270,8 +268,8 @@ class FileExplorer extends React.Component {
             params: {
                 _private: this.props._private,
                 path: (this.props._private
-                        ? this.props.sessionId + '/' + this.state.current_folder
-                        : this.state.current_folder)
+                        ? this.props.sessionId + '/' + this.props.current_folder
+                        : this.props.current_folder)
             }
         })
             .then(response => {
@@ -323,7 +321,7 @@ class FileExplorer extends React.Component {
      * Open the folder menu
      */
     createFolder() {
-        let path = this.state.current_folder;
+        let path = this.props.current_folder;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
         this.folderMenu.current.openMenu(path);
     }
@@ -334,13 +332,13 @@ class FileExplorer extends React.Component {
     }
 
     performOCR(filename, isFolder=false, alreadyOcr=false, customConfig=null) {
-        let path = this.state.current_folder;
+        let path = this.props.current_folder;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
         this.ocrPopup.current.openMenu(path, filename, isFolder, alreadyOcr, customConfig);
     }
 
     sendChunk(i, chunk, fileName, _totalCount, _fileID) {
-        let path = this.state.current_folder;
+        let path = this.props.current_folder;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
         const formData = new FormData();
@@ -393,7 +391,7 @@ class FileExplorer extends React.Component {
      * Function to select the files to be submitted
      */
     createFile() {
-        let path = this.state.current_folder;
+        let path = this.props.current_folder;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
         var el = window._protected_reference = document.createElement("INPUT");
@@ -482,7 +480,7 @@ class FileExplorer extends React.Component {
     getDocument(type, file, extension, suffix="") {
         this.successNot.current.openNotif("A transferência do ficheiro começou, por favor aguarde");
 
-        let path = this.state.current_folder + '/' + file;
+        let path = this.props.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
         fetch(API_URL + '/get_' + type + '?_private=' + this.props._private + '&path=' + path, {
@@ -503,7 +501,7 @@ class FileExplorer extends React.Component {
     getEntities(file) {
         this.successNot.current.openNotif("A transferência do ficheiro começou, por favor aguarde");
 
-        let path = this.state.current_folder + '/' + file;
+        let path = this.props.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
         fetch(API_URL + '/get_entities?_private=' + this.props._private + '&path=' + path, {
@@ -522,7 +520,7 @@ class FileExplorer extends React.Component {
     }
 
     requestEntities(file) {
-        let path = this.state.current_folder + '/' + file;
+        let path = this.props.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
         fetch( API_URL + '/request_entities?_private=' + this.props._private + '&path=' + path, {
@@ -545,7 +543,7 @@ class FileExplorer extends React.Component {
          //
          // Export the .zip file
          //
-        const path = this.state.current_folder.replace(/^\//, '');
+        const path = this.props.current_folder.replace(/^\//, '');
 
         fetch(API_URL + "get_zip?path=" + path, {
             method: 'GET'
@@ -580,7 +578,7 @@ class FileExplorer extends React.Component {
     getOriginalFile(file) {
         this.successNot.current.openNotif("A transferência do ficheiro começou, por favor aguarde");
 
-        let path = this.state.current_folder + '/' + file;
+        let path = this.props.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
         fetch(API_URL + '/get_original?_private=' + this.props._private + '&path=' + path, {
@@ -625,7 +623,7 @@ class FileExplorer extends React.Component {
     getImages(file) {
         this.successNot.current.openNotif("A transferência do ficheiro começou, por favor aguarde");
 
-        let path = this.state.current_folder + '/' + file;
+        let path = this.props.current_folder + '/' + file;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
         fetch(API_URL + '/get_images?_private=' + this.props._private + '&path=' + path, {
@@ -666,14 +664,14 @@ class FileExplorer extends React.Component {
 
     /*
     editFile(file) {
-        const filename = this.state.current_folder + '/' + file;
-        this.state.app.editFile(this.state.current_folder, filename);
+        const filename = this.props.current_folder + '/' + file;
+        this.state.app.editFile(this.props.current_folder, filename);
     }
      */
 
     /*
     viewFile(file, algorithm, config) {
-        var path = this.state.current_folder.slice(1).join('/');
+        var path = this.props.current_folder.slice(1).join('/');
         file = file.split('/')[0];
         var filename = path + '/' + file;
         this.state.app.viewFile(filename, algorithm, config);
@@ -684,7 +682,7 @@ class FileExplorer extends React.Component {
      * Open the delete menu
      */
     deleteItem(filename) {
-        let path = this.state.current_folder;
+        let path = this.props.current_folder;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
         this.deletePopup.current.openMenu(path, filename);
     }
@@ -693,7 +691,7 @@ class FileExplorer extends React.Component {
      * Enter the folder and update the path
      */
     enterFolder(folder, isDocument = false) {
-        const current_folder_list = this.state.current_folder.split('/');
+        const current_folder_list = this.props.current_folder.split('/');
         current_folder_list.push(folder);
         this.props.setCurrentPath(current_folder_list, isDocument);
     }
@@ -720,7 +718,7 @@ class FileExplorer extends React.Component {
      */
     getPathContents() {
         let files = this.state.files;
-        let current_folder_list = this.state.current_folder.split('/');
+        let current_folder_list = this.props.current_folder.split('/');
 
         // if path is at top level, findFolder() is called once, returns whole list of folders and files
         for (let f in current_folder_list) {
@@ -735,8 +733,8 @@ class FileExplorer extends React.Component {
      * Get the info of the file
      */
     getInfo(path) {
-        if (this.state.current_folder !== null && this.state.current_folder !== "") {
-            path = this.state.current_folder + '/' + path;
+        if (this.props.current_folder !== null && this.props.current_folder !== "") {
+            path = this.props.current_folder + '/' + path;
         }
         return this.state.info[path];
     }
@@ -1079,7 +1077,7 @@ class FileExplorer extends React.Component {
     }
 
     indexFile(file, multiple) {
-        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
+        const path = (this.props.current_folder + '/' + file).replace(/^\//, '');
 
         fetch(API_URL + '/index-doc', {
             method: 'POST',
@@ -1104,7 +1102,7 @@ class FileExplorer extends React.Component {
     }
 
     removeIndexFile(file, multiple) {
-        const path = (this.state.current_folder + '/' + file).replace(/^\//, '');
+        const path = (this.props.current_folder + '/' + file).replace(/^\//, '');
 
         fetch(API_URL + '/remove-index-doc', {
             method: 'POST',
@@ -1145,7 +1143,7 @@ class FileExplorer extends React.Component {
     }
 
     changeFolderFromPath(folder_name) {
-        var current_folder = this.state.current_folder;
+        var current_folder = this.props.current_folder;
 
         // Remove the last element of the path until we find folder_name
         while (current_folder[current_folder.length - 1] !== folder_name) {
@@ -1170,7 +1168,7 @@ class FileExplorer extends React.Component {
                 flexWrap: 'wrap'
             }}>
                 {
-                    this.state.current_folder.map((folder, index) => {
+                    this.props.current_folder.map((folder, index) => {
                         var name;
                         if (folder !== 'files') {
                             name = folder;
@@ -1212,7 +1210,7 @@ class FileExplorer extends React.Component {
                     this.state.ocrMenu
                     ? <OcrMenu _private={this.props._private}
                                sessionId={this.props._private ? this.props.sessionId : ""}
-                               current_folder={this.state.current_folder}
+                               current_folder={this.props.current_folder}
                                filename={this.state.fileOpened}
                                isFolder={this.state.isFolder}
                                isSinglePage={this.state.isSinglePage}
@@ -1222,13 +1220,13 @@ class FileExplorer extends React.Component {
                     : this.state.layoutMenu
                     ? <LayoutMenu _private={this.props._private}
                                   sessionId={this.props._private ? this.props.sessionId : ""}
-                                  current_folder={this.state.current_folder}
+                                  current_folder={this.props.current_folder}
                                   filename={this.state.fileOpened}
                                   closeLayoutMenu={this.closeLayoutMenu}/>
                     : this.state.editingMenu
                     ? <EditingMenu _private={this.props._private}
                                    sessionId={this.props._private ? this.props.sessionId : ""}
-                                   current_folder={this.state.current_folder}
+                                   current_folder={this.props.current_folder}
                                    filename={this.state.fileOpened}
                                    closeEditingMenu={this.closeEditingMenu}/>
                     : <Box sx={{
@@ -1272,7 +1270,7 @@ class FileExplorer extends React.Component {
 FileExplorer.defaultProps = {
     _private: false,
     sessionId: "",
-    current_folder: null,
+    current_folder: "",
     // functions:
     setCurrentPath: null,
     enterOcrMenu: null,
