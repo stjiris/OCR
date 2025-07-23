@@ -247,9 +247,10 @@ class DocumentRow extends React.Component {
                                 : <TableCell className="explorerCell stateCell infoCell" align='center'>
                                     <Box className="stateBox">
                                       <span>
-                                        {this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)
+                                        {this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}
+                                          <CircularProgress sx={{ml: '1rem'}} size='1rem' />
+                                        <br />({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)
                                       </span>
-                                      <CircularProgress sx={{ml: '1rem'}} size='1rem' />
                                     </Box>
                                 </TableCell>
                             }

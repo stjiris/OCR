@@ -34,6 +34,7 @@ import {
     ocrMenuState
 } from "./states";
 import StorageManager from "./Components/Admin/Geral/StorageManager";
+import Typography from "@mui/material/Typography";
 
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
@@ -200,20 +201,45 @@ function App() {
         render() {
             const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
-                <Box className="App" sx={{height: '100vh'}}>
+                <Box className="App" sx={{height: "100vh", display: "flex", flexDirection: "column"}}>
+                    <Typography
+                        id="modal-modal-title"
+                        variant="h3"
+                        component="h1"
+                        sx={{
+                            textAlign: "center",
+                            color: "#1976d2",
+                        }}
+                    >
+                        {
+                            Boolean(this.getPrivateSession())
+                                ? `Sessão Privada - ${this.getPrivateSession()}`
+                                : "OCR - Reconhecimento Ótico de Caracteres"
+                        }
+                    </Typography>
+
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
                         justifyContent: 'space-between',
                         zIndex: '5',
                         // border: '1px solid #000000',
-                        pt: '0.5rem',
-                        pl: '0.5rem',
-                        pb: '0.5rem',
-                        pr: '0.5rem',
+                        padding: '0.5rem',
                     }}>
                         <Box sx={{display: "flex", flexDirection: "row"}}>
-                            <Button
+                        {
+                            Boolean(this.getPrivateSession())
+                            ? <Button
+                                disabled={buttonsDisabled}
+                                variant="contained"
+                                startIcon={<LockIcon/>}
+                                onClick={() => { this.props.navigate("/"); }}
+                                className="menuButton"
+                                color="error"
+                            >
+                                Sair da Sessão
+                            </Button>
+                            : <Button
                                 disabled={buttonsDisabled}
                                 variant="contained"
                                 startIcon={<LockIcon/>}
@@ -226,8 +252,9 @@ function App() {
                                 }}
                                 className="menuButton"
                             >
-                                Sessão Privada
+                                Nova Sessão Privada
                             </Button>
+                        }
 
                             <Button
                                 disabled={buttonsDisabled}
@@ -353,9 +380,8 @@ function App() {
 
                             {/* TODO: update help document */}
                             <Button
-                                disabled={true}
                                 variant="text"
-                                onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
+                                onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vTjGei4_szYIrD8G7x2UmNKlbOsW_JZmVj0E2J4933-hXjkU9iuKGr0J8Aj6qpF25HlCb9y3vMadC23/pub", '_blank')}
                                 startIcon={<HelpIcon/>}
                                 sx={{
                                     ml: '1.5rem',
@@ -363,7 +389,7 @@ function App() {
                                     p: 0
                                 }}
                             >
-                                Ajuda
+                                Manual de Utilizador
                             </Button>
                         </Box>
                     </Box>
@@ -395,7 +421,7 @@ function App() {
                                       configChoice={this.state.configChoice}/>
                         }
                     </Box>
-                    <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
+                    <Box sx={{display:"flex", alignItems:"center", marginTop: "auto", justifyContent:"center"}}>
                         <a href={footerBanner} target='_blank' rel="noreferrer">
                             <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
                         </a>

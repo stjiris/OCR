@@ -119,6 +119,7 @@ body {
 
 .MuiTableCell-root.explorerCell {
     border-left: 1px solid #aaa;
+    font-size: 1rem;
 }
 
 .MuiTableCell-root.MuiTableCell-body.explorerCell {

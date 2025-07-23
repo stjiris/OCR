@@ -16,6 +16,7 @@ import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
+import Typography from "@mui/material/Typography";
 const ArrowDownAZIcon = loadComponent('Icons', 'ArrowDownAZIcon');
 const ArrowUpZAIcon = loadComponent('Icons', 'ArrowUpZAIcon');
 const DocumentRow = loadComponent('FileSystem', 'DocumentRow');
@@ -1028,15 +1029,15 @@ class FileExplorer extends React.Component {
                                     }
                                     sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
                                     onClick={() => this.toggleSortByName()}>
-                                    <b>Nome</b>
+                                    <span><b>Nome</b></span>
                                 </Button>
                             </TableCell>
                             <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticActionsCell" : "actionsCell")}>
-                                <b>Ações</b>
+                                <span><b>Ações</b></span>
                             </TableCell>
                             { !this.props.current_file_name
                                 ? <TableCell className="explorerCell stateCell">
-                                    <b>Estado</b>
+                                    <span><b>Estado</b></span>
                                 </TableCell>
                                 : null
                             }
@@ -1044,15 +1045,20 @@ class FileExplorer extends React.Component {
                                 <b>Data de criação</b>
                             </TableCell>
                             <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticDetailsCell" : "detailsCell")}>
-                                <b>Detalhes</b>
+                                <span><b>Detalhes</b></span>
                             </TableCell>
                             <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticSizeCell" : "sizeCell")}>
-                                <b>Tamanho</b>
+                                <span><b>Tamanho</b></span>
                             </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {this.sortByName()}
+                        {this.state.components.length === 0
+                            ? <Typography variant="body1" sx={{marginTop: "1rem", marginBottom: "1rem", marginLeft: "1rem"}}>
+                                A pasta está vazia. Adicione um documento ou sub-pasta.
+                            </Typography>
+                            : this.sortByName()
+                        }
                     </TableBody>
                 </Table>
             </TableContainer>
