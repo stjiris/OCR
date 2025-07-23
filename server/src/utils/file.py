@@ -365,7 +365,9 @@ def get_structure_info(path, private_session=None, is_private=False):
             if folder.startswith("_"):
                 continue
             # ignore possible private path folders
-            if not is_private and (PRIVATE_PATH in root or folder in PRIVATE_PATH):
+            if not is_private and (
+                PRIVATE_PATH in root or folder in PRIVATE_PATH.split("/")
+            ):
                 continue
             # if in a private session, ignore folders not from this private session
             if is_private and f"{PRIVATE_PATH}/{private_session}" not in root:
@@ -426,7 +428,7 @@ def get_structure(path, private_session=None, is_private=False):
     )
     for folder in folders:
         # ignore possible private path folders
-        if not is_private and folder in PRIVATE_PATH:
+        if not is_private and folder in PRIVATE_PATH.split("/"):
             continue
         # if in a private session, ignore folders not from this private session
         if is_private and f"{PRIVATE_PATH}/{private_session}" not in f"{path}/{folder}":
