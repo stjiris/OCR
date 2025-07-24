@@ -88,55 +88,35 @@ class LayoutMenu extends React.Component {
 		event.returnValue = '';
 	}
 
-	componentDidMount() {
+    getLayouts() {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
         fetch(API_URL + '/get-layouts?' + is_private + 'path=' + path, {
-			method: 'GET'
-		}).then(response => { return response.json() })
-			.then(data => {
-				const contents = data["layouts"].sort((a, b) =>
-					(a["page_number"] > b["page_number"]) ? 1 : -1
-				)
+            method: 'GET'
+        }).then(response => { return response.json() })
+            .then(data => {
+                const contents = data["layouts"].sort((a, b) =>
+                    (a["page_number"] > b["page_number"]) ? 1 : -1
+                )
 
-				for (let i = 0; i < contents.length; i++) {
-					const groups = contents[i]["boxes"];
-					for (let j = 0; j < groups.length; j++) {
-						groups[j]["checked"] = false;
-					}
-				}
+                for (let i = 0; i < contents.length; i++) {
+                    const groups = contents[i]["boxes"];
+                    for (let j = 0; j < groups.length; j++) {
+                        groups[j]["checked"] = false;
+                    }
+                }
 
-				this.setState({ contents: contents }, () => {
-					this.updateTextMode();
-				});
-			});
+                this.setState({ contents: contents }, () => {
+                    this.updateTextMode();
+                });
+            });
+    }
 
+	componentDidMount() {
+        this.getLayouts();
 		this.interval = setInterval(() => {
 			if (!this.state.segmentLoading) return;
-
-            const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-            const is_private = this.props._private ? '_private=true&' : '';
-            fetch(API_URL + '/get-layouts?' + is_private + 'path=' + path, {
-				method: 'GET'
-			}).then(response => { return response.json() })
-				.then(data => {
-					if (data["layouts"].some(e => !e["done"])) return;
-
-					const contents = data["layouts"].sort((a, b) =>
-						(a["page_number"] > b["page_number"]) ? 1 : -1
-					)
-
-					for (let i = 0; i < contents.length; i++) {
-						const groups = contents[i]["boxes"];
-						for (let j = 0; j < groups.length; j++) {
-							groups[j]["checked"] = false;
-						}
-					}
-
-					this.setState({ contents: contents, segmentLoading: false }, () => {
-						this.updateTextMode();
-					});
-				});
+            this.getLayouts();
 		}, 1000);
 	}
 
@@ -580,7 +560,7 @@ class LayoutMenu extends React.Component {
         const pageBoxes = [...contents[this.state.currentPage - 1]["boxes"]];
         pageBoxes.push(newGroupData);
         contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
-        this.setState({ contents: contents });
+        this.setState({ contents: contents, uncommittedChanges: true });
     }
 
 	groupCheckedBoxes() {
@@ -610,7 +590,7 @@ class LayoutMenu extends React.Component {
 		newGroups.splice(insertIndex, 0, newGroup);
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
-		this.setState({ contents: contents });
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	splitCheckedBoxes() {
@@ -635,7 +615,7 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
 
-		this.setState({ contents: contents });
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
     /*
@@ -672,7 +652,6 @@ class LayoutMenu extends React.Component {
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
-    */
 
 	goDown(index) {
 		var contents = this.state.contents;
@@ -686,6 +665,7 @@ class LayoutMenu extends React.Component {
 
 		this.setState({ contents: contents });
 	}
+     */
 
 	switchType(box) {
 		const contents = this.state.contents;
@@ -696,7 +676,7 @@ class LayoutMenu extends React.Component {
 		group["type"] = newType;
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
-		this.setState({ contents: contents });
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	switchMode() {
@@ -711,7 +691,7 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
-		this.setState({ contents: contents, textModeState: !this.state.textModeState });
+		this.setState({ contents: contents, uncommittedChanges: true, textModeState: !this.state.textModeState });
 	}
 
 	updateTextMode() {
