@@ -11,11 +11,21 @@ import {
     useSensors
 } from "@dnd-kit/core";
 import {restrictToVerticalAxis} from "@dnd-kit/modifiers";
-import {arrayMove, SortableContext, verticalListSortingStrategy} from "@dnd-kit/sortable";
+import {SortableContext, verticalListSortingStrategy} from "@dnd-kit/sortable";
 import {DraggableTableRow} from "./DraggableTableRow";
 import {StaticTableRow} from "./StaticTableRow";
 
-export default function LayoutTable({ data, reorderBoxes, textModeState, confirmAllChecked, commitAllCheckBoxes, changeChecked, switchType }) {
+const LayoutTable = ({
+        data = [],
+        // functions:
+        reorderBoxes,
+        textModeState,
+        confirmAllChecked,
+        commitAllCheckBoxes,
+        changeChecked,
+        switchType
+        }) => {
+
     const [activeId, setActiveId] = useState(null);
     const [dropPosition, setDropPosition] = useState(undefined);
     const groupIds = useMemo(() => data?.map((group) => group.groupId), [data]);
@@ -137,3 +147,5 @@ export default function LayoutTable({ data, reorderBoxes, textModeState, confirm
         </DndContext>
     );
 }
+
+export default LayoutTable;

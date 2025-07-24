@@ -8,6 +8,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Switch from '@mui/material/Switch';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
@@ -17,8 +18,6 @@ import FirstPageIcon from "@mui/icons-material/FirstPage";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
-
-import { CircularProgress } from '@mui/material';
 
 import loadComponent from '../../../utils/loadComponents';
 const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
@@ -64,7 +63,6 @@ class LayoutMenu extends React.Component {
 		}
 
 		this.image = React.createRef();
-		this.menu = React.createRef();
 		this.confirmLeave = React.createRef();
 
 		this.successNot = React.createRef();
@@ -724,6 +722,7 @@ class LayoutMenu extends React.Component {
     }
 
 	render() {
+        const loaded = this.state.contents.length !== 0;
         let tableData = [];
 
 		let noCheckBoxActive = false;
@@ -731,7 +730,7 @@ class LayoutMenu extends React.Component {
         let separateDisabled = false;
         let copyDisabled = false;
 
-		if (this.state.contents.length !== 0) {
+		if (loaded) {
             tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
 
             noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
@@ -772,6 +771,7 @@ class LayoutMenu extends React.Component {
 
 					<Box>
 						<Button
+                            disabled={!loaded}
 							variant="contained"
                             className="menuFunctionButton"
 							onClick={() => this.cleanAllBoxes()}
@@ -780,7 +780,7 @@ class LayoutMenu extends React.Component {
 							Limpar Tudo
 						</Button>
 						<Button
-							disabled={this.state.segmentLoading
+							disabled={!loaded || this.state.segmentLoading
                                 || cannotAutoSegment.has(this.props.filename.split('.').pop())}
                             title={cannotAutoSegment.has(this.props.filename.split('.').pop())
                                     ? "Não é possível segmentar automaticamente este formato de ficheiro." : ""}
@@ -797,6 +797,7 @@ class LayoutMenu extends React.Component {
 							}
 						</Button>
 						<Button
+                            disabled={!loaded}
 							variant="contained"
                             className="menuFunctionButton"
 							color="success"
@@ -806,6 +807,7 @@ class LayoutMenu extends React.Component {
 							Guardar
 						</Button>
 						<Button
+                            disabled={!loaded}
 							variant="contained"
 							color="success"
                             className="menuFunctionButton noMarginRight"
@@ -817,7 +819,9 @@ class LayoutMenu extends React.Component {
 					</Box>
 				</Box>
 
-				<Box ref={this.menu} sx={{
+                {
+                loaded
+                ? <Box sx={{
 					display: "flex",
 					flexDirection: "row",
                     ml: "1rem",
@@ -970,6 +974,18 @@ class LayoutMenu extends React.Component {
                         />
 					</Box>
 				</Box>
+
+                :<Box sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center"
+                }}>
+                    <CircularProgress color="success" />
+                </Box>
+                }
 			</>
 		)
 	}
