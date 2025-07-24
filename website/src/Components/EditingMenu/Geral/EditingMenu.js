@@ -3,8 +3,11 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
+import Typography from "@mui/material/Typography";
 import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import CircularProgress from '@mui/material/CircularProgress';
+import TextareaAutosize from '@mui/material/TextareaAutosize';
 
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -18,8 +21,6 @@ import AddLineIcon from '../../../static/addLine.svg';
 import RemoveLineIcon from '../../../static/removeLine.svg';
 
 import loadComponent from '../../../utils/loadComponents';
-import {CircularProgress, TextareaAutosize} from '@mui/material';
-
 const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 const Notification = loadComponent('Notifications', 'Notification');
@@ -790,10 +791,20 @@ class EditingMenu extends React.Component {
                         marginBottom: '0.5rem',
                         borderBottom: '1px solid black'
                     }}>
-                        <ReturnButton
-                            disabled={false}
-                            returnFunction={this.goBack}
-                        />
+                        <Box className="noMarginRight" sx={{display: "flex"}}>
+                            <ReturnButton
+                                disabled={false}
+                                returnFunction={this.goBack}
+                            />
+
+                            <Typography
+                                variant="h5"
+                                component="h2"
+                                sx={{ marginLeft: "1rem", textAlign: "center" }}
+                            >
+                                Editar os resultados
+                            </Typography>
+                        </Box>
 
                         <Box>
                             {

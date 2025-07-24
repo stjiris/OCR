@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
-import UndoIcon from '@mui/icons-material/Undo';
+import Typography from "@mui/material/Typography";
 import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Switch from '@mui/material/Switch';
@@ -764,10 +764,20 @@ class LayoutMenu extends React.Component {
 					marginBottom: '0.5rem',
 					borderBottom: '1px solid black',
 				}}>
-                    <ReturnButton
-                        disabled={false}
-                        returnFunction={this.goBack}
-                    />
+                    <Box className="noMarginRight" sx={{display: "flex"}}>
+                        <ReturnButton
+                            disabled={false}
+                            returnFunction={this.goBack}
+                        />
+
+                        <Typography
+                            variant="h5"
+                            component="h2"
+                            sx={{ marginLeft: "1rem", textAlign: "center" }}
+                        >
+                            Editar o layout
+                        </Typography>
+                    </Box>
 
 					<Box>
 						<Button

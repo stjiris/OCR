@@ -45,7 +45,7 @@ body {
     font-size: 2rem;
 }
 
-.MuiButton-contained.menuFunctionButton {
+.MuiButton-contained.menuFunctionButton {  /* overrides React MUI styles */
     border: 1px solid black;
     height: 2rem;
     text-transform: none;
@@ -53,7 +53,11 @@ body {
     width: fit-content;
 }
 
-.menuFunctionButton.noMarginRight {
+.noMarginRight {
+    margin-right: 0
+}
+
+.menuFunctionButton.noMarginRight {  /* overrides React MUI styles */
     margin-right: 0
 }
 
