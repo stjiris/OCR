@@ -7,6 +7,7 @@ import Divider from '@mui/material/Divider';
 import InboxIcon from '@mui/icons-material/Inbox';
 
 import loadComponent from '../../../utils/loadComponents';
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const PageDisplayer = loadComponent('Displayer', 'PageDisplayer');
 const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
 
@@ -251,7 +252,28 @@ class ESPage extends React.Component {
     */
 
     render() {
-        return (
+        return (<>
+            <Box sx={{
+                ml: '0.5rem',
+                mr: '0.5rem',
+                display: "flex",
+                flexDirection: "row",
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                position: 'sticky',
+                top: 0,
+                zIndex: 100,
+                backgroundColor: '#fff',
+                paddingBottom: '1rem',
+                marginBottom: '0.5rem',
+                borderBottom: '1px solid black'
+            }}>
+                <ReturnButton
+                    disabled={false}
+                    returnFunction={this.props.closeSearchMenu}
+                />
+            </Box>
+
             <Box sx={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -337,7 +359,7 @@ class ESPage extends React.Component {
                     }
                 </Box>
             </Box>
-        )
+        </>);
     }
 }
 
@@ -348,7 +370,9 @@ ESItem.defaultProps = {
 ESPage.defaultProps = {
     filesChoice: null,
     algorithmChoice: null,
-    configChoice: null
+    configChoice: null,
+    // functions:
+    closeSearchMenu: null,
 }
 
 export default ESPage;

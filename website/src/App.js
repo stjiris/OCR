@@ -124,6 +124,7 @@ function App() {
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
             this.enterEditingMenu = this.enterEditingMenu.bind(this);
             this.exitMenus = this.exitMenus.bind(this);
+            this.closeSearchMenu = this.closeSearchMenu.bind(this);
         }
 
         getPrivateSession() {
@@ -207,6 +208,14 @@ function App() {
                 current_list.pop();
             }
             this.setCurrentPath(current_list);
+        }
+
+        closeSearchMenu() {
+            this.setState({...fileSystemState,
+                filesChoice: [],
+                algorithmChoice: [],
+                configChoice: []
+            });
         }
 
         render() {
@@ -326,13 +335,7 @@ function App() {
                                                     key={folder}
                                                     onClick={() => {
                                                         if (index === 0 && this.state.searchMenu) {
-                                                            this.setState({...fileSystemState,
-                                                                filesChoice: [],
-                                                                algorithmChoice: [],
-                                                                configChoice: []
-                                                            });
-                                                        //} else if (this.getPrivateSession() !== null) {
-                                                        //    this.redirectHome();
+                                                            this.closeSearchMenu();
                                                         } else {
                                                             this.changeFolderFromPath(folder);
                                                         }
@@ -430,7 +433,8 @@ function App() {
                                             exitMenus={this.exitMenus}/>
                             : <ESPage filesChoice={this.state.filesChoice}
                                       algorithmChoice={this.state.algorithmChoice}
-                                      configChoice={this.state.configChoice}/>
+                                      configChoice={this.state.configChoice}
+                                      closeSearchMenu={this.closeSearchMenu}/>
                         }
                     </Box>
                     <Box sx={{display:"flex", alignItems:"center", marginTop: "auto", justifyContent:"center"}}>
