@@ -4,10 +4,11 @@ import { v4 as uuidv4 } from 'uuid';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
-import UndoIcon from '@mui/icons-material/Undo';
+import Typography from "@mui/material/Typography";
 import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Switch from '@mui/material/Switch';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
@@ -18,9 +19,8 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 
-import { CircularProgress } from '@mui/material';
-
 import loadComponent from '../../../utils/loadComponents';
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
 const LayoutTable = loadComponent('LayoutMenu', 'LayoutTable');
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
@@ -63,7 +63,6 @@ class LayoutMenu extends React.Component {
 		}
 
 		this.image = React.createRef();
-		this.menu = React.createRef();
 		this.confirmLeave = React.createRef();
 
 		this.successNot = React.createRef();
@@ -77,6 +76,7 @@ class LayoutMenu extends React.Component {
         this.switchType = this.switchType.bind(this);
         this.reorderBoxes = this.reorderBoxes.bind(this);
 
+        this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
         this.zoomOut = this.zoomOut.bind(this);
@@ -88,55 +88,35 @@ class LayoutMenu extends React.Component {
 		event.returnValue = '';
 	}
 
-	componentDidMount() {
+    getLayouts() {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
         fetch(API_URL + '/get-layouts?' + is_private + 'path=' + path, {
-			method: 'GET'
-		}).then(response => { return response.json() })
-			.then(data => {
-				const contents = data["layouts"].sort((a, b) =>
-					(a["page_number"] > b["page_number"]) ? 1 : -1
-				)
+            method: 'GET'
+        }).then(response => { return response.json() })
+            .then(data => {
+                const contents = data["layouts"].sort((a, b) =>
+                    (a["page_number"] > b["page_number"]) ? 1 : -1
+                )
 
-				for (let i = 0; i < contents.length; i++) {
-					const groups = contents[i]["boxes"];
-					for (let j = 0; j < groups.length; j++) {
-						groups[j]["checked"] = false;
-					}
-				}
+                for (let i = 0; i < contents.length; i++) {
+                    const groups = contents[i]["boxes"];
+                    for (let j = 0; j < groups.length; j++) {
+                        groups[j]["checked"] = false;
+                    }
+                }
 
-				this.setState({ contents: contents }, () => {
-					this.updateTextMode();
-				});
-			});
+                this.setState({ contents: contents }, () => {
+                    this.updateTextMode();
+                });
+            });
+    }
 
+	componentDidMount() {
+        this.getLayouts();
 		this.interval = setInterval(() => {
 			if (!this.state.segmentLoading) return;
-
-            const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-            const is_private = this.props._private ? '_private=true&' : '';
-            fetch(API_URL + '/get-layouts?' + is_private + 'path=' + path, {
-				method: 'GET'
-			}).then(response => { return response.json() })
-				.then(data => {
-					if (data["layouts"].some(e => !e["done"])) return;
-
-					const contents = data["layouts"].sort((a, b) =>
-						(a["page_number"] > b["page_number"]) ? 1 : -1
-					)
-
-					for (let i = 0; i < contents.length; i++) {
-						const groups = contents[i]["boxes"];
-						for (let j = 0; j < groups.length; j++) {
-							groups[j]["checked"] = false;
-						}
-					}
-
-					this.setState({ contents: contents, segmentLoading: false }, () => {
-						this.updateTextMode();
-					});
-				});
+            this.getLayouts();
 		}, 1000);
 	}
 
@@ -580,7 +560,7 @@ class LayoutMenu extends React.Component {
         const pageBoxes = [...contents[this.state.currentPage - 1]["boxes"]];
         pageBoxes.push(newGroupData);
         contents[this.state.currentPage - 1]["boxes"] = pageBoxes;
-        this.setState({ contents: contents });
+        this.setState({ contents: contents, uncommittedChanges: true });
     }
 
 	groupCheckedBoxes() {
@@ -610,7 +590,7 @@ class LayoutMenu extends React.Component {
 		newGroups.splice(insertIndex, 0, newGroup);
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
-		this.setState({ contents: contents });
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	splitCheckedBoxes() {
@@ -635,7 +615,7 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(newGroups, this.state.currentPage);
 
-		this.setState({ contents: contents });
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
     /*
@@ -672,7 +652,6 @@ class LayoutMenu extends React.Component {
 			this.image.current.updateBoxes(this.state.contents[this.state.currentPage - 1]["boxes"]);
 		});
 	}
-    */
 
 	goDown(index) {
 		var contents = this.state.contents;
@@ -686,6 +665,7 @@ class LayoutMenu extends React.Component {
 
 		this.setState({ contents: contents });
 	}
+     */
 
 	switchType(box) {
 		const contents = this.state.contents;
@@ -696,7 +676,7 @@ class LayoutMenu extends React.Component {
 		group["type"] = newType;
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
-		this.setState({ contents: contents });
+		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	switchMode() {
@@ -711,7 +691,7 @@ class LayoutMenu extends React.Component {
 
 		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(groups, this.state.currentPage);
 
-		this.setState({ contents: contents, textModeState: !this.state.textModeState });
+		this.setState({ contents: contents, uncommittedChanges: true, textModeState: !this.state.textModeState });
 	}
 
 	updateTextMode() {
@@ -742,6 +722,7 @@ class LayoutMenu extends React.Component {
     }
 
 	render() {
+        const loaded = this.state.contents.length !== 0;
         let tableData = [];
 
 		let noCheckBoxActive = false;
@@ -749,7 +730,7 @@ class LayoutMenu extends React.Component {
         let separateDisabled = false;
         let copyDisabled = false;
 
-		if (this.state.contents.length !== 0) {
+		if (loaded) {
             tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
 
             noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
@@ -783,25 +764,24 @@ class LayoutMenu extends React.Component {
 					marginBottom: '0.5rem',
 					borderBottom: '1px solid black',
 				}}>
-					<Button
-						variant="contained"
-						startIcon={<UndoIcon />}
-						onClick={() => this.goBack()}
-						sx={{
-							border: '1px solid black',
-							height: '2rem',
-							textTransform: 'none',
-							fontSize: '0.75rem',
-							backgroundColor: '#ffffff',
-							color: '#000000',
-							':hover': { bgcolor: '#ddd' }
-						}}
-					>
-						Voltar
-					</Button>
+                    <Box className="noMarginRight" sx={{display: "flex"}}>
+                        <ReturnButton
+                            disabled={false}
+                            returnFunction={this.goBack}
+                        />
+
+                        <Typography
+                            variant="h5"
+                            component="h2"
+                            sx={{ marginLeft: "1rem", textAlign: "center" }}
+                        >
+                            Editar o layout
+                        </Typography>
+                    </Box>
 
 					<Box>
 						<Button
+                            disabled={!loaded}
 							variant="contained"
                             className="menuFunctionButton"
 							onClick={() => this.cleanAllBoxes()}
@@ -810,7 +790,7 @@ class LayoutMenu extends React.Component {
 							Limpar Tudo
 						</Button>
 						<Button
-							disabled={this.state.segmentLoading
+							disabled={!loaded || this.state.segmentLoading
                                 || cannotAutoSegment.has(this.props.filename.split('.').pop())}
                             title={cannotAutoSegment.has(this.props.filename.split('.').pop())
                                     ? "Não é possível segmentar automaticamente este formato de ficheiro." : ""}
@@ -827,6 +807,7 @@ class LayoutMenu extends React.Component {
 							}
 						</Button>
 						<Button
+                            disabled={!loaded}
 							variant="contained"
                             className="menuFunctionButton"
 							color="success"
@@ -836,6 +817,7 @@ class LayoutMenu extends React.Component {
 							Guardar
 						</Button>
 						<Button
+                            disabled={!loaded}
 							variant="contained"
 							color="success"
                             className="menuFunctionButton noMarginRight"
@@ -847,7 +829,9 @@ class LayoutMenu extends React.Component {
 					</Box>
 				</Box>
 
-				<Box ref={this.menu} sx={{
+                {
+                loaded
+                ? <Box sx={{
 					display: "flex",
 					flexDirection: "row",
                     ml: "1rem",
@@ -1000,6 +984,18 @@ class LayoutMenu extends React.Component {
                         />
 					</Box>
 				</Box>
+
+                :<Box sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center"
+                }}>
+                    <CircularProgress color="success" />
+                </Box>
+                }
 			</>
 		)
 	}

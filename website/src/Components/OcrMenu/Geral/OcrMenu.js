@@ -16,6 +16,7 @@ import Radio from "@mui/material/Radio";
 import FormControl from "@mui/material/FormControl";
 
 import loadComponent from '../../../utils/loadComponents';
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
 const Notification = loadComponent('Notifications', 'Notification');
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
@@ -219,6 +220,7 @@ class OcrMenu extends React.Component {
         this.dpiField = React.createRef();
         this.moreParams = React.createRef();
 
+        this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
         this.setLangList = this.setLangList.bind(this);
         this.setOutputList = this.setOutputList.bind(this);
@@ -371,22 +373,10 @@ class OcrMenu extends React.Component {
                 marginBottom: '0.5rem',
                 borderBottom: '1px solid black',
             }}>
-                <Button
-                    variant="contained"
-                    startIcon={<UndoIcon />}
-                    onClick={() => this.goBack()}
-                    sx={{
-                        border: '1px solid black',
-                        height: '2rem',
-                        textTransform: 'none',
-                        fontSize: '0.75rem',
-                        backgroundColor: '#ffffff',
-                        color: '#000000',
-                        ':hover': { bgcolor: '#ddd' }
-                    }}
-                >
-                    Voltar
-                </Button>
+                <ReturnButton
+                    disabled={false}
+                    returnFunction={this.goBack}
+                />
 
                 <Box>
                     <Button

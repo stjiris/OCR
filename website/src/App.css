@@ -13,7 +13,9 @@ body {
     height: 2rem;
     align-items: center;
     font-family: "Roboto", "Helvetica", "Arial", sans-serif;
-    font-size: 0.875rem
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.02857em;
 }
 
 .MuiBox-root .pathButton {
@@ -43,7 +45,7 @@ body {
     font-size: 2rem;
 }
 
-.MuiButton-contained.menuFunctionButton {
+.MuiButton-contained.menuFunctionButton {  /* overrides React MUI styles */
     border: 1px solid black;
     height: 2rem;
     text-transform: none;
@@ -51,7 +53,11 @@ body {
     width: fit-content;
 }
 
-.menuFunctionButton.noMarginRight {
+.noMarginRight {
+    margin-right: 0
+}
+
+.menuFunctionButton.noMarginRight {  /* overrides React MUI styles */
     margin-right: 0
 }
 
@@ -119,6 +125,7 @@ body {
 
 .MuiTableCell-root.explorerCell {
     border-left: 1px solid #aaa;
+    font-size: 1rem;
 }
 
 .MuiTableCell-root.MuiTableCell-body.explorerCell {
