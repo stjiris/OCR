@@ -5,7 +5,6 @@ import { useNavigate } from "react-router";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import UndoIcon from "@mui/icons-material/Undo";
 import Typography from "@mui/material/Typography";
 
 import TextField from "@mui/material/TextField";
@@ -17,6 +16,7 @@ import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 
 import footerBanner from "../../../static/footerBanner.png";
 import loadComponent from "../../../utils/loadComponents";
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const Notification = loadComponent('Notifications', 'Notification');
 const ConfirmActionPopup = loadComponent('Form', 'ConfirmActionPopup');
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
@@ -331,19 +331,10 @@ const StorageManager = (props) => {
                 marginBottom: '0.5rem',
                 borderBottom: '1px solid black',
             }}>
-                <Button
-                    variant="contained"
-                    startIcon={<UndoIcon />}
-                    onClick={() => navigate('/admin')}
-                    className="menuFunctionButton noMarginRight"
-                    sx={{
-                        backgroundColor: '#ffffff',
-                        color: '#000000',
-                        ':hover': { bgcolor: '#ddd' }
-                    }}
-                >
-                    Voltar
-                </Button>
+                <ReturnButton
+                    disabled={false}
+                    returnFunction={() => navigate('/admin')}
+                />
 
                 <Button
                     disabled={!valid}

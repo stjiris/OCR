@@ -13,7 +13,6 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import UndoIcon from "@mui/icons-material/Undo";
 
 import AddLineIcon from '../../../static/addLine.svg';
 import RemoveLineIcon from '../../../static/removeLine.svg';
@@ -21,6 +20,7 @@ import RemoveLineIcon from '../../../static/removeLine.svg';
 import loadComponent from '../../../utils/loadComponents';
 import {CircularProgress, TextareaAutosize} from '@mui/material';
 
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 const Notification = loadComponent('Notifications', 'Notification');
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
@@ -113,6 +113,7 @@ class EditingMenu extends React.Component {
 
         this.selectedWord = "";
 
+        this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
         this.hoverWord = this.hoverWord.bind(this);
         this.showImageHighlight = this.showImageHighlight.bind(this)
@@ -801,22 +802,10 @@ class EditingMenu extends React.Component {
                         marginBottom: '0.5rem',
                         borderBottom: '1px solid black'
                     }}>
-                        <Button
-                            variant="contained"
-                            startIcon={<UndoIcon />}
-                            onClick={() => this.goBack()}
-                            sx={{
-                                border: '1px solid black',
-                                height: '2rem',
-                                textTransform: 'none',
-                                fontSize: '0.75rem',
-                                backgroundColor: '#ffffff',
-                                color: '#000000',
-                                ':hover': { bgcolor: '#ddd' }
-                            }}
-                        >
-                            Voltar
-                        </Button>
+                        <ReturnButton
+                            disabled={false}
+                            returnFunction={this.goBack}
+                        />
 
                         <Box>
                             {

@@ -119,6 +119,7 @@ function App() {
             this.fileSystem = React.createRef();
 
             this.setCurrentPath = this.setCurrentPath.bind(this);
+            this.returnToParentFolder = this.returnToParentFolder.bind(this);
             this.enterOcrMenu = this.enterOcrMenu.bind(this);
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
             this.enterEditingMenu = this.enterEditingMenu.bind(this);
@@ -186,6 +187,16 @@ function App() {
             this.setState({...fileSystemState, currentFileName: null},
                 () => { if (callback) callback(); }
             );
+        }
+
+        returnToParentFolder() {
+            if (this.state.currentFileName !== null) {
+                this.setState({currentFileName: null});
+            } else {
+                let current_list = this.state.currentFolderPathList;
+                current_list.pop();
+                this.setCurrentPath(current_list);
+            }
         }
 
         changeFolderFromPath(folder_name) {
@@ -412,6 +423,7 @@ function App() {
                                             layoutMenu={this.state.layoutMenu}
                                             editingMenu={this.state.editingMenu}
                                             setCurrentPath={this.setCurrentPath}
+                                            returnToParentFolder={this.returnToParentFolder}
                                             enterOcrMenu={this.enterOcrMenu}
                                             enterLayoutMenu={this.enterLayoutMenu}
                                             enterEditingMenu={this.enterEditingMenu}

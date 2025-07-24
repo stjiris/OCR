@@ -21,6 +21,7 @@ import LastPageIcon from "@mui/icons-material/LastPage";
 import { CircularProgress } from '@mui/material';
 
 import loadComponent from '../../../utils/loadComponents';
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
 const LayoutTable = loadComponent('LayoutMenu', 'LayoutTable');
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
@@ -77,6 +78,7 @@ class LayoutMenu extends React.Component {
         this.switchType = this.switchType.bind(this);
         this.reorderBoxes = this.reorderBoxes.bind(this);
 
+        this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
         this.zoomIn = this.zoomIn.bind(this);
         this.zoomOut = this.zoomOut.bind(this);
@@ -763,22 +765,10 @@ class LayoutMenu extends React.Component {
 					marginBottom: '0.5rem',
 					borderBottom: '1px solid black',
 				}}>
-					<Button
-						variant="contained"
-						startIcon={<UndoIcon />}
-						onClick={() => this.goBack()}
-						sx={{
-							border: '1px solid black',
-							height: '2rem',
-							textTransform: 'none',
-							fontSize: '0.75rem',
-							backgroundColor: '#ffffff',
-							color: '#000000',
-							':hover': { bgcolor: '#ddd' }
-						}}
-					>
-						Voltar
-					</Button>
+                    <ReturnButton
+                        disabled={false}
+                        returnFunction={this.goBack}
+                    />
 
 					<Box>
 						<Button
