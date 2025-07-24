@@ -23,6 +23,10 @@ const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 const CheckboxList = loadComponent("Form", "CheckboxList");
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
+                            ? `/${process.env.REACT_APP_BASENAME}/admin`
+                            : '/admin';
+
 const UPDATE_TIME = 30;  // period of fetching system info, in seconds
 
 const numberHoursRegex = /^[1-9][0-9]*$/;
@@ -307,7 +311,7 @@ const StorageManager = (props) => {
                         variant="contained"
                         onClick={() => {
                             axios.post(API_URL + "/account/logout")
-                                .then(() => window.location.href = '/admin');
+                                .then(() => window.location.href = ADMIN_HOME);
                         }}
                         className="menuButton"
                     >
