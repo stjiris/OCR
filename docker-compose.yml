@@ -37,6 +37,7 @@ services:
       dockerfile: ../compose/worker/Dockerfile
     image: ocr-worker
     env_file: "server/.env"
+    hostname: "${HOSTNAME:-$COMPUTERNAME}"  # set same hostname as host machine; try UNIX, else Windows
     environment:
       C_FORCE_ROOT: true
       PYTHONUNBUFFERED: true
