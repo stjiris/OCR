@@ -768,25 +768,13 @@ class EditingMenu extends React.Component {
     }
 
     render() {
+        const loaded = this.state.contents.length !== 0;
         const incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
         return (
-            this.state.contents.length === 0 ?
-                <Box sx={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    alignItems: "center"
-                }}>
-                    <CircularProgress color="success" />
-                </Box>
-            :
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
-                {
-                    <>
+                {<>
                     <Box sx={{
                         ml: '0.5rem',
                         mr: '0.5rem',
@@ -811,6 +799,7 @@ class EditingMenu extends React.Component {
                             {
                             this.state.addLineMode
                                 ? <Button
+                                    disabled={!loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -821,6 +810,7 @@ class EditingMenu extends React.Component {
                                 </Button>
 
                                 : <Button
+                                    disabled={!loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({addLineMode: true, removeLineMode: false})}}
@@ -833,6 +823,7 @@ class EditingMenu extends React.Component {
                             {
                             this.state.removeLineMode
                                 ? <Button
+                                    disabled={!loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -843,6 +834,7 @@ class EditingMenu extends React.Component {
                                 </Button>
 
                                 : <Button
+                                    disabled={!loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({removeLineMode: true, addLineMode: false})}}
@@ -855,6 +847,7 @@ class EditingMenu extends React.Component {
                             {
                             this.state.wordsMode
                                 ? <Button
+                                    disabled={!loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -871,6 +864,7 @@ class EditingMenu extends React.Component {
                                     }
                                 </Button>
                                 : <Button
+                                    disabled={!loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({wordsMode: true})}}
@@ -888,6 +882,7 @@ class EditingMenu extends React.Component {
                             }
 
                             <Button
+                                disabled={!loaded}
                                 color="success"
                                 variant="contained"
                                 className="menuFunctionButton"
@@ -898,6 +893,7 @@ class EditingMenu extends React.Component {
                             </Button>
 
                             <Button
+                                disabled={!loaded}
                                 variant="contained"
                                 color="success"
                                 className="menuFunctionButton noMarginRight"
@@ -909,6 +905,9 @@ class EditingMenu extends React.Component {
                         </Box>
                     </Box>
 
+                    {
+                    loaded
+                    ? <>
                     <Box sx={{
                         display: "flex",
                         flexDirection: "row",
@@ -1215,9 +1214,21 @@ class EditingMenu extends React.Component {
                                 </Box>
                             </Box>
                         </Box>
-
                     </Box>
                     </>
+
+                    :<Box sx={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "row",
+                            justifyContent: "center",
+                            alignItems: "center"
+                    }}>
+                        <CircularProgress color="success" />
+                    </Box>
+                    }
+                </>
                 }
             </Box>
         )
