@@ -4,6 +4,22 @@ body {
   font-family: 'Noto Sans', 'Arial', sans-serif;
 }
 
+.toolbar {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: #fff;
+    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid black;
+}
+
 .MuiBox-root .pathElement {
     margin: 0;
     padding: 0 10px 0 10px;
@@ -210,41 +226,13 @@ body {
     text-align: center;
 }
 
-.page-div {
-  margin-top: 0.5rem;
-  text-align: center;
-}
-
-.footer-div {
-  margin-top: 0.5rem;
-  text-align: center;
-}
-
-.loading-wheel {
-  display: none;
-}
-
 span {
   font-size: 1rem;
   white-space: pre-line;
 }
 
-.no-file {
-  margin-left: 1rem;
-}
-
 .link:hover {
   cursor: pointer;
-}
-
-.modal-image {
-  max-width: 90vw;
-  max-height: 90vh;
-  transition: transform 0.5s;
-}
-
-.modal-image:hover {
-  transform: scale(1.5);
 }
 
 img:hover {
@@ -255,12 +243,4 @@ img:hover {
   font-family: 'Cinzel', serif;
   font-weight: 500;
   margin: 0px;
-}
-
-.editorSelector {
-  border: 1px solid black;
-  border-bottom: none;
-  border-top-left-radius: 7px;
-  border-top-right-radius: 7px;
-  cursor: pointer;
 }

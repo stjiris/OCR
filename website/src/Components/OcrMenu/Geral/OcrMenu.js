@@ -5,7 +5,6 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import TextField from "@mui/material/TextField";
-import UndoIcon from "@mui/icons-material/Undo";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import RotateLeft from "@mui/icons-material/RotateLeft";
 import SaveIcon from "@mui/icons-material/Save";
@@ -358,21 +357,7 @@ class OcrMenu extends React.Component {
             <Notification message={""} severity={"error"} ref={this.errorNot}/>
             <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
 
-            <Box sx={{
-                ml: '0.5rem',
-                mr: '0.5rem',
-                display: 'flex',
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'space-between',
-                position: 'sticky',
-                top: 0,
-                zIndex: 100,
-                backgroundColor: '#fff',
-                paddingBottom: '1rem',
-                marginBottom: '0.5rem',
-                borderBottom: '1px solid black',
-            }}>
+            <Box className="toolbar">
                 <ReturnButton
                     disabled={false}
                     returnFunction={this.goBack}

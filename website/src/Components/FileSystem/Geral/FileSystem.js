@@ -1221,21 +1221,7 @@ class FileExplorer extends React.Component {
                                    closeEditingMenu={this.closeEditingMenu}/>
                     :
                     <>
-                    <Box sx={{
-                        ml: '0.5rem',
-                        mr: '0.5rem',
-                        display: "flex",
-                        flexDirection: "row",
-                        flexWrap: 'wrap',
-                        justifyContent: 'space-between',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 100,
-                        backgroundColor: '#fff',
-                        paddingBottom: '1rem',
-                        marginBottom: '0.5rem',
-                        borderBottom: '1px solid black'
-                    }}>
+                    <Box className="toolbar">
                         <ReturnButton
                             disabled={this.props.current_folder === ""}
                             returnFunction={this.props.returnToParentFolder}

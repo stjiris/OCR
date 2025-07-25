@@ -749,21 +749,7 @@ class LayoutMenu extends React.Component {
 			<>
 				<Notification message={""} severity={"success"} ref={this.successNot} />
 				<ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
-				<Box sx={{
-					ml: '0.5rem',
-					mr: '0.5rem',
-					display: 'flex',
-					flexDirection: 'row',
-					flexWrap: 'wrap',
-					justifyContent: 'space-between',
-					position: 'sticky',
-					top: 0,
-					zIndex: 100,
-					backgroundColor: '#fff',
-					paddingBottom: '1rem',
-					marginBottom: '0.5rem',
-					borderBottom: '1px solid black',
-				}}>
+                <Box className="toolbar">
                     <Box className="noMarginRight" sx={{display: "flex"}}>
                         <ReturnButton
                             disabled={false}
