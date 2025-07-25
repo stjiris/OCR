@@ -38,6 +38,7 @@ const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 const LoginPage = loadComponent('Admin', 'LoginPage');
 const AdminDashboard = loadComponent('Admin', 'Dashboard');
 const StorageManager = loadComponent('Admin', 'StorageManager');
+const ConfigManager = loadComponent('Admin', 'ConfigManager');
 const Footer = loadComponent('Footer', 'Footer');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
@@ -453,6 +454,7 @@ function App() {
                     <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
                         <Route exact path="/admin" element={<AdminDashboard />} />
                         <Route exact path="/admin/storage" element={<StorageManager />} />
+                        <Route exact path="/admin/config" element={<ConfigManager />} />
                     </Route>
                     <Route exact path="/admin/login" element={<LoginPage isAuthenticated={isAuthenticated} setLoggedIn={login}/>} />
                 </Routes>

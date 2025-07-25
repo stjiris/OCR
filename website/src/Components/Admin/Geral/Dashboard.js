@@ -99,9 +99,9 @@ const Dashboard = (props) => {
                 </Button>
 
                 <Button
-                    disabled
                     variant="contained"
                     className="adminMenuButton"
+                    onClick={() => navigate('/admin/config')}
                 >
                     Configurar Predefinições OCR
                 </Button>

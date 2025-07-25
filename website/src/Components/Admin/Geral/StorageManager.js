@@ -297,7 +297,7 @@ const StorageManager = (props) => {
                     </Box>
                 </Box>
 
-                <Typography id="modal-modal-title" variant="h4" component="h2">
+                <Typography variant="h4" component="h2">
                     Gerir Armazenamento
                 </Typography>
 
