@@ -151,7 +151,7 @@ function App() {
 
         createPrivateSession() {
             return axios.get(API_URL + '/create-private-session')
-            .then(({data}) => {return data["sessionId"]});
+            .then(({data}) => {return data["session_id"]});
         }
 
         setCurrentPath(new_path_list, isDocument=false) {

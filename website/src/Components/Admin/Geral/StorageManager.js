@@ -165,7 +165,7 @@ const StorageManager = (props) => {
     const deletePrivateSession = () => {
         axios.post(API_URL + "/admin/delete-private-session",
             {
-                "sessionId": deleteSessionId
+                "session_id": deleteSessionId
             },
             {
                 headers: {

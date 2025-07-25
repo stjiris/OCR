@@ -1066,16 +1066,16 @@ def create_private_session():
             ensure_ascii=False,
         )
 
-    return {"success": True, "sessionId": session_id}
+    return {"success": True, "session_id": session_id}
 
 
 @app.route("/validate-private-session", methods=["POST"])
 def validate_private_session():
     data = request.json
-    if "sessionId" not in data:
-        return bad_request("Missing parameter 'sessionId'")
+    if "session_id" not in data:
+        return bad_request("Missing parameter 'session_id'")
 
-    session_id = data["sessionId"]
+    session_id = data["session_id"]
 
     if session_id in private_sessions:
         response = {"success": True, "valid": True}
@@ -1342,9 +1342,9 @@ def set_max_private_session_age():
 @roles_required("Admin")
 def delete_private_session():
     data = request.json
-    if "sessionId" not in data:
-        return bad_request("Missing parameter 'sessionId'")
-    session_id = data["sessionId"]
+    if "session_id" not in data:
+        return bad_request("Missing parameter 'session_id'")
+    session_id = data["session_id"]
 
     session_path = safe_join(PRIVATE_PATH, session_id)
     if session_path is None:

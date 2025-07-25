@@ -450,7 +450,7 @@ class FileExplorer extends React.Component {
         })
         .then(response => {return response.json()})
         .then(data => {
-            var sessionId = data["sessionId"];
+            var sessionId = data["session_id"];
             if (window.location.href.endsWith('/')) {
                 window.location.href = window.location.href + `${sessionId}`;
             } else {
