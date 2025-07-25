@@ -5,6 +5,7 @@ import shutil
 import string
 from datetime import timedelta
 from http import HTTPStatus
+from json import JSONDecodeError
 from threading import Lock
 from threading import Thread
 
@@ -67,6 +68,8 @@ from werkzeug.utils import safe_join
 # from src.utils.system import get_logs
 
 load_dotenv()
+
+DEFAULT_CONFIG_FILE = os.environ.get("DEFAULT_CONFIG_FILE", "config_files/default.json")
 
 APP_BASENAME = os.environ.get("APP_BASENAME", "")
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
@@ -708,6 +711,20 @@ def upload_file():
             return {"success": True, "finished": True}
 
     return {"success": True, "finished": False}
+
+
+@app.route("/get-default-config", methods=["GET"])
+def get_default_ocr_config():
+    """
+    Returns the current default OCR configuration.
+    """
+    try:
+        with open(DEFAULT_CONFIG_FILE) as f:
+            return json.load(f)
+    except OSError:
+        abort(HTTPStatus.NOT_FOUND)
+    except JSONDecodeError:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/save-config", methods=["POST"])
