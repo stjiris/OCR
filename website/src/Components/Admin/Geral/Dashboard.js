@@ -4,8 +4,8 @@ import axios from "axios";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 
-import footerBanner from "../../../static/footerBanner.png";
-// import loadComponent from "../../../utils/loadComponents";
+import loadComponent from "../../../utils/loadComponents";
+const Footer = loadComponent('Footer', 'Footer');
 // const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 // const LogsMenu = loadComponent('Form', 'LogsMenu');
 // const Notification = loadComponent('Notifications', 'Notification');
@@ -117,11 +117,7 @@ const Dashboard = (props) => {
                 </Link>
             </Box>
 
-            <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
-                <a href={footerBanner} target='_blank' rel="noreferrer">
-                    <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
-                </a>
-            </Box>
+            <Footer />
         </Box>
     );
 }

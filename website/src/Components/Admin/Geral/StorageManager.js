@@ -14,13 +14,13 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 
-import footerBanner from "../../../static/footerBanner.png";
 import loadComponent from "../../../utils/loadComponents";
 const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const Notification = loadComponent('Notifications', 'Notification');
 const ConfirmActionPopup = loadComponent('Form', 'ConfirmActionPopup');
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 const CheckboxList = loadComponent("Form", "CheckboxList");
+const Footer = loadComponent('Footer', 'Footer');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
@@ -582,11 +582,7 @@ const StorageManager = (props) => {
                 </Box>
             </Box>
 
-            <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
-                <a href={footerBanner} target='_blank' rel="noreferrer">
-                    <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
-                </a>
-            </Box>
+            <Footer />
         </Box>
     );
 }
