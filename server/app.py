@@ -5,7 +5,6 @@ import shutil
 import string
 from datetime import timedelta
 from http import HTTPStatus
-from json import JSONDecodeError
 from threading import Lock
 from threading import Thread
 
@@ -23,6 +22,7 @@ from flask import jsonify
 from flask import request
 from flask import Response
 from flask import send_file
+from flask import send_from_directory
 from flask_cors import CORS
 from flask_login import current_user
 from flask_mailman import Mail
@@ -52,13 +52,12 @@ from src.utils.file import get_file_extension
 from src.utils.file import get_file_layouts
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
-from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
 from src.utils.file import PRIVATE_PATH
 from src.utils.file import save_file_layouts
 from src.utils.file import TEMP_PATH
-from src.utils.file import update_data
+from src.utils.file import update_json_file
 from src.utils.system import get_free_space
 from src.utils.system import get_private_sessions
 from src.utils.system import get_size_private_sessions
@@ -69,7 +68,8 @@ from werkzeug.utils import safe_join
 
 load_dotenv()
 
-DEFAULT_CONFIG_FILE = os.environ.get("DEFAULT_CONFIG_FILE", "config_files/default.json")
+DEFAULT_CONFIG_FILE = os.environ.get("DEFAULT_CONFIG_FILE", "_configs/default.json")
+CONFIG_FILES_LOCATION = os.environ.get("CONFIG_FILES_LOCATION", "_configs")
 
 APP_BASENAME = os.environ.get("APP_BASENAME", "")
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
@@ -380,7 +380,7 @@ def request_entities():
         "complete": False,
     }
 
-    update_data(f"{path}/_data.json", data)
+    update_json_file(f"{path}/_data.json", data)
 
     celery.send_task("request_ner", kwargs={"data_folder": path})
     # Thread(target=request_ner, args=(path,)).start()
@@ -520,7 +520,7 @@ def set_upload_stuck():
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
     data["upload_stuck"] = True
-    update_data(f"{path}/_data.json", data)
+    update_json_file(f"{path}/_data.json", data)
 
     return {
         "success": True,
@@ -698,7 +698,7 @@ def upload_file():
 
         log.debug(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
 
-        update_data(f"{target_path}/_data.json", {"stored": stored})
+        update_json_file(f"{target_path}/_data.json", {"stored": stored})
 
         if chunks_saved == total_count:
             del lock_system[temp_filename]
@@ -713,18 +713,53 @@ def upload_file():
     return {"success": True, "finished": False}
 
 
-@app.route("/get-default-config", methods=["GET"])
+@app.route("/default-config", methods=["GET"])
 def get_default_ocr_config():
     """
     Returns the current default OCR configuration.
     """
+    return send_from_directory(CONFIG_FILES_LOCATION, "default.json")
+
+
+@app.route("/config-preset", methods=["GET"])
+def get_config_preset():
+    """
+    Returns the OCR configuration with the specified name.
+    """
+    data = request.values
+    if "name" not in data or data["name"] == "":
+        return bad_request("Missing 'name' argument")
+    log.info(f"{CONFIG_FILES_LOCATION}/{data["name"]}.json")
+
+    path_str = safe_join(
+        os.fspath(CONFIG_FILES_LOCATION), os.fspath(f'"{data["name"]}".json')
+    )
+    log.info(f"Path 1: {path_str} {os.path.isfile(path_str)}")
+
+    path_str = safe_join(
+        os.fspath(CONFIG_FILES_LOCATION), os.fspath(f"{data["name"]}.json")
+    )
+    log.info(f"Path 2: {path_str} {os.path.isfile(path_str)}")
+
+    return send_from_directory(CONFIG_FILES_LOCATION, f"{data["name"]}.json")
+
+
+@app.route("/presets-list", methods=["GET"])
+def get_presets_list():
+    """
+    Returns the names of existing configuration presets, excluding the default.
+    """
+    config_names = [
+        os.path.splitext(config.name)[0]
+        for config in os.scandir(CONFIG_FILES_LOCATION)
+        if config.is_file()
+    ]
     try:
-        with open(DEFAULT_CONFIG_FILE) as f:
-            return json.load(f)
-    except OSError:
-        abort(HTTPStatus.NOT_FOUND)
-    except JSONDecodeError:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR)
+        config_names.remove("default")
+    except ValueError:
+        log.error("Missing default.json in config files")
+    log.info(f"Config names: {config_names}")
+    return config_names
 
 
 @app.route("/save-config", methods=["POST"])
@@ -749,7 +784,7 @@ def configure_ocr():
         # TODO: accept and verify other strings as config file names
         return bad_request('Config must be dictionary or "default"')
 
-    update_data(data_path, data)
+    update_json_file(data_path, data)
 
     return {"success": True}
 
@@ -823,7 +858,7 @@ def perform_ocr():
                 "zip": {"complete": False},
             }
         )
-        update_data(f"{f}/_data.json", data)
+        update_json_file(f"{f}/_data.json", data)
 
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
@@ -892,7 +927,7 @@ def index_doc():
 
             es.add_document(doc_id, doc)
 
-        update_data(data_path, {"indexed": True})
+        update_json_file(data_path, {"indexed": True})
 
         return {
             "success": True,
@@ -935,7 +970,7 @@ def remove_index_doc():
             id = generate_uuid(file_path)
             es.delete_document(id)
 
-        update_data(data_path, {"indexed": False})
+        update_json_file(data_path, {"indexed": False})
 
         return {
             "success": True,
@@ -1359,6 +1394,73 @@ def delete_private_session():
         "message": "Apagado com sucesso",
         "private_sessions": get_size_private_sessions(),
     }
+
+
+@app.route("/admin/save-config", methods=["PUT"])
+@auth_required("token", "session")
+@roles_required("Admin")
+def save_ocr_config():
+    data = request.json
+    if "config_name" not in data or data["config_name"] == "":
+        return bad_request("Missing parameter 'config_name'")
+    if (
+        "config" not in data
+        or not isinstance(data["config"], dict)
+        or not data["config"]
+    ):  # not empty dict
+        return bad_request(
+            "Missing parameter 'config'. Must be a non-empty dictionary."
+        )
+    config_name = data["config_name"]
+    config = data["config"]
+
+    config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
+    if config_path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
+    # TODO: check validity of config
+    if not os.path.exists(config_path):
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+        return {"success": True, "message": "Configuração guardada."}
+    else:
+        return {
+            "success": False,
+            "message": f"A configuração '{config_name}' já existe.",
+        }
+
+
+@app.route("/admin/edit-config", methods=["PUT"])
+@auth_required("token", "session")
+@roles_required("Admin")
+def edit_ocr_config():
+    data = request.json
+    if "config_name" not in data or data["config_name"] == "":
+        return bad_request("Missing parameter 'config_name'")
+    if (
+        "config" not in data
+        or not isinstance(data["config"], dict)
+        or not data["config"]
+    ):  # not empty dict
+        return bad_request(
+            "Missing parameter 'config'. Must be a non-empty dictionary."
+        )
+    config_name = data["config_name"]
+    config = data["config"]
+
+    config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
+    if config_path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
+    # TODO: check validity of config
+    if os.path.exists(config_path):
+        update_json_file(config_path, config)
+        return {"success": True, "message": "Configuração atualizada."}
+    else:
+        return {
+            "success": False,
+            "message": f"A configuração '{config_name}' não existe.",
+        }
 
 
 @app.route("/admin/flower/", defaults={"fullpath": ""}, methods=["GET", "POST"])

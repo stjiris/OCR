@@ -516,11 +516,11 @@ def get_doc_len(file):
         return json.loads(text)["pages"]
 
 
-def update_data(file, data):
+def update_json_file(file, data):
     """
-    Update the data file
-    @param file: path to the data file
-    @param data: data to update
+    Update the JSON data contained in the file.
+    :param file: file to update
+    :param data: new or updated data
     """
 
     # TODO: ensure atomic operations to handle multiple users making changes to the same files/folders

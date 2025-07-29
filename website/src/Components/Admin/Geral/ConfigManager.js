@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 
+import Autocomplete from "@mui/material/Autocomplete";
 import FormControl from "@mui/material/FormControl";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
@@ -14,7 +15,7 @@ import RadioGroup from "@mui/material/RadioGroup";
 import TextField from "@mui/material/TextField";
 
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import RotateLeft from "@mui/icons-material/RotateLeft";
+import EditIcon from "@mui/icons-material/Edit";
 
 import {
     engineList,
@@ -48,9 +49,9 @@ const ConfigManager = (props) => {
     const navigate = useNavigate();
 
     const [defaultConfig, setDefaultConfig] = useState(_emptydict);
+    const [existingConfigNames, setExistingConfigNames] = useState(_emptylist);
 
-    const [isConfiguringPreset, setIsConfiguringPreset] = useState(false);
-    const [isEditingConfig, setIsEditingConfig] = useState(false);
+    const [isEditingExistingConfig, setIsEditingExistingConfig] = useState(false);
     const [configName, setConfigName] = useState(null);
     const [uncommittedChanges, setUncommittedChanges] = useState(false);
 
@@ -73,42 +74,38 @@ const ConfigManager = (props) => {
 
     const [confirmPopupOpened, setConfirmPopupOpened] = useState(false);
     const [confirmPopupMessage, setConfirmPopupMessage] = useState("");
-    const [confirmPopupSubmitCallback, setConfirmPopupSubmitCallback] = useState(null);
+    // const [confirmPopupSubmitCallback, setConfirmPopupSubmitCallback] = useState(null);
 
     const successNotifRef = useRef(null);
     const errorNotifRef = useRef(null);
     const confirmLeaveRef = useRef(null);
 
-    function getDefaultConfig() {
-        axios.get(API_URL + '/get-default-config')
+    function fetchDefaultConfig() {
+        axios.get(API_URL + '/default-config')
             .then(({ data }) => {
-                console.log(data)
                 setDefaultConfig(data);
+            });
+    }
+
+    function fetchExistingConfigNames() {
+        axios.get(API_URL + '/presets-list')
+            .then(({ data }) => {
+                data.unshift("default");  // add "default" as first config in list
+                setExistingConfigNames(data);
             });
     }
 
     // Fetch default configuration on open and in intervals
     useEffect(() => {
-        getDefaultConfig();
-        const interval = setInterval(getDefaultConfig, 1000 * UPDATE_TIME);
+        fetchDefaultConfig();
+        fetchExistingConfigNames();
+        const getDefaultConfigInterval = setInterval(fetchDefaultConfig, 1000 * UPDATE_TIME);
+        const getExistingConfigNamesInterval = setInterval(fetchExistingConfigNames, 1000 * UPDATE_TIME);
         return () => {
-            clearInterval(interval);
+            clearInterval(getDefaultConfigInterval);
+            clearInterval(getExistingConfigNamesInterval);
         }
     }, []);
-
-    // Set options from default when altering default config
-    useEffect(() => {
-        if (isConfiguringPreset) {
-            setLang(defaultConfig.lang);
-            setEngine(defaultConfig.engine);
-            setEngineMode(defaultConfig.engineMode);
-            setSegmentMode(defaultConfig.segmentMode);
-            setThresholdMethod(defaultConfig.thresholdMethod);
-            setOutputs(defaultConfig.outputs);
-            setDpiVal(defaultConfig.dpiVal ?? null);
-            setOtherParams(defaultConfig.otherParams ?? null);
-        }
-    }, [isConfiguringPreset])
 
     // Add and remove preventExit event listener
     useEffect(() => {
@@ -128,16 +125,6 @@ const ConfigManager = (props) => {
         }
     }, [uncommittedChanges])
 
-    function temp() {
-        successNotifRef.current.openNotif("Testing - a configuração seria guardada");
-    }
-
-    function closeConfirmationPopup() {
-        setConfirmPopupOpened(false);
-        setConfirmPopupMessage("");
-        setConfirmPopupSubmitCallback(null);
-    }
-
     function goBack() {
         if (uncommittedChanges) {
             confirmLeaveRef.current.toggleOpen();
@@ -151,6 +138,57 @@ const ConfigManager = (props) => {
         navigate('/admin');
     }
 
+    function toggleEditingExistingConfig() {
+        if (isEditingExistingConfig) {  // toggling off, clear config name
+            setConfigName(null);
+        } else {  // toggling on, clear all options
+            setConfigName(null);
+            setLang(_emptylist);
+            setEngine("");
+            setEngineMode(-1);
+            setSegmentMode(-1);
+            setThresholdMethod(-1);
+            setOutputs(_emptylist);
+            setDpiVal(null);
+            setOtherParams(null);
+            setUncommittedChanges(false);
+        }
+        setIsEditingExistingConfig(!isEditingExistingConfig);
+    }
+
+    function changeConfigName(value, fillExisting = false) {
+        if (value !== null) {
+            value = value.trimStart();
+        }
+        if (fillExisting) {
+            showExistingConfig(value);
+        } else {
+            setConfigName(value);
+            setUncommittedChanges(true);
+        }
+    }
+
+    /**
+     * Fill all fields with the values of the configuration with the given name
+     */
+    function showExistingConfig(name) {
+        if (name === "default") {
+            setConfigName(name);
+            setLang([...defaultConfig.lang]);
+            setEngine(defaultConfig.engine);
+            setEngineMode(Number(defaultConfig.engineMode));
+            setSegmentMode(Number(defaultConfig.segmentMode));
+            setThresholdMethod(Number(defaultConfig.thresholdMethod));
+            setOutputs([...defaultConfig.outputs]);
+            setDpiVal(defaultConfig.dpiVal ?? null);
+            setOtherParams(defaultConfig.otherParams ?? null);
+        } else {
+            setConfigName(name);
+            // TODO
+        }
+        setUncommittedChanges(false);
+    }
+
     function setLangList(checked) {
         setLang(checked);
         setUncommittedChanges(true);
@@ -162,7 +200,7 @@ const ConfigManager = (props) => {
     }
 
     function changeDpi(value) {
-        value = value.trim()
+        value = value.trim();
         if (!(/^[1-9][0-9]*$/.test(value))) {
             errorNotifRef.current.openNotif("O valor de DPI deve ser um número inteiro!");
         }
@@ -195,8 +233,74 @@ const ConfigManager = (props) => {
         setUncommittedChanges(true);
     }
 
-    const validLang = lang.every(chosenValue => langOptions.some(option => option.value === chosenValue));
-    const validOutputs = outputs.every(chosenValue => outputOptions.some(option => option.value === chosenValue));
+    function getConfig() {
+        const config = {
+            engine: engine,
+            lang: lang,
+            outputs: outputs,
+            engineMode: engineMode,
+            segmentMode: segmentMode,
+            thresholdMethod: thresholdMethod,
+        }
+        if (dpiVal !== null && dpiVal !== "") {
+            config.dpi = dpiVal;
+        }
+        if (otherParams !== null && otherParams !== "") {
+            config.otherParams = otherParams;
+        }
+        return config;
+    }
+
+    const saveConfig = () => {
+        const config = getConfig();
+        let endpoint = "save-config";
+        if (isEditingExistingConfig) {
+            endpoint = "edit-config";
+        }
+        axios.put(API_URL + `/admin/${endpoint}`,
+            {
+                config_name: configName,
+                config: config,
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error("Não foi possível concluir o pedido.");
+                }
+                if (response.data["success"]) {
+                    successNotifRef.current.openNotif(response.data["message"]);
+                    if (configName === "default") {
+                        setDefaultConfig(config);
+                    }
+                } else {
+                    throw new Error(response.data["message"])
+                }
+                closeConfirmationPopup();
+            })
+            .catch(err => {
+                errorNotifRef.current.openNotif(err.message);
+                closeConfirmationPopup();
+            });
+    }
+
+    function openSaveConfigPopup(e) {
+        e.stopPropagation();
+        setConfirmPopupOpened(true);
+        setConfirmPopupMessage(`Guardar a configuração "${configName}"`);
+    }
+
+    function closeConfirmationPopup() {
+        setConfirmPopupOpened(false);
+        setConfirmPopupMessage("");
+    }
+
+    const validConfigName = configName !== null && configName !== "";
+    const validLang = lang.length !== 0 && lang.every(chosenValue => langOptions.some(option => option.value === chosenValue));
+    const validOutputs = outputs.length !== 0 && outputs.every(chosenValue => outputOptions.some(option => option.value === chosenValue));
     const validEngine = engineOptions.some(option => option.value === engine);
     const validEngineMode = engineModeOptions.some(option => option.value === engineMode);
     const validSegmentMode = segmentModeOptions.some(option => option.value === segmentMode);
@@ -205,14 +309,15 @@ const ConfigManager = (props) => {
         isNaN(dpiVal)
         || (dpiVal !== null && dpiVal !== "" && !(/^[1-9][0-9]*$/.test(dpiVal)))
     );
-    console.log(`L  ${lang} ${validLang}`)
-    console.log(`O  ${outputs} ${validOutputs}`)
-    console.log(`E  ${engine} ${validEngine}`)
-    console.log(`EM ${engineMode} ${validEngineMode}`)
-    console.log(`S  ${segmentMode} ${validSegmentMode}`)
-    console.log(`T  ${thresholdMethod} ${validThresholdMethod}`)
-    console.log(`T  ${dpiVal} ${validDpiVal}`)
-    const valid = (validLang && validOutputs && validEngine && validEngineMode && validSegmentMode && validThresholdMethod && validDpiVal);
+    const validFields = (
+        validLang
+        && validOutputs
+        && validEngine
+        && validEngineMode
+        && validSegmentMode
+        && validThresholdMethod
+        && validDpiVal
+    );
     return (
         <Box className="App" sx={{height: '100vh'}}>
             <Notification message={""} severity={"success"} ref={successNotifRef}/>
@@ -222,8 +327,8 @@ const ConfigManager = (props) => {
             <ConfirmActionPopup
                 open={confirmPopupOpened}
                 message={confirmPopupMessage}
-                confirmButtonColor="error"
-                submitCallback={confirmPopupSubmitCallback}
+                confirmButtonColor="info"
+                submitCallback={saveConfig}
                 cancelCallback={closeConfirmationPopup}
             />
 
@@ -257,43 +362,90 @@ const ConfigManager = (props) => {
             </Box>
 
             <Box className="toolbar">
-                <Box>
+                <Box sx={{display: "flex", flexDirection: "row"}}>
                     <ReturnButton
                         disabled={false}
                         returnFunction={() => goBack()}
                     />
 
-                    <span style={{marginLeft: "1rem", fontSize: "1.5rem"}}>
-                        {isConfiguringPreset
-                            ? "A alterar configuração predefinida"
-                            : isEditingConfig
-                                ? `A alterar configuração <b>${configName}<b />>`
-                                : "A criar nova configuração"
-                        }
-                    </span>
+                    {isEditingExistingConfig
+                        ?  <span style={{marginLeft: "1rem", fontSize: "1.5rem", display: "flex", flexDirection: "row"}}>
+                            A alterar configuração
+                            &nbsp;
+                            <Autocomplete
+                                error={!validConfigName}
+                                value={configName}
+                                options={existingConfigNames}
+                                getOptionLabel={(option) => option}
+                                autoSelect
+                                onChange={(e, newValue) => changeConfigName(newValue, true)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        required
+                                        error={!validConfigName}
+                                        placeholder="nome"
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{
+                                            height: "2rem",
+                                            width: "14rem",
+                                            "& input:focus:invalid + fieldset": {borderColor: "red", borderWidth: 2}
+                                        }}
+                                    />
+                                )}
+                                slotProps={{
+                                    paper: {  // dropdown popup props
+                                        sx: {
+                                            width: 'auto',
+                                            maxHeight: '70%',
+                                        }
+                                    }
+                                }}
+                            />
+                        </span>
+                        : <span style={{marginLeft: "1rem", fontSize: "1.5rem"}}>
+                            A criar nova configuração:
+                            &nbsp;
+                            <TextField
+                                required
+                                placeholder="nome"
+                                error={!validConfigName}
+                                value={configName}
+                                onChange={(e) => changeConfigName(e.target.value)}
+                                variant='outlined'
+                                size="small"
+                                sx={{
+                                    height: "2rem",
+                                    width: "14rem",
+                                    "& input:focus:invalid + fieldset": {borderColor: "red", borderWidth: 2}
+                                }}
+                            />
+                        </span>
+                    }
                 </Box>
 
                 <Box>
                     <Button
                         variant="contained"
                         className="menuFunctionButton"
-                        color={isConfiguringPreset ? "error" : "primary"}
-                        startIcon={<RotateLeft />}
-                        onClick={() => setIsConfiguringPreset(!isConfiguringPreset)}
+                        color={isEditingExistingConfig ? "error" : "primary"}
+                        startIcon={<EditIcon />}
+                        onClick={() => toggleEditingExistingConfig()}
                     >
-                        {isConfiguringPreset
+                        {isEditingExistingConfig
                             ? "Cancelar"
-                            : "Alterar Configuração Predefinida"
+                            : "Alterar Configuração Existente"
                         }
                     </Button>
 
                     <Button
-                        disabled={!valid}
+                        disabled={!validFields || !validConfigName || !uncommittedChanges}
                         color="success"
                         variant="contained"
                         className="menuFunctionButton noMarginRight"
                         startIcon={<CheckRoundedIcon />}
-                        onClick={(e) => temp(e)}
+                        onClick={(e) => openSaveConfigPopup(e)}
                     >
                         Confirmar
                     </Button>

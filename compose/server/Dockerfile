@@ -43,6 +43,10 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 COPY --from=builder /app/ /app/
 
+# Copy NEW hardcoded configurations to the configs volume
+# Does not overwrite existing configurations, which may have been edited through the Admin tools
+COPY --from=builder /app/config_files/ /app/_configs/
+
 # Enable venv
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
