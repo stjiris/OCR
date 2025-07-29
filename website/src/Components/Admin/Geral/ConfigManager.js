@@ -189,6 +189,21 @@ const ConfigManager = (props) => {
         setUncommittedChanges(false);
     }
 
+    /**
+     * Fill empty fields with default values
+     */
+    function autoFillWithDefault() {
+        setLang(lang.length === 0 ? [...defaultConfig.lang] : lang);
+        setEngine(engine === "" ? defaultConfig.engine : engine);
+        setEngineMode(engineMode === -1 ? Number(defaultConfig.engineMode) : engineMode);
+        setSegmentMode(segmentMode === -1 ? Number(defaultConfig.segmentMode) : segmentMode);
+        setThresholdMethod(thresholdMethod === -1 ? Number(defaultConfig.thresholdMethod) : thresholdMethod);
+        setOutputs(outputs.length === 0 ? [...defaultConfig.outputs] : outputs);
+        setDpiVal(dpiVal === null ? (defaultConfig.dpiVal ?? null) : dpiVal);
+        setOtherParams(otherParams === null ? (defaultConfig.otherParams ?? null) : otherParams);
+        setUncommittedChanges(true);
+    }
+
     function setLangList(checked) {
         setLang(checked);
         setUncommittedChanges(true);
@@ -437,6 +452,15 @@ const ConfigManager = (props) => {
                             ? "Cancelar"
                             : "Alterar Configuração Existente"
                         }
+                    </Button>
+
+                    <Button
+                        disabled={validFields}
+                        variant="contained"
+                        className="menuFunctionButton"
+                        onClick={() => autoFillWithDefault()}
+                    >
+                        Preencher campos restantes
                     </Button>
 
                     <Button
