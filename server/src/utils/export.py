@@ -81,7 +81,7 @@ def export_imgs(path, force_recreate=False):
     if os.path.exists(filename) and not force_recreate:
         return filename
 
-    shutil.make_archive(f"{path}/_images", "zip", path, base_dir="_images")
+    shutil.make_archive(f"{path}/_export/_images", "zip", path, base_dir="images")
     return filename
 
 
