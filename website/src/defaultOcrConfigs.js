@@ -70,3 +70,14 @@ export const defaultConfig = {
     segmentMode: defaultSegmentationMode,
     thresholdMethod: defaultThresholding,
 }
+
+export const emptyConfig = {
+    lang: [],
+    outputs: [],
+    engine: "",
+    engineMode: -1,
+    segmentMode: -1,
+    thresholdMethod: -1,
+    dpiVal: null,
+    otherParams: null,
+}

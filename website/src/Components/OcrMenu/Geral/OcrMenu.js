@@ -16,6 +16,7 @@ import FormControl from "@mui/material/FormControl";
 
 import {
     defaultConfig,
+    emptyConfig,
     engineList,
     tesseractLangList,
     tesseractModeList,
@@ -25,6 +26,7 @@ import {
 } from "../../../defaultOcrConfigs";
 
 import loadComponent from '../../../utils/loadComponents';
+import CircularProgress from "@mui/material/CircularProgress";
 const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
 const Notification = loadComponent('Notifications', 'Notification');
@@ -33,15 +35,15 @@ const CheckboxList = loadComponent('Form', 'CheckboxList');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
-// TODO: always get the most updated default config from an API endpoint
 
 class OcrMenu extends React.Component {
     constructor(props) {
         super(props);
         const usingDefault = this.props.customConfig == null;  // null or undefined
-        const initialConfig = Object.assign({...defaultConfig}, this.props.customConfig);
         this.state = {
-            ...initialConfig,
+            ...emptyConfig,
+            loaded: false,
+            defaultConfig: defaultConfig,
             // lists of options in state, to allow changing them dynamically depending on other choices
             // e.g. when choosing an OCR engine that has different parameter values
             engineOptions: engineList,
@@ -78,12 +80,45 @@ class OcrMenu extends React.Component {
         event.returnValue = '';
     }
 
+    fetchDefaultConfig() {
+        axios.get(API_URL + '/default-config')
+            .then(({ data }) => {
+                if (!this.state.loaded) {
+                    // entering config menu, set initial config
+                    const initialConfig = Object.assign({...data}, this.props.customConfig);
+                    this.setState({...initialConfig, defaultConfig: data, loaded: true});
+                } else {
+                    this.setState({defaultConfig: data});
+                }
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível obter a configuração predefinida mais atual");
+                if (!this.state.loaded) {
+                    // entering config, use hardcoded default for initial config
+                    const initialConfig = Object.assign({...defaultConfig}, this.props.customConfig);
+                    this.setState({...initialConfig, loaded: true});
+                }
+            });
+    }
+
+    componentDidMount() {
+        this.fetchDefaultConfig();
+        this.interval = setInterval(() => {
+            this.fetchDefaultConfig();
+        }, 120000);  // getting an updated default configuration for every 2 minutes on this page is already generous
+    }
+
     componentDidUpdate(prevProps, prevState, snapshot) {
         if (!prevState.uncommittedChanges && this.state.uncommittedChanges) {
             window.addEventListener('beforeunload', this.preventExit);
         } else if (prevState.uncommittedChanges && !this.state.uncommittedChanges) {
             window.removeEventListener('beforeunload', this.preventExit);
         }
+    }
+
+    componentWillUnmount() {
+        if (this.interval)
+            clearInterval(this.interval);
     }
 
     getConfig() {
@@ -107,7 +142,7 @@ class OcrMenu extends React.Component {
     restoreDefault() {
         if (this.state.usingDefault) return;
         this.setState({
-            ...defaultConfig,
+            ...this.state.defaultConfig,
             usingDefault: true,
             uncommittedChanges: true
         });
@@ -206,10 +241,20 @@ class OcrMenu extends React.Component {
             <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
 
             <Box className="toolbar">
-                <ReturnButton
-                    disabled={false}
-                    returnFunction={this.goBack}
-                />
+                <Box className="noMarginRight" sx={{display: "flex"}}>
+                    <ReturnButton
+                        disabled={false}
+                        returnFunction={this.goBack}
+                    />
+
+                    <Typography
+                        variant="h5"
+                        component="h2"
+                        sx={{ marginLeft: "1rem", textAlign: "center" }}
+                    >
+                        Configurar OCR {this.props.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
+                    </Typography>
+                </Box>
 
                 <Box>
                     <Button
@@ -244,18 +289,9 @@ class OcrMenu extends React.Component {
                 </Box>
             </Box>
 
-            <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                width: 'auto',
-                margin: '1rem',
-            }}>
-                <Typography variant="h5" component="h2" sx={{alignSelf: 'center'}}>
-                    Configurar OCR {this.props.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
-                </Typography>
-            </Box>
-
-            <Box sx={{
+            {
+            this.state.loaded
+            ? <Box sx={{
                 display: 'flex',
                 flexDirection: 'row',
                 justifyContent: 'space-evenly',
@@ -396,6 +432,18 @@ class OcrMenu extends React.Component {
                 </Box>
                 */}
             </Box>
+
+            :<Box sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center"
+            }}>
+                <CircularProgress color="success" />
+            </Box>
+            }
         </>
         );
     }

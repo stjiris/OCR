@@ -117,7 +117,7 @@ class LayoutMenu extends React.Component {
 		this.interval = setInterval(() => {
 			if (!this.state.segmentLoading) return;
             this.getLayouts();
-		}, 1000);
+		}, 5000);  // TODO: should be replaced with WebSocket to receive info when done
 	}
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -126,6 +126,11 @@ class LayoutMenu extends React.Component {
         } else if (prevState.uncommittedChanges && !this.state.uncommittedChanges) {
             window.removeEventListener('beforeunload', this.preventExit);
         }
+    }
+
+    componentWillUnmount() {
+        if (this.interval)
+            clearInterval(this.interval);
     }
 
     /*
@@ -830,7 +835,7 @@ class LayoutMenu extends React.Component {
 					}}>
 						<Box sx={{display: "flex", flexDirection: "row"}}>
 							{
-								this.state.contents.length === 0
+								!loaded
 									? null
 									: <LayoutImage ref={this.image}
                                                    segmentLoading={this.state.segmentLoading}

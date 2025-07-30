@@ -248,7 +248,7 @@ class FileExplorer extends React.Component {
     }
 
     createFetchInfoInterval() {
-        this.infoInterval = setInterval(this.fetchInfo, 1000 * UPDATE_TIME);
+        this.infoInterval = setInterval(this.fetchInfo, 1000 * UPDATE_TIME);  // TODO: replace with WebSockets
     }
 
     /**
@@ -1196,6 +1196,7 @@ class FileExplorer extends React.Component {
     render() {
         return (
             <>
+                <FullStorageMenu ref={this.storageMenu}/>
                 {
                     this.props.ocrMenu
                     ? <OcrMenu _private={this.props._private}
@@ -1254,7 +1255,6 @@ class FileExplorer extends React.Component {
                                                   createFile={this.createFile}/>
                             : null
                         }
-                        <FullStorageMenu ref={this.storageMenu}/>
 
                         {
                             this.generateTable()
