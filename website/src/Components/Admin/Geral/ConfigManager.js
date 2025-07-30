@@ -87,7 +87,26 @@ const ConfigManager = (props) => {
             });
     }
 
-    function fetchExistingConfigNames() {
+   function fetchConfigPreset(name) {
+       axios.get(API_URL + '/config-preset', {
+           params: {
+               name: name,
+           }
+       })
+           .then(({ data }) => {
+               setConfigName(name);
+               setLang([...data.lang]);
+               setEngine(data.engine);
+               setEngineMode(Number(data.engineMode));
+               setSegmentMode(Number(data.segmentMode));
+               setThresholdMethod(Number(data.thresholdMethod));
+               setOutputs([...data.outputs]);
+               setDpiVal(data.dpiVal ?? null);
+               setOtherParams(data.otherParams ?? null);
+           });
+    }
+
+    function fetchExistingPresetNames() {
         axios.get(API_URL + '/presets-list')
             .then(({ data }) => {
                 data.unshift("default");  // add "default" as first config in list
@@ -98,9 +117,9 @@ const ConfigManager = (props) => {
     // Fetch default configuration on open and in intervals
     useEffect(() => {
         fetchDefaultConfig();
-        fetchExistingConfigNames();
+        fetchExistingPresetNames();
         const getDefaultConfigInterval = setInterval(fetchDefaultConfig, 1000 * UPDATE_TIME);
-        const getExistingConfigNamesInterval = setInterval(fetchExistingConfigNames, 1000 * UPDATE_TIME);
+        const getExistingConfigNamesInterval = setInterval(fetchExistingPresetNames, 1000 * UPDATE_TIME);
         return () => {
             clearInterval(getDefaultConfigInterval);
             clearInterval(getExistingConfigNamesInterval);
@@ -183,8 +202,7 @@ const ConfigManager = (props) => {
             setDpiVal(defaultConfig.dpiVal ?? null);
             setOtherParams(defaultConfig.otherParams ?? null);
         } else {
-            setConfigName(name);
-            // TODO
+            fetchConfigPreset(name);
         }
         setUncommittedChanges(false);
     }
