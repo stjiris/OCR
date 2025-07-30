@@ -254,7 +254,6 @@ def get_file_system():
         path, filesystem_path, private_session, is_private = format_filesystem_path(
             request.values
         )
-        log.debug(f"Getting info of {filesystem_path}, priv session {private_session}")
         filesystem = get_filesystem(filesystem_path, private_session, is_private)
         filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
         return filesystem
@@ -282,8 +281,6 @@ def get_info():
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
-    log.debug(data)
-
     if (
         "path" not in data  # empty path is valid: new top-level public session folder
         or "folder" not in data
@@ -696,8 +693,6 @@ def upload_file():
         chunks_saved = len(os.listdir(f"{temp_file_path}"))
         stored = round(100 * chunks_saved / total_count, 2)
 
-        log.debug(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
-
         update_json_file(f"{target_path}/_data.json", {"stored": stored})
 
         if chunks_saved == total_count:
@@ -729,18 +724,6 @@ def get_config_preset():
     data = request.values
     if "name" not in data or data["name"] == "":
         return bad_request("Missing 'name' argument")
-    log.info(f"{CONFIG_FILES_LOCATION}/{data["name"]}.json")
-
-    path_str = safe_join(
-        os.fspath(CONFIG_FILES_LOCATION), os.fspath(f'"{data["name"]}".json')
-    )
-    log.info(f"Path 1: {path_str} {os.path.isfile(path_str)}")
-
-    path_str = safe_join(
-        os.fspath(CONFIG_FILES_LOCATION), os.fspath(f"{data["name"]}.json")
-    )
-    log.info(f"Path 2: {path_str} {os.path.isfile(path_str)}")
-
     return send_from_directory(CONFIG_FILES_LOCATION, f"{data["name"]}.json")
 
 
@@ -758,7 +741,6 @@ def get_presets_list():
         config_names.remove("default")
     except ValueError:
         log.error("Missing default.json in config files")
-    log.info(f"Config names: {config_names}")
     return config_names
 
 
@@ -1260,7 +1242,6 @@ def cancel_cleanup():
 @roles_required("Admin")
 def schedule_private_session_cleanup():
     data = request.json
-    log.debug(data)
     if "type" not in data:
         return bad_request("Missing parameter 'type'")
 
@@ -1329,13 +1310,11 @@ def perform_private_session_cleanup():
 def get_scheduled_tasks():
     config = RedBeatConfig(celery)
     schedule_key = config.schedule_key
-    log.debug(f"Schedule key: {schedule_key}")
     redis = redbeat.schedulers.get_redis(celery)
     elements = redis.zrange(schedule_key, 0, -1, withscores=False)
     entries = {
         el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements
     }
-    log.debug(entries)
     return f"{entries}"
 
 
@@ -1415,7 +1394,7 @@ def save_ocr_config():
 
     config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
     if config_path is None:
-        abort(HTTPStatus.NOT_FOUND)
+        return bad_request(f"Invalid config name: {config_name}")
 
     # TODO: check validity of config
     if not os.path.exists(config_path):
@@ -1474,9 +1453,9 @@ def proxy_flower(fullpath):
     :param fullpath: rest of the path to the Flower API
     :return: response from Flower
     """
-    log.debug(
-        f'Requesting to flower {request.base_url.replace(request.host_url, f"http://flower:5050/{APP_BASENAME}/")}'
-    )
+    # log.debug(
+    #     f'Requesting to flower {request.base_url.replace(request.host_url, f"http://flower:5050/{APP_BASENAME}/")}'
+    # )
     res = requests.request(
         method=request.method,
         url=request.base_url.replace(
