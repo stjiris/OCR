@@ -121,6 +121,7 @@ function App() {
             this.setCurrentPath = this.setCurrentPath.bind(this);
             this.returnToParentFolder = this.returnToParentFolder.bind(this);
             this.enterOcrMenu = this.enterOcrMenu.bind(this);
+            this.setCurrentCustomConfig = this.setCurrentCustomConfig.bind(this);
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
             this.enterEditingMenu = this.enterEditingMenu.bind(this);
             this.exitMenus = this.exitMenus.bind(this);
@@ -174,6 +175,13 @@ function App() {
                 ocrTargetIsSinglePage: ocrTargetIsSinglePage,
                 customConfig: customConfig,
             });
+        }
+
+        /*
+        Used to pass down an updated customConfig prop without fetching all info from the server
+         */
+        setCurrentCustomConfig(customConfig) {
+            this.setState({customConfig: customConfig});
         }
 
         enterLayoutMenu(filename) {
@@ -428,6 +436,7 @@ function App() {
                                             setCurrentPath={this.setCurrentPath}
                                             returnToParentFolder={this.returnToParentFolder}
                                             enterOcrMenu={this.enterOcrMenu}
+                                            setCurrentCustomConfig={this.setCurrentCustomConfig}
                                             enterLayoutMenu={this.enterLayoutMenu}
                                             enterEditingMenu={this.enterEditingMenu}
                                             exitMenus={this.exitMenus}/>

@@ -191,7 +191,7 @@ class OcrMenu extends React.Component {
             ...this.state.defaultConfig,
             presetName: null,
             usingDefault: true,
-            uncommittedChanges: true
+            uncommittedChanges: this.props.customConfig != null,  // no changes if was already default
         });
     }
 
@@ -268,6 +268,8 @@ class OcrMenu extends React.Component {
 
                     if (exit) {
                         this.leave();
+                    } else {
+                        this.props.setCurrentCustomConfig(config);
                     }
                 } else {
                     this.errorNot.current.openNotif("Erro inesperado ao guardar a configuração de OCR.")
@@ -343,7 +345,7 @@ class OcrMenu extends React.Component {
                         Valores Por Defeito
                     </Button>
                     <Button
-                        disabled={!valid}
+                        disabled={!valid || !this.state.uncommittedChanges}
                         color="success"
                         variant="contained"
                         className="menuFunctionButton"
@@ -353,7 +355,7 @@ class OcrMenu extends React.Component {
                         Guardar
                     </Button>
                     <Button
-                        disabled={!valid}
+                        disabled={!valid || !this.state.uncommittedChanges}
                         variant="contained"
                         color="success"
                         className="menuFunctionButton noMarginRight"
@@ -534,6 +536,7 @@ OcrMenu.defaultProps = {
     isSinglePage: false,
     customConfig: null,
     // functions:
+    setCurrentCustomConfig: null,
     closeOCRMenu: null,
     showStorageForm: null,
 }

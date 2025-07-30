@@ -1206,6 +1206,7 @@ class FileExplorer extends React.Component {
                                isFolder={this.props.isFolder}
                                isSinglePage={this.props.ocrTargetIsSinglePage}
                                customConfig={this.props.customConfig}
+                               setCurrentCustomConfig={this.props.setCurrentCustomConfig}
                                closeOCRMenu={this.closeOCRMenu}
                                showStorageForm={this.showStorageForm}/>
                     : this.props.layoutMenu
@@ -1284,6 +1285,7 @@ FileExplorer.defaultProps = {
     setCurrentPath: null,
     returnToParentFolder: null,
     enterOcrMenu: null,
+    setCurrentCustomConfig: null,
     enterLayoutMenu: null,
     enterEditingMenu: null,
     exitMenus: null
