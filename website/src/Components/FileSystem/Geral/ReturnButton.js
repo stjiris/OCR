@@ -4,7 +4,7 @@ import Button from "@mui/material/Button";
 import UndoIcon from "@mui/icons-material/Undo";
 
 
-const ReturnButton = ({ disabled = false, returnFunction = null }) => {
+const ReturnButton = ({ disabled = false, returnFunction = null, sx = {} }) => {
     return (
         <Button
             disabled={disabled}
@@ -12,11 +12,11 @@ const ReturnButton = ({ disabled = false, returnFunction = null }) => {
             startIcon={<UndoIcon />}
             onClick={() => returnFunction()}
             className="menuFunctionButton noMarginRight"
-            sx={{
+            sx={Object.assign({
                 backgroundColor: '#ffffff',
                 color: '#000000',
-                ':hover': { bgcolor: '#ddd' }
-            }}
+                ':hover': { bgcolor: '#ddd' },
+            }, sx)}
         >
             Voltar
         </Button>

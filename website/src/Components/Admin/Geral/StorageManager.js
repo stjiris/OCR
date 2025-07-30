@@ -14,13 +14,13 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 
-import footerBanner from "../../../static/footerBanner.png";
 import loadComponent from "../../../utils/loadComponents";
 const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const Notification = loadComponent('Notifications', 'Notification');
 const ConfirmActionPopup = loadComponent('Form', 'ConfirmActionPopup');
 const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
 const CheckboxList = loadComponent("Form", "CheckboxList");
+const Footer = loadComponent('Footer', 'Footer');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
@@ -202,7 +202,7 @@ const StorageManager = (props) => {
     const deletePrivateSession = () => {
         axios.post(API_URL + "/admin/delete-private-session",
             {
-                "sessionId": deleteSessionId
+                "session_id": deleteSessionId
             },
             {
                 headers: {
@@ -334,7 +334,7 @@ const StorageManager = (props) => {
                     </Box>
                 </Box>
 
-                <Typography id="modal-modal-title" variant="h4" component="h2">
+                <Typography variant="h4" component="h2">
                     Gerir Armazenamento
                 </Typography>
 
@@ -357,21 +357,7 @@ const StorageManager = (props) => {
                 </Box>
             </Box>
 
-            <Box sx={{
-                ml: '0.5rem',
-                mr: '0.5rem',
-                display: 'flex',
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'space-between',
-                position: 'sticky',
-                top: 0,
-                zIndex: 100,
-                backgroundColor: '#fff',
-                paddingBottom: '1rem',
-                marginBottom: '0.5rem',
-                borderBottom: '1px solid black',
-            }}>
+            <Box className="toolbar">
                 <ReturnButton
                     disabled={false}
                     returnFunction={() => navigate('/admin')}
@@ -684,11 +670,7 @@ const StorageManager = (props) => {
                 </Box>
             </Box>
 
-            <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
-                <a href={footerBanner} target='_blank' rel="noreferrer">
-                    <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
-                </a>
-            </Box>
+            <Footer />
         </Box>
     );
 }

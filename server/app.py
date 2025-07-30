@@ -59,7 +59,7 @@ from src.utils.file import json_to_text
 from src.utils.file import PRIVATE_PATH
 from src.utils.file import save_file_layouts
 from src.utils.file import TEMP_PATH
-from src.utils.file import update_data
+from src.utils.file import update_json_file
 from src.utils.system import get_free_space
 from src.utils.system import get_private_sessions
 from src.utils.system import get_size_api_files
@@ -70,6 +70,9 @@ from werkzeug.utils import safe_join
 # from src.utils.system import get_logs
 
 load_dotenv()
+
+DEFAULT_CONFIG_FILE = os.environ.get("DEFAULT_CONFIG_FILE", "_configs/default.json")
+CONFIG_FILES_LOCATION = os.environ.get("CONFIG_FILES_LOCATION", "_configs")
 
 APP_BASENAME = os.environ.get("APP_BASENAME", "")
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
@@ -282,7 +285,6 @@ def get_file_system():
         _, filesystem_path, private_session, is_private = format_filesystem_path(
             request.values
         )
-        log.debug(f"Getting info of {filesystem_path}, priv session {private_session}")
         filesystem = get_filesystem(filesystem_path, private_session, is_private)
         filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
         return filesystem
@@ -310,8 +312,6 @@ def get_info():
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
-    log.debug(data)
-
     if (
         "path" not in data  # empty path is valid: new top-level public session folder
         or "folder" not in data
@@ -408,7 +408,7 @@ def request_entities():
         "complete": False,
     }
 
-    update_data(f"{path}/_data.json", data)
+    update_json_file(f"{path}/_data.json", data)
 
     celery.send_task("request_ner", kwargs={"data_folder": path})
     # Thread(target=request_ner, args=(path,)).start()
@@ -548,7 +548,7 @@ def set_upload_stuck():
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
     data["upload_stuck"] = True
-    update_data(f"{path}/_data.json", data)
+    update_json_file(f"{path}/_data.json", data)
 
     return {
         "success": True,
@@ -724,9 +724,7 @@ def upload_file():
         chunks_saved = len(os.listdir(f"{temp_file_path}"))
         stored = round(100 * chunks_saved / total_count, 2)
 
-        log.debug(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
-
-        update_data(f"{target_path}/_data.json", {"stored": stored})
+        update_json_file(f"{target_path}/_data.json", {"stored": stored})
 
         if chunks_saved == total_count:
             del lock_system[temp_filename]
@@ -739,6 +737,42 @@ def upload_file():
             return {"success": True, "finished": True}
 
     return {"success": True, "finished": False}
+
+
+@app.route("/default-config", methods=["GET"])
+def get_default_ocr_config():
+    """
+    Returns the current default OCR configuration.
+    """
+    return send_from_directory(CONFIG_FILES_LOCATION, "default.json")
+
+
+@app.route("/config-preset", methods=["GET"])
+def get_config_preset():
+    """
+    Returns the OCR configuration with the specified name.
+    """
+    data = request.values
+    if "name" not in data or data["name"] == "":
+        return bad_request("Missing 'name' argument")
+    return send_from_directory(CONFIG_FILES_LOCATION, f"{data["name"]}.json")
+
+
+@app.route("/presets-list", methods=["GET"])
+def get_presets_list():
+    """
+    Returns the names of existing configuration presets, excluding the default.
+    """
+    config_names = [
+        os.path.splitext(config.name)[0]
+        for config in os.scandir(CONFIG_FILES_LOCATION)
+        if config.is_file()
+    ]
+    try:
+        config_names.remove("default")
+    except ValueError:
+        log.error("Missing default.json in config files")
+    return config_names
 
 
 @app.route("/save-config", methods=["POST"])
@@ -760,10 +794,9 @@ def configure_ocr():
     if isinstance(req_data["config"], dict) or req_data["config"] == "default":
         data["config"] = req_data["config"]
     else:
-        # TODO: accept and verify other strings as config file names
         return bad_request('Config must be dictionary or "default"')
 
-    update_data(data_path, data)
+    update_json_file(data_path, data)
 
     return {"success": True}
 
@@ -838,7 +871,7 @@ def request_ocr():
                 "zip": {"complete": False},
             }
         )
-        update_data(f"{f}/_data.json", data)
+        update_json_file(f"{f}/_data.json", data)
 
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
@@ -907,7 +940,7 @@ def index_doc():
 
             es.add_document(doc_id, doc)
 
-        update_data(data_path, {"indexed": True})
+        update_json_file(data_path, {"indexed": True})
 
         return {
             "success": True,
@@ -950,7 +983,7 @@ def remove_index_doc():
             id = generate_uuid(file_path)
             es.delete_document(id)
 
-        update_data(data_path, {"indexed": False})
+        update_json_file(data_path, {"indexed": False})
 
         return {
             "success": True,
@@ -1080,9 +1113,9 @@ def create_private_session():
             ensure_ascii=False,
         )
 
-    return {"success": True, "sessionId": session_id}
+    return {"success": True, "session_id": session_id}
 
-
+  
 #####################################
 # LAYOUTS
 #####################################
@@ -1336,7 +1369,6 @@ def cancel_cleanup():
 @roles_required("Admin")
 def schedule_private_session_cleanup():
     data = request.json
-    log.debug(data)
     if "type" not in data:
         return bad_request("Missing parameter 'type'")
 
@@ -1405,13 +1437,11 @@ def perform_private_session_cleanup():
 def get_scheduled_tasks():
     config = RedBeatConfig(celery)
     schedule_key = config.schedule_key
-    log.debug(f"Schedule key: {schedule_key}")
     redis = redbeat.schedulers.get_redis(celery)
     elements = redis.zrange(schedule_key, 0, -1, withscores=False)
     entries = {
         el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements
     }
-    log.debug(entries)
     return f"{entries}"
 
 
@@ -1452,9 +1482,9 @@ def set_max_private_session_age():
 @roles_required("Admin")
 def delete_private_session():
     data = request.json
-    if "sessionId" not in data:
-        return bad_request("Missing parameter 'sessionId'")
-    session_id = data["sessionId"]
+    if "session_id" not in data:
+        return bad_request("Missing parameter 'session_id'")
+    session_id = data["session_id"]
 
     session_path = safe_join(PRIVATE_PATH, session_id)
     if session_path is None:
@@ -1469,6 +1499,73 @@ def delete_private_session():
     }
 
 
+@app.route("/admin/save-config", methods=["PUT"])
+@auth_required("token", "session")
+@roles_required("Admin")
+def save_ocr_config():
+    data = request.json
+    if "config_name" not in data or data["config_name"] == "":
+        return bad_request("Missing parameter 'config_name'")
+    if (
+        "config" not in data
+        or not isinstance(data["config"], dict)
+        or not data["config"]
+    ):  # not empty dict
+        return bad_request(
+            "Missing parameter 'config'. Must be a non-empty dictionary."
+        )
+    config_name = data["config_name"]
+    config = data["config"]
+
+    config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
+    if config_path is None:
+        return bad_request(f"Invalid config name: {config_name}")
+
+    # TODO: check validity of config
+    if not os.path.exists(config_path):
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+        return {"success": True, "message": "Configuração guardada."}
+    else:
+        return {
+            "success": False,
+            "message": f"A configuração '{config_name}' já existe.",
+        }
+
+
+@app.route("/admin/edit-config", methods=["PUT"])
+@auth_required("token", "session")
+@roles_required("Admin")
+def edit_ocr_config():
+    data = request.json
+    if "config_name" not in data or data["config_name"] == "":
+        return bad_request("Missing parameter 'config_name'")
+    if (
+        "config" not in data
+        or not isinstance(data["config"], dict)
+        or not data["config"]
+    ):  # not empty dict
+        return bad_request(
+            "Missing parameter 'config'. Must be a non-empty dictionary."
+        )
+    config_name = data["config_name"]
+    config = data["config"]
+
+    config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
+    if config_path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
+    # TODO: check validity of config
+    if os.path.exists(config_path):
+        update_json_file(config_path, config)
+        return {"success": True, "message": "Configuração atualizada."}
+    else:
+        return {
+            "success": False,
+            "message": f"A configuração '{config_name}' não existe.",
+        }
+
+
 @app.route("/admin/flower/", defaults={"fullpath": ""}, methods=["GET", "POST"])
 @app.route("/admin/flower/<path:fullpath>", methods=["GET", "POST"])
 @auth_required("token", "session")
@@ -1481,9 +1578,9 @@ def proxy_flower(fullpath):
     :param fullpath: rest of the path to the Flower API
     :return: response from Flower
     """
-    log.debug(
-        f'Requesting to flower {request.base_url.replace(request.host_url, f"http://flower:5050/{APP_BASENAME}/")}'
-    )
+    # log.debug(
+    #     f'Requesting to flower {request.base_url.replace(request.host_url, f"http://flower:5050/{APP_BASENAME}/")}'
+    # )
     res = requests.request(
         method=request.method,
         url=request.base_url.replace(

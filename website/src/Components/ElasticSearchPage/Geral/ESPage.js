@@ -253,21 +253,7 @@ class ESPage extends React.Component {
 
     render() {
         return (<>
-            <Box sx={{
-                ml: '0.5rem',
-                mr: '0.5rem',
-                display: "flex",
-                flexDirection: "row",
-                flexWrap: 'wrap',
-                justifyContent: 'space-between',
-                position: 'sticky',
-                top: 0,
-                zIndex: 100,
-                backgroundColor: '#fff',
-                paddingBottom: '1rem',
-                marginBottom: '0.5rem',
-                borderBottom: '1px solid black'
-            }}>
+            <Box className="toolbar">
                 <ReturnButton
                     disabled={false}
                     returnFunction={this.props.closeSearchMenu}

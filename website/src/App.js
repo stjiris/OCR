@@ -7,9 +7,7 @@ import "dayjs/locale/pt";
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-
-import loadComponent from './utils/loadComponents';
-import footerBanner from './static/footerBanner.png';
+import Typography from "@mui/material/Typography";
 
 import LockIcon from '@mui/icons-material/Lock';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
@@ -33,13 +31,15 @@ import {
     searchMenuState,
     ocrMenuState
 } from "./states";
-import StorageManager from "./Components/Admin/Geral/StorageManager";
-import Typography from "@mui/material/Typography";
 
+import loadComponent from './utils/loadComponents';
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 const LoginPage = loadComponent('Admin', 'LoginPage');
 const AdminDashboard = loadComponent('Admin', 'Dashboard');
+const StorageManager = loadComponent('Admin', 'StorageManager');
+const ConfigManager = loadComponent('Admin', 'ConfigManager');
+const Footer = loadComponent('Footer', 'Footer');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
@@ -121,6 +121,7 @@ function App() {
             this.setCurrentPath = this.setCurrentPath.bind(this);
             this.returnToParentFolder = this.returnToParentFolder.bind(this);
             this.enterOcrMenu = this.enterOcrMenu.bind(this);
+            this.setCurrentCustomConfig = this.setCurrentCustomConfig.bind(this);
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
             this.enterEditingMenu = this.enterEditingMenu.bind(this);
             this.exitMenus = this.exitMenus.bind(this);
@@ -151,7 +152,7 @@ function App() {
 
         createPrivateSession() {
             return axios.get(API_URL + '/create-private-session')
-            .then(({data}) => {return data["sessionId"]});
+            .then(({data}) => {return data["session_id"]});
         }
 
         setCurrentPath(new_path_list, isDocument=false) {
@@ -174,6 +175,13 @@ function App() {
                 ocrTargetIsSinglePage: ocrTargetIsSinglePage,
                 customConfig: customConfig,
             });
+        }
+
+        /*
+        Used to pass down an updated customConfig prop without fetching all info from the server
+         */
+        setCurrentCustomConfig(customConfig) {
+            this.setState({customConfig: customConfig});
         }
 
         enterLayoutMenu(filename) {
@@ -428,6 +436,7 @@ function App() {
                                             setCurrentPath={this.setCurrentPath}
                                             returnToParentFolder={this.returnToParentFolder}
                                             enterOcrMenu={this.enterOcrMenu}
+                                            setCurrentCustomConfig={this.setCurrentCustomConfig}
                                             enterLayoutMenu={this.enterLayoutMenu}
                                             enterEditingMenu={this.enterEditingMenu}
                                             exitMenus={this.exitMenus}/>
@@ -437,11 +446,8 @@ function App() {
                                       closeSearchMenu={this.closeSearchMenu}/>
                         }
                     </Box>
-                    <Box sx={{display:"flex", alignItems:"center", marginTop: "auto", justifyContent:"center"}}>
-                        <a href={footerBanner} target='_blank' rel="noreferrer">
-                            <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
-                        </a>
-                    </Box>
+
+                    <Footer />
                 </Box>
             )
         }
@@ -457,6 +463,7 @@ function App() {
                     <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
                         <Route exact path="/admin" element={<AdminDashboard />} />
                         <Route exact path="/admin/storage" element={<StorageManager />} />
+                        <Route exact path="/admin/config" element={<ConfigManager />} />
                     </Route>
                     <Route exact path="/admin/login" element={<LoginPage isAuthenticated={isAuthenticated} setLoggedIn={login}/>} />
                 </Routes>

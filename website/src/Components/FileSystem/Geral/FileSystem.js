@@ -248,7 +248,7 @@ class FileExplorer extends React.Component {
     }
 
     createFetchInfoInterval() {
-        this.infoInterval = setInterval(this.fetchInfo, 1000 * UPDATE_TIME);
+        this.infoInterval = setInterval(this.fetchInfo, 1000 * UPDATE_TIME);  // TODO: replace with WebSockets
     }
 
     /**
@@ -450,7 +450,7 @@ class FileExplorer extends React.Component {
         })
         .then(response => {return response.json()})
         .then(data => {
-            var sessionId = data["sessionId"];
+            var sessionId = data["session_id"];
             if (window.location.href.endsWith('/')) {
                 window.location.href = window.location.href + `${sessionId}`;
             } else {
@@ -1196,6 +1196,7 @@ class FileExplorer extends React.Component {
     render() {
         return (
             <>
+                <FullStorageMenu ref={this.storageMenu}/>
                 {
                     this.props.ocrMenu
                     ? <OcrMenu _private={this.props._private}
@@ -1205,6 +1206,7 @@ class FileExplorer extends React.Component {
                                isFolder={this.props.isFolder}
                                isSinglePage={this.props.ocrTargetIsSinglePage}
                                customConfig={this.props.customConfig}
+                               setCurrentCustomConfig={this.props.setCurrentCustomConfig}
                                closeOCRMenu={this.closeOCRMenu}
                                showStorageForm={this.showStorageForm}/>
                     : this.props.layoutMenu
@@ -1221,21 +1223,7 @@ class FileExplorer extends React.Component {
                                    closeEditingMenu={this.closeEditingMenu}/>
                     :
                     <>
-                    <Box sx={{
-                        ml: '0.5rem',
-                        mr: '0.5rem',
-                        display: "flex",
-                        flexDirection: "row",
-                        flexWrap: 'wrap',
-                        justifyContent: 'space-between',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 100,
-                        backgroundColor: '#fff',
-                        paddingBottom: '1rem',
-                        marginBottom: '0.5rem',
-                        borderBottom: '1px solid black'
-                    }}>
+                    <Box className="toolbar">
                         <ReturnButton
                             disabled={this.props.current_folder === ""}
                             returnFunction={this.props.returnToParentFolder}
@@ -1268,7 +1256,6 @@ class FileExplorer extends React.Component {
                                                   createFile={this.createFile}/>
                             : null
                         }
-                        <FullStorageMenu ref={this.storageMenu}/>
 
                         {
                             this.generateTable()
@@ -1298,6 +1285,7 @@ FileExplorer.defaultProps = {
     setCurrentPath: null,
     returnToParentFolder: null,
     enterOcrMenu: null,
+    setCurrentCustomConfig: null,
     enterLayoutMenu: null,
     enterEditingMenu: null,
     exitMenus: null
