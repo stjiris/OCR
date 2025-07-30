@@ -152,7 +152,7 @@ class EditingMenu extends React.Component {
     getContents(page = 1) {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
-        fetch(API_URL + '/get-file?' + is_private + 'path=' + path + '&page=' + page, {
+        fetch(API_URL + '/get-text-content?' + is_private + 'path=' + path + '&page=' + page, {
             method: 'GET'
         })
         .then(response => {return response.json()})

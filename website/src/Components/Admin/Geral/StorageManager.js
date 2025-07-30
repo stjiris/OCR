@@ -48,6 +48,7 @@ const StorageManager = (props) => {
     const [freeSpace, setFreeSpace] = useState("");
     const [freeSpacePercent, setFreeSpacePercent] = useState("");
     const [privateSessions, setPrivateSessions] = useState([]);
+    const [apiFiles, setApiFiles] = useState([]);
     const [lastCleanup, setLastCleanup] = useState("nunca");
     const [maxPrivateSessionAge, setMaxPrivateSessionAge] = useState("5");
 
@@ -62,6 +63,7 @@ const StorageManager = (props) => {
     const [weekDays, setWeekDays] = useState([]);
 
     const [deleteSessionId, setDeleteSessionId] = useState(null);
+    const [deleteApiDocumentId, setDeleteApiDocumentId] = useState(null);
 
     const [confirmPopupOpened, setConfirmPopupOpened] = useState(false);
     const [confirmPopupMessage, setConfirmPopupMessage] = useState("");
@@ -76,6 +78,7 @@ const StorageManager = (props) => {
                 setFreeSpace(data["free_space"]);
                 setFreeSpacePercent(data["free_space_percentage"]);
                 setPrivateSessions(data["private_sessions"]);
+                setApiFiles(data["api_files"]);
                 setLastCleanup(data["last_cleanup"]);
                 setMaxPrivateSessionAge(data["max_age"]);
             });
@@ -92,14 +95,15 @@ const StorageManager = (props) => {
     // setup confirmation popup after deleteSessionId is set by openDeletePopup()
     useEffect(() => {
         if (deleteSessionId !== null) {
-            console.log(`Before opening: ${deleteSessionId}`);
             setConfirmPopupOpened(true);
             setConfirmPopupMessage(`Tem a certeza que quer apagar a sessão ${deleteSessionId}?`);
-            console.log(`Before callback: ${deleteSessionId}`);
             setConfirmPopupSubmitCallback(() => deletePrivateSession);  // set value as function deletePrivateSession
-            console.log(`After callback: ${deleteSessionId}`);
+        } else if (deleteApiDocumentId !== null) {
+            setConfirmPopupOpened(true);
+            setConfirmPopupMessage(`Tem a certeza que quer apagar o documento com ID ${deleteApiDocumentId}?`);
+            setConfirmPopupSubmitCallback(() => deleteApiDocument);  // set value as function deleteApiDocument
         }
-    }, [deleteSessionId])
+    }, [deleteSessionId, deleteApiDocumentId])
 
     function handleScheduleTypeChange(newType) {
         switch (newType) {
@@ -142,7 +146,13 @@ const StorageManager = (props) => {
         setWeekDays(choices);
     }
 
-    function openDeletePopup(e, privateSession) {
+    function openDeleteApiDocumentPopup(e, documentId) {
+        e.stopPropagation();
+        setDeleteApiDocumentId(documentId);
+        // confirm popup is set up in useEffect
+    }
+
+    function openDeleteSessionPopup(e, privateSession) {
         e.stopPropagation();
         setDeleteSessionId(privateSession);
         // confirm popup is set up in useEffect
@@ -157,9 +167,36 @@ const StorageManager = (props) => {
 
     function closeConfirmationPopup() {
         setDeleteSessionId(null);  // needed when closing or cancelling popup for deletion of single private session
+        setDeleteApiDocumentId(null);
         setConfirmPopupOpened(false);
         setConfirmPopupMessage("");
         setConfirmPopupSubmitCallback(null);
+    }
+
+    const deleteApiDocument = () => {
+        axios.post(API_URL + "/delete-results",
+            {
+                "doc_id": deleteApiDocumentId
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
+                }
+                if (!response.data["success"]) {
+                    throw new Error(response.data["message"]);
+                }
+                closeConfirmationPopup();
+                getStorageInfo();
+            })
+            .catch(err => {
+                errorNotif.current.openNotif(err.message);
+                closeConfirmationPopup();
+            });
     }
 
     const deletePrivateSession = () => {
@@ -362,10 +399,61 @@ const StorageManager = (props) => {
                 margin: 'auto',
                 /*overflow: 'scroll'*/
             }}>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '24%',
+                }}>
+                    <Box sx = {{
+                        display: "flex",
+                        flexDirection: "column",
+                        zIndex: "1",
+                        backgroundColor: "#fff",
+                        border: "1px solid black",
+                        borderRadius: '0.5rem',
+                        position: 'relative',
+                        top: "0.5rem",
+                        p: "0.5rem 1rem",
+                        width: "fit-content",
+                        height: "fit-content",
+                    }}>
+                        <span>Ficheiros de API</span>
+                        {
+                            Object.entries(apiFiles).map(([apiFile, info], index) => {
+                                return (
+                                    <Box
+                                        key={index}
+                                        sx={{
+                                            display: "flex",
+                                            flexDirection: "row",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            height: "2rem",
+                                            lineHeight: "2rem",
+                                            borderTop: index !== 0 ? "1px solid black" : "0px solid black",
+                                            cursor: "pointer"
+                                        }}
+                                    >
+                                        <code>{apiFile}</code>
+                                        <span>&nbsp;–&nbsp;{info["size"]}&nbsp;–&nbsp;{info["creation"]}</span>
+                                        <TooltipIcon
+                                            className="negActionButton"
+                                            message="Apagar"
+                                            clickFunction={(e) => openDeleteApiDocumentPopup(e, apiFile)}
+                                            icon={<DeleteForeverIcon />}
+                                        />
+                                    </Box>
+                                )
+                            })
+                        }
+                    </Box>
+                </Box>
 
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
+                    width: '22%',
+                    alignItems: 'center',
                 }}>
                     <Button
                         variant="contained"
@@ -414,7 +502,7 @@ const StorageManager = (props) => {
                                         <TooltipIcon
                                             className="negActionButton"
                                             message="Apagar"
-                                            clickFunction={(e) => openDeletePopup(e, privateSession)}
+                                            clickFunction={(e) => openDeleteSessionPopup(e, privateSession)}
                                             icon={<DeleteForeverIcon />}
                                         />
                                     </Box>
