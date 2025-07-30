@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import axios from "axios";
 import { useNavigate } from "react-router";
 
@@ -103,7 +103,7 @@ const StorageManager = (props) => {
             setConfirmPopupMessage(`Tem a certeza que quer apagar o documento com ID ${deleteApiDocumentId}?`);
             setConfirmPopupSubmitCallback(() => deleteApiDocument);  // set value as function deleteApiDocument
         }
-    }, [deleteSessionId, deleteApiDocumentId])
+    }, [deleteSessionId, deleteApiDocumentId, deletePrivateSession, deleteApiDocument])
 
     function handleScheduleTypeChange(newType) {
         switch (newType) {
@@ -173,7 +173,7 @@ const StorageManager = (props) => {
         setConfirmPopupSubmitCallback(null);
     }
 
-    const deleteApiDocument = () => {
+    const deleteApiDocument = useCallback(() => {
         axios.post(API_URL + "/delete-results",
             {
                 "doc_id": deleteApiDocumentId
@@ -197,9 +197,9 @@ const StorageManager = (props) => {
                 errorNotif.current.openNotif(err.message);
                 closeConfirmationPopup();
             });
-    }
+    }, [deleteApiDocumentId]);
 
-    const deletePrivateSession = () => {
+    const deletePrivateSession = useCallback(() => {
         axios.post(API_URL + "/admin/delete-private-session",
             {
                 "session_id": deleteSessionId
@@ -224,7 +224,7 @@ const StorageManager = (props) => {
                 errorNotif.current.openNotif(err.message);
                 closeConfirmationPopup();
             });
-    }
+    }, [deleteSessionId]);
 
     const runPrivateSessionCleanup = () => {
         axios.post(API_URL + "/admin/cleanup-sessions")
@@ -292,7 +292,7 @@ const StorageManager = (props) => {
 
     const valid = (scheduleType === "interval" && numberHoursRegex.test(everyHours))
                         || (scheduleType === "monthly" && monthTime !== null && dayRegex.test(monthDay))
-                        || (scheduleType === "weekly" && weekTime !== null && weekDays !== []);
+                        || (scheduleType === "weekly" && weekTime !== null && weekDays.length !== 0);
     return (
         <Box className="App" sx={{height: '100vh'}}>
             <Notification message={""} severity={"success"} ref={successNotif}/>

@@ -240,7 +240,7 @@ function App() {
                         }}
                     >
                         {
-                            Boolean(this.getPrivateSession())
+                            this.getPrivateSession()
                                 ? `Sessão Privada - ${this.getPrivateSession()}`
                                 : "OCR - Reconhecimento Ótico de Caracteres"
                         }
@@ -256,7 +256,7 @@ function App() {
                     }}>
                         <Box sx={{display: "flex", flexDirection: "row"}}>
                         {
-                            Boolean(this.getPrivateSession())
+                            this.getPrivateSession()
                             ? <Button
                                 disabled={buttonsDisabled}
                                 variant="contained"

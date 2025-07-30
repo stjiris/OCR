@@ -11,9 +11,9 @@ import {
 } from "react-icons/bs";
 
 export default function FileIcon(props) {
+    const sx = {...props.sx, fontSize: '25px'};
     switch (props.extension) {
         case "pdf":
-            const sx = {...props.sx, fontSize: '25px'};
             return (
                 <div className="fileIcon">
                     <SvgIcon

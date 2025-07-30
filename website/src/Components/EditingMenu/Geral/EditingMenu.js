@@ -60,7 +60,8 @@ class Word extends React.Component {
                 margin: "0px 2px",
                 display: "inline-block",
                 fontSize: "14px",
-                backgroundColor: (false) ? "#ffd700" : "transparent",
+                // backgroundColor: (false) ? "#ffd700" : "transparent",
+                backgroundColor: "transparent",
                 borderRadius: "5px",
             }}
             onMouseEnter={(e) => {
