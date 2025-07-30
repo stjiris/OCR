@@ -92,6 +92,59 @@ const StorageManager = (props) => {
         }
     }, []);
 
+    const deleteApiDocument = useCallback(() => {
+        axios.post(API_URL + "/delete-results",
+            {
+                "doc_id": deleteApiDocumentId
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
+                }
+                if (!response.data["success"]) {
+                    throw new Error(response.data["message"]);
+                }
+                closeConfirmationPopup();
+                getStorageInfo();
+            })
+            .catch(err => {
+                errorNotif.current.openNotif(err.message);
+                closeConfirmationPopup();
+            });
+    }, [deleteApiDocumentId]);
+
+    const deletePrivateSession = useCallback(() => {
+        axios.post(API_URL + "/admin/delete-private-session",
+            {
+                "session_id": deleteSessionId
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
+                }
+                if (response.data["success"]) {
+                    setPrivateSessions(response.data["private_sessions"]);
+                } else {
+                    throw new Error(response.data["message"]);
+                }
+                closeConfirmationPopup();
+            })
+            .catch(err => {
+                errorNotif.current.openNotif(err.message);
+                closeConfirmationPopup();
+            });
+    }, [deleteSessionId]);
+
     // setup confirmation popup after deleteSessionId is set by openDeletePopup()
     useEffect(() => {
         if (deleteSessionId !== null) {
@@ -172,59 +225,6 @@ const StorageManager = (props) => {
         setConfirmPopupMessage("");
         setConfirmPopupSubmitCallback(null);
     }
-
-    const deleteApiDocument = useCallback(() => {
-        axios.post(API_URL + "/delete-results",
-            {
-                "doc_id": deleteApiDocumentId
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-            })
-            .then(response => {
-                if (response.status !== 200) {
-                    throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
-                }
-                if (!response.data["success"]) {
-                    throw new Error(response.data["message"]);
-                }
-                closeConfirmationPopup();
-                getStorageInfo();
-            })
-            .catch(err => {
-                errorNotif.current.openNotif(err.message);
-                closeConfirmationPopup();
-            });
-    }, [deleteApiDocumentId]);
-
-    const deletePrivateSession = useCallback(() => {
-        axios.post(API_URL + "/admin/delete-private-session",
-            {
-                "session_id": deleteSessionId
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-            })
-            .then(response => {
-                if (response.status !== 200) {
-                    throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
-                }
-                if (response.data["success"]) {
-                    setPrivateSessions(response.data["private_sessions"]);
-                } else {
-                    throw new Error(response.data["message"]);
-                }
-                closeConfirmationPopup();
-            })
-            .catch(err => {
-                errorNotif.current.openNotif(err.message);
-                closeConfirmationPopup();
-            });
-    }, [deleteSessionId]);
 
     const runPrivateSessionCleanup = () => {
         axios.post(API_URL + "/admin/cleanup-sessions")
