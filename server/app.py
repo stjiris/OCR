@@ -781,7 +781,6 @@ def configure_ocr():
     if isinstance(req_data["config"], dict) or req_data["config"] == "default":
         data["config"] = req_data["config"]
     else:
-        # TODO: accept and verify other strings as config file names
         return bad_request('Config must be dictionary or "default"')
 
     update_json_file(data_path, data)

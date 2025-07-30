@@ -87,7 +87,7 @@ const ConfigManager = (props) => {
             });
     }
 
-   function fetchConfigPreset(name) {
+    function fetchConfigPreset(name) {
        axios.get(API_URL + '/config-preset', {
            params: {
                name: name,

@@ -4,6 +4,8 @@ import axios from "axios";
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import CircularProgress from "@mui/material/CircularProgress";
+import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import RotateLeft from "@mui/icons-material/RotateLeft";
@@ -26,7 +28,6 @@ import {
 } from "../../../defaultOcrConfigs";
 
 import loadComponent from '../../../utils/loadComponents';
-import CircularProgress from "@mui/material/CircularProgress";
 const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
 const Notification = loadComponent('Notifications', 'Notification');
@@ -42,7 +43,8 @@ class OcrMenu extends React.Component {
         const usingDefault = this.props.customConfig == null;  // null or undefined
         this.state = {
             ...emptyConfig,
-            loaded: false,
+            presetsList: [],
+            presetName: "",
             defaultConfig: defaultConfig,
             // lists of options in state, to allow changing them dynamically depending on other choices
             // e.g. when choosing an OCR engine that has different parameter values
@@ -52,6 +54,8 @@ class OcrMenu extends React.Component {
             thresholdMethodOptions: tesseractThreshList,
             usingDefault: usingDefault,
             uncommittedChanges: false,
+            loaded: false,  // true if default configuration has been fetched and page is ready
+            fetchingPreset: false,  // true if selected preset has been fetched
         }
 
         // Enable options restricted to single-page
@@ -92,7 +96,7 @@ class OcrMenu extends React.Component {
                 }
             })
             .catch(err => {
-                this.errorNot.current.openNotif("Não foi possível obter a configuração predefinida mais atual");
+                this.errorNot.current.openNotif("Não foi possível obter a configuração por defeito mais atual");
                 if (!this.state.loaded) {
                     // entering config, use hardcoded default for initial config
                     const initialConfig = Object.assign({...defaultConfig}, this.props.customConfig);
@@ -101,10 +105,44 @@ class OcrMenu extends React.Component {
             });
     }
 
+    fetchConfigPreset(name) {
+        this.setState({fetchingPreset: true});
+        axios.get(API_URL + '/config-preset', {
+            params: {
+                name: name,
+            }
+        })
+            .then(({ data }) => {
+                this.setState({
+                    ...data,
+                    presetName: name,
+                    usingDefault: false,
+                    fetchingPreset: false,
+                    uncommittedChanges: true
+                });
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível obter a configuração predefinida");
+                this.setState({presetName: null, fetchingPreset: false});
+            });
+    }
+
+    fetchPresetsList() {
+        axios.get(API_URL + '/presets-list')
+            .then(({ data }) => {
+                this.setState({presetsList: data});
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível atualizar a lista de configurações predefinidas");
+            });
+    }
+
     componentDidMount() {
         this.fetchDefaultConfig();
+        this.fetchPresetsList();
         this.interval = setInterval(() => {
             this.fetchDefaultConfig();
+            this.fetchPresetsList();
         }, 120000);  // getting an updated default configuration for every 2 minutes on this page is already generous
     }
 
@@ -139,10 +177,19 @@ class OcrMenu extends React.Component {
         return config;
     }
 
+    selectPreset(name) {
+        if (name === null || name === "") {  // cleared the preset box, not applying preset
+            this.setState({presetName: null});
+        } else {
+            this.fetchConfigPreset(name);
+        }
+    }
+
     restoreDefault() {
         if (this.state.usingDefault) return;
         this.setState({
             ...this.state.defaultConfig,
+            presetName: null,
             usingDefault: true,
             uncommittedChanges: true
         });
@@ -256,7 +303,36 @@ class OcrMenu extends React.Component {
                     </Typography>
                 </Box>
 
-                <Box>
+                <Box sx={{display: "flex", flexDirection: "row"}}>
+                    <Autocomplete
+                        value={this.state.presetName}
+                        options={this.state.presetsList}
+                        getOptionLabel={(option) => option}
+                        autoHighlight
+                        onChange={(e, newValue) => this.selectPreset(newValue)}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                required
+                                placeholder="Escolher configuração predefinida"
+                                variant="outlined"
+                                size="small"
+                                sx={{
+                                    height: "2rem",
+                                    width: "25rem",
+                                }}
+                            />
+                        )}
+                        sx={{marginRight: "1rem"}}
+                        slotProps={{
+                            paper: {  // dropdown popup props
+                                sx: {
+                                    width: 'auto',
+                                    maxHeight: '70%',
+                                }
+                            }
+                        }}
+                    />
                     <Button
                         disabled={this.state.usingDefault}
                         variant="contained"
@@ -264,7 +340,7 @@ class OcrMenu extends React.Component {
                         startIcon={<RotateLeft />}
                         onClick={() => this.restoreDefault()}
                     >
-                        Configuração Predefinida
+                        Valores Por Defeito
                     </Button>
                     <Button
                         disabled={!valid}
@@ -290,7 +366,7 @@ class OcrMenu extends React.Component {
             </Box>
 
             {
-            this.state.loaded
+            this.state.loaded && !this.state.fetchingPreset
             ? <Box sx={{
                 display: 'flex',
                 flexDirection: 'row',

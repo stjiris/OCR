@@ -112,6 +112,14 @@ body {
     object-fit: contain;
 }
 
+/*
+input field within a TextField used within Autocomplete
+cannot be styled with props, interferes with functioning of Autocomplete
+*/
+.MuiAutocomplete-root .MuiTextField-root .MuiInputBase-root {
+    height: 2rem;
+}
+
 .MuiFormControl-root.simpleInput {
     margin-bottom: 0.3rem;
     margin-top: 0.5rem;
