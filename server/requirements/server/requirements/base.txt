@@ -7,7 +7,7 @@ flask-mailman==1.1.1
 celery==5.5.3
 celery-redbeat==2.3.2
 eventlet==0.35.2
-redis==5.0.3
+redis==6.2.0
 lxml==4.9.3
 psutil==5.9.5
 elasticsearch==8.17.1

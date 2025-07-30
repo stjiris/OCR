@@ -1,16 +1,13 @@
 # import subprocess
 import os
+
 import psutil
-
-from src.utils.file import PRIVATE_PATH
+from src.utils.file import API_TEMP_PATH
 from src.utils.file import get_data
+from src.utils.file import PRIVATE_PATH
 
 
-def get_logs(
-    starting_point: int = 0,
-    number_of_logs: int = 50,
-    endpoints: list = None
-):
+def get_logs(starting_point: int = 0, number_of_logs: int = 50, endpoints: list = None):
     # try:
     #     # Using subprocess to get the logs
     #     res = subprocess.run(
@@ -30,20 +27,15 @@ def get_logs(
     #     pass
 
     # Get the logs of the app
-    with open('record.log', 'r') as file:
+    with open("record.log") as file:
         logs = file.readlines()
 
     # Get the logs of the endpoints
     if endpoints:
-        logs = [
-            l for l in logs
-            if any(
-                endpoint in l for endpoint in endpoints
-            )
-        ]
+        logs = [l for l in logs if any(endpoint in l for endpoint in endpoints)]
 
     # Get the logs from the starting point
-    logs = logs[::-1][starting_point:starting_point + number_of_logs]
+    logs = logs[::-1][starting_point : starting_point + number_of_logs]
 
     return logs
 
@@ -51,8 +43,7 @@ def get_logs(
 def get_private_sessions():
     # Get the private sessions
     private_sessions = [
-        session.name for session in os.scandir(PRIVATE_PATH)
-        if session.is_dir()
+        session.name for session in os.scandir(PRIVATE_PATH) if session.is_dir()
     ]
     return private_sessions
 
@@ -68,7 +59,28 @@ def get_size_private_sessions():
                     path = os.path.join(dirpath, f)
                     if not os.path.islink(path):
                         size += os.path.getsize(path)
-            private_sessions[session.name] = {"size": format_size(size), "creation": get_data(f"{session.path}/_data.json")["creation"]}
+            private_sessions[session.name] = {
+                "size": format_size(size),
+                "creation": get_data(f"{session.path}/_data.json")["creation"],
+            }
+    return private_sessions
+
+
+def get_size_api_files():
+    # Get the stored file results from API operations
+    private_sessions = {}
+    for file_folder in os.scandir(API_TEMP_PATH):
+        if file_folder.is_dir():
+            size = 0
+            for dirpath, dirnames, filenames in os.walk(file_folder.path):
+                for f in filenames:
+                    path = os.path.join(dirpath, f)
+                    if not os.path.islink(path):
+                        size += os.path.getsize(path)
+            private_sessions[file_folder.name] = {
+                "size": format_size(size),
+                "creation": get_data(f"{file_folder.path}/_data.json")["creation"],
+            }
     return private_sessions
 
 
@@ -77,7 +89,7 @@ def get_free_space():
     # UNIX usually reserves ~5% of total for root user;
     # 'total' and 'used' are overall total and used space
     # 'free' is space available for current user, 'percent' is user utilization
-    disk_usage = psutil.disk_usage('/')
+    disk_usage = psutil.disk_usage("/")
     free_space = disk_usage.free
     total_space = disk_usage.used + disk_usage.free
 
@@ -95,13 +107,13 @@ def format_size(size: int) -> str:
     :return: string formatted as "{value rounded to 2 cases} {unit}"
     """
     if size < 1024:
-        size = f'{size} B'
-    elif size < 1024 ** 2:
-        size = f'{size / 1024:.2f} KB'
-    elif size < 1024 ** 3:
-        size = f'{size / 1024 ** 2:.2f} MB'
-    elif size < 1024 ** 4:
-        size = f'{size / 1024 ** 3:.2f} GB'
+        size = f"{size} B"
+    elif size < 1024**2:
+        size = f"{size / 1024:.2f} KB"
+    elif size < 1024**3:
+        size = f"{size / 1024 ** 2:.2f} MB"
+    elif size < 1024**4:
+        size = f"{size / 1024 ** 3:.2f} GB"
     else:
-        size = f'{size / 1024 ** 4:.2f} TB'
+        size = f"{size / 1024 ** 4:.2f} TB"
     return size
