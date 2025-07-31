@@ -626,7 +626,14 @@ def prepare_upload():
 
     target = safe_join(path, filename)
 
+    # Create document folder and subfolders
     os.mkdir(target)
+    os.mkdir(target + "/_export")
+    os.mkdir(target + "/_images")
+    os.mkdir(target + "/_layouts")
+    os.mkdir(target + "/_ocr_results")
+    os.mkdir(target + "/_pages")
+
     with open(f"{target}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
