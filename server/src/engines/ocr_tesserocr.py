@@ -1,42 +1,43 @@
-from enum import Enum
-
 from PIL import Image
 from PIL import ImageEnhance
 from PIL import ImageFilter
+from src.utils.enums_tesseract import ENGINE_MODES
+from src.utils.enums_tesseract import LANGS
+from src.utils.enums_tesseract import OUTPUTS
+from src.utils.enums_tesseract import SEGMENT_MODES
+from src.utils.enums_tesseract import THRESHOLD_METHODS
 from src.utils.parse_hocr import parse_hocr
 from tesserocr import OEM
 from tesserocr import PSM
 from tesserocr import PyTessBaseAPI
 
-
-class LANGS(Enum):
-    DEU = "deu"
-    SPA = "spa"
-    FRA = "fra"
-    ENG = "eng"
-    POR = "por"
-    EQU = "equ"
-    OSD = "osd"
-
-
-class THRESHOLD_METHODS(Enum):
-    OTSU = 0  # DEFAULT
-    LEPTONICA = 1
-    SAUVOLA = 2
-
-
-class OUTPUTS(Enum):
-    PDF_INDEXED = "pdf_indexed"
-    PDF = "pdf"
-    TXT = "txt"
-    TXT_DELIMITED = "txt_delimited"
-    CSV = "csv"
-    NER = "ner"
-    HOCR = "hocr"
-    ALTO_XML = "xml"
-
-
 api = PyTessBaseAPI(init=False)
+
+
+INT_TO_OEM = {  # Cannot directly convert int to OEM due to TesserOCR _Enum type
+    0: OEM.TESSERACT_ONLY,
+    1: OEM.LSTM_ONLY,
+    2: OEM.TESSERACT_LSTM_COMBINED,
+    3: OEM.DEFAULT,
+}
+
+INT_TO_PSM = {  # Cannot directly convert int to PSM due to TesserOCR _Enum type
+    0: PSM.OSD_ONLY,
+    1: PSM.AUTO_OSD,
+    2: PSM.AUTO_ONLY,
+    3: PSM.AUTO,
+    4: PSM.SINGLE_COLUMN,
+    5: PSM.SINGLE_BLOCK_VERT_TEXT,
+    6: PSM.SINGLE_BLOCK,
+    7: PSM.SINGLE_LINE,
+    8: PSM.SINGLE_WORD,
+    9: PSM.CIRCLE_WORD,
+    10: PSM.SINGLE_CHAR,
+    11: PSM.SPARSE_TEXT,
+    12: PSM.SPARSE_TEXT_OSD,
+    13: PSM.RAW_LINE,
+    14: PSM.COUNT,
+}
 
 
 def preprocess_image(image):
@@ -67,12 +68,15 @@ def get_structure(page, config, segment_box=None):
 
     # Ensure config is a dict, use defaults if not
     if not isinstance(config, dict):
-        config = {"lang": "por", "psm": PSM.SINGLE_BLOCK if segment_box else PSM.AUTO}
+        config = {
+            "oem": INT_TO_OEM[3],
+            "psm": INT_TO_PSM[6 if segment_box else 3],
+        }
 
     api.InitFull(
         lang=config.get("lang", "por"),
-        oem=config.get("oem", OEM.DEFAULT),
-        psm=config.get("psm", PSM.AUTO),
+        oem=config.get("oem", INT_TO_OEM[3]),
+        psm=config.get("psm", INT_TO_PSM[3]),
     )
     # TODO: receive other variables
 
@@ -113,9 +117,9 @@ def verify_params(config):
         for lang in config["lang"]:
             if lang not in LANGS:
                 errors.append(f'Língua: "{config["lang"]}"')
-    if "engineMode" in config and config["engineMode"] not in OEM:
+    if "engineMode" in config and config["engineMode"] not in ENGINE_MODES:
         errors.append(f'Modo do motor: "{config["engineMode"]}"')
-    if "segmentMode" in config and config["segmentMode"] not in PSM:
+    if "segmentMode" in config and config["segmentMode"] not in SEGMENT_MODES:
         errors.append(f'Segmentação: "{config["segmentMode"]}"')
     if (
         "thresholdMethod" in config
@@ -123,8 +127,8 @@ def verify_params(config):
     ):
         errors.append(f'Thresholding: "{config["thresholdMethod"]}"')
     if "outputs" in config:
-        for format in config["outputs"]:
-            if format not in OUTPUTS:
+        for output_format in config["outputs"]:
+            if output_format not in OUTPUTS:
                 errors.append(f'Formato de resultado: "{config["outputs"]}"')
     if "dpi" in config and not isinstance(config["dpi"], (int, str)):
         errors.append(f'DPI: "{config["outputs"]}"')

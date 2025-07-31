@@ -251,7 +251,9 @@ def task_request_ner(path):
 
 
 @celery.task(name="file_ocr")
-def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False):
+def task_file_ocr(
+    path: str, config: dict | str | None = None, delete_on_finish: bool = False
+):
     """
     Prepare the OCR of a file
     :param path: path to the file
@@ -263,9 +265,7 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
         with open(DEFAULT_CONFIG_FILE) as f:
             default_config = json.load(f)
 
-        if (
-            config is None or config == "default"
-        ):  # TODO: accept other strings for preset config files
+        if config is None or isinstance(config, str) and config == "default":
             config = default_config
         else:
             # Build string with Tesseract run configuration
@@ -290,6 +290,8 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
 
             if "dpi" not in config and "dpi" in default_config:
                 config["dpi"] = default_config["dpi"]
+            if "otherParams" not in config and "otherParams" in default_config:
+                config["otherParams"] = default_config["otherParams"]
 
         # Verify parameter values
         ocr_engine = globals()[f'ocr_{config["engine"]}'.lower()]
@@ -402,7 +404,6 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
         return {"status": "success"}
 
     except Exception as e:
-        print(e)
         data = get_data(data_folder)
         data["ocr"]["exceptions"] = str(e)
         update_json_file(data_folder, data)
