@@ -15,6 +15,7 @@ from celery import Celery
 from celery.schedules import crontab
 from celery.schedules import schedule
 from dotenv import load_dotenv
+from elasticsearch import NotFoundError
 from flask import abort
 from flask import Flask
 from flask import g
@@ -819,13 +820,13 @@ def request_ocr():
             "error": "O servidor não tem espaço suficiente. Por favor informe o administrador",
         }
 
-    data = request.json
-    path, _ = format_path(data)
+    req_data = request.json
+    path, _ = format_path(req_data)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    config = data["config"] if "config" in data else None
-    multiple = data["multiple"] if "multiple" in data else False
+    config = req_data["config"] if "config" in req_data else None
+    multiple = req_data["multiple"] if "multiple" in req_data else False
 
     if multiple:
         files = [
@@ -837,21 +838,38 @@ def request_ocr():
         files = [path]
 
     for f in files:
+        data_path = f"{f}/_data.json"
         try:
-            data = get_data(f"{f}/_data.json")
+            data = get_data(data_path)
         except FileNotFoundError:
             abort(
                 HTTPStatus.INTERNAL_SERVER_ERROR
             )  # TODO: improve feedback to users on error
 
-        # TODO: handle default or preset name configs in celery tasks
         # Replace specified config with saved config, if exists
         if config is None and "config" in data:
             config = data["config"]
 
+        # Remove indexed pages, which will become outdated
+        results_path = f"{f}/_ocr_results"
+        pages = [
+            f
+            for f in os.scandir(results_path)
+            if os.path.splitext(f.name)[1] == ".json"
+        ]
+
+        for page in pages:
+            page_id = generate_uuid(page.path)
+            log.warning(f"Removing {page.path}: ID={page_id}")
+            try:
+                es.delete_document(page_id)
+            except NotFoundError:
+                log.warning(f"Failed to find {page.path}: ID={page_id}")
+                continue
+
         # Delete previous results
-        if os.path.exists(f"{f}/_ocr_results"):
-            shutil.rmtree(f"{f}/_ocr_results")
+        if os.path.exists(results_path):
+            shutil.rmtree(results_path)
         if os.path.exists(f"{f}/_export"):
             shutil.rmtree(f"{f}/_export")
         os.mkdir(f"{f}/_ocr_results")
@@ -869,9 +887,10 @@ def request_ocr():
                 "hocr": {"complete": False},
                 "xml": {"complete": False},
                 "zip": {"complete": False},
+                "indexed": False,
             }
         )
-        update_json_file(f"{f}/_data.json", data)
+        update_json_file(data_path, data)
 
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
@@ -890,7 +909,6 @@ def index_doc():
     """
     Index a document in Elasticsearch
     @param path: path to the document
-    @param multiple: if it is a folder or not
     """
     data = request.json
     path, _ = format_path(data)
@@ -899,53 +917,47 @@ def index_doc():
 
     if PRIVATE_PATH in path:  # avoid indexing private sessions
         abort(HTTPStatus.NOT_FOUND)
-    multiple = data["multiple"]
 
-    if multiple:
-        pass
+    data_path = path + "/_data.json"
+    hOCR_path = path + "/_ocr_results"
+    try:
+        data = get_data(data_path)
+    except FileNotFoundError:
+        abort(HTTPStatus.NOT_FOUND)
 
-        return {}
-    else:
-        data_path = path + "/_data.json"
-        hOCR_path = path + "/_ocr_results"
-        try:
-            data = get_data(data_path)
-        except FileNotFoundError:
-            abort(HTTPStatus.NOT_FOUND)
-        files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
+    pages = [f for f in os.scandir(hOCR_path) if os.path.splitext(f.name)[1] == ".json"]
 
-        extension = data["extension"]
-        for i, file in enumerate(files):
-            file_path = f"{hOCR_path}/{file}"
+    extension = data["extension"]
+    for i, page in enumerate(pages):
+        with open(page, encoding="utf-8") as f:
+            hocr = json.load(f)
+            text = json_to_text(hocr)
 
-            with open(file_path, encoding="utf-8") as f:
-                hocr = json.load(f)
-                text = json_to_text(hocr)
+        if data["pages"] > 1:
+            doc = create_document(
+                page.path,
+                data["ocr"]["config"]["engine"],
+                data["ocr"]["config"],
+                text,
+                extension,
+                i + 1,
+            )
+        else:
+            doc = create_document(
+                page.path, "Tesseract", data["ocr"]["config"], text, extension
+            )
 
-            if data["pages"] > 1:
-                doc = create_document(
-                    file_path,
-                    data["ocr"]["config"]["engine"],
-                    data["ocr"]["config"],
-                    text,
-                    extension,
-                    i + 1,
-                )
-            else:
-                doc = create_document(
-                    file_path, "Tesseract", data["ocr"]["config"], text, extension
-                )
+        page_id = generate_uuid(page.path)
+        log.warning(f"Doc gerado: {page.path}: ID={page_id}, {doc}")
 
-            doc_id = generate_uuid(file_path)
+        es.add_document(page_id, doc)
 
-            es.add_document(doc_id, doc)
+    update_json_file(data_path, {"indexed": True})
 
-        update_json_file(data_path, {"indexed": True})
-
-        return {
-            "success": True,
-            "message": "Documento indexado",
-        }
+    return {
+        "success": True,
+        "message": "Documento indexado",
+    }
 
 
 @app.route("/remove-index-doc", methods=["POST"])
@@ -954,7 +966,6 @@ def remove_index_doc():
     """
     Remove a document in Elasticsearch
     @param path: path to the document
-    @param multiple: if it is a folder or not
     """
     data = request.json
     path, _ = format_path(data)
@@ -963,31 +974,27 @@ def remove_index_doc():
 
     if PRIVATE_PATH in path:
         abort(HTTPStatus.NOT_FOUND)
-    multiple = data["multiple"]
 
-    if multiple:
-        pass
-
-        return {}
-    else:
-        data_path = path + "/_data.json"
-        hOCR_path = path + "/_ocr_results"
-        # try:
-        #     data_path = get_data(path + "/_data.json")
-        # except FileNotFoundError:
-        #     abort(HTTPStatus.NOT_FOUND)
-        files = [f for f in os.listdir(hOCR_path) if f.endswith(".json")]
-
-        for f in files:
-            file_path = f"{hOCR_path}/{f}"
-            id = generate_uuid(file_path)
-            es.delete_document(id)
+    data_path = path + "/_data.json"
+    hOCR_path = path + "/_ocr_results"
+    pages = [f for f in os.scandir(hOCR_path) if os.path.splitext(f.name)[1] == ".json"]
+    try:
+        for page in pages:
+            page_id = generate_uuid(page.path)
+            log.warning(f"Apagando {page.path}: ID={page_id}")
+            es.delete_document(page_id)
 
         update_json_file(data_path, {"indexed": False})
 
         return {
             "success": True,
             "message": "Documento removido",
+        }
+    except NotFoundError:
+        update_json_file(data_path, {"indexed": False})
+        return {
+            "success": False,
+            "message": "O documento não foi encontrado no index.",
         }
 
 
@@ -1115,7 +1122,7 @@ def create_private_session():
 
     return {"success": True, "session_id": session_id}
 
-  
+
 #####################################
 # LAYOUTS
 #####################################
