@@ -1,42 +1,63 @@
-from enum import Enum
-
+from lxml import etree
+from lxml import html
 from PIL import Image
 from PIL import ImageEnhance
 from PIL import ImageFilter
+from src.utils.enums_tesseract import ENGINE_MODES
+from src.utils.enums_tesseract import LANGS
+from src.utils.enums_tesseract import OUTPUTS
+from src.utils.enums_tesseract import SEGMENT_MODES
+from src.utils.enums_tesseract import THRESHOLD_METHODS
 from src.utils.parse_hocr import parse_hocr
 from tesserocr import OEM
 from tesserocr import PSM
 from tesserocr import PyTessBaseAPI
 
-
-class LANGS(Enum):
-    DEU = "deu"
-    SPA = "spa"
-    FRA = "fra"
-    ENG = "eng"
-    POR = "por"
-    EQU = "equ"
-    OSD = "osd"
-
-
-class THRESHOLD_METHODS(Enum):
-    OTSU = 0  # DEFAULT
-    LEPTONICA = 1
-    SAUVOLA = 2
-
-
-class OUTPUTS(Enum):
-    PDF_INDEXED = "pdf_indexed"
-    PDF = "pdf"
-    TXT = "txt"
-    TXT_DELIMITED = "txt_delimited"
-    CSV = "csv"
-    NER = "ner"
-    HOCR = "hocr"
-    ALTO_XML = "xml"
-
-
 api = PyTessBaseAPI(init=False)
+
+# TesserOCR's ProcessPage() (singular) cannot output a valid PDF.
+# TODO: obtain a PDF directly by using tesserOCR's ProcessPages() (plural), which takes a file path instead of PIL image.
+
+TESSERACT_OUTPUTS = (
+    "hocr",
+    # "pdf",
+    "tsv",
+    "txt",
+    "xml",
+)
+
+EXTENSION_TO_VAR = {
+    "hocr": "tessedit_create_hocr",
+    # "pdf": "tessedit_create_pdf",
+    "tsv": "tessedit_create_tsv",
+    "txt": "tessedit_create_txt",
+    "xml": "tessedit_create_alto",
+}
+
+INT_TO_OEM = {  # Cannot directly convert int to OEM due to TesserOCR _Enum type
+    0: OEM.TESSERACT_ONLY,
+    1: OEM.LSTM_ONLY,
+    2: OEM.TESSERACT_LSTM_COMBINED,
+    3: OEM.DEFAULT,
+}
+
+INT_TO_PSM = {  # Cannot directly convert int to PSM due to TesserOCR _Enum type
+    0: PSM.OSD_ONLY,
+    1: PSM.AUTO_OSD,
+    2: PSM.AUTO_ONLY,
+    3: PSM.AUTO,
+    4: PSM.SINGLE_COLUMN,
+    5: PSM.SINGLE_BLOCK_VERT_TEXT,
+    6: PSM.SINGLE_BLOCK,
+    7: PSM.SINGLE_LINE,
+    8: PSM.SINGLE_WORD,
+    9: PSM.CIRCLE_WORD,
+    10: PSM.SINGLE_CHAR,
+    11: PSM.SPARSE_TEXT,
+    12: PSM.SPARSE_TEXT_OSD,
+    13: PSM.RAW_LINE,
+    14: PSM.COUNT,
+}
 
 
 def preprocess_image(image):
@@ -53,12 +74,21 @@ def preprocess_image(image):
     return image
 
 
-def get_structure(page, config, segment_box=None):
+def get_structure(
+    page,
+    lang: str,
+    config: dict | str,
+    doc_path: str = "",
+    output_types: list[str] | None = None,
+    segment_box=None,
+):
     """
     Extract text and layout structure from a page or a segment.
 
     :param page: The PIL image of the page.
+    :param lang: The string of languages to use
     :param config: OCR configuration options (dict).
+    :param output_types: List of output types to auto-generate if the document being OCR'd only has one page.
     :param segment_box: Optional bounding box for a segment (left, top, right, bottom) or list of boxes.
     :return: Extracted text structure in the form of lines and words.
     """
@@ -67,17 +97,21 @@ def get_structure(page, config, segment_box=None):
 
     # Ensure config is a dict, use defaults if not
     if not isinstance(config, dict):
-        config = {"lang": "por", "psm": PSM.SINGLE_BLOCK if segment_box else PSM.AUTO}
+        config = {
+            "oem": INT_TO_OEM[3],
+            "psm": INT_TO_PSM[6 if segment_box else 3],
+        }
 
     api.InitFull(
-        lang=config.get("lang", "por"),
-        oem=config.get("oem", OEM.DEFAULT),
-        psm=config.get("psm", PSM.AUTO),
+        lang=config.get("lang", lang),
+        oem=config.get("oem", INT_TO_OEM[3]),
+        psm=config.get("psm", INT_TO_PSM[3]),
     )
     # TODO: receive other variables
 
-    api.SetImage(page)
+    raw_results_paths = []
     if segment_box:
+        api.SetImage(page)
         if isinstance(segment_box, list):  # Batch multiple segments
             results = []
             for box in segment_box:
@@ -101,10 +135,26 @@ def get_structure(page, config, segment_box=None):
             api.SetRectangle(**coords)
             hocr = api.GetHOCRText(0)
     else:
-        hocr = api.GetHOCRText(0)
+        if output_types is None or len(output_types) == 0:
+            output_types = ["hocr"]
+        elif "hocr" not in output_types:
+            output_types.append("hocr")
+
+        output_base = f"{doc_path}/_export/_temp"
+        extensions = [ext for ext in output_types if ext in TESSERACT_OUTPUTS]
+        for ext in extensions:
+            api.SetVariable(EXTENSION_TO_VAR[ext], "true")
+            raw_results_paths.append(f"{output_base}.{ext}")
+        api.ProcessPage(
+            outputbase=output_base, image=page, page_index=0, filename="test1"
+        )
+        hocr = etree.parse(f"{output_base}.hocr", html.XHTMLParser())
 
     api.End()
-    return parse_hocr(hocr, segment_box)
+
+    lines = parse_hocr(hocr, segment_box)
+
+    return lines, raw_results_paths
 
 
 def verify_params(config):
@@ -113,9 +163,9 @@ def verify_params(config):
         for lang in config["lang"]:
             if lang not in LANGS:
                 errors.append(f'Língua: "{config["lang"]}"')
-    if "engineMode" in config and config["engineMode"] not in OEM:
+    if "engineMode" in config and config["engineMode"] not in ENGINE_MODES:
         errors.append(f'Modo do motor: "{config["engineMode"]}"')
-    if "segmentMode" in config and config["segmentMode"] not in PSM:
+    if "segmentMode" in config and config["segmentMode"] not in SEGMENT_MODES:
         errors.append(f'Segmentação: "{config["segmentMode"]}"')
     if (
         "thresholdMethod" in config
@@ -123,8 +173,8 @@ def verify_params(config):
     ):
         errors.append(f'Thresholding: "{config["thresholdMethod"]}"')
     if "outputs" in config:
-        for format in config["outputs"]:
-            if format not in OUTPUTS:
+        for output_format in config["outputs"]:
+            if output_format not in OUTPUTS:
                 errors.append(f'Formato de resultado: "{config["outputs"]}"')
     if "dpi" in config and not isinstance(config["dpi"], (int, str)):
         errors.append(f'DPI: "{config["outputs"]}"')

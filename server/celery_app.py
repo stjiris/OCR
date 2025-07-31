@@ -54,6 +54,42 @@ celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKE
 load_invisible_font()
 
 
+def build_ocr_config(
+    config: dict, ocr_engine_name: str
+) -> tuple[str, str] | tuple[str, dict]:
+    if ocr_engine_name == "pytesseract":
+        config_str = ""
+        # Join langs with pluses, expected by tesseract
+        lang = "+".join(config["lang"])
+
+        if (
+            "dpi" in config and config["dpi"]
+        ):  # typecheck expected in ocr_engine.verify_params()
+            " ".join([config_str, f'--dpi {int(config["dpi"])}'])
+
+        " ".join(
+            [
+                config_str,
+                f'--oem {config["engineMode"]}',
+                f'--psm {config["segmentMode"]}',
+                f'-c thresholding_method={config["thresholdMethod"]}',
+            ]
+        )
+
+        if "otherParams" in config and isinstance(config["otherParams"], str):
+            " ".join([config_str, config["otherParams"]])
+
+        return lang, config_str
+
+    elif ocr_engine_name == "tesserocr":
+        # Join langs with pluses, expected by tesseract
+        lang = "+".join(config["lang"])
+        config["lang"] = lang
+        return lang, config
+    else:
+        raise ValueError("Invalid configuration received")
+
+
 @celery.task(name="auto_segment")
 def task_auto_segment(path):
     return parse_images(path)
@@ -251,7 +287,9 @@ def task_request_ner(path):
 
 
 @celery.task(name="file_ocr")
-def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False):
+def task_file_ocr(
+    path: str, config: dict | str | None = None, delete_on_finish: bool = False
+):
     """
     Prepare the OCR of a file
     :param path: path to the file
@@ -263,9 +301,7 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
         with open(DEFAULT_CONFIG_FILE) as f:
             default_config = json.load(f)
 
-        if (
-            config is None or config == "default"
-        ):  # TODO: accept other strings for preset config files
+        if config is None or isinstance(config, str) and config == "default":
             config = default_config
         else:
             # Build string with Tesseract run configuration
@@ -290,6 +326,8 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
 
             if "dpi" not in config and "dpi" in default_config:
                 config["dpi"] = default_config["dpi"]
+            if "otherParams" not in config and "otherParams" in default_config:
+                config["otherParams"] = default_config["otherParams"]
 
         # Verify parameter values
         ocr_engine = globals()[f'ocr_{config["engine"]}'.lower()]
@@ -305,28 +343,6 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
             )
             return {"status": "error", "errors": errors}
 
-        # Join langs with pluses, expected by tesseract
-        lang = "+".join(config["lang"])
-        config_str = ""
-
-        if (
-            "dpi" in config and config["dpi"] != ""
-        ):  # typecheck expected in ocr_engine.verify_params()
-            " ".join([config_str, f'--dpi {int(config["dpi"])}'])
-
-        " ".join(
-            [
-                config_str,
-                f'--oem {config["engineMode"]}',
-                f'--psm {config["segmentMode"]}',
-                f'-c thresholding_method={config["thresholdMethod"]}',
-            ]
-        )
-
-        # TODO: implement accepting additional string params in TesserOCR; currently only having effect in PyTesseract
-        if "otherParams" in config and isinstance(config["otherParams"], str):
-            " ".join([config_str, config["otherParams"]])
-
         # Update the information related to the OCR
         data = get_data(data_folder)
         data["ocr"] = {
@@ -334,6 +350,10 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
             "progress": 0,
         }
         update_json_file(data_folder, data)
+
+        # Build config according to specified engine
+        ocr_engine_name = config["engine"].lower()
+        lang, config_formatted = build_ocr_config(config, ocr_engine_name)
 
         # Generate the images
         """
@@ -391,7 +411,7 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
                 filename=image,
                 ocr_engine_name=f'ocr_{config["engine"]}',
                 lang=lang,
-                config_str=config_str,
+                config=config_formatted,
                 output_types=config["outputs"],
                 delete_on_finish=delete_on_finish,
             )
@@ -402,7 +422,6 @@ def task_file_ocr(path: str, config: dict | None, delete_on_finish: bool = False
         return {"status": "success"}
 
     except Exception as e:
-        print(e)
         data = get_data(data_folder)
         data["ocr"]["exceptions"] = str(e)
         update_json_file(data_folder, data)
@@ -518,9 +537,9 @@ def task_page_ocr(
     path: str,
     filename: str,
     ocr_engine_name: str,
-    lang: list[str],
+    lang: str,
     output_types: list[str],
-    config_str: str = "",
+    config: str | dict | None = None,
     delete_on_finish: bool = False,
 ):
     """
@@ -530,7 +549,7 @@ def task_page_ocr(
     :param filename: filename of the page
     :param ocr_engine_name: name of the OCR module to use
     :param lang: string of languages to use
-    :param config_str: config string to use
+    :param config: config to use
     :param output_types: output types to generate directly, if the file is a single page without user-defined text boxes
     :param delete_on_finish: whether the original file and pages should be deleted on finish, keeping only the results
     """
@@ -564,9 +583,9 @@ def task_page_ocr(
             with open(layout_path, encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
-                all_but_ignore = [x for x in parsed_json if x["type"] != "remove"]
+                text_boxes = [x for x in parsed_json if x["type"] != "remove"]
 
-                if all_but_ignore:
+                if text_boxes:
                     segment_ocr_flag = True
 
         if not segment_ocr_flag:
@@ -576,7 +595,9 @@ def task_page_ocr(
             # load_time = time.time() - load_start
             # page_metrics["image_load_time"] = load_time
 
-            for item in [x for x in parsed_json if x["type"] == "remove"]:
+            for item in [
+                x for x in parsed_json if x["type"] != "remove"
+            ]:  # hide both images and ignored segments
                 for sq in item["squares"]:
                     left = sq["left"]
                     top = sq["top"]
@@ -592,10 +613,16 @@ def task_page_ocr(
             # If single-page document, take advantage of output types to immediately generate results with Tesseract
             if n_doc_pages == 1:
                 json_d, raw_results = ocr_engine.get_structure(
-                    image, lang, config_str, output_types=output_types
+                    page=image,
+                    lang=lang,
+                    config=config,
+                    doc_path=path,
+                    output_types=output_types,
                 )
             else:
-                json_d, _ = ocr_engine.get_structure(image, lang, config_str)
+                json_d, _ = ocr_engine.get_structure(
+                    page=image, lang=lang, doc_path=path, config=config
+                )
             # ocr_time = time.time() - ocr_start
             # page_metrics["ocr_time"] = ocr_time
             json_d = [[x] for x in json_d]
@@ -670,7 +697,7 @@ def task_page_ocr(
                 # Perform OCR
                 # ocr_start = time.time()
                 json_d, _ = ocr_engine.get_structure(
-                    image, lang, config_str, segment_box=box
+                    page=image, lang=lang, config=config, doc_path=path, segment_box=box
                 )
                 # ocr_time = time.time() - ocr_start
                 # page_metrics["ocr_time"] = ocr_time
@@ -700,8 +727,6 @@ def task_page_ocr(
 
         # If last page has been processed, generate results
         if len(files) == n_doc_pages:
-            log.debug(f"{path}: Acabei OCR")
-
             data["ocr"].update(
                 {
                     "progress": len(files),
@@ -713,20 +738,40 @@ def task_page_ocr(
 
             # If single-page document, directly store results generated by Tesseract
             if n_doc_pages == 1 and raw_results:
-                for extension in raw_results.keys():
-                    if extension in output_types:
-                        file_path = f"{path}/_export/_{extension}.{extension}"
-                        with open(file_path, "wb") as f:
-                            f.write(raw_results[extension])
-                        creation_date = get_current_time()
-                        data[extension] = {
-                            "complete": True,
-                            "size": get_size(file_path, path_complete=True),
-                            "creation": creation_date,
-                        }
-                        if extension == "pdf":
-                            data[extension]["pages"] = get_page_count(path, "pdf")
-                        update_json_file(data_file, data)
+                if isinstance(raw_results, dict):  # results in memory, in dict
+                    for extension in raw_results.keys():
+                        if extension in output_types:
+                            file_path = f"{path}/_export/_{extension}.{extension}"
+                            with open(file_path, "wb") as f:
+                                f.write(raw_results[extension])
+                            creation_date = get_current_time()
+                            data[extension] = {
+                                "complete": True,
+                                "size": get_size(file_path, path_complete=True),
+                                "creation": creation_date,
+                            }
+                            if extension == "pdf":
+                                data[extension]["pages"] = get_page_count(path, "pdf")
+                            update_json_file(data_file, data)
+
+                elif isinstance(raw_results, list):  # results stored in listed files
+                    for result in raw_results:
+                        _, ext = os.path.splitext(result)
+                        ext = ext.strip(".")
+                        if ext in output_types:
+                            file_path = f"{path}/_export/_{ext}.{ext}"
+                            os.rename(
+                                result, file_path
+                            )  # raw results should be in /_export folder already
+                            creation_date = get_current_time()
+                            data[ext] = {
+                                "complete": True,
+                                "size": get_size(file_path, path_complete=True),
+                                "creation": creation_date,
+                            }
+                            if ext == "pdf":
+                                data[ext]["pages"] = get_page_count(path, "pdf")
+                            update_json_file(data_file, data)
 
             if delete_on_finish:
                 callback = task_delete_file.si(
