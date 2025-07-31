@@ -274,6 +274,9 @@ class OcrMenu extends React.Component {
                 } else {
                     this.errorNot.current.openNotif("Erro inesperado ao guardar a configuração de OCR.")
                 }
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível guardar a configuração de OCR.");
             });
     }
 

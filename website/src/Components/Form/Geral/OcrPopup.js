@@ -120,6 +120,9 @@ class OcrPopup extends React.Component {
                 }
 
                 this.closeMenu(this.props.submitCallback);
+            })
+            .catch(err => {
+               this.errorNot.current.openNotif("Não foi possível realizar o pedido.")
             });
     }
 

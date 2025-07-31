@@ -837,9 +837,9 @@ def request_ocr():
 
     if multiple:
         files = [
-            f"{path}/{f}"  # path is safe, 'f' obtained by server
-            for f in os.listdir(path)
-            if os.path.isdir(os.path.join(path, f))
+            f.path
+            for f in os.scandir(path)
+            if f.is_dir() and get_data(f"{f.path}/_data.json")["type"] == "file"
         ]
     else:
         files = [path]
