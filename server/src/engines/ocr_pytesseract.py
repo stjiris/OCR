@@ -104,16 +104,17 @@ def _run_and_get_multiple_output(
 def get_structure(
     page,
     lang: str,
-    config_str: str = "",
-    output_types: list[str] = None,
+    config: str = "",
+    doc_path: str = "",  # not used, added for consistent parameter names with tesserOCR
+    output_types: list[str] | None = None,
     segment_box=None,
 ):
     if segment_box:
         raw_results = _get_segment_hocr(
-            page, lang, config_str, segment_coordinates=segment_box
+            page, lang, config, segment_coordinates=segment_box
         )
     else:
-        raw_results = _get_hocr(page, lang, config_str, extensions=output_types)
+        raw_results = _get_hocr(page, lang, config, extensions=output_types)
 
     hocr = etree.fromstring(raw_results["hocr"], html.XHTMLParser())
     lines = parse_hocr(hocr, segment_box)

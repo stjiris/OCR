@@ -1,3 +1,5 @@
+from lxml import etree
+from lxml import html
 from PIL import Image
 from PIL import ImageEnhance
 from PIL import ImageFilter
@@ -13,6 +15,24 @@ from tesserocr import PyTessBaseAPI
 
 api = PyTessBaseAPI(init=False)
 
+# TesserOCR's ProcessPage() (singular) cannot output a valid PDF.
+# TODO: obtain a PDF directly by using tesserOCR's ProcessPages() (plural), which takes a file path instead of PIL image.
+
+TESSERACT_OUTPUTS = (
+    "hocr",
+    # "pdf",
+    "tsv",
+    "txt",
+    "xml",
+)
+
+EXTENSION_TO_VAR = {
+    "hocr": "tessedit_create_hocr",
+    # "pdf": "tessedit_create_pdf",
+    "tsv": "tessedit_create_tsv",
+    "txt": "tessedit_create_txt",
+    "xml": "tessedit_create_alto",
+}
 
 INT_TO_OEM = {  # Cannot directly convert int to OEM due to TesserOCR _Enum type
     0: OEM.TESSERACT_ONLY,
@@ -54,12 +74,21 @@ def preprocess_image(image):
     return image
 
 
-def get_structure(page, config, segment_box=None):
+def get_structure(
+    page,
+    lang: str,
+    config: dict | str,
+    doc_path: str = "",
+    output_types: list[str] | None = None,
+    segment_box=None,
+):
     """
     Extract text and layout structure from a page or a segment.
 
     :param page: The PIL image of the page.
+    :param lang: The string of languages to use
     :param config: OCR configuration options (dict).
+    :param output_types: List of output types to auto-generate if the document being OCR'd only has one page.
     :param segment_box: Optional bounding box for a segment (left, top, right, bottom) or list of boxes.
     :return: Extracted text structure in the form of lines and words.
     """
@@ -74,14 +103,15 @@ def get_structure(page, config, segment_box=None):
         }
 
     api.InitFull(
-        lang=config.get("lang", "por"),
+        lang=config.get("lang", lang),
         oem=config.get("oem", INT_TO_OEM[3]),
         psm=config.get("psm", INT_TO_PSM[3]),
     )
     # TODO: receive other variables
 
-    api.SetImage(page)
+    raw_results_paths = []
     if segment_box:
+        api.SetImage(page)
         if isinstance(segment_box, list):  # Batch multiple segments
             results = []
             for box in segment_box:
@@ -105,10 +135,26 @@ def get_structure(page, config, segment_box=None):
             api.SetRectangle(**coords)
             hocr = api.GetHOCRText(0)
     else:
-        hocr = api.GetHOCRText(0)
+        if output_types is None or len(output_types) == 0:
+            output_types = ["hocr"]
+        elif "hocr" not in output_types:
+            output_types.append("hocr")
+
+        output_base = f"{doc_path}/_export/_temp"
+        extensions = [ext for ext in output_types if ext in TESSERACT_OUTPUTS]
+        for ext in extensions:
+            api.SetVariable(EXTENSION_TO_VAR[ext], "true")
+            raw_results_paths.append(f"{output_base}.{ext}")
+        api.ProcessPage(
+            outputbase=output_base, image=page, page_index=0, filename="test1"
+        )
+        hocr = etree.parse(f"{output_base}.hocr", html.XHTMLParser())
 
     api.End()
-    return parse_hocr(hocr, segment_box)
+
+    lines = parse_hocr(hocr, segment_box)
+
+    return lines, raw_results_paths
 
 
 def verify_params(config):
