@@ -81,6 +81,7 @@ def get_structure(
     doc_path: str = "",
     output_types: list[str] | None = None,
     segment_box=None,
+    single_page: bool = False,
 ):
     """
     Extract text and layout structure from a page or a segment.
@@ -90,6 +91,7 @@ def get_structure(
     :param config: OCR configuration options (dict).
     :param output_types: List of output types to auto-generate if the document being OCR'd only has one page.
     :param segment_box: Optional bounding box for a segment (left, top, right, bottom) or list of boxes.
+    :param single_page: Whether this is the only page of the document being analysed. If yes, some result files can be immediately outputted.
     :return: Extracted text structure in the form of lines and words.
     """
     # Preprocess the image
@@ -122,7 +124,7 @@ def get_structure(
                     "height": box[3] - box[1],
                 }
                 api.SetRectangle(**coords)
-                hocr = api.GetHOCRText(0)
+                hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
                 results.append(parse_hocr(hocr, box))
             return results
         else:
@@ -133,20 +135,31 @@ def get_structure(
                 "height": segment_box[3] - segment_box[1],
             }
             api.SetRectangle(**coords)
-            hocr = api.GetHOCRText(0)
+            hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
+
+    elif not single_page:
+        api.SetImage(page)
+        hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
+
     else:
+        # single-page document, leverage direct Tesseract outputs
         if output_types is None or len(output_types) == 0:
             output_types = ["hocr"]
-        elif "hocr" not in output_types:
-            output_types.append("hocr")
 
         output_base = f"{doc_path}/_export/_temp"
         extensions = [ext for ext in output_types if ext in TESSERACT_OUTPUTS]
+        if "hocr" not in extensions:
+            extensions.append(
+                "hocr"
+            )  # append here and not output_types to avoid mutating original list
         for ext in extensions:
             api.SetVariable(EXTENSION_TO_VAR[ext], "true")
             raw_results_paths.append(f"{output_base}.{ext}")
         api.ProcessPage(
-            outputbase=output_base, image=page, page_index=0, filename="test1"
+            outputbase=output_base,
+            image=page,
+            page_index=0,
+            filename="Resultado de OCR",
         )
         hocr = etree.parse(f"{output_base}.hocr", html.XHTMLParser())
 

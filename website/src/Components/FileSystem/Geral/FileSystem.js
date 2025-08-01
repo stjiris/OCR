@@ -981,6 +981,8 @@ class FileExplorer extends React.Component {
                         name={key}
                         info={this.getInfo(key)}
                         enterFolder={this.enterFolder}
+                        performOCR={this.performOCR}
+                        configureOCR={this.configureOCR}
                         deleteItem={this.deleteItem}
                     />
                 )
@@ -1203,7 +1205,7 @@ class FileExplorer extends React.Component {
                                sessionId={this.props._private ? this.props.sessionId : ""}
                                current_folder={this.props.current_folder}
                                filename={this.props.current_file_name}
-                               isFolder={this.props.isFolder}
+                               isFolder={this.props.ocrTargetIsFolder}
                                isSinglePage={this.props.ocrTargetIsSinglePage}
                                customConfig={this.props.customConfig}
                                setCurrentCustomConfig={this.props.setCurrentCustomConfig}

@@ -44,8 +44,14 @@ def _get_segment_hocr(page, lang: str, config_str: str, segment_coordinates):
     )
 
 
-def _get_hocr(page, lang: str, config_str: str, extensions: list[str] = None):
-    if extensions is None:
+def _get_hocr(
+    page,
+    lang: str,
+    config_str: str,
+    extensions: list[str] = None,
+    single_page: bool = False,
+):
+    if not single_page or extensions is None:
         extensions = ["hocr"]
     return _run_and_get_multiple_output(
         page, lang=lang, extensions=extensions, config_str=config_str
@@ -108,13 +114,16 @@ def get_structure(
     doc_path: str = "",  # not used, added for consistent parameter names with tesserOCR
     output_types: list[str] | None = None,
     segment_box=None,
+    single_page: bool = False,
 ):
     if segment_box:
         raw_results = _get_segment_hocr(
             page, lang, config, segment_coordinates=segment_box
         )
     else:
-        raw_results = _get_hocr(page, lang, config, extensions=output_types)
+        raw_results = _get_hocr(
+            page, lang, config, extensions=output_types, single_page=single_page
+        )
 
     hocr = etree.fromstring(raw_results["hocr"], html.XHTMLParser())
     lines = parse_hocr(hocr, segment_box)

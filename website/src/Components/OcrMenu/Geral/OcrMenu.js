@@ -58,9 +58,9 @@ class OcrMenu extends React.Component {
             fetchingPreset: false,  // true if selected preset has been fetched
         }
 
-        // Enable options restricted to single-page
-        tesseractOutputsList[tesseractOutputsList.length-2]["disabled"] = !this.props.isSinglePage;  // hOCR output
-        tesseractOutputsList[tesseractOutputsList.length-1]["disabled"] = !this.props.isSinglePage;  // ALTO output
+        // Disable options restricted to single-page if configuring for multi-page documents
+        tesseractOutputsList[tesseractOutputsList.length-2]["disabled"] = !this.props.isSinglePage && !this.props.isFolder;  // hOCR output
+        tesseractOutputsList[tesseractOutputsList.length-1]["disabled"] = !this.props.isSinglePage && !this.props.isFolder;  // ALTO output
 
         this.confirmLeave = React.createRef();
         this.successNot = React.createRef();
@@ -274,6 +274,9 @@ class OcrMenu extends React.Component {
                 } else {
                     this.errorNot.current.openNotif("Erro inesperado ao guardar a configuração de OCR.")
                 }
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível guardar a configuração de OCR.");
             });
     }
 

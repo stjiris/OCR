@@ -4,7 +4,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-import Button from '@mui/material/Button';
 
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
@@ -148,7 +147,7 @@ class DocumentRow extends React.Component {
                         </>
                         : <>
                             <TableCell className="explorerCell actionsCell" align='center'>
-                                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                                <Box className="actionsCell-inner">
                                     <TooltipIcon
                                         key={"OCR " + this.props.name}
                                         disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
@@ -284,6 +283,7 @@ DocumentRow.defaultProps = {
     deleteItem: null,
     editText: null,
     performOCR: null,
+    configureOCR: null,
     indexFile: null,
     removeIndexFile: null,
     createLayout: null

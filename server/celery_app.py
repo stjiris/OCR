@@ -618,6 +618,7 @@ def task_page_ocr(
                     config=config,
                     doc_path=path,
                     output_types=output_types,
+                    single_page=True,
                 )
             else:
                 json_d, _ = ocr_engine.get_structure(

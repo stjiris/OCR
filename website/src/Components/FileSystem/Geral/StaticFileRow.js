@@ -40,7 +40,7 @@ class StaticFileRow extends React.Component {
                 </TableCell>
 
                 <TableCell className="explorerCell staticActionsCell">
-                    <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                    <Box className="actionsCell-inner">
                         <TooltipIcon
                             className="actionButton"
                             message="Transferir"

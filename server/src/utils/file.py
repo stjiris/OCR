@@ -513,12 +513,12 @@ def get_data(file):
         return json.loads(text)
 
 
-def get_doc_len(file):
+def get_doc_len(file) -> int:
     with open(file, encoding="utf-8") as f:
         text = f.read()
         if text == "":
-            return {}
-        return json.loads(text)["pages"]
+            return -1
+        return int(json.loads(text)["pages"])
 
 
 def update_json_file(file, data):
