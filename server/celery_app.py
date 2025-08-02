@@ -576,35 +576,23 @@ def task_page_ocr(
         ocr_engine = globals()[ocr_engine_name.lower()]
 
         layout_path = f"{path}/_layouts/{get_file_basename(filename)}.json"
-        segment_ocr_flag = False
+        only_ignored_areas = True
 
         parsed_json = []
         if os.path.exists(layout_path):
             with open(layout_path, encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
+                for x in parsed_json:
+                    if x["type"] != "remove":
+                        only_ignored_areas = False
+                        break
 
-                text_boxes = [x for x in parsed_json if x["type"] != "remove"]
-
-                if text_boxes:
-                    segment_ocr_flag = True
-
-        if not segment_ocr_flag:
-            # Measure image load time
-            # load_start = time.time()
+        if only_ignored_areas:
             image = Image.open(f"{path}/_pages/{filename}")
-            # load_time = time.time() - load_start
-            # page_metrics["image_load_time"] = load_time
 
-            for item in [
-                x for x in parsed_json if x["type"] != "remove"
-            ]:  # hide both images and ignored segments
+            for item in parsed_json:
                 for sq in item["squares"]:
-                    left = sq["left"]
-                    top = sq["top"]
-                    right = sq["right"]
-                    bottom = sq["bottom"]
-
-                    box_coords = ((left, top), (right, bottom))
+                    box_coords = ((sq["left"], sq["top"]), (sq["right"], sq["bottom"]))
                     img_draw = ImageDraw.Draw(image)
                     img_draw.rectangle(box_coords, fill="white")
 
@@ -639,17 +627,26 @@ def task_page_ocr(
                 json.dump(json_d, f, indent=2, ensure_ascii=False)
             # save_time = time.time() - save_start
             # page_metrics["save_time"] = save_time
-        else:
+
+        else:  # OCR only selected areas
             with open(layout_path, encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
 
-            text_groups = [x for x in parsed_json if x["type"] == "text"]
-            image_groups = [x for x in parsed_json if x["type"] == "image"]
-            ignore_groups = [x for x in parsed_json if x["type"] == "remove"]
+            text_groups = []
+            image_groups = []
+            ignore_groups = []
+
+            for item in parsed_json:
+                area_type = item["type"]
+                if area_type == "text":
+                    text_groups.append(item)
+                elif area_type == "image":
+                    image_groups.append(item)
+                elif area_type == "remove":
+                    ignore_groups.append(item)
 
             image = Image.open(f"{path}/_pages/{filename}")
-            basename = get_file_basename(filename)
-            page_id = int(basename.split("_")[-1]) + 1
+            img_draw = ImageDraw.Draw(image)
 
             if ignore_groups:
                 for item in ignore_groups:
@@ -660,14 +657,16 @@ def task_page_ocr(
                         bottom = sq["bottom"]
 
                         box_coords = ((left, top), (right, bottom))
-                        img_draw = ImageDraw.Draw(image)
                         img_draw.rectangle(box_coords, fill="white")
 
             if image_groups:
                 if not os.path.exists(f"{path}/_images"):
                     os.mkdir(f"{path}/_images")
 
-                for id, item in enumerate(image_groups):
+                basename = get_file_basename(filename)
+                page_number = int(basename.split("_")[-1]) + 1
+
+                for item_id, item in enumerate(image_groups):
                     for sq in item["squares"]:
                         left = sq["left"]
                         top = sq["top"]
@@ -677,7 +676,7 @@ def task_page_ocr(
                         box_coords = (left, top, right, bottom)
                         cropped_image = image.crop(box_coords)
                         cropped_image.save(
-                            f"{path}/_images/page{page_id}_{id + 1}.{filename.split('.')[-1].lower()}"
+                            f"{path}/_images/page{page_number}_{item_id + 1}.{filename.split('.')[-1].lower()}"
                         )
 
             box_coordinates_list = []
