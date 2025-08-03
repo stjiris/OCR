@@ -527,23 +527,20 @@ def task_page_ocr(
     :param output_types: output types to generate directly, if the file is a single page without user-defined text boxes
     :param delete_on_finish: whether the original file and pages should be deleted on finish, keeping only the results
     """
-    if filename.split(".")[0][-1] == "$":
-        return None
-
     data_file = f"{path}/_data.json"
-    # hacky way of aborting if another task_page_ocr previously raised an error
-    if "exceptions" in get_data(data_file)["ocr"]:
-        return {"status": "aborted"}
-
     try:
+        if filename.split(".")[0][-1] == "$":
+            return None
+
+        # hacky way of aborting if another task_page_ocr previously raised an error
+        if "exceptions" in get_data(data_file)["ocr"]:
+            return {"status": "aborted"}
+
         n_doc_pages = get_doc_len(data_file)
         raw_results = None
 
-        # log.debug(f"OCR of page {filename}")
         """
         page_metrics = {}
-        data_folder = f"{path}/_data.json"
-        data = get_data(data_folder)
         """
 
         # Convert the ocr_algorithm to the correct class
@@ -584,7 +581,10 @@ def task_page_ocr(
                 )
             else:
                 json_d, _ = ocr_engine.get_structure(
-                    page=image, lang=lang, doc_path=path, config=config
+                    page=image,
+                    lang=lang,
+                    doc_path=path,
+                    config=config,
                 )
             # ocr_time = time.time() - ocr_start
             # page_metrics["ocr_time"] = ocr_time
@@ -693,6 +693,7 @@ def task_page_ocr(
             # save_time = time.time() - save_start
             # page_metrics["save_time"] = save_time
 
+        # Performed OCR of page, update data
         files = os.listdir(f"{path}/_ocr_results")
 
         data = get_data(data_file)

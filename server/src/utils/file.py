@@ -485,6 +485,14 @@ def get_file_extension(filename):
     return filename.split(".")[-1]
 
 
+def get_page_extension_from_original(filename):
+    original_extension = filename.split(".")[-1]
+    if original_extension == "pdf" or original_extension == "zip":
+        return "png"
+    else:
+        return original_extension
+
+
 def json_to_text(json_d):
     """
     Convert json to text

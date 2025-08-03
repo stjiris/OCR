@@ -3,6 +3,7 @@ from tempfile import NamedTemporaryFile
 
 from lxml import etree
 from lxml import html
+from PIL import Image
 from pytesseract import pytesseract
 from src.utils.enums_tesseract import ENGINE_MODES
 from src.utils.enums_tesseract import LANGS
@@ -116,6 +117,9 @@ def get_structure(
     segment_box=None,
     single_page: bool = False,
 ):
+    if isinstance(page, str):  # open file if filename was passed
+        page = Image.open(page)
+
     if segment_box:
         raw_results = _get_segment_hocr(
             page, lang, config, segment_coordinates=segment_box

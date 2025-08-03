@@ -1,3 +1,6 @@
+import tempfile
+from os import remove
+
 from lxml import etree
 from lxml import html
 from PIL import Image
@@ -8,6 +11,7 @@ from src.utils.enums_tesseract import LANGS
 from src.utils.enums_tesseract import OUTPUTS
 from src.utils.enums_tesseract import SEGMENT_MODES
 from src.utils.enums_tesseract import THRESHOLD_METHODS
+from src.utils.file import get_page_extension_from_original
 from src.utils.parse_hocr import parse_hocr
 from tesserocr import OEM
 from tesserocr import PSM
@@ -15,12 +19,9 @@ from tesserocr import PyTessBaseAPI
 
 api = PyTessBaseAPI(init=False)
 
-# TesserOCR's ProcessPage() (singular) cannot output a valid PDF.
-# TODO: obtain a PDF directly by using tesserOCR's ProcessPages() (plural), which takes a file path instead of PIL image.
-
 TESSERACT_OUTPUTS = (
     "hocr",
-    # "pdf",
+    "pdf",
     "tsv",
     "txt",
     "xml",
@@ -28,7 +29,7 @@ TESSERACT_OUTPUTS = (
 
 EXTENSION_TO_VAR = {
     "hocr": "tessedit_create_hocr",
-    # "pdf": "tessedit_create_pdf",
+    "pdf": "tessedit_create_pdf",
     "tsv": "tessedit_create_tsv",
     "txt": "tessedit_create_txt",
     "xml": "tessedit_create_alto",
@@ -86,9 +87,10 @@ def get_structure(
     """
     Extract text and layout structure from a page or a segment.
 
-    :param page: The PIL image of the page.
-    :param lang: The string of languages to use
+    :param page: The PIL image of the page, or its path.
+    :param lang: The string of languages to use.
     :param config: OCR configuration options (dict).
+    :param doc_path: Path to the folder of the document being OCR'd.
     :param output_types: List of output types to auto-generate if the document being OCR'd only has one page.
     :param segment_box: Optional bounding box for a segment (left, top, right, bottom) or list of boxes.
     :param single_page: Whether this is the only page of the document being analysed. If yes, some result files can be immediately outputted.
@@ -100,44 +102,36 @@ def get_structure(
     # Ensure config is a dict, use defaults if not
     if not isinstance(config, dict):
         config = {
-            "engineMode": INT_TO_OEM[3],
-            "segmentMode": INT_TO_PSM[6 if segment_box else 3],
+            "engineMode": 3,
+            "segmentMode": 6 if segment_box else 3,
         }
 
     api.InitFull(
         lang=config.get("lang", lang),
-        oem=config.get("engineMode", INT_TO_OEM[3]),
-        psm=config.get("segmentMode", INT_TO_PSM[3]),
+        oem=INT_TO_OEM[config.get("engineMode", 3)],
+        psm=INT_TO_PSM[config.get("segmentMode", 3)],
+        variables=config.get("otherParams", {}),
     )
     # TODO: receive other variables
 
     raw_results_paths = []
     if segment_box:
+        if isinstance(page, str):
+            page = Image.open(page)  # get file descriptor
         api.SetImage(page)
-        if isinstance(segment_box, list):  # Batch multiple segments
-            results = []
-            for box in segment_box:
-                coords = {
-                    "left": box[0],
-                    "top": box[1],
-                    "width": box[2] - box[0],
-                    "height": box[3] - box[1],
-                }
-                api.SetRectangle(**coords)
-                hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
-                results.append(parse_hocr(hocr, box))
-            return results
-        else:
-            coords = {
-                "left": segment_box[0],
-                "top": segment_box[1],
-                "width": segment_box[2] - segment_box[0],
-                "height": segment_box[3] - segment_box[1],
-            }
-            api.SetRectangle(**coords)
-            hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
+
+        coords = {
+            "left": segment_box[0],
+            "top": segment_box[1],
+            "width": segment_box[2] - segment_box[0],
+            "height": segment_box[3] - segment_box[1],
+        }
+        api.SetRectangle(**coords)
+        hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
 
     elif not single_page:
+        if isinstance(page, str):
+            page = Image.open(page)  # get file descriptor
         api.SetImage(page)
         hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
 
@@ -155,12 +149,29 @@ def get_structure(
         for ext in extensions:
             api.SetVariable(EXTENSION_TO_VAR[ext], "true")
             raw_results_paths.append(f"{output_base}.{ext}")
-        api.ProcessPage(
-            outputbase=output_base,
-            image=page,
-            page_index=0,
-            filename="Resultado de OCR",
-        )
+
+        if isinstance(page, str):
+            # Use ProcessPages (plural) to obtain direct results from file path
+            api.ProcessPages(
+                outputbase=output_base,
+                filename=page,
+            )
+        else:
+            # Getting direct outputs from tesserOCR requires API call that only processes stored file, not in-memory image
+            temp_file = tempfile.NamedTemporaryFile(
+                prefix="temp_",
+                suffix=f".{get_page_extension_from_original(doc_path)}",
+                delete=False,
+                delete_on_close=False,
+            )
+            page.save(temp_file, format=page.format)
+            api.ProcessPages(
+                outputbase=output_base,
+                filename=temp_file.name,
+            )
+            if temp_file:
+                remove(temp_file.name)
+
         hocr = etree.parse(f"{output_base}.hocr", html.XHTMLParser())
 
     api.End()
