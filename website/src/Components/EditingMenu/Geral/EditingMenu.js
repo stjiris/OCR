@@ -12,7 +12,7 @@ import TextareaAutosize from '@mui/material/TextareaAutosize';
 
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-
+import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
@@ -51,6 +51,19 @@ class Word extends React.Component {
         return word.toLowerCase();
     }
      */
+    confidenceColor() {
+        if (this.props.confidence == null) {
+            return "#000000ff"
+        }
+
+        if (this.props.confidence > 85) {
+            return "#008a07ff";
+        } else if (this.props.confidence > 75) {
+            return "#ff8800ff";
+        } else {
+            return "#ee0000ff";
+        }
+    }
 
     render() {
         //const cleanedWord = this.cleanWord(this.props.text.toLowerCase());
@@ -61,6 +74,7 @@ class Word extends React.Component {
                 margin: "0px 2px",
                 display: "inline-block",
                 fontSize: "14px",
+                color: this.props.showConfidence ? this.confidenceColor() : "#000000ff",
                 // backgroundColor: (false) ? "#ffd700" : "transparent",
                 backgroundColor: "transparent",
                 borderRadius: "5px",
@@ -104,6 +118,7 @@ class EditingMenu extends React.Component {
 
             addLineMode: false,
             removeLineMode: false,
+            showConfidence: false,
 
             corpusChoice: [{"name": "Português", "code": "Português"}]
         }
@@ -892,6 +907,30 @@ class EditingMenu extends React.Component {
                                 </Button>
                             }
 
+                            {
+                                this.state.showConfidence
+                                    ? <Button
+                                        disabled={!loaded}
+                                        color="error"
+                                        variant="contained"
+                                        className="menuFunctionButton"
+                                        onClick={() => {this.setState({showConfidence: false})}}
+                                        startIcon={<CloseRoundedIcon />}
+                                    >
+                                        Mostrar Texto Simples
+                                    </Button>
+
+                                    : <Button
+                                        disabled={!loaded}
+                                        variant="contained"
+                                        className="menuFunctionButton"
+                                        onClick={() => {this.setState({showConfidence: true})}}
+                                        startIcon={<ThumbUpAltIcon />}
+                                    >
+                                        Mostrar Grau de Confiança
+                                    </Button>
+                            }
+
                             <Button
                                 disabled={!this.state.loaded}
                                 color="success"
@@ -1086,6 +1125,8 @@ class EditingMenu extends React.Component {
                                                                             text={word["text"]}
                                                                             id={id}
                                                                             box={word["box"]}
+                                                                            confidence={word["confidence"]}
+                                                                            showConfidence={this.state.showConfidence}
                                                                             //cleanText={word["clean_text"]}
                                                                             hoverWord={this.hoverWord}
                                                                             highlightWord={this.showImageHighlight}
@@ -1250,6 +1291,8 @@ Word.defaultProps = {
     id: null,
     text: null,
     box: null,
+    showConfidence: false,
+    confidence: null,
     overlay: null,
     // functions:
     hoverWord: null,
