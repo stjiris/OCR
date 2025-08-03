@@ -176,20 +176,35 @@ def verify_params(config):
         for lang in config["lang"]:
             if lang not in LANGS:
                 errors.append(f'Língua: "{config["lang"]}"')
+
     if "engineMode" in config and config["engineMode"] not in ENGINE_MODES:
         errors.append(f'Modo do motor: "{config["engineMode"]}"')
+
     if "segmentMode" in config and config["segmentMode"] not in SEGMENT_MODES:
         errors.append(f'Segmentação: "{config["segmentMode"]}"')
+
     if (
         "thresholdMethod" in config
         and config["thresholdMethod"] not in THRESHOLD_METHODS
     ):
         errors.append(f'Thresholding: "{config["thresholdMethod"]}"')
+
     if "outputs" in config:
         for output_format in config["outputs"]:
             if output_format not in OUTPUTS:
                 errors.append(f'Formato de resultado: "{config["outputs"]}"')
+
     if "dpi" in config and not isinstance(config["dpi"], (int, str)):
-        errors.append(f'DPI: "{config["outputs"]}"')
+        errors.append(f'DPI: "{config["dpi"]}"')
+
+    if "otherParams" in config and not isinstance(config["otherParams"], dict):
+        errors.append(f'Outros parâmetros: "{config["otherParams"]}"')
 
     return len(errors) == 0, errors
+
+
+def build_ocr_config(config: dict) -> tuple[str, dict]:
+    # Join langs with pluses, expected by tesseract
+    lang = "+".join(config["lang"])
+    config["lang"] = lang
+    return lang, config

@@ -55,42 +55,6 @@ celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKE
 load_invisible_font()
 
 
-def build_ocr_config(
-    config: dict, ocr_engine_name: str
-) -> tuple[str, str] | tuple[str, dict]:
-    if ocr_engine_name == "pytesseract":
-        config_str = ""
-        # Join langs with pluses, expected by tesseract
-        lang = "+".join(config["lang"])
-
-        if (
-            "dpi" in config and config["dpi"]
-        ):  # typecheck expected in ocr_engine.verify_params()
-            " ".join([config_str, f'--dpi {int(config["dpi"])}'])
-
-        " ".join(
-            [
-                config_str,
-                f'--oem {config["engineMode"]}',
-                f'--psm {config["segmentMode"]}',
-                f'-c thresholding_method={config["thresholdMethod"]}',
-            ]
-        )
-
-        if "otherParams" in config and isinstance(config["otherParams"], str):
-            " ".join([config_str, config["otherParams"]])
-
-        return lang, config_str
-
-    elif ocr_engine_name == "tesserocr":
-        # Join langs with pluses, expected by tesseract
-        lang = "+".join(config["lang"])
-        config["lang"] = lang
-        return lang, config
-    else:
-        raise ValueError("Invalid configuration received")
-
-
 @celery.task(name="auto_segment")
 def task_auto_segment(path):
     return parse_images(path)
@@ -330,6 +294,15 @@ def task_file_ocr(
             if "otherParams" not in config and "otherParams" in default_config:
                 config["otherParams"] = default_config["otherParams"]
 
+        # ensure other params are defined as a dict of names to values
+        other_params = config["otherParams"]
+        if not isinstance(other_params, dict) and isinstance(other_params, str):
+            other_params_dict = {}
+            for param in other_params.split(";"):
+                n, v = param.split("=")
+                other_params_dict[n] = v
+            config["otherParams"] = other_params_dict
+
         # Verify parameter values
         ocr_engine = globals()[f'ocr_{config["engine"]}'.lower()]
         valid, errors = ocr_engine.verify_params(config)
@@ -353,8 +326,7 @@ def task_file_ocr(
         update_json_file(data_folder, data)
 
         # Build config according to specified engine
-        ocr_engine_name = config["engine"].lower()
-        lang, config_formatted = build_ocr_config(config, ocr_engine_name)
+        lang, config_formatted = ocr_engine.build_ocr_config(config)
 
         # Generate the images
         """
@@ -398,6 +370,7 @@ def task_file_ocr(
 
         # This should not be necessary as images for OCR are extracted on document upload
         # task_prepare_file_ocr(path)
+
         pages_path = f"{path}/_pages"
         images = sorted([x for x in os.listdir(pages_path)])
 
