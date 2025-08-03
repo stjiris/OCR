@@ -39,7 +39,7 @@ export const defaultSegmentationMode = 3;
 export const tesseractSegmentList = [
     { value: 0, description: "Apenas Orientation and Script Detection (OSD)"},
     { value: 1, description: "OCR com segmentação automática de página e OSD"},
-    //{ value: 2, description: "Segmentação automática de página sem OSD nem OCR"},
+    { value: 2, description: "Segmentação automática de página sem OSD nem OCR"},
     { value: 3, description: "(Por defeito) OCR com segmentação automática, sem OSD"},
     { value: 4, description: "Coluna de texto com linhas de tamanho variável"},
     { value: 5, description: "Bloco uniforme de texto, alinhado verticalmente"},

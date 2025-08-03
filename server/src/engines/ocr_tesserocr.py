@@ -100,14 +100,14 @@ def get_structure(
     # Ensure config is a dict, use defaults if not
     if not isinstance(config, dict):
         config = {
-            "oem": INT_TO_OEM[3],
-            "psm": INT_TO_PSM[6 if segment_box else 3],
+            "engineMode": INT_TO_OEM[3],
+            "segmentMode": INT_TO_PSM[6 if segment_box else 3],
         }
 
     api.InitFull(
         lang=config.get("lang", lang),
-        oem=config.get("oem", INT_TO_OEM[3]),
-        psm=config.get("psm", INT_TO_PSM[3]),
+        oem=config.get("engineMode", INT_TO_OEM[3]),
+        psm=config.get("segmentMode", INT_TO_PSM[3]),
     )
     # TODO: receive other variables
 
