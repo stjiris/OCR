@@ -1,3 +1,4 @@
+import math
 import tempfile
 from os import remove
 
@@ -104,11 +105,12 @@ def get_structure(
             page = Image.open(page)  # get file descriptor
         api.SetImage(page)
 
+        # err on the side of using a bigger margin
         coords = {
-            "left": segment_box[0],
-            "top": segment_box[1],
-            "width": segment_box[2] - segment_box[0],
-            "height": segment_box[3] - segment_box[1],
+            "left": math.floor(segment_box[0]),
+            "top": math.floor(segment_box[1]),
+            "width": math.ceil(segment_box[2] - segment_box[0]),
+            "height": math.ceil(segment_box[3] - segment_box[1]),
         }
         api.SetRectangle(**coords)
         hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
