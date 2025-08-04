@@ -3,8 +3,11 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
+import Typography from "@mui/material/Typography";
 import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import CircularProgress from '@mui/material/CircularProgress';
+import TextareaAutosize from '@mui/material/TextareaAutosize';
 
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -13,14 +16,12 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import UndoIcon from "@mui/icons-material/Undo";
 
 import AddLineIcon from '../../../static/addLine.svg';
 import RemoveLineIcon from '../../../static/removeLine.svg';
 
 import loadComponent from '../../../utils/loadComponents';
-import {CircularProgress, TextareaAutosize} from '@mui/material';
-
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
 const Notification = loadComponent('Notifications', 'Notification');
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
@@ -59,7 +60,8 @@ class Word extends React.Component {
                 margin: "0px 2px",
                 display: "inline-block",
                 fontSize: "14px",
-                backgroundColor: (false) ? "#ffd700" : "transparent",
+                // backgroundColor: (false) ? "#ffd700" : "transparent",
+                backgroundColor: "transparent",
                 borderRadius: "5px",
             }}
             onMouseEnter={(e) => {
@@ -113,6 +115,7 @@ class EditingMenu extends React.Component {
 
         this.selectedWord = "";
 
+        this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
         this.hoverWord = this.hoverWord.bind(this);
         this.showImageHighlight = this.showImageHighlight.bind(this)
@@ -150,7 +153,7 @@ class EditingMenu extends React.Component {
     getContents(page = 1) {
         const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
-        fetch(API_URL + '/get-file?' + is_private + 'path=' + path + '&page=' + page, {
+        fetch(API_URL + '/get-text-content?' + is_private + 'path=' + path + '&page=' + page, {
             method: 'GET'
         })
         .then(response => {return response.json()})
@@ -767,61 +770,34 @@ class EditingMenu extends React.Component {
     }
 
     render() {
+        const loaded = this.state.contents.length !== 0;
         const incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
         return (
-            this.state.contents.length === 0 ?
-                <Box sx={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    alignItems: "center"
-                }}>
-                    <CircularProgress color="success" />
-                </Box>
-            :
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
                 <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
-                {
-                    <>
-                    <Box sx={{
-                        ml: '0.5rem',
-                        mr: '0.5rem',
-                        display: "flex",
-                        flexDirection: "row",
-                        flexWrap: 'wrap',
-                        justifyContent: 'space-between',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 100,
-                        backgroundColor: '#fff',
-                        paddingBottom: '1rem',
-                        marginBottom: '0.5rem',
-                        borderBottom: '1px solid black'
-                    }}>
-                        <Button
-                            variant="contained"
-                            startIcon={<UndoIcon />}
-                            onClick={() => this.goBack()}
-                            sx={{
-                                border: '1px solid black',
-                                height: '2rem',
-                                textTransform: 'none',
-                                fontSize: '0.75rem',
-                                backgroundColor: '#ffffff',
-                                color: '#000000',
-                                ':hover': { bgcolor: '#ddd' }
-                            }}
-                        >
-                            Voltar
-                        </Button>
+                {<>
+                    <Box className="toolbar">
+                        <Box className="noMarginRight" sx={{display: "flex"}}>
+                            <ReturnButton
+                                disabled={false}
+                                returnFunction={this.goBack}
+                            />
+
+                            <Typography
+                                variant="h5"
+                                component="h2"
+                                sx={{ marginLeft: "1rem", textAlign: "center" }}
+                            >
+                                Editar os resultados
+                            </Typography>
+                        </Box>
 
                         <Box>
                             {
                             this.state.addLineMode
                                 ? <Button
+                                    disabled={!loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -832,6 +808,7 @@ class EditingMenu extends React.Component {
                                 </Button>
 
                                 : <Button
+                                    disabled={!loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({addLineMode: true, removeLineMode: false})}}
@@ -844,6 +821,7 @@ class EditingMenu extends React.Component {
                             {
                             this.state.removeLineMode
                                 ? <Button
+                                    disabled={!loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -854,6 +832,7 @@ class EditingMenu extends React.Component {
                                 </Button>
 
                                 : <Button
+                                    disabled={!loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({removeLineMode: true, addLineMode: false})}}
@@ -866,6 +845,7 @@ class EditingMenu extends React.Component {
                             {
                             this.state.wordsMode
                                 ? <Button
+                                    disabled={!loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -882,6 +862,7 @@ class EditingMenu extends React.Component {
                                     }
                                 </Button>
                                 : <Button
+                                    disabled={!loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({wordsMode: true})}}
@@ -899,6 +880,7 @@ class EditingMenu extends React.Component {
                             }
 
                             <Button
+                                disabled={!loaded}
                                 color="success"
                                 variant="contained"
                                 className="menuFunctionButton"
@@ -909,6 +891,7 @@ class EditingMenu extends React.Component {
                             </Button>
 
                             <Button
+                                disabled={!loaded}
                                 variant="contained"
                                 color="success"
                                 className="menuFunctionButton noMarginRight"
@@ -920,6 +903,9 @@ class EditingMenu extends React.Component {
                         </Box>
                     </Box>
 
+                    {
+                    loaded
+                    ? <>
                     <Box sx={{
                         display: "flex",
                         flexDirection: "row",
@@ -1226,9 +1212,21 @@ class EditingMenu extends React.Component {
                                 </Box>
                             </Box>
                         </Box>
-
                     </Box>
                     </>
+
+                    :<Box sx={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "row",
+                            justifyContent: "center",
+                            alignItems: "center"
+                    }}>
+                        <CircularProgress color="success" />
+                    </Box>
+                    }
+                </>
                 }
             </Box>
         )

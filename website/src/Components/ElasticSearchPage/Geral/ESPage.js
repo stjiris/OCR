@@ -7,6 +7,7 @@ import Divider from '@mui/material/Divider';
 import InboxIcon from '@mui/icons-material/Inbox';
 
 import loadComponent from '../../../utils/loadComponents';
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const PageDisplayer = loadComponent('Displayer', 'PageDisplayer');
 const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
 
@@ -251,7 +252,14 @@ class ESPage extends React.Component {
     */
 
     render() {
-        return (
+        return (<>
+            <Box className="toolbar">
+                <ReturnButton
+                    disabled={false}
+                    returnFunction={this.props.closeSearchMenu}
+                />
+            </Box>
+
             <Box sx={{
                 display: 'flex',
                 flexDirection: 'row',
@@ -337,7 +345,7 @@ class ESPage extends React.Component {
                     }
                 </Box>
             </Box>
-        )
+        </>);
     }
 }
 
@@ -348,7 +356,9 @@ ESItem.defaultProps = {
 ESPage.defaultProps = {
     filesChoice: null,
     algorithmChoice: null,
-    configChoice: null
+    configChoice: null,
+    // functions:
+    closeSearchMenu: null,
 }
 
 export default ESPage;

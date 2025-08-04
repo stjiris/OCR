@@ -17,7 +17,13 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
+from src.utils.file import get_current_time
+from src.utils.file import get_data
+from src.utils.file import get_file_basename
+from src.utils.file import get_page_count
+from src.utils.file import get_size
 from src.utils.file import json_to_text
+from src.utils.file import update_json_file
 
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
 PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
@@ -25,18 +31,8 @@ PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
 OUT_DEFAULT_DPI = 150
 
 
-def get_file_basename(filename):
-    """
-    Get the basename of a file
-
-    :param filename: file name
-    :return: basename of the file
-    """
-    return ".".join(filename.split("/")[-1].split(".")[:-1])
-
-
 ####################################################
-# GENERAL FUNCTION
+# GENERAL FUNCTIONS
 ####################################################
 def export_file(
     path, filetype, delimiter=False, force_recreate=False, simple=False, get_csv=False
@@ -65,6 +61,56 @@ def export_file(
     return func(path, delimiter=delimiter, force_recreate=force_recreate)
 
 
+def export_from_existing(path: str, raw_results: dict | list, output_types: list):
+    """
+    Export result files from pre-existing output files.
+
+    If raw_results is a dict, any contents whose keys are not in output_types are ignored.
+
+    If raw_results is a list of filenames of pre-generated results, the files should be in the _export folder, and
+    any files whose extensions are not in output_types are ignored.
+
+    :param path: Path of the document to which the results refer.
+    :param raw_results: Dictionary of extension keys to respective contents in bytes, or list of filenames of the pregenerated results.
+    :param output_types: List of output types to consider.
+    """
+    data_file = f"{path}/_data.json"
+    data_update = {}
+    if isinstance(raw_results, dict):  # results in memory, in dict
+        for extension in raw_results.keys():
+            if extension in output_types:
+                file_path = f"{path}/_export/_{extension}.{extension}"
+                with open(file_path, "wb") as f:
+                    f.write(raw_results[extension])
+                creation_date = get_current_time()
+                data_update[extension] = {
+                    "complete": True,
+                    "size": get_size(file_path, path_complete=True),
+                    "creation": creation_date,
+                }
+                if extension == "pdf":
+                    data_update[extension]["pages"] = get_page_count(path, "pdf")
+
+    elif isinstance(raw_results, list):  # results stored in listed files
+        for result in raw_results:
+            _, ext = os.path.splitext(result)
+            ext = ext.strip(".")
+            if ext in output_types:
+                # raw results should be in /_export folder already
+                file_path = f"{path}/_export/_{ext}.{ext}"
+                os.rename(result, file_path)
+                creation_date = get_current_time()
+                data_update[ext] = {
+                    "complete": True,
+                    "size": get_size(file_path, path_complete=True),
+                    "creation": creation_date,
+                }
+                if ext == "pdf":
+                    data_update[ext]["pages"] = get_page_count(path, "pdf")
+
+    update_json_file(data_file, data_update)
+
+
 ####################################################
 # EXPORT TXT FUNCTIONS
 ####################################################
@@ -81,7 +127,7 @@ def export_imgs(path, force_recreate=False):
     if os.path.exists(filename) and not force_recreate:
         return filename
 
-    shutil.make_archive(f"{path}/_images", "zip", path, base_dir="_images")
+    shutil.make_archive(f"{path}/_export/_images", "zip", path, base_dir="_images")
     return filename
 
 
@@ -191,7 +237,8 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         return target
 
     else:
-        original_extension = path.split(".")[-1].lower()
+        data = get_data(f"{path}/_data.json")
+        original_extension = data["extension"]
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         if original_extension == "pdf":

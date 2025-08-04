@@ -10,7 +10,10 @@ export const fileSystemState = {
     editingMenu: false,
     layoutMenu: false,
     ocrMenu: false,
-    contents: []
+    contents: [],
+    ocrTargetIsFolder: false,
+    ocrTargetIsSinglePage: false,
+    customConfig: null,
 };
 
 export const layoutMenuState = {
@@ -32,17 +35,9 @@ export const searchMenuState = {
     editingMenu: false,
     layoutMenu: false,
     ocrMenu: false,
-    fileOpened: "",
+    currentFileName: null,
     contents: [],
     filesChoice: [],
     algorithmChoice: [],
     configChoice: []
 };
-
-export const closeFileSystemMenus = {
-    fileOpened: null,
-    isFolder: false,
-    ocrMenu: false,
-    layoutMenu: false,
-    editingMenu: false,
-}

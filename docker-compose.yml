@@ -1,6 +1,7 @@
 volumes:
   elasticsearch_data: {}
   files_data: {}
+  configs_data: {}
 
 services:
   server:
@@ -21,10 +22,13 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+        restart: true
       redis:
         condition: service_healthy
+        restart: true
     volumes:
       - files_data:/app/_files
+      - configs_data:/app/_configs
     restart: unless-stopped
     networks:
       - internal-network
@@ -35,13 +39,21 @@ services:
       dockerfile: ../compose/worker/Dockerfile
     image: ocr-worker
     env_file: "server/.env"
+    hostname: "${HOSTNAME:-$COMPUTERNAME}"  # set same hostname as host machine; try UNIX, else Windows
     environment:
       C_FORCE_ROOT: true
       PYTHONUNBUFFERED: true
       PYTHONDONTWRITEBYTECODE : true
     command: celery -A celery_app.celery worker --beat --scheduler redbeat.RedBeatScheduler --loglevel=debug --without-gossip --without-mingle --without-heartbeat -Ofair -E --concurrency=8 --hostname=worker1@%h -P prefork
+    healthcheck:
+        test: celery inspect ping -d worker1@$$HOSTNAME
+        interval: 10s
+        timeout: 10s
+        retries: 3
+        start_period: 10s
     volumes:
       - files_data:/app/_files
+      - configs_data:/app/_configs
     depends_on:
       redis:
         condition: service_healthy
@@ -61,10 +73,11 @@ services:
       - "5050"  # exposed only to other services
     depends_on:
       worker:
-        condition: service_started
+        condition: service_healthy
         restart: true
       redis:
         condition: service_healthy
+        restart: true
     restart: unless-stopped
     networks:
       - internal-network
@@ -76,8 +89,8 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 30s
-      retries: 15
+      timeout: 10s
+      retries: 10
       start_period: 10s
     volumes:
       - files_data:/app/_files

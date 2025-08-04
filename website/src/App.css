@@ -4,6 +4,22 @@ body {
   font-family: 'Noto Sans', 'Arial', sans-serif;
 }
 
+.toolbar {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: #fff;
+    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid black;
+}
+
 .MuiBox-root .pathElement {
     margin: 0;
     padding: 0 10px 0 10px;
@@ -13,7 +29,9 @@ body {
     height: 2rem;
     align-items: center;
     font-family: "Roboto", "Helvetica", "Arial", sans-serif;
-    font-size: 0.875rem
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.02857em;
 }
 
 .MuiBox-root .pathButton {
@@ -43,7 +61,7 @@ body {
     font-size: 2rem;
 }
 
-.MuiButton-contained.menuFunctionButton {
+.MuiButton-contained.menuFunctionButton {  /* overrides React MUI styles */
     border: 1px solid black;
     height: 2rem;
     text-transform: none;
@@ -51,7 +69,11 @@ body {
     width: fit-content;
 }
 
-.menuFunctionButton.noMarginRight {
+.noMarginRight {
+    margin-right: 0
+}
+
+.menuFunctionButton.noMarginRight {  /* overrides React MUI styles */
     margin-right: 0
 }
 
@@ -90,6 +112,14 @@ body {
     object-fit: contain;
 }
 
+/*
+input field within a TextField used within Autocomplete
+cannot be styled with props, interferes with functioning of Autocomplete
+*/
+.MuiAutocomplete-root .MuiTextField-root .MuiInputBase-root {
+    height: 2rem;
+}
+
 .MuiFormControl-root.simpleInput {
     margin-bottom: 0.3rem;
     margin-top: 0.5rem;
@@ -119,6 +149,7 @@ body {
 
 .MuiTableCell-root.explorerCell {
     border-left: 1px solid #aaa;
+    font-size: 1rem;
 }
 
 .MuiTableCell-root.MuiTableCell-body.explorerCell {
@@ -168,6 +199,13 @@ body {
     text-align: center;
 }
 
+.actionsCell-inner {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
 .MuiTableCell-root.stateCell {
     width: 8%;
     text-align: center;
@@ -203,41 +241,13 @@ body {
     text-align: center;
 }
 
-.page-div {
-  margin-top: 0.5rem;
-  text-align: center;
-}
-
-.footer-div {
-  margin-top: 0.5rem;
-  text-align: center;
-}
-
-.loading-wheel {
-  display: none;
-}
-
 span {
   font-size: 1rem;
   white-space: pre-line;
 }
 
-.no-file {
-  margin-left: 1rem;
-}
-
 .link:hover {
   cursor: pointer;
-}
-
-.modal-image {
-  max-width: 90vw;
-  max-height: 90vh;
-  transition: transform 0.5s;
-}
-
-.modal-image:hover {
-  transform: scale(1.5);
 }
 
 img:hover {
@@ -248,12 +258,4 @@ img:hover {
   font-family: 'Cinzel', serif;
   font-weight: 500;
   margin: 0px;
-}
-
-.editorSelector {
-  border: 1px solid black;
-  border-bottom: none;
-  border-top-left-radius: 7px;
-  border-top-right-radius: 7px;
-  cursor: pointer;
 }

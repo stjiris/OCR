@@ -1,11 +1,11 @@
 from os import environ
 
 from elasticsearch import Elasticsearch
-from src.utils.file import get_file_basename
 from src.utils.file import FILES_PATH
+from src.utils.file import get_file_basename
 
 ES_URL = environ.get("ES_URL", "http://elasticsearch:9200/")
-IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
+IMAGE_PREFIX = environ.get("IMAGE_PREFIX", "")
 ES_INDEX = "documents"
 
 settings = {
@@ -14,18 +14,18 @@ settings = {
             "filename_analyzer": {
                 "type": "pattern",
                 "pattern": "\\W|_",
-                "lowercase": True
+                "lowercase": True,
             },
             "text_analyzer": {
                 "tokenizer": "whitespace",
                 "filter": ["stop_eng_pt"],
-            }
+            },
         },
         "filter": {
             "stop_eng_pt": {
                 "type": "stop",
                 "ignore_case": True,
-                "stopwords": ["_english_", "_portuguese_"]
+                "stopwords": ["_english_", "_portuguese_"],
             }
         },
         "normalizer": {
@@ -33,7 +33,7 @@ settings = {
                 "type": "custom",
                 "filter": ["lowercase", "asciifolding"],
             }
-        }
+        },
     },
     "number_of_shards": 1,
     "number_of_replicas": 0,
@@ -45,48 +45,28 @@ mapping = {
         "Document": {
             "type": "text",
             "analyzer": "filename_analyzer",
-            "fields": {
-                "keyword": {
-                    "type": "keyword"
-                }
-            },
+            "fields": {"keyword": {"type": "keyword"}},
         },
-        "Path": {
-            "type": "text",
-            "analyzer": "filename_analyzer"
-        },
+        "Path": {"type": "text", "analyzer": "filename_analyzer"},
         "Page": {
             "type": "integer",
             "fields": {
-                "raw": {
-                    "type": "keyword"
-                },
-                "keyword": {
-                    "type": "keyword",
-                    "normalizer": "term_normalizer"
-                },
+                "raw": {"type": "keyword"},
+                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
             },
         },
         "Text": {
             "type": "text",
             "analyzer": "text_analyzer",
             "fields": {
-                "raw": {
-                    "type": "keyword"
-                },
-                "keyword": {
-                    "type": "keyword",
-                    "normalizer": "term_normalizer"
-                },
+                "raw": {"type": "keyword"},
+                "keyword": {"type": "keyword", "normalizer": "term_normalizer"},
             },
         },
-        "Engine": {
-            "type": "keyword",
-            "normalizer": "term_normalizer"
-        },
+        "Engine": {"type": "keyword", "normalizer": "term_normalizer"},
         "Config": {  # TODO: store configs differently and allow querying with them
             "type": "object",
-            "dynamic": False
+            "dynamic": False,
         },
         "Page Image": {"enabled": False},
     }
@@ -151,14 +131,11 @@ class ElasticSearchClient:
             body={
                 "size": 0,
                 "aggs": {
-                    "docs_names" : {
-                        "terms": {
-                            "field": "Document.keyword",
-                            "size": 10000
-                        }
+                    "docs_names": {
+                        "terms": {"field": "Document.keyword", "size": 10000}
                     }
-                }
-            }
+                },
+            },
         )["aggregations"]["docs_names"]["buckets"]
         return [doc["key"] for doc in results]
 
@@ -170,16 +147,8 @@ class ElasticSearchClient:
             index=self.ES_INDEX,
             body={
                 "size": 1000,
-                "query": {
-                    "bool": {
-                        "filter": {
-                            "terms": {
-                                "Document.keyword": docs
-                            }
-                        }
-                    }
-                }
-            }
+                "query": {"bool": {"filter": {"terms": {"Document.keyword": docs}}}},
+            },
         )["hits"]["hits"]
         for r in results:
             r.pop("_index", None)
@@ -192,11 +161,11 @@ class ElasticSearchClient:
         If a list of documents is given, the search is restricted to these filenames.
         """
         query = {
-            "multi_match" : {
+            "multi_match": {
                 "query": string,
                 "type": "best_fields",
                 "fuzziness": "AUTO",
-                "fields": [ "Text", "Document" ]
+                "fields": ["Text", "Document"],
             }
         }
 
@@ -206,39 +175,40 @@ class ElasticSearchClient:
                 "query": {
                     "bool": {
                         "must": query,
-                        "filter": {
-                            "terms": {
-                                "Document.keyword": docs
-                            }
-                        }
+                        "filter": {"terms": {"Document.keyword": docs}},
                     }
-                }
+                },
             }
         else:
-            body = {
-                "size": 1000,
-                "query": query
-            }
+            body = {"size": 1000, "query": query}
 
-        results = self.client.search(
-                    index=self.ES_INDEX,
-                    body=body
-                    )["hits"]["hits"]
+        results = self.client.search(index=self.ES_INDEX, body=body)["hits"]["hits"]
         for r in results:
             r.pop("_index", None)
             r.pop("_score", None)
         return results
 
 
-def create_document(path: str, engine: str, config: dict, text: str, extension: str = "pdf", page: int = None):
+def create_document(
+    path: str,
+    engine: str,
+    config: dict,
+    text: str,
+    extension: str = "pdf",
+    page: int = None,
+):
     basename = get_file_basename(path)
-    page_extension = ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
+    page_extension = (
+        ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
+    )
 
-    page_url = (IMAGE_PREFIX
-                + "/images/"
-                + "/".join(path.split('/')[1:-2])
-                + f"/_pages/{basename}"
-                + page_extension)
+    page_url = (
+        IMAGE_PREFIX
+        + "/images/"
+        + "/".join(path.split("/")[1:-2])
+        + f"/_pages/{basename}"
+        + page_extension
+    )
 
     if page is None:
         return {

@@ -7,9 +7,7 @@ import "dayjs/locale/pt";
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-
-import loadComponent from './utils/loadComponents';
-import footerBanner from './static/footerBanner.png';
+import Typography from "@mui/material/Typography";
 
 import LockIcon from '@mui/icons-material/Lock';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
@@ -31,15 +29,17 @@ import {
     layoutMenuState,
     editingMenuState,
     searchMenuState,
-    closeFileSystemMenus,
     ocrMenuState
 } from "./states";
-import StorageManager from "./Components/Admin/Geral/StorageManager";
 
+import loadComponent from './utils/loadComponents';
 const FileExplorer = loadComponent('FileSystem', 'FileSystem');
 const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
 const LoginPage = loadComponent('Admin', 'LoginPage');
 const AdminDashboard = loadComponent('Admin', 'Dashboard');
+const StorageManager = loadComponent('Admin', 'StorageManager');
+const ConfigManager = loadComponent('Admin', 'ConfigManager');
+const Footer = loadComponent('Footer', 'Footer');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
@@ -51,7 +51,7 @@ const API_URL = `${window.location.protocol}//${window.location.host}/${process.
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -97,8 +97,12 @@ function App() {
                 editingMenu: false,
                 layoutMenu: false,
 
-                fileOpened: null,
+                currentFileName: null,
                 currentFolderPathList: [""],
+
+                ocrTargetIsFolder: false,
+                ocrTargetIsSinglePage: false,
+                customConfig: null,
 
                 filesChoice: [],
                 algorithmChoice: [],
@@ -115,10 +119,13 @@ function App() {
             this.fileSystem = React.createRef();
 
             this.setCurrentPath = this.setCurrentPath.bind(this);
+            this.returnToParentFolder = this.returnToParentFolder.bind(this);
             this.enterOcrMenu = this.enterOcrMenu.bind(this);
+            this.setCurrentCustomConfig = this.setCurrentCustomConfig.bind(this);
             this.enterLayoutMenu = this.enterLayoutMenu.bind(this);
             this.enterEditingMenu = this.enterEditingMenu.bind(this);
             this.exitMenus = this.exitMenus.bind(this);
+            this.closeSearchMenu = this.closeSearchMenu.bind(this);
         }
 
         getPrivateSession() {
@@ -145,57 +152,60 @@ function App() {
 
         createPrivateSession() {
             return axios.get(API_URL + '/create-private-session')
-            .then(({data}) => {return data["sessionId"]});
+            .then(({data}) => {return data["session_id"]});
         }
 
         setCurrentPath(new_path_list, isDocument=false) {
             // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
-            let fileOpened = null;
+            let currentFileName = null;
             if (isDocument) {
-                fileOpened = new_path_list.pop();
+                currentFileName = new_path_list.pop();
             }
             // ensure empty root item, lost if the path was joined into a string and split again
             if (new_path_list[0] !== "") new_path_list.unshift("");
 
-            this.setState({...fileSystemState, currentFolderPathList: new_path_list, fileOpened: fileOpened},
-                () => this.fileSystem.current.setState({
-                    ...closeFileSystemMenus,
-                    current_folder: new_path_list.join('/').replace(/^\//, ''),
-                    fileOpened: fileOpened,
-                })
-            );
+            this.setState({...fileSystemState, currentFolderPathList: new_path_list, currentFileName: currentFileName});
         }
 
-        enterOcrMenu(filename, isFolder=false, isSinglePage=false, customConfig=null) {
-            this.setState({...ocrMenuState, fileOpened: filename},
-                () => this.fileSystem.current.setState(
-                    {
-                        ...ocrMenuState,
-                        fileOpened: filename,
-                        isFolder: isFolder,
-                        isSinglePage: isSinglePage,
-                        customConfig: customConfig
-                    })
-            );
+        enterOcrMenu(filename, ocrTargetIsFolder=false, ocrTargetIsSinglePage=false, customConfig=null) {
+            this.setState({
+                ...ocrMenuState,
+                currentFileName: filename,
+                ocrTargetIsFolder: ocrTargetIsFolder,
+                ocrTargetIsSinglePage: ocrTargetIsSinglePage,
+                customConfig: customConfig,
+            });
+        }
+
+        /*
+        Used to pass down an updated customConfig prop without fetching all info from the server
+         */
+        setCurrentCustomConfig(customConfig) {
+            this.setState({customConfig: customConfig});
         }
 
         enterLayoutMenu(filename) {
-            this.setState({...layoutMenuState, fileOpened: filename},
-                () => this.fileSystem.current.setState({...layoutMenuState, fileOpened: filename})
-            );
+            this.setState({...layoutMenuState, currentFileName: filename});
         }
 
         enterEditingMenu(filename) {
-            this.setState({...editingMenuState, fileOpened: filename},
-                () => this.fileSystem.current.setState({...editingMenuState, fileOpened: filename})
-            );
+            this.setState({...editingMenuState, currentFileName: filename});
         }
 
         exitMenus(callback) {
-            this.setState({...fileSystemState, fileOpened: null},
-        () => this.fileSystem.current.setState({...closeFileSystemMenus},
-                    () => { if (callback) callback(); })
+            this.setState({...fileSystemState, currentFileName: null},
+                () => { if (callback) callback(); }
             );
+        }
+
+        returnToParentFolder() {
+            if (this.state.currentFileName !== null) {
+                this.setState({currentFileName: null});
+            } else {
+                let current_list = this.state.currentFolderPathList;
+                current_list.pop();
+                this.setCurrentPath(current_list);
+            }
         }
 
         changeFolderFromPath(folder_name) {
@@ -208,35 +218,71 @@ function App() {
             this.setCurrentPath(current_list);
         }
 
+        closeSearchMenu() {
+            this.setState({...fileSystemState,
+                filesChoice: [],
+                algorithmChoice: [],
+                configChoice: []
+            });
+        }
+
         render() {
             const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
-                <Box className="App" sx={{height: '100vh'}}>
+                <Box className="App" sx={{height: "100vh", display: "flex", flexDirection: "column"}}>
+                    <Typography
+                        id="modal-modal-title"
+                        variant="h3"
+                        component="h1"
+                        sx={{
+                            textAlign: "center",
+                            color: "#1976d2",
+                        }}
+                    >
+                        {
+                            this.getPrivateSession()
+                                ? `Sessão Privada - ${this.getPrivateSession()}`
+                                : "OCR - Reconhecimento Ótico de Caracteres"
+                        }
+                    </Typography>
+
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
                         justifyContent: 'space-between',
                         zIndex: '5',
                         // border: '1px solid #000000',
-                        pt: '0.5rem',
-                        pl: '0.5rem',
-                        pb: '0.5rem',
-                        pr: '0.5rem',
+                        padding: '0.5rem',
                     }}>
                         <Box sx={{display: "flex", flexDirection: "row"}}>
-                            <Button
+                        {
+                            this.getPrivateSession()
+                            ? <Button
+                                disabled={buttonsDisabled}
+                                variant="contained"
+                                startIcon={<LockIcon/>}
+                                onClick={() => { this.props.navigate("/"); }}
+                                className="menuButton"
+                                color="error"
+                            >
+                                Sair da Sessão
+                            </Button>
+                            : <Button
                                 disabled={buttonsDisabled}
                                 variant="contained"
                                 startIcon={<LockIcon/>}
                                 onClick={() => {
                                     this.createPrivateSession().then((sessionId) => {
+                                        //this.setCurrentPath([""]);
+                                        this.setState({currentFolderPathList: [""]});
                                         this.props.navigate(`/session/${sessionId}`);
                                     });
                                 }}
                                 className="menuButton"
                             >
-                                Sessão Privada
+                                Nova Sessão Privada
                             </Button>
+                        }
 
                             <Button
                                 disabled={buttonsDisabled}
@@ -279,7 +325,7 @@ function App() {
 
                                         // If not in menu or inside document "folder" containing original and results,
                                         // make current folder non-clickable (folder names are clickable to go back)
-                                        if (!this.state.fileOpened && index > 0 && index === folderDepth - 1) {
+                                        if (!this.state.currentFileName && index > 0 && index === folderDepth - 1) {
                                             return <p className="pathElement">
                                                 {name}
                                             </p>
@@ -297,13 +343,7 @@ function App() {
                                                     key={folder}
                                                     onClick={() => {
                                                         if (index === 0 && this.state.searchMenu) {
-                                                            this.setState({...fileSystemState,
-                                                                filesChoice: [],
-                                                                algorithmChoice: [],
-                                                                configChoice: []
-                                                            });
-                                                        //} else if (this.getPrivateSession() !== null) {
-                                                        //    this.redirectHome();
+                                                            this.closeSearchMenu();
                                                         } else {
                                                             this.changeFolderFromPath(folder);
                                                         }
@@ -319,12 +359,12 @@ function App() {
                                     })
                                 }
                                 <p className="pathElement">
-                                    {this.state.fileOpened}
+                                    {this.state.currentFileName}
                                 </p>
                                 {
                                     // in private session, root level can have docs
                                     (!buttonsDisabled
-                                        && !this.state.fileOpened
+                                        && !this.state.currentFileName
                                         && (this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession())))
                                         ? <Button
                                             variant="text"
@@ -362,9 +402,8 @@ function App() {
 
                             {/* TODO: update help document */}
                             <Button
-                                disabled={true}
                                 variant="text"
-                                onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vR7BhM0haXd5CIyQatS22NrM44woFjChYCAaUAlqOjGAslLuF0TRPaMhjNW-dX8cxuaL86O5N_3mQMv/pub", '_blank')}
+                                onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vTjGei4_szYIrD8G7x2UmNKlbOsW_JZmVj0E2J4933-hXjkU9iuKGr0J8Aj6qpF25HlCb9y3vMadC23/pub", '_blank')}
                                 startIcon={<HelpIcon/>}
                                 sx={{
                                     ml: '1.5rem',
@@ -372,7 +411,7 @@ function App() {
                                     p: 0
                                 }}
                             >
-                                Ajuda
+                                Manual de Utilizador
                             </Button>
                         </Box>
                     </Box>
@@ -383,22 +422,32 @@ function App() {
                             ? <FileExplorer ref={this.fileSystem}
                                             _private={Boolean(this.getPrivateSession())}
                                             sessionId={this.props.sessionId || ""}  // sessionId or empty str if null
-                                            current_folder={this.state.currentFolderPathList}
+                                            current_folder={
+                                                // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
+                                                this.state.currentFolderPathList.join('/').replace(/^\//, '')
+                                            }
+                                            current_file_name={this.state.currentFileName}
+                                            ocrTargetIsFolder={this.state.ocrTargetIsFolder}
+                                            ocrTargetIsSinglePage={this.state.ocrTargetIsSinglePage}
+                                            customConfig={this.state.customConfig}
+                                            ocrMenu={this.state.ocrMenu}
+                                            layoutMenu={this.state.layoutMenu}
+                                            editingMenu={this.state.editingMenu}
                                             setCurrentPath={this.setCurrentPath}
+                                            returnToParentFolder={this.returnToParentFolder}
                                             enterOcrMenu={this.enterOcrMenu}
+                                            setCurrentCustomConfig={this.setCurrentCustomConfig}
                                             enterLayoutMenu={this.enterLayoutMenu}
                                             enterEditingMenu={this.enterEditingMenu}
                                             exitMenus={this.exitMenus}/>
                             : <ESPage filesChoice={this.state.filesChoice}
                                       algorithmChoice={this.state.algorithmChoice}
-                                      configChoice={this.state.configChoice}/>
+                                      configChoice={this.state.configChoice}
+                                      closeSearchMenu={this.closeSearchMenu}/>
                         }
                     </Box>
-                    <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
-                        <a href={footerBanner} target='_blank' rel="noreferrer">
-                            <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
-                        </a>
-                    </Box>
+
+                    <Footer />
                 </Box>
             )
         }
@@ -414,6 +463,7 @@ function App() {
                     <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
                         <Route exact path="/admin" element={<AdminDashboard />} />
                         <Route exact path="/admin/storage" element={<StorageManager />} />
+                        <Route exact path="/admin/config" element={<ConfigManager />} />
                     </Route>
                     <Route exact path="/admin/login" element={<LoginPage isAuthenticated={isAuthenticated} setLoggedIn={login}/>} />
                 </Routes>

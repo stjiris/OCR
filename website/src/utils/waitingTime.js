@@ -9,13 +9,13 @@ function calculateEstimatedTime(pagesProcessed, totalPages) {
         - 500 pages - 9min
         - 1100 pages - 10.5min
         - 4000 pages - 21min
-
-        The regression formula is:
-        Y = 0.004650*X + 3.305
     */
 
-    var pagesLeft = totalPages - pagesProcessed;
-    return Math.ceil(0.004650 * pagesLeft + 3.305);
+    let pagesLeft = totalPages - pagesProcessed;
+    if (pagesLeft < 20) {
+        return "<1";
+    }
+    return Math.ceil(0.0176 * pagesLeft + 0.2632);
 }
 
 export default calculateEstimatedTime;

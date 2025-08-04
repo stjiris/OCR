@@ -4,7 +4,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-import Button from '@mui/material/Button';
 
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
@@ -148,7 +147,7 @@ class DocumentRow extends React.Component {
                         </>
                         : <>
                             <TableCell className="explorerCell actionsCell" align='center'>
-                                <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                                <Box className="actionsCell-inner">
                                     <TooltipIcon
                                         key={"OCR " + this.props.name}
                                         disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
@@ -247,9 +246,10 @@ class DocumentRow extends React.Component {
                                 : <TableCell className="explorerCell stateCell infoCell" align='center'>
                                     <Box className="stateBox">
                                       <span>
-                                        {this.state.info["ocr"]["progress"]}/{this.state.info["pages"]} ({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)
+                                        {this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}
+                                          <CircularProgress sx={{ml: '1rem'}} size='1rem' />
+                                        <br />({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)
                                       </span>
-                                      <CircularProgress sx={{ml: '1rem'}} size='1rem' />
                                     </Box>
                                 </TableCell>
                             }
@@ -283,6 +283,7 @@ DocumentRow.defaultProps = {
     deleteItem: null,
     editText: null,
     performOCR: null,
+    configureOCR: null,
     indexFile: null,
     removeIndexFile: null,
     createLayout: null

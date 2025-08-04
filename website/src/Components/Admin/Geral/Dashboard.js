@@ -1,16 +1,20 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Link, useNavigate} from "react-router";
 import axios from "axios";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 
-import footerBanner from "../../../static/footerBanner.png";
-// import loadComponent from "../../../utils/loadComponents";
+import loadComponent from "../../../utils/loadComponents";
+const Footer = loadComponent('Footer', 'Footer');
 // const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 // const LogsMenu = loadComponent('Form', 'LogsMenu');
 // const Notification = loadComponent('Notifications', 'Notification');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
+const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
+    ? `/${process.env.REACT_APP_BASENAME}/admin`
+    : '/admin';
+
 const UPDATE_TIME = 30;  // period of fetching system info, in seconds
 
 const Dashboard = (props) => {
@@ -70,7 +74,7 @@ const Dashboard = (props) => {
                         variant="contained"
                         onClick={() => {
                             axios.post(API_URL + "/account/logout")
-                                .then(() => window.location.href = '/admin');
+                                .then(() => window.location.href = ADMIN_HOME);
                         }}
                         className="menuButton"
                     >
@@ -95,9 +99,9 @@ const Dashboard = (props) => {
                 </Button>
 
                 <Button
-                    disabled
                     variant="contained"
                     className="adminMenuButton"
+                    onClick={() => navigate('/admin/config')}
                 >
                     Configurar Predefinições OCR
                 </Button>
@@ -113,11 +117,7 @@ const Dashboard = (props) => {
                 </Link>
             </Box>
 
-            <Box sx={{display:"flex", alignItems:"center", marginTop: '1rem', justifyContent:"center"}}>
-                <a href={footerBanner} target='_blank' rel="noreferrer">
-                    <img src={footerBanner} alt="Footer com logo do COMPETE 2020, STJ e INESC-ID" style={{height: '4.5rem', width: 'auto'}}/>
-                </a>
-            </Box>
+            <Footer />
         </Box>
     );
 }

@@ -4,8 +4,9 @@ import axios from "axios";
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import CircularProgress from "@mui/material/CircularProgress";
+import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
-import UndoIcon from "@mui/icons-material/Undo";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import RotateLeft from "@mui/icons-material/RotateLeft";
 import SaveIcon from "@mui/icons-material/Save";
@@ -15,7 +16,19 @@ import RadioGroup from "@mui/material/RadioGroup";
 import Radio from "@mui/material/Radio";
 import FormControl from "@mui/material/FormControl";
 
+import {
+    defaultConfig,
+    emptyConfig,
+    engineList,
+    tesseractLangList,
+    tesseractModeList,
+    tesseractOutputsList,
+    tesseractSegmentList,
+    tesseractThreshList,
+} from "../../../defaultOcrConfigs";
+
 import loadComponent from '../../../utils/loadComponents';
+const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
 const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
 const Notification = loadComponent('Notifications', 'Notification');
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
@@ -23,177 +36,16 @@ const CheckboxList = loadComponent('Form', 'CheckboxList');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
-// TODO: always get the most updated default config from an API endpoint
-
-const defaultLangs = ["por"];
-const tesseractLangList = [
-    { value: "deu", description: "Alemão"},
-    { value: "spa", description: "Espanhol Castelhano"},
-    { value: "fra", description: "Francês"},
-    { value: "eng", description: "Inglês"},
-    { value: "por", description: "Português"},
-    { value: "equ", description: "Módulo de detecção de matemática / equações"},
-    { value: "osd", description: "Módulo de orientação e detecção de scripts"},
-]
-
-const defaultOutputs = ["pdf"];
-const tesseractOutputsList = [
-    { value: "pdf_indexed", description: "PDF com texto e índice"},
-    { value: "pdf", description: "PDF com texto (por defeito)"},
-    { value: "txt", description: "Texto"},
-    { value: "txt_delimited", description: "Texto com separador por página"},
-    { value: "csv", description: "Índice de palavras"},
-    { value: "ner", description: "Entidades (NER)"},
-    { value: "hocr", description: "hOCR (apenas documentos com 1 página)", disabled: true},
-    { value: "xml", description: "ALTO (apenas documentos com 1 página)", disabled: true},
-]
-
-const defaultEngine = "pytesseract";
-const engineList = [
-    { value: "pytesseract", description: "PyTesseract"},
-    { value: "tesserOCR", description: "TesserOCR"},
-]
-
-const defaultEngineMode = 3;
-const tesseractModeList = [
-    { value: 0, description: "Tesseract Original"},
-    { value: 1, description: "Tesseract LSTM"},
-    { value: 2, description: "Tesseract LSTM + Original combinado"},
-    { value: 3, description: "Modo disponível por defeito"},
-]
-
-const defaultSegmentationMode = 3;
-const tesseractSegmentList = [
-    { value: 0, description: "Apenas Orientation and Script Detection (OSD)"},
-    { value: 1, description: "OCR com segmentação automática de página e OSD"},
-    //{ value: 2, description: "Segmentação automática de página sem OSD nem OCR"},
-    { value: 3, description: "(Por defeito) OCR com segmentação automática, sem OSD"},
-    { value: 4, description: "Coluna de texto com linhas de tamanho variável"},
-    { value: 5, description: "Bloco uniforme de texto, alinhado verticalmente"},
-    { value: 6, description: "Bloco uniforme de texto"},
-    { value: 7, description: "Imagem com apenas uma linha de texto"},
-    { value: 8, description: "Imagem com apenas uma palavra"},
-    { value: 9, description: "Imagem com apenas uma palavra num círculo"},
-    { value: 10, description: "Imagem com apenas um caracter"},
-    { value: 11, description: "Texto disperso; procurar o máximo de texto sem ordem particular"},
-    { value: 12, description: "Texto disperso com OSD"},
-    { value: 13, description: "Contornando truques específicos do Tesseract, tratar imagem como apenas uma linha de texto"},
-]
-
-const defaultThresholding = 0;
-const tesseractThreshList = [
-    { value: 0, description: "Otsu (por defeito)"},
-    { value: 1, description: "LeptonicaOtsu"},
-    { value: 2, description: "Sauvola"},
-]
-
-/*
-const easyOCRChoice = [{"name": "Português","code": "pt"}]
-const easyOCRLangList = [
-    {"name": "Abaza","code": "abq"},
-    {"name": "Adigue","code": "ady"},
-    {"name": "Africanês","code": "af"},
-    {"name": "Albanês","code": "sq"},
-    {"name": "Alemão","code": "de"},
-    {"name": "Angika","code": "ang"},
-    {"name": "Árabe","code": "ar"},
-    {"name": "Assamês","code": "as"},
-    {"name": "Ávaro","code": "ava"},
-    {"name": "Azerbaijão","code": "az"},
-    {"name": "Bielorusso","code": "be"},
-    {"name": "Búlgaro","code": "bg"},
-    {"name": "Biari","code": "bh"},
-    {"name": "Boiapuri","code": "bho"},
-    {"name": "Bengalês","code": "bn"},
-    {"name": "Bósnio","code": "bs"},
-    {"name": "Cabardiano","code": "kbd"},
-    {"name": "Canarim ","code": "kn"},
-    {"name": "Checheno","code": "che"},
-    {"name": "Checo","code": "cs"},
-    {"name": "Chinês Simplificado","code": "ch_sim"},
-    {"name": "Chinês Tradicional","code": "ch_tra"},
-    {"name": "Coreano","code": "ko"},
-    {"name": "Croata","code": "hr"},
-    {"name": "Curdo","code": "ku"},
-    {"name": "Dargínico","code": "dar"},
-    {"name": "Dinamarquês","code": "da"},
-    {"name": "Eslovaco","code": "sk"},
-    {"name": "Esloveno","code": "sl"},
-    {"name": "Espanhol","code": "es"},
-    {"name": "Estónio","code": "et"},
-    {"name": "Francês","code": "fr"},
-    {"name": "Galês","code": "cy"},
-    {"name": "Hindi","code": "hi"},
-    {"name": "Holandês","code": "nl"},
-    {"name": "Húngaro","code": "hu"},
-    {"name": "Indonésio","code": "id"},
-    {"name": "Inglês","code": "en"},
-    {"name": "Inguche","code": "inh"},
-    {"name": "Irlandês","code": "ga"},
-    {"name": "Islandês","code": "is"},
-    {"name": "Italiano","code": "it"},
-    {"name": "Japonês","code": "ja"},
-    {"name": "Konkani","code": "gom"},
-    {"name": "Latim","code": "la"},
-    {"name": "Lak","code": "lbe"},
-    {"name": "Letão","code": "lv"},
-    {"name": "Lezghiano","code": "lez"},
-    {"name": "Lituano","code": "lt"},
-    {"name": "Magahi","code": "mah"},
-    {"name": "Maithili","code": "mai"},
-    {"name": "Malaio","code": "ms"},
-    {"name": "Maltês","code": "mt"},
-    {"name": "Maori","code": "mi"},
-    {"name": "Marata","code": "mr"},
-    {"name": "Mongol","code": "mn"},
-    {"name": "Nagpuri","code": "sck"},
-    {"name": "Nepalês","code": "ne"},
-    {"name": "Newari","code": "new"},
-    {"name": "Norueguês","code": "no"},
-    {"name": "Occitano","code": "oc"},
-    {"name": "Páli","code": "pi"},
-    {"name": "Persa (Farsi)","code": "fa"},
-    {"name": "Polaco","code": "pl"},
-    {"name": "Português","code": "pt"},
-    {"name": "Romeno","code": "ro"},
-    {"name": "Russo","code": "ru"},
-    {"name": "Sérvio (cirílico)","code": "rs_cyrillic"},
-    {"name": "Sérvio (latim)","code": "rs_latin"},
-    {"name": "Suaíli","code": "sw"},
-    {"name": "Sueco","code": "sv"},
-    {"name": "Tabassarão ","code": "tab"},
-    {"name": "Tailandês ","code": "th"},
-    {"name": "Tajique ","code": "tjk"},
-    {"name": "Tagalo","code": "tl"},
-    {"name": "Tâmil","code": "ta"},
-    {"name": "Telugu","code": "te"},
-    {"name": "Turco","code": "tr"},
-    {"name": "Ucraniano","code": "uk"},
-    {"name": "Uigur","code": "ug"},
-    {"name": "Urdu","code": "ur"},
-    {"name": "Usbeque","code": "uz"},
-    {"name": "Vietnamita","code": "vi"}
-  ]
-*/
-
-const defaultConfig = {
-    lang: defaultLangs,
-    outputs: defaultOutputs,
-    dpiVal: null,
-    otherParams: null,
-    engine: defaultEngine,
-    engineMode: defaultEngineMode,
-    segmentMode: defaultSegmentationMode,
-    thresholdMethod: defaultThresholding,
-}
 
 class OcrMenu extends React.Component {
     constructor(props) {
         super(props);
         const usingDefault = this.props.customConfig == null;  // null or undefined
-        const initialConfig = Object.assign({...defaultConfig}, this.props.customConfig);
         this.state = {
-            ...initialConfig,
+            ...emptyConfig,
+            presetsList: [],
+            presetName: "",
+            defaultConfig: defaultConfig,
             // lists of options in state, to allow changing them dynamically depending on other choices
             // e.g. when choosing an OCR engine that has different parameter values
             engineOptions: engineList,
@@ -202,11 +54,13 @@ class OcrMenu extends React.Component {
             thresholdMethodOptions: tesseractThreshList,
             usingDefault: usingDefault,
             uncommittedChanges: false,
+            loaded: false,  // true if default configuration has been fetched and page is ready
+            fetchingPreset: false,  // true if selected preset has been fetched
         }
 
-        // Enable options restricted to single-page
-        tesseractOutputsList[tesseractOutputsList.length-2]["disabled"] = !this.props.isSinglePage;  // hOCR output
-        tesseractOutputsList[tesseractOutputsList.length-1]["disabled"] = !this.props.isSinglePage;  // ALTO output
+        // Disable options restricted to single-page if configuring for multi-page documents
+        tesseractOutputsList[tesseractOutputsList.length-2]["disabled"] = !this.props.isSinglePage && !this.props.isFolder;  // hOCR output
+        tesseractOutputsList[tesseractOutputsList.length-1]["disabled"] = !this.props.isSinglePage && !this.props.isFolder;  // ALTO output
 
         this.confirmLeave = React.createRef();
         this.successNot = React.createRef();
@@ -219,6 +73,7 @@ class OcrMenu extends React.Component {
         this.dpiField = React.createRef();
         this.moreParams = React.createRef();
 
+        this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
         this.setLangList = this.setLangList.bind(this);
         this.setOutputList = this.setOutputList.bind(this);
@@ -229,12 +84,79 @@ class OcrMenu extends React.Component {
         event.returnValue = '';
     }
 
+    fetchDefaultConfig() {
+        axios.get(API_URL + '/default-config')
+            .then(({ data }) => {
+                if (!this.state.loaded) {
+                    // entering config menu, set initial config
+                    const initialConfig = Object.assign({...data}, this.props.customConfig);
+                    this.setState({...initialConfig, defaultConfig: data, loaded: true});
+                } else {
+                    this.setState({defaultConfig: data});
+                }
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível obter a configuração por defeito mais atual");
+                if (!this.state.loaded) {
+                    // entering config, use hardcoded default for initial config
+                    const initialConfig = Object.assign({...defaultConfig}, this.props.customConfig);
+                    this.setState({...initialConfig, loaded: true});
+                }
+            });
+    }
+
+    fetchConfigPreset(name) {
+        this.setState({fetchingPreset: true});
+        axios.get(API_URL + '/config-preset', {
+            params: {
+                name: name,
+            }
+        })
+            .then(({ data }) => {
+                this.setState({
+                    ...data,
+                    presetName: name,
+                    usingDefault: false,
+                    fetchingPreset: false,
+                    uncommittedChanges: true
+                });
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível obter a configuração predefinida");
+                this.setState({presetName: null, fetchingPreset: false});
+            });
+    }
+
+    fetchPresetsList() {
+        axios.get(API_URL + '/presets-list')
+            .then(({ data }) => {
+                this.setState({presetsList: data});
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível atualizar a lista de configurações predefinidas");
+            });
+    }
+
+    componentDidMount() {
+        this.fetchDefaultConfig();
+        this.fetchPresetsList();
+        this.interval = setInterval(() => {
+            this.fetchDefaultConfig();
+            this.fetchPresetsList();
+        }, 120000);  // getting an updated default configuration for every 2 minutes on this page is already generous
+    }
+
     componentDidUpdate(prevProps, prevState, snapshot) {
         if (!prevState.uncommittedChanges && this.state.uncommittedChanges) {
             window.addEventListener('beforeunload', this.preventExit);
         } else if (prevState.uncommittedChanges && !this.state.uncommittedChanges) {
             window.removeEventListener('beforeunload', this.preventExit);
         }
+    }
+
+    componentWillUnmount() {
+        if (this.interval)
+            clearInterval(this.interval);
     }
 
     getConfig() {
@@ -255,12 +177,21 @@ class OcrMenu extends React.Component {
         return config;
     }
 
+    selectPreset(name) {
+        if (name === null || name === "") {  // cleared the preset box, not applying preset
+            this.setState({presetName: null});
+        } else {
+            this.fetchConfigPreset(name);
+        }
+    }
+
     restoreDefault() {
         if (this.state.usingDefault) return;
         this.setState({
-            ...defaultConfig,
+            ...this.state.defaultConfig,
+            presetName: null,
             usingDefault: true,
-            uncommittedChanges: true
+            uncommittedChanges: this.props.customConfig != null,  // no changes if was already default
         });
     }
 
@@ -337,10 +268,15 @@ class OcrMenu extends React.Component {
 
                     if (exit) {
                         this.leave();
+                    } else {
+                        this.props.setCurrentCustomConfig(config);
                     }
                 } else {
                     this.errorNot.current.openNotif("Erro inesperado ao guardar a configuração de OCR.")
                 }
+            })
+            .catch(err => {
+                this.errorNot.current.openNotif("Não foi possível guardar a configuração de OCR.");
             });
     }
 
@@ -356,39 +292,52 @@ class OcrMenu extends React.Component {
             <Notification message={""} severity={"error"} ref={this.errorNot}/>
             <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
 
-            <Box sx={{
-                ml: '0.5rem',
-                mr: '0.5rem',
-                display: 'flex',
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'space-between',
-                position: 'sticky',
-                top: 0,
-                zIndex: 100,
-                backgroundColor: '#fff',
-                paddingBottom: '1rem',
-                marginBottom: '0.5rem',
-                borderBottom: '1px solid black',
-            }}>
-                <Button
-                    variant="contained"
-                    startIcon={<UndoIcon />}
-                    onClick={() => this.goBack()}
-                    sx={{
-                        border: '1px solid black',
-                        height: '2rem',
-                        textTransform: 'none',
-                        fontSize: '0.75rem',
-                        backgroundColor: '#ffffff',
-                        color: '#000000',
-                        ':hover': { bgcolor: '#ddd' }
-                    }}
-                >
-                    Voltar
-                </Button>
+            <Box className="toolbar">
+                <Box className="noMarginRight" sx={{display: "flex"}}>
+                    <ReturnButton
+                        disabled={false}
+                        returnFunction={this.goBack}
+                    />
 
-                <Box>
+                    <Typography
+                        variant="h5"
+                        component="h2"
+                        sx={{ marginLeft: "1rem", textAlign: "center" }}
+                    >
+                        Configurar OCR {this.props.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
+                    </Typography>
+                </Box>
+
+                <Box sx={{display: "flex", flexDirection: "row"}}>
+                    <Autocomplete
+                        value={this.state.presetName}
+                        options={this.state.presetsList}
+                        getOptionLabel={(option) => option}
+                        autoHighlight
+                        onChange={(e, newValue) => this.selectPreset(newValue)}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                required
+                                placeholder="Escolher configuração predefinida"
+                                variant="outlined"
+                                size="small"
+                                sx={{
+                                    height: "2rem",
+                                    width: "25rem",
+                                }}
+                            />
+                        )}
+                        sx={{marginRight: "1rem"}}
+                        slotProps={{
+                            paper: {  // dropdown popup props
+                                sx: {
+                                    width: 'auto',
+                                    maxHeight: '70%',
+                                }
+                            }
+                        }}
+                    />
                     <Button
                         disabled={this.state.usingDefault}
                         variant="contained"
@@ -396,10 +345,10 @@ class OcrMenu extends React.Component {
                         startIcon={<RotateLeft />}
                         onClick={() => this.restoreDefault()}
                     >
-                        Configuração Predefinida
+                        Valores Por Defeito
                     </Button>
                     <Button
-                        disabled={!valid}
+                        disabled={!valid || !this.state.uncommittedChanges}
                         color="success"
                         variant="contained"
                         className="menuFunctionButton"
@@ -409,7 +358,7 @@ class OcrMenu extends React.Component {
                         Guardar
                     </Button>
                     <Button
-                        disabled={!valid}
+                        disabled={!valid || !this.state.uncommittedChanges}
                         variant="contained"
                         color="success"
                         className="menuFunctionButton noMarginRight"
@@ -421,18 +370,9 @@ class OcrMenu extends React.Component {
                 </Box>
             </Box>
 
-            <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                width: 'auto',
-                margin: '1rem',
-            }}>
-                <Typography variant="h5" component="h2" sx={{alignSelf: 'center'}}>
-                    Configurar OCR {this.props.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
-                </Typography>
-            </Box>
-
-            <Box sx={{
+            {
+            this.state.loaded && !this.state.fetchingPreset
+            ? <Box sx={{
                 display: 'flex',
                 flexDirection: 'row',
                 justifyContent: 'space-evenly',
@@ -472,7 +412,7 @@ class OcrMenu extends React.Component {
                 }}>
                     <TextField ref={this.dpiField}
                                label="DPI (Dots Per Inch)"
-                               inputProps={{ inputMode: "numeric", pattern: "[1-9][0-9]*" }}
+                               slotProps={{htmlInput: { inputMode: "numeric", pattern: "[1-9][0-9]*" }}}
                                error={isNaN(this.state.dpiVal)
                                    || (this.state.dpiVal !== null
                                    && this.state.dpiVal !== "" && !(/^[1-9][0-9]*$/.test(this.state.dpiVal)))}
@@ -549,7 +489,7 @@ class OcrMenu extends React.Component {
                                variant='outlined'
                                className="simpleInput borderTop"
                                size="small"
-                               InputLabelProps={{sx: {top: "0.5rem"}}}
+                               slotProps={{inputLabel: {sx: {top: "0.5rem"}}}}
                     />
                 </Box>
 
@@ -573,6 +513,18 @@ class OcrMenu extends React.Component {
                 </Box>
                 */}
             </Box>
+
+            :<Box sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center"
+            }}>
+                <CircularProgress color="success" />
+            </Box>
+            }
         </>
         );
     }
@@ -587,6 +539,7 @@ OcrMenu.defaultProps = {
     isSinglePage: false,
     customConfig: null,
     // functions:
+    setCurrentCustomConfig: null,
     closeOCRMenu: null,
     showStorageForm: null,
 }

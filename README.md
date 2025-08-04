@@ -1,4 +1,4 @@
-# OCR – 1.1
+# OCR – 1.2
 
 # Setup
 For a prepared server, the only required setup is the creation of `.env` files in the `website` and `server` folders. If the server is behind a proxy and must be accessed through a specific path, this path must be placed where `/path-that-serves-website/` is specified.
@@ -51,12 +51,12 @@ The config file for NGINX is generated from `compose/nginx/nginx.conf.template` 
 ## Installation and first-time startup
 
 Run the following command from the project root:
-`docker-compose -f docker-compose.production.yml up -d --force-recreate --build`
+`docker compose -f docker-compose.production.yml up -d --force-recreate --build`
 
 ## Shutting down
 
 Run the following command from the project root:
-`docker-compose -f docker-compose.production.yml down`
+`docker compose -f docker-compose.production.yml down`
 
 ## Restarting after shutdown
 

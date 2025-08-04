@@ -146,12 +146,14 @@ class LayoutBox extends React.Component {
         }
     }
 
+    /*
     dragEnd(e) {
         e.preventDefault();
         e.stopPropagation();
         if (!this.state.dragging) return;
         this.setState({dragging: false}, this.props.updateMenu());
     }
+     */
 
     render() {
         var initialCoords = this.imageToScreenCoordinates(this.state.left, this.state.top);

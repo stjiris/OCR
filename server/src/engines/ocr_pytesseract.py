@@ -1,64 +1,16 @@
 import os
-from enum import Enum
 from tempfile import NamedTemporaryFile
 
 from lxml import etree
 from lxml import html
+from PIL import Image
 from pytesseract import pytesseract
+from src.utils.enums_tesseract import ENGINE_MODES
+from src.utils.enums_tesseract import LANGS
+from src.utils.enums_tesseract import OUTPUTS
+from src.utils.enums_tesseract import SEGMENT_MODES
+from src.utils.enums_tesseract import THRESHOLD_METHODS
 from src.utils.parse_hocr import parse_hocr
-
-
-class LANGS(Enum):
-    DEU = "deu"
-    SPA = "spa"
-    FRA = "fra"
-    ENG = "eng"
-    POR = "por"
-    EQU = "equ"
-    OSD = "osd"
-
-
-class ENGINE_MODES(Enum):
-    TESSERACT_ONLY = 0
-    LSTM_ONLY = 1
-    TESSERACT_LSTM_COMBINED = 2
-    DEFAULT = 3  # Default
-
-
-class SEGMENT_MODES(Enum):
-    OSD_ONLY = 0
-    AUTO_OSD = 1
-    AUTO_ONLY = 2
-    AUTO = 3  # Default
-    SINGLE_COLUMN = 4
-    SINGLE_BLOCK_VERT_TEXT = 5
-    SINGLE_BLOCK = 6
-    SINGLE_LINE = 7
-    SINGLE_WORD = 8
-    CIRCLE_WORD = 9
-    SINGLE_CHAR = 10
-    SPARSE_TEXT = 11
-    SPARSE_TEXT_OSD = 12
-    RAW_LINE = 13
-    COUNT = 14
-
-
-class THRESHOLD_METHODS(Enum):
-    OTSU = 0  # DEFAULT
-    LEPTONICA = 1
-    SAUVOLA = 2
-
-
-class OUTPUTS(Enum):
-    PDF_INDEXED = "pdf_indexed"
-    PDF = "pdf"
-    TXT = "txt"
-    TXT_DELIMITED = "txt_delimited"
-    CSV = "csv"
-    NER = "ner"
-    HOCR = "hocr"
-    ALTO_XML = "xml"
-
 
 TESSERACT_OUTPUTS = (
     "hocr",
@@ -93,8 +45,14 @@ def _get_segment_hocr(page, lang: str, config_str: str, segment_coordinates):
     )
 
 
-def _get_hocr(page, lang: str, config_str: str, extensions: list[str] = None):
-    if extensions is None:
+def _get_hocr(
+    page,
+    lang: str,
+    config_str: str,
+    extensions: list[str] = None,
+    single_page: bool = False,
+):
+    if not single_page or extensions is None:
         extensions = ["hocr"]
     return _run_and_get_multiple_output(
         page, lang=lang, extensions=extensions, config_str=config_str
@@ -122,7 +80,7 @@ def _run_and_get_multiple_output(
     else:
         config = config_str
 
-    with NamedTemporaryFile(prefix="tess_", delete=False) as f:
+    with NamedTemporaryFile(prefix="tess_", delete=False, delete_on_close=False) as f:
         image, extension = pytesseract.prepare(image)
         input_file_name = f"{f.name}_input{os.extsep}{extension}"
         image.save(input_file_name, format=image.format)
@@ -153,16 +111,23 @@ def _run_and_get_multiple_output(
 def get_structure(
     page,
     lang: str,
-    config_str: str = "",
-    output_types: list[str] = None,
+    config: str = "",
+    doc_path: str = "",  # not used, added for consistent parameter names with tesserOCR
+    output_types: list[str] | None = None,
     segment_box=None,
+    single_page: bool = False,
 ):
+    if isinstance(page, str):  # open file if filename was passed
+        page = Image.open(page)
+
     if segment_box:
         raw_results = _get_segment_hocr(
-            page, lang, config_str, segment_coordinates=segment_box
+            page, lang, config, segment_coordinates=segment_box
         )
     else:
-        raw_results = _get_hocr(page, lang, config_str, extensions=output_types)
+        raw_results = _get_hocr(
+            page, lang, config, extensions=output_types, single_page=single_page
+        )
 
     hocr = etree.fromstring(raw_results["hocr"], html.XHTMLParser())
     lines = parse_hocr(hocr, segment_box)
@@ -193,3 +158,31 @@ def verify_params(config):
         errors.append(f'DPI: "{config["outputs"]}"')
 
     return len(errors) == 0, errors
+
+
+def build_ocr_config(config: dict) -> tuple[str, str]:
+    config_str = ""
+    # Join langs with pluses, expected by tesseract
+    lang = "+".join(config["lang"])
+
+    if (
+        "dpi" in config and config["dpi"]
+    ):  # typecheck expected in ocr_engine.verify_params()
+        config_str = " ".join([config_str, f'--dpi {int(config["dpi"])}'])
+
+    config_str = " ".join(
+        [
+            config_str,
+            f'--oem {config["engineMode"]}',
+            f'--psm {config["segmentMode"]}',
+            f'-c thresholding_method={config["thresholdMethod"]}',
+        ]
+    )
+
+    if "otherParams" in config and isinstance(config["otherParams"], dict):
+        other_params = [config_str] + [
+            f"-c {key}={value}" for key, value in config["otherParams"].items()
+        ]
+        config_str = " ".join(other_params)
+
+    return lang, config_str

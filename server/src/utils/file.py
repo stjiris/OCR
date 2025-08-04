@@ -15,6 +15,7 @@ import requests
 FILES_PATH = environ.get("FILES_PATH", "_files")
 TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
 PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
+API_TEMP_PATH = environ.get("API_TEMP_PATH", "_files/_tmp")
 
 ALLOWED_EXTENSIONS = (
     "pdf",
@@ -34,7 +35,7 @@ ALLOWED_EXTENSIONS = (
     "zip",
 )
 
-IMAGE_PREFIX = environ.get("IMAGE_PREFIX", ".")
+IMAGE_PREFIX = environ.get("IMAGE_PREFIX", "")
 TIMEZONE = pytz.timezone("Europe/Lisbon")
 
 ##################################################
@@ -68,7 +69,6 @@ def get_ner_file(path):
             json.dump(ner, f, indent=2, ensure_ascii=False)
         return True
     else:
-
         return False
 
 
@@ -355,28 +355,27 @@ def get_structure_info(path, private_session=None, is_private=False):
     """
     if not is_private and PRIVATE_PATH in path:
         raise FileNotFoundError
+    if API_TEMP_PATH in path:
+        raise FileNotFoundError
 
     info = {}
 
-    for root, folders, _ in os.walk(path):
+    for root, folders, _ in os.walk(path, topdown=True):
         root = root.replace("\\", "/")
-        for folder in folders:
-            # ignore reserved folders
-            if folder.startswith("_"):
-                continue
-            # ignore possible private path folders
-            if not is_private and (PRIVATE_PATH in root or folder in PRIVATE_PATH):
-                continue
-            # if in a private session, ignore folders not from this private session
-            if is_private and f"{PRIVATE_PATH}/{private_session}" not in root:
-                continue
+        # ignore reserved folders by pruning them from search tree
+        folders[:] = [f for f in folders if not f.startswith("_")]
+        if root.split("/")[-1].startswith("_"):
+            continue
+        # ignore possible private path folders
+        if not is_private and (PRIVATE_PATH in root or root in PRIVATE_PATH.split("/")):
+            continue
+        # if in a private session, ignore folders not from this private session
+        if is_private and f"{PRIVATE_PATH}/{private_session}" not in root:
+            continue
 
-            folder_path = f"{root}/{folder}".replace("\\", "/")
-
-            folder_info = get_folder_info(folder_path, private_session)
-
-            info = {**info, **folder_info}
-
+        folder_path = root.replace("\\", "/")
+        folder_info = get_folder_info(folder_path, private_session)
+        info = {**info, **folder_info}
     return info
 
 
@@ -397,6 +396,8 @@ def get_structure(path, private_session=None, is_private=False):
     :param path: the path to the files
     """
     if not is_private and PRIVATE_PATH in path:
+        raise FileNotFoundError
+    if API_TEMP_PATH in path:
         raise FileNotFoundError
 
     filesystem = {}
@@ -426,7 +427,7 @@ def get_structure(path, private_session=None, is_private=False):
     )
     for folder in folders:
         # ignore possible private path folders
-        if not is_private and folder in PRIVATE_PATH:
+        if not is_private and folder in PRIVATE_PATH.split("/"):
             continue
         # if in a private session, ignore folders not from this private session
         if is_private and f"{PRIVATE_PATH}/{private_session}" not in f"{path}/{folder}":
@@ -465,7 +466,13 @@ def get_file_basename(filename):
     :param file: file name
     :return: basename of the file
     """
-    return ".".join(filename.replace("\\", "/").split("/")[-1].split(".")[:-1])
+    basename = ".".join(filename.replace("\\", "/").split("/")[-1].split(".")[:-1])
+    if basename == "":
+        # no extension, get entire filename.
+        # files submitted through API call are stored in a folder named with a UUID,
+        # and original document's basename is the same UUID
+        basename = filename.replace("\\", "/").split("/")[-1]
+    return basename
 
 
 def get_file_extension(filename):
@@ -476,6 +483,14 @@ def get_file_extension(filename):
     :return: extension of the file
     """
     return filename.split(".")[-1]
+
+
+def get_page_extension_from_original(filename):
+    original_extension = filename.split(".")[-1]
+    if original_extension == "pdf" or original_extension == "zip":
+        return "png"
+    else:
+        return original_extension
 
 
 def json_to_text(json_d):
@@ -506,19 +521,19 @@ def get_data(file):
         return json.loads(text)
 
 
-def get_doc_len(file):
+def get_doc_len(file) -> int:
     with open(file, encoding="utf-8") as f:
         text = f.read()
         if text == "":
-            return {}
-        return json.loads(text)["pages"]
+            return -1
+        return int(json.loads(text)["pages"])
 
 
-def update_data(file, data):
+def update_json_file(file, data):
     """
-    Update the data file
-    @param file: path to the data file
-    @param data: data to update
+    Update the JSON data contained in the file.
+    :param file: file to update
+    :param data: new or updated data
     """
 
     # TODO: ensure atomic operations to handle multiple users making changes to the same files/folders

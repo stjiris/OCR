@@ -15,6 +15,7 @@ from celery import Celery
 from celery.schedules import crontab
 from celery.schedules import schedule
 from dotenv import load_dotenv
+from elasticsearch import NotFoundError
 from flask import abort
 from flask import Flask
 from flask import g
@@ -22,6 +23,7 @@ from flask import jsonify
 from flask import request
 from flask import Response
 from flask import send_file
+from flask import send_from_directory
 from flask_cors import CORS
 from flask_login import current_user
 from flask_mailman import Mail
@@ -41,8 +43,10 @@ from src.elastic_search import ES_URL
 from src.elastic_search import mapping
 from src.elastic_search import settings
 from src.utils.file import ALLOWED_EXTENSIONS
+from src.utils.file import API_TEMP_PATH
 from src.utils.file import delete_structure
 from src.utils.file import FILES_PATH
+from src.utils.file import generate_random_uuid
 from src.utils.file import generate_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -51,15 +55,15 @@ from src.utils.file import get_file_extension
 from src.utils.file import get_file_layouts
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
-from src.utils.file import get_folder_info
 from src.utils.file import get_structure_info
 from src.utils.file import json_to_text
 from src.utils.file import PRIVATE_PATH
 from src.utils.file import save_file_layouts
 from src.utils.file import TEMP_PATH
-from src.utils.file import update_data
+from src.utils.file import update_json_file
 from src.utils.system import get_free_space
 from src.utils.system import get_private_sessions
+from src.utils.system import get_size_api_files
 from src.utils.system import get_size_private_sessions
 from src.utils.text import compare_dicts_words
 from werkzeug.utils import safe_join
@@ -67,6 +71,9 @@ from werkzeug.utils import safe_join
 # from src.utils.system import get_logs
 
 load_dotenv()
+
+DEFAULT_CONFIG_FILE = os.environ.get("DEFAULT_CONFIG_FILE", "_configs/default.json")
+CONFIG_FILES_LOCATION = os.environ.get("CONFIG_FILES_LOCATION", "_configs")
 
 APP_BASENAME = os.environ.get("APP_BASENAME", "")
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
@@ -79,6 +86,7 @@ if APP_BASENAME == "":
     app.config["APPLICATION_ROOT"] = "/"
 else:
     app.config["APPLICATION_ROOT"] = APP_BASENAME
+    app.config["SESSION_COOKIE_PATH"] = f"/{APP_BASENAME}"
 
 # Set secret key and salt (required)
 app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
@@ -120,7 +128,17 @@ es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
 log = app.logger
 
 lock_system = dict()
-private_sessions = dict()
+
+RESULT_TYPE_TO_EXTENSION = {
+    "pdf_indexed": "pdf",
+    "pdf": "pdf",
+    "txt": "txt",
+    "txt_delimited": "txt",
+    "csv": "csv",
+    "ner": "json",
+    "hocr": "hocr",
+    "alto": "xml",
+}
 
 
 #####################################
@@ -198,6 +216,18 @@ def requires_allowed_file(func):
     return func
 
 
+# Endpoint requires a document ID argument; used for API calls for OCR of single files, bypassing the creation of workspace folders
+def requires_arg_doc_id(func):
+    func._requires_arg_doc_id = True  # value unimportant
+    return func
+
+
+# Endpoint requires a document ID JSON value; used for API calls for OCR of single files, bypassing the creation of workspace folders
+def requires_json_doc_id(func):
+    func._requires_json_doc_id = True  # value unimportant
+    return func
+
+
 # Endpoint is exempt from CSRF; used to bypass csrf.exempt decorator not working
 def csrf_exempt(func):
     func._csrf_exempt = True  # value unimportant
@@ -217,6 +247,12 @@ def abort_bad_request():
         elif hasattr(view_func, "_requires_form_path"):
             if "path" not in request.form or request.form["path"] == "":
                 return bad_request("Missing 'path' in form")
+        elif hasattr(view_func, "_requires_arg_doc_id"):
+            if "doc_id" not in request.values or request.values["doc_id"] == "":
+                return bad_request("Missing 'doc_id' argument")
+        elif hasattr(view_func, "_requires_json_doc_id"):
+            if "doc_id" not in request.json or request.json["doc_id"] == "":
+                return bad_request("Missing 'doc_id' parameter")
         elif hasattr(view_func, "_requires_allowed_file"):
             if "name" not in request.form:
                 return bad_request("Missing 'name' in form")
@@ -247,10 +283,9 @@ def get_file_system():
             filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
             return filesystem
 
-        path, filesystem_path, private_session, is_private = format_filesystem_path(
+        _, filesystem_path, private_session, is_private = format_filesystem_path(
             request.values
         )
-        log.debug(f"Getting info of {filesystem_path}, priv session {private_session}")
         filesystem = get_filesystem(filesystem_path, private_session, is_private)
         filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
         return filesystem
@@ -265,7 +300,7 @@ def get_info():
         if "path" not in request.values or request.values["path"] == "":
             return get_filesystem(FILES_PATH)
 
-        path, filesystem_path, private_session, is_private = format_filesystem_path(
+        _, filesystem_path, private_session, is_private = format_filesystem_path(
             request.values
         )
         return {
@@ -278,8 +313,6 @@ def get_info():
 @app.route("/create-folder", methods=["POST"])
 def create_folder():
     data = request.json
-    log.debug(data)
-
     if (
         "path" not in data  # empty path is valid: new top-level public session folder
         or "folder" not in data
@@ -320,7 +353,7 @@ def create_folder():
     }
 
 
-@app.route("/get-file", methods=["GET"])
+@app.route("/get-text-content", methods=["GET"])
 @requires_arg_path
 def get_file():
     path, is_private = format_path(request.values)
@@ -376,7 +409,7 @@ def request_entities():
         "complete": False,
     }
 
-    update_data(f"{path}/_data.json", data)
+    update_json_file(f"{path}/_data.json", data)
 
     celery.send_task("request_ner", kwargs={"data_folder": path})
     # Thread(target=request_ner, args=(path,)).start()
@@ -516,7 +549,7 @@ def set_upload_stuck():
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
     data["upload_stuck"] = True
-    update_data(f"{path}/_data.json", data)
+    update_json_file(f"{path}/_data.json", data)
 
     return {
         "success": True,
@@ -593,11 +626,20 @@ def prepare_upload():
 
     target = safe_join(path, filename)
 
+    # Create document folder and subfolders
     os.mkdir(target)
+    os.mkdir(target + "/_export")
+    os.mkdir(target + "/_images")
+    os.mkdir(target + "/_layouts")
+    os.mkdir(target + "/_ocr_results")
+    os.mkdir(target + "/_pages")
+
+    extension = filename.split(".")[-1].lower()
     with open(f"{target}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "file",
+                "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
                 "stored": 0.00,
             },
             f,
@@ -650,19 +692,6 @@ def upload_file():
         target_path, filename
     )  # file stored as "path/filename/filename"
 
-    with open(f"{target_path}/_data.json", "w", encoding="utf-8") as f:
-        extension = filename.split(".")[-1].lower()
-        json.dump(
-            {
-                "type": "file",
-                "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
-                "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
-            },
-            f,
-            indent=2,
-            ensure_ascii=False,
-        )
-
     # If only one chunk, save the file directly
     if total_count == 1:
         file.save(file_path)
@@ -692,9 +721,7 @@ def upload_file():
         chunks_saved = len(os.listdir(f"{temp_file_path}"))
         stored = round(100 * chunks_saved / total_count, 2)
 
-        log.debug(f"Uploading file {filename} ({counter}/{total_count}) - {stored}%")
-
-        update_data(f"{target_path}/_data.json", {"stored": stored})
+        update_json_file(f"{target_path}/_data.json", {"stored": stored})
 
         if chunks_saved == total_count:
             del lock_system[temp_filename]
@@ -707,6 +734,42 @@ def upload_file():
             return {"success": True, "finished": True}
 
     return {"success": True, "finished": False}
+
+
+@app.route("/default-config", methods=["GET"])
+def get_default_ocr_config():
+    """
+    Returns the current default OCR configuration.
+    """
+    return send_from_directory(CONFIG_FILES_LOCATION, "default.json")
+
+
+@app.route("/config-preset", methods=["GET"])
+def get_config_preset():
+    """
+    Returns the OCR configuration with the specified name.
+    """
+    data = request.values
+    if "name" not in data or data["name"] == "":
+        return bad_request("Missing 'name' argument")
+    return send_from_directory(CONFIG_FILES_LOCATION, f"{data["name"]}.json")
+
+
+@app.route("/presets-list", methods=["GET"])
+def get_presets_list():
+    """
+    Returns the names of existing configuration presets, excluding the default.
+    """
+    config_names = [
+        os.path.splitext(config.name)[0]
+        for config in os.scandir(CONFIG_FILES_LOCATION)
+        if config.is_file()
+    ]
+    try:
+        config_names.remove("default")
+    except ValueError:
+        log.error("Missing default.json in config files")
+    return config_names
 
 
 @app.route("/save-config", methods=["POST"])
@@ -728,23 +791,23 @@ def configure_ocr():
     if isinstance(req_data["config"], dict) or req_data["config"] == "default":
         data["config"] = req_data["config"]
     else:
-        # TODO: accept and verify other strings as config file names
         return bad_request('Config must be dictionary or "default"')
 
-    update_data(data_path, data)
+    update_json_file(data_path, data)
 
     return {"success": True}
 
 
-@app.route("/perform-ocr", methods=["POST"])
+@app.route("/request-ocr", methods=["POST"])
 @requires_json_path
-def perform_ocr():
+def request_ocr():
     """
-    Request to perform OCR on a file/folder
-    @param path: path to the file/folder
-    @param algorithm: algorithm to be used
-    @param data: data to be used
-    @param multiple: if it is a folder or not
+    Request to perform OCR on a file/folder.
+
+    JSON parameters:
+    - path: path to the file/folder\n
+    - config: configuration to be used in OCR\n
+    - multiple: if it is a folder or not\n
     """
 
     if float(get_free_space()[1]) < 10:
@@ -753,39 +816,56 @@ def perform_ocr():
             "error": "O servidor não tem espaço suficiente. Por favor informe o administrador",
         }
 
-    data = request.json
-    path, _ = format_path(data)
+    req_data = request.json
+    path, _ = format_path(req_data)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    config = data["config"] if "config" in data else None
-    multiple = data["multiple"] if "multiple" in data else False
+    config = req_data["config"] if "config" in req_data else None
+    multiple = req_data["multiple"] if "multiple" in req_data else False
 
     if multiple:
         files = [
-            f"{path}/{f}"  # path is safe, 'f' obtained by server
-            for f in os.listdir(path)
-            if os.path.isdir(os.path.join(path, f))
+            f.path
+            for f in os.scandir(path)
+            if f.is_dir() and get_data(f"{f.path}/_data.json")["type"] == "file"
         ]
     else:
         files = [path]
 
     for f in files:
+        data_path = f"{f}/_data.json"
         try:
-            data = get_data(f"{f}/_data.json")
+            data = get_data(data_path)
         except FileNotFoundError:
             abort(
                 HTTPStatus.INTERNAL_SERVER_ERROR
             )  # TODO: improve feedback to users on error
 
-        # TODO: handle default or preset name configs in celery tasks
         # Replace specified config with saved config, if exists
         if config is None and "config" in data:
             config = data["config"]
 
+        # Remove indexed pages, which will become outdated
+        results_path = f"{f}/_ocr_results"
+        pages = [
+            f
+            for f in os.scandir(results_path)
+            if os.path.splitext(f.name)[1] == ".json"
+        ]
+
+        for page in pages:
+            page_id = generate_uuid(page.path)
+            log.warning(f"Removing {page.path}: ID={page_id}")
+            try:
+                es.delete_document(page_id)
+            except NotFoundError:
+                log.warning(f"Failed to find {page.path}: ID={page_id}")
+                continue
+
         # Delete previous results
-        if os.path.exists(f"{f}/_ocr_results"):
-            shutil.rmtree(f"{f}/_ocr_results")
+        if os.path.exists(results_path):
+            shutil.rmtree(results_path)
         if os.path.exists(f"{f}/_export"):
             shutil.rmtree(f"{f}/_export")
         os.mkdir(f"{f}/_ocr_results")
@@ -803,9 +883,10 @@ def perform_ocr():
                 "hocr": {"complete": False},
                 "xml": {"complete": False},
                 "zip": {"complete": False},
+                "indexed": False,
             }
         )
-        update_data(f"{f}/_data.json", data)
+        update_json_file(data_path, data)
 
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
@@ -824,7 +905,6 @@ def index_doc():
     """
     Index a document in Elasticsearch
     @param path: path to the document
-    @param multiple: if it is a folder or not
     """
     data = request.json
     path, _ = format_path(data)
@@ -833,53 +913,47 @@ def index_doc():
 
     if PRIVATE_PATH in path:  # avoid indexing private sessions
         abort(HTTPStatus.NOT_FOUND)
-    multiple = data["multiple"]
 
-    if multiple:
-        pass
+    data_path = path + "/_data.json"
+    hOCR_path = path + "/_ocr_results"
+    try:
+        data = get_data(data_path)
+    except FileNotFoundError:
+        abort(HTTPStatus.NOT_FOUND)
 
-        return {}
-    else:
-        data_path = path + "/_data.json"
-        hOCR_path = path + "/_ocr_results"
-        try:
-            data = get_data(data_path)
-        except FileNotFoundError:
-            abort(HTTPStatus.NOT_FOUND)
-        files = sorted([f for f in os.listdir(hOCR_path) if f.endswith(".json")])
+    pages = [f for f in os.scandir(hOCR_path) if os.path.splitext(f.name)[1] == ".json"]
 
-        extension = data["extension"]
-        for i, file in enumerate(files):
-            file_path = f"{hOCR_path}/{file}"
+    extension = data["extension"]
+    for i, page in enumerate(pages):
+        with open(page, encoding="utf-8") as f:
+            hocr = json.load(f)
+            text = json_to_text(hocr)
 
-            with open(file_path, encoding="utf-8") as f:
-                hocr = json.load(f)
-                text = json_to_text(hocr)
+        if data["pages"] > 1:
+            doc = create_document(
+                page.path,
+                data["ocr"]["config"]["engine"],
+                data["ocr"]["config"],
+                text,
+                extension,
+                i + 1,
+            )
+        else:
+            doc = create_document(
+                page.path, "Tesseract", data["ocr"]["config"], text, extension
+            )
 
-            if data["pages"] > 1:
-                doc = create_document(
-                    file_path,
-                    data["ocr"]["config"]["engine"],
-                    data["ocr"]["config"],
-                    text,
-                    extension,
-                    i + 1,
-                )
-            else:
-                doc = create_document(
-                    file_path, "Tesseract", data["ocr"]["config"], text, extension
-                )
+        page_id = generate_uuid(page.path)
+        log.warning(f"Doc gerado: {page.path}: ID={page_id}, {doc}")
 
-            doc_id = generate_uuid(file_path)
+        es.add_document(page_id, doc)
 
-            es.add_document(doc_id, doc)
+    update_json_file(data_path, {"indexed": True})
 
-        update_data(data_path, {"indexed": True})
-
-        return {
-            "success": True,
-            "message": "Documento indexado",
-        }
+    return {
+        "success": True,
+        "message": "Documento indexado",
+    }
 
 
 @app.route("/remove-index-doc", methods=["POST"])
@@ -888,7 +962,6 @@ def remove_index_doc():
     """
     Remove a document in Elasticsearch
     @param path: path to the document
-    @param multiple: if it is a folder or not
     """
     data = request.json
     path, _ = format_path(data)
@@ -897,31 +970,27 @@ def remove_index_doc():
 
     if PRIVATE_PATH in path:
         abort(HTTPStatus.NOT_FOUND)
-    multiple = data["multiple"]
 
-    if multiple:
-        pass
+    data_path = path + "/_data.json"
+    hOCR_path = path + "/_ocr_results"
+    pages = [f for f in os.scandir(hOCR_path) if os.path.splitext(f.name)[1] == ".json"]
+    try:
+        for page in pages:
+            page_id = generate_uuid(page.path)
+            log.warning(f"Apagando {page.path}: ID={page_id}")
+            es.delete_document(page_id)
 
-        return {}
-    else:
-        data_path = path + "/_data.json"
-        hOCR_path = path + "/_ocr_results"
-        # try:
-        #     data_path = get_data(path + "/_data.json")
-        # except FileNotFoundError:
-        #     abort(HTTPStatus.NOT_FOUND)
-        files = [f for f in os.listdir(hOCR_path) if f.endswith(".json")]
-
-        for f in files:
-            file_path = f"{hOCR_path}/{f}"
-            id = generate_uuid(file_path)
-            es.delete_document(id)
-
-        update_data(data_path, {"indexed": False})
+        update_json_file(data_path, {"indexed": False})
 
         return {
             "success": True,
             "message": "Documento removido",
+        }
+    except NotFoundError:
+        update_json_file(data_path, {"indexed": False})
+        return {
+            "success": False,
+            "message": "O documento não foi encontrado no index.",
         }
 
 
@@ -1020,7 +1089,6 @@ def search():
 @app.route("/create-private-session", methods=["GET"])
 def create_private_session():
     session_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
-    private_sessions[session_id] = {}
 
     if not os.path.isdir(PRIVATE_PATH):
         os.mkdir(PRIVATE_PATH)
@@ -1048,23 +1116,7 @@ def create_private_session():
             ensure_ascii=False,
         )
 
-    return {"success": True, "sessionId": session_id}
-
-
-@app.route("/validate-private-session", methods=["POST"])
-def validate_private_session():
-    data = request.json
-    if "sessionId" not in data:
-        return bad_request("Missing parameter 'sessionId'")
-
-    session_id = data["sessionId"]
-
-    if session_id in private_sessions:
-        response = {"success": True, "valid": True}
-    else:
-        response = {"success": True, "valid": False}
-
-    return response
+    return {"success": True, "session_id": session_id}
 
 
 #####################################
@@ -1114,6 +1166,117 @@ def generate_automatic_layouts():
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
     return {"layouts": layouts}
+
+
+#####################################
+# API-specific endpoints
+#####################################
+@app.route("/check-status", methods=["GET"])
+@requires_arg_doc_id
+def api_check_status():
+    doc_id = request.values["doc_id"]
+    doc_path = safe_join(API_TEMP_PATH, doc_id)
+    data_path = safe_join(doc_path, "_data.json")
+    try:
+        return get_data(data_path)
+    except FileNotFoundError:
+        abort(HTTPStatus.NOT_FOUND)
+
+
+@app.route("/perform-ocr", methods=["POST"])
+def api_perform_ocr():
+    if float(get_free_space()[1]) < 10:
+        return {
+            "success": False,
+            "error": "O servidor não tem espaço suficiente. Por favor informe o administrador",
+        }
+
+    if "file" not in request.files:
+        return bad_request("Missing file")
+
+    file = request.files["file"]
+    config = request.form.get("config", None)
+
+    doc_id = generate_random_uuid()[:9]
+    doc_path = f"{API_TEMP_PATH}/{doc_id}"
+    file_path = f"{doc_path}/{doc_id}.pdf"
+    os.mkdir(doc_path)
+    with open(f"{doc_path}/_data.json", "w", encoding="utf-8") as f:
+        extension = file.filename.split(".")[-1].lower()
+        json.dump(
+            {
+                "type": "file",
+                "creation": get_current_time(),
+                "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
+                "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
+                "ocr": {"progress": 0},
+                "pdf": {"complete": False},
+                "pdf_indexed": {"complete": False},
+                "txt": {"complete": False},
+                "txt_delimited": {"complete": False},
+                "csv": {"complete": False},
+                "ner": {"complete": False},
+                "hocr": {"complete": False},
+                "xml": {"complete": False},
+                "zip": {"complete": False},
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+    file.save(file_path)
+    # TODO: default to NOT deleting original after OCR?
+    celery.send_task(
+        "ocr_from_api",
+        kwargs={"path": doc_path, "config": config, "delete_on_finish": True},
+    )
+    return {
+        "success": True,
+        "doc_id": doc_id,
+        "message": "OCR has been requested. View progress at /check-status, retrieve results at /get-result",
+    }
+
+
+@app.route("/get-result", methods=["GET"])
+@requires_arg_doc_id
+def api_get_result():
+    doc_id = request.values["doc_id"]
+    if "type" not in request.values or request.values["type"] == "":
+        return bad_request("Missing 'type' argument")
+    type = request.values["type"]
+    if type not in RESULT_TYPE_TO_EXTENSION.keys():
+        return bad_request(f"'{type} is not a supported result format")
+
+    log.debug(f"Requesting result of type {type}")
+
+    doc_path = safe_join(API_TEMP_PATH, doc_id)
+    data_path = safe_join(doc_path, "_data.json")
+    try:
+        data = get_data(data_path)
+    except FileNotFoundError:
+        abort(HTTPStatus.NOT_FOUND)
+
+    log.debug(
+        f"Result is {data.get(type)} at /_export/_{type}.{RESULT_TYPE_TO_EXTENSION[type]}"
+    )
+
+    if not data.get(type, {}).get("complete", False):
+        abort(HTTPStatus.NOT_FOUND)
+
+    return send_from_directory(
+        doc_path, f"_export/_{type}.{RESULT_TYPE_TO_EXTENSION[type]}"
+    )
+
+
+@app.route("/delete-results", methods=["POST"])
+@requires_json_doc_id
+def api_delete_results():
+    doc_id = request.json["doc_id"]
+    doc_path = safe_join(API_TEMP_PATH, doc_id)
+    if doc_path is None:
+        abort(HTTPStatus.NOT_FOUND)
+    shutil.rmtree(doc_path)
+    return {"success": True, "message": f"Removed {doc_id}"}
 
 
 #####################################
@@ -1179,6 +1342,7 @@ def get_storage_info():
         "free_space": free_space,
         "free_space_percentage": free_space_percentage,
         "private_sessions": get_size_private_sessions(),
+        "api_files": get_size_api_files(),
         "last_cleanup": last_cleanup,
         "max_age": os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"),
     }
@@ -1208,7 +1372,6 @@ def cancel_cleanup():
 @roles_required("Admin")
 def schedule_private_session_cleanup():
     data = request.json
-    log.debug(data)
     if "type" not in data:
         return bad_request("Missing parameter 'type'")
 
@@ -1277,13 +1440,11 @@ def perform_private_session_cleanup():
 def get_scheduled_tasks():
     config = RedBeatConfig(celery)
     schedule_key = config.schedule_key
-    log.debug(f"Schedule key: {schedule_key}")
     redis = redbeat.schedulers.get_redis(celery)
     elements = redis.zrange(schedule_key, 0, -1, withscores=False)
     entries = {
         el: RedBeatSchedulerEntry.from_key(key=el, app=celery) for el in elements
     }
-    log.debug(entries)
     return f"{entries}"
 
 
@@ -1324,23 +1485,88 @@ def set_max_private_session_age():
 @roles_required("Admin")
 def delete_private_session():
     data = request.json
-    if "sessionId" not in data:
-        return bad_request("Missing parameter 'sessionId'")
-    session_id = data["sessionId"]
+    if "session_id" not in data:
+        return bad_request("Missing parameter 'session_id'")
+    session_id = data["session_id"]
 
     session_path = safe_join(PRIVATE_PATH, session_id)
     if session_path is None:
         abort(HTTPStatus.NOT_FOUND)
 
     shutil.rmtree(session_path)
-    if session_id in private_sessions:
-        del private_sessions[session_id]
 
     return {
         "success": True,
         "message": "Apagado com sucesso",
         "private_sessions": get_size_private_sessions(),
     }
+
+
+@app.route("/admin/save-config", methods=["PUT"])
+@auth_required("token", "session")
+@roles_required("Admin")
+def save_ocr_config():
+    data = request.json
+    if "config_name" not in data or data["config_name"] == "":
+        return bad_request("Missing parameter 'config_name'")
+    if (
+        "config" not in data
+        or not isinstance(data["config"], dict)
+        or not data["config"]
+    ):  # not empty dict
+        return bad_request(
+            "Missing parameter 'config'. Must be a non-empty dictionary."
+        )
+    config_name = data["config_name"]
+    config = data["config"]
+
+    config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
+    if config_path is None:
+        return bad_request(f"Invalid config name: {config_name}")
+
+    # TODO: check validity of config
+    if not os.path.exists(config_path):
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+        return {"success": True, "message": "Configuração guardada."}
+    else:
+        return {
+            "success": False,
+            "message": f"A configuração '{config_name}' já existe.",
+        }
+
+
+@app.route("/admin/edit-config", methods=["PUT"])
+@auth_required("token", "session")
+@roles_required("Admin")
+def edit_ocr_config():
+    data = request.json
+    if "config_name" not in data or data["config_name"] == "":
+        return bad_request("Missing parameter 'config_name'")
+    if (
+        "config" not in data
+        or not isinstance(data["config"], dict)
+        or not data["config"]
+    ):  # not empty dict
+        return bad_request(
+            "Missing parameter 'config'. Must be a non-empty dictionary."
+        )
+    config_name = data["config_name"]
+    config = data["config"]
+
+    config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
+    if config_path is None:
+        abort(HTTPStatus.NOT_FOUND)
+
+    # TODO: check validity of config
+    if os.path.exists(config_path):
+        update_json_file(config_path, config)
+        return {"success": True, "message": "Configuração atualizada."}
+    else:
+        return {
+            "success": False,
+            "message": f"A configuração '{config_name}' não existe.",
+        }
 
 
 @app.route("/admin/flower/", defaults={"fullpath": ""}, methods=["GET", "POST"])
@@ -1355,9 +1581,9 @@ def proxy_flower(fullpath):
     :param fullpath: rest of the path to the Flower API
     :return: response from Flower
     """
-    log.debug(
-        f'Requesting to flower {request.base_url.replace(request.host_url, f"http://flower:5050/{APP_BASENAME}/")}'
-    )
+    # log.debug(
+    #     f'Requesting to flower {request.base_url.replace(request.host_url, f"http://flower:5050/{APP_BASENAME}/")}'
+    # )
     res = requests.request(
         method=request.method,
         url=request.base_url.replace(
@@ -1408,6 +1634,9 @@ if not os.path.exists(f"./{PRIVATE_PATH}/"):
             indent=2,
             ensure_ascii=False,
         )
+
+if not os.path.exists(f"./{API_TEMP_PATH}/"):
+    os.mkdir(f"./{API_TEMP_PATH}/")
 
 with app.app_context():
     # drop and rebuild database to ensure only the credentials currently in environment allow admin access
