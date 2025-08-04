@@ -19,7 +19,7 @@ class ENGINE_MODES(Enum):
 
 
 class SEGMENT_MODES(Enum):
-    OSD_ONLY = 0
+    # OSD_ONLY = 0  # TODO: allow producing only OSD file without OCR
     AUTO_OSD = 1
     AUTO_ONLY = 2
     AUTO = 3  # Default

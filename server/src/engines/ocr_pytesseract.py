@@ -3,6 +3,7 @@ from tempfile import NamedTemporaryFile
 
 from lxml import etree
 from lxml import html
+from PIL import Image
 from pytesseract import pytesseract
 from src.utils.enums_tesseract import ENGINE_MODES
 from src.utils.enums_tesseract import LANGS
@@ -79,7 +80,7 @@ def _run_and_get_multiple_output(
     else:
         config = config_str
 
-    with NamedTemporaryFile(prefix="tess_", delete=False) as f:
+    with NamedTemporaryFile(prefix="tess_", delete=False, delete_on_close=False) as f:
         image, extension = pytesseract.prepare(image)
         input_file_name = f"{f.name}_input{os.extsep}{extension}"
         image.save(input_file_name, format=image.format)
@@ -116,6 +117,9 @@ def get_structure(
     segment_box=None,
     single_page: bool = False,
 ):
+    if isinstance(page, str):  # open file if filename was passed
+        page = Image.open(page)
+
     if segment_box:
         raw_results = _get_segment_hocr(
             page, lang, config, segment_coordinates=segment_box
@@ -154,3 +158,31 @@ def verify_params(config):
         errors.append(f'DPI: "{config["outputs"]}"')
 
     return len(errors) == 0, errors
+
+
+def build_ocr_config(config: dict) -> tuple[str, str]:
+    config_str = ""
+    # Join langs with pluses, expected by tesseract
+    lang = "+".join(config["lang"])
+
+    if (
+        "dpi" in config and config["dpi"]
+    ):  # typecheck expected in ocr_engine.verify_params()
+        config_str = " ".join([config_str, f'--dpi {int(config["dpi"])}'])
+
+    config_str = " ".join(
+        [
+            config_str,
+            f'--oem {config["engineMode"]}',
+            f'--psm {config["segmentMode"]}',
+            f'-c thresholding_method={config["thresholdMethod"]}',
+        ]
+    )
+
+    if "otherParams" in config and isinstance(config["otherParams"], dict):
+        other_params = [config_str] + [
+            f"-c {key}={value}" for key, value in config["otherParams"].items()
+        ]
+        config_str = " ".join(other_params)
+
+    return lang, config_str
