@@ -47,7 +47,7 @@ class FolderRow extends React.Component {
     }
 
     render() {
-        const buttonsDisabled = false;
+        const buttonsDisabled = this.state.info["contents"] === 0;
         const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
         return (
             <TableRow className="explorerRow"
@@ -68,8 +68,8 @@ class FolderRow extends React.Component {
                 <TableCell className="explorerCell actionsCell" align='center'>
                     <Box className="actionsCell-inner">
                         <TooltipIcon
-                            key={"OCR " + this.props.name}
-                            disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
+                            key={"OCR folder " + this.props.name}
+                            disabled={buttonsDisabled}
                             className="actionButton"
                             message="Fazer OCR"
                             clickFunction={(e) => this.performOCR(e, usingCustomConfig)}
@@ -77,8 +77,8 @@ class FolderRow extends React.Component {
                         />
 
                         <TooltipIcon
-                            key={"Config " + this.props.name}
-                            disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
+                            key={"Config folder " + this.props.name}
+                            disabled={buttonsDisabled}
                             className={"actionButton"
                                 // highlight custom configs with different color
                                 + (usingCustomConfig
