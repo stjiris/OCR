@@ -207,7 +207,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                     f"{path}/_pages/{basename}_{i}.png", format="PNG"
                 )  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
-            task_count_doc_pages(path=path, extension=extension, _=None)
+            task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
                 callback.apply_async()
 
@@ -216,7 +216,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
-            task_count_doc_pages(path=path, extension=extension, _=None)
+            task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
                 callback.apply_async()
 
@@ -295,12 +295,16 @@ def task_file_ocr(
                 config["otherParams"] = default_config["otherParams"]
 
         # ensure other params are defined as a dict of names to values
-        other_params = config["otherParams"]
-        if not isinstance(other_params, dict) and isinstance(other_params, str):
+        other_params = config.get("otherParams", None)
+        if (
+            other_params is not None
+            and not isinstance(other_params, dict)
+            and isinstance(other_params, str)
+        ):
             other_params_dict = {}
             for param in other_params.split(";"):
                 n, v = param.split("=")
-                other_params_dict[n] = v
+                other_params_dict[n.strip()] = v.strip()
             config["otherParams"] = other_params_dict
 
         # Verify parameter values
