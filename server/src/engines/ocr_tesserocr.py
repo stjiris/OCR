@@ -4,8 +4,6 @@ from os import remove
 from lxml import etree
 from lxml import html
 from PIL import Image
-from PIL import ImageEnhance
-from PIL import ImageFilter
 from src.utils.enums_tesseract import ENGINE_MODES
 from src.utils.enums_tesseract import LANGS
 from src.utils.enums_tesseract import OUTPUTS
@@ -61,20 +59,6 @@ INT_TO_PSM = {  # Cannot directly convert int to PSM due to TesserOCR _Enum type
 }
 
 
-def preprocess_image(image):
-    # Downscale to 200 DPI (assuming 300 DPI input)
-    image = image.resize(
-        (int(image.width * 0.67), int(image.height * 0.67)), Image.Resampling.LANCZOS
-    )
-    # Convert to grayscale, enhance contrast, and binarize
-    image = image.convert("L")
-    enhancer = ImageEnhance.Contrast(image)
-    image = enhancer.enhance(2.0)
-    image = image.filter(ImageFilter.MedianFilter())  # Noise removal
-    image = image.point(lambda p: 255 if p > 128 else 0)  # Binarization
-    return image
-
-
 def get_structure(
     page,
     lang: str,
@@ -96,14 +80,12 @@ def get_structure(
     :param single_page: Whether this is the only page of the document being analysed. If yes, some result files can be immediately outputted.
     :return: Extracted text structure in the form of lines and words.
     """
-    # Preprocess the image
-    page = preprocess_image(page)
-
     # Ensure config is a dict, use defaults if not
     if not isinstance(config, dict):
         config = {
             "engineMode": 3,
             "segmentMode": 6 if segment_box else 3,
+            "thresholdMethod": 0,
         }
 
     api.InitFull(
@@ -113,6 +95,8 @@ def get_structure(
         variables=config.get("otherParams", {}),
     )
     # TODO: receive other variables
+    api.SetVariable("thresholding_method", str(config.get("thresholdMethod", 0)))
+    api.SetVariable("user_defined_dpi", str(config.get("dpi", 0)))
 
     raw_results_paths = []
     if segment_box:
@@ -134,6 +118,34 @@ def get_structure(
             page = Image.open(page)  # get file descriptor
         api.SetImage(page)
         hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
+
+        # Code for theoretically producing a direct output using all pages, streaming the list of all filenames to tesseract
+        """
+        if output_types is None or len(output_types) == 0:
+            output_types = ["hocr"]
+
+        output_base = f"{doc_path}/_export/_temp"
+        extensions = [ext for ext in output_types if ext in TESSERACT_OUTPUTS]
+        if "hocr" not in extensions:
+            extensions.append(
+                "hocr"
+            )  # append here and not output_types to avoid mutating original list
+        for ext in extensions:
+            api.SetVariable(EXTENSION_TO_VAR[ext], "1")
+            raw_results_paths.append(f"{output_base}.{ext}")
+
+        # From the command line, it's possible to sequentially process multiple pages into one output:
+        # echo example_0.png\\nexample_1.png | tesseract -l por --oem 0 -c stream_filelist=1 - - pdf > example_out.pdf
+
+        # api.SetVariable("stream_filelist", "1")  # accept list of filenames as string separated by \n; not working from code
+
+        #api.SetVariable("hocr_font_info", "1")
+        #api.SetVariable("tessedit_dump_pageseg_images", "1")
+        api.ProcessPages(
+            outputbase=output_base,
+            filename=page,  # page should be stream of filenames
+        )
+        """
 
     else:
         # single-page document, leverage direct Tesseract outputs
