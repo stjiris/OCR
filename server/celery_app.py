@@ -710,13 +710,14 @@ def task_page_ocr(
             if n_doc_pages == 1 and raw_results:
                 export_from_existing(path, raw_results, output_types)
 
-            finish_ocr_data = {
-                "ocr": {
+            finish_ocr_data = get_data(data_file)
+            finish_ocr_data["ocr"].update(
+                {
                     "progress": len(files),
                     "size": get_ocr_size(f"{path}/_ocr_results"),
                     "creation": get_current_time(),
                 }
-            }
+            )
 
             update_json_file(data_file, finish_ocr_data)
 
