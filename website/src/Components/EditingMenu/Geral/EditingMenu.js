@@ -832,7 +832,7 @@ class EditingMenu extends React.Component {
                                     onClick={() => {this.setState({addLineMode: false, hoveredId: null})}}
                                     startIcon={<CloseRoundedIcon />}
                                 >
-                                    Cancelar
+                                    Terminar
                                 </Button>
 
                                 : <Button
@@ -856,7 +856,7 @@ class EditingMenu extends React.Component {
                                     onClick={() => {this.setState({removeLineMode: false})}}
                                     startIcon={<CloseRoundedIcon />}
                                 >
-                                    Cancelar
+                                    Terminar
                                 </Button>
 
                                 : <Button
