@@ -467,7 +467,7 @@ const ConfigManager = (props) => {
                         onClick={() => toggleEditingExistingConfig()}
                     >
                         {isEditingExistingConfig
-                            ? "Cancelar"
+                            ? "Terminar"
                             : "Alterar Configuração Existente"
                         }
                     </Button>
