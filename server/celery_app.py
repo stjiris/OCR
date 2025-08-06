@@ -207,21 +207,44 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                     f"{path}/_pages/{basename}_{i}.png", format="PNG"
                 )  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
-            task_count_doc_pages(path=path, extension=extension)
-            if callback is not None:
-                callback.apply_async()
+
+        elif extension == "tif" or extension == "tiff":
+            img = Image.open(f"{path}/{basename}.{extension}", formats=["tiff"])
+            n_frames = img.n_frames
+            if n_frames == 1:
+                original_path = f"{path}/{basename}.{extension}"
+                link_path = f"{path}/_pages/{basename}_0.{extension}"
+                if not os.path.exists(link_path):
+                    os.link(original_path, link_path)
+            else:
+                compression = img._compression
+                log.warning(f"TIFF with {n_frames} frames, compression {compression}")
+                img.save(
+                    f"{path}/_pages/{basename}_0.{extension}",
+                    save_all=False,
+                    compression=compression,
+                )
+
+                for i in range(1, n_frames):
+                    img.seek(i)
+                    img.save(
+                        f"{path}/_pages/{basename}_{i}.{extension}",
+                        save_all=False,
+                        compression=compression,
+                    )
 
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
-            task_count_doc_pages(path=path, extension=extension)
-            if callback is not None:
-                callback.apply_async()
 
         else:
             raise FileNotFoundError("No file with a valid extension was found")
+
+        task_count_doc_pages(path=path, extension=extension)
+        if callback is not None:
+            callback.apply_async()
 
     except Exception as e:
         data_folder = f"{path}/_data.json"
