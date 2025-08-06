@@ -671,16 +671,26 @@ def task_page_ocr(
                     box_coordinates_list.append(box_coords)
 
             all_jsons = []
-            for box in box_coordinates_list:
-                # Perform OCR
-                # ocr_start = time.time()
-                json_d, _ = ocr_engine.get_structure(
-                    page=image, lang=lang, config=config, doc_path=path, segment_box=box
+            if ocr_engine_name.lower() == "ocr_tesserocr":
+                # TesserOCR can load an image once and OCR multiple segments within it.
+                all_jsons, _ = ocr_engine.get_structure(
+                    page=image,
+                    lang=lang,
+                    config=config,
+                    doc_path=path,
+                    segment_box=box_coordinates_list,
                 )
-                # ocr_time = time.time() - ocr_start
-                # page_metrics["ocr_time"] = ocr_time
-                if json_d:
-                    all_jsons.append(json_d)
+            else:
+                for box in box_coordinates_list:
+                    json_d, _ = ocr_engine.get_structure(
+                        page=image,
+                        lang=lang,
+                        config=config,
+                        doc_path=path,
+                        segment_box=box,
+                    )
+                    if json_d:
+                        all_jsons.append(json_d)
 
             page_json = []
             for sublist in all_jsons:
