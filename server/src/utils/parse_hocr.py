@@ -3,6 +3,7 @@ import re
 bbox_re = re.compile(r"bbox((\s+\d+){4})")
 baseline_re = re.compile(r"baseline((\s+[\d.\-]+){2})")
 confidence_re = re.compile(r"x_wconf\s+(\d+)")
+font_re = re.compile(r"x_font\s+([a-zA-Z_-]+)")
 
 
 def is_left(point_a, point_b, point_c):
@@ -69,15 +70,25 @@ def parse_hocr(hocr, segment_box):
             box = bbox_re.search(word_title).group(1).split()
             confidence = int(confidence_re.search(word_title).group(1))
 
+            font_result = font_re.search(word_title)
+            font = font_result.group(1) if font_result is not None else None
+
             if segment_box:
                 box = [float(i) + segment_box[id % 2] for id, i in enumerate(box)]
             else:
                 box = [float(i) for i in box]
             b = polyval(baseline, (box[0] + box[2]) / 2 - linebox[0]) + linebox[3]
 
-            words.append(
-                {"text": rawtext, "box": box, "b": b, "confidence": confidence}
-            )
+            word_data = {
+                "text": rawtext,
+                "box": box,
+                "b": b,
+                "confidence": confidence,
+            }
+            if font is not None:
+                word_data["font"] = font
+
+            words.append(word_data)
 
         if words:
             lines.append(words)
