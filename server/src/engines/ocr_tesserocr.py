@@ -66,7 +66,7 @@ def get_structure(
     config: dict | str,
     doc_path: str = "",
     output_types: list[str] | None = None,
-    segment_box=None,
+    segment_box: tuple | list[tuple] | None = None,
     single_page: bool = False,
 ):
     """
@@ -95,7 +95,6 @@ def get_structure(
         psm=INT_TO_PSM[config.get("segmentMode", 3)],
         variables=config.get("otherParams", {}),
     )
-    # TODO: receive other variables
     api.SetVariable("thresholding_method", str(config.get("thresholdMethod", 0)))
     api.SetVariable("user_defined_dpi", str(config.get("dpi", 0)))
 
