@@ -1,3 +1,4 @@
+import glob
 import json
 import logging as log
 import math
@@ -5,6 +6,7 @@ import os
 import shutil
 import tempfile
 import traceback
+import uuid
 import zipfile
 from datetime import datetime
 from io import BytesIO
@@ -36,10 +38,12 @@ from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
 from src.utils.file import PRIVATE_PATH
+from src.utils.file import save_file_layouts
 from src.utils.file import size_to_units
 from src.utils.file import TIMEZONE
 from src.utils.file import update_json_file
-from src.utils.image import parse_images
+
+# from src.utils.image import parse_images
 
 OCR_ENGINES = (
     "pytesseract",
@@ -73,7 +77,76 @@ load_invisible_font()
 
 @celery.task(name="auto_segment", priority=0)
 def task_auto_segment(path):
-    return parse_images(path)
+    # return parse_images(path)
+    pages_path = f"{path}/_pages"
+    if not os.path.exists(pages_path):
+        log.error(f"Error in parsing images at {path}: missing /_pages")
+        raise FileNotFoundError
+
+    extension = path.split(".")[-1].lower()
+    page_extension = (
+        ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
+    )
+    basename = get_file_basename(path)
+
+    # Grab all the images already in the folder
+    images = [
+        x
+        for x in glob.glob(f"{pages_path}/{basename}_*{page_extension}")
+        if x[-5] != "$"
+    ]
+    sorted_images = sorted(images, key=lambda x: int(x.split("_")[-1].split(".")[0]))
+
+    all_layouts = []
+
+    for img in sorted_images:
+        box_coords = ocr_tesserocr.auto_get_boxes(img)
+        formatted_boxes = []
+
+        for box in box_coords:
+            left, top, width, height = box
+            formatted_box = {
+                "_uniq_id": uuid.uuid4().hex[
+                    :16
+                ],  # each line in the sortable list must have a constant unique ID
+                "groupId": "temp",
+                "checked": False,
+                "type": "text",
+                "squares": [
+                    {
+                        "id": "temp",
+                        "top": top,
+                        "left": left,
+                        "bottom": top + height,
+                        "right": left + width,
+                    }
+                ],
+                "copyId": None,
+            }
+            formatted_boxes.append(formatted_box)
+
+        all_layouts.append({"boxes": formatted_boxes})
+
+    layouts_path = f"{path}/_layouts"
+    if not os.path.isdir(layouts_path):
+        os.mkdir(layouts_path)
+
+    sorted_all_layouts = []
+    for page, layout in enumerate(all_layouts):
+        # This orders the segments based on typical reading order: top-left to bottom-right.
+        sorted_layout = sorted(
+            layout["boxes"],
+            key=lambda c: (c["squares"][0]["top"], c["squares"][0]["left"]),
+        )
+
+        for i, box_group in enumerate(sorted_layout):
+            box_group["groupId"] = f"{page + 1}.{i + 1}"
+            for b in box_group["squares"]:
+                b["id"] = f"{page + 1}.{i + 1}"
+
+        sorted_all_layouts.append({"boxes": sorted_layout})
+    save_file_layouts(path, sorted_all_layouts)
+    return {"status": "success"}
 
 
 @celery.task(name="export_file", priority=2)
