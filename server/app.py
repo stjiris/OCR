@@ -854,14 +854,15 @@ def request_ocr():
             if os.path.splitext(f.name)[1] == ".json"
         ]
 
-        for page in pages:
-            page_id = generate_uuid(page.path)
-            log.warning(f"Removing {page.path}: ID={page_id}")
-            try:
-                es.delete_document(page_id)
-            except NotFoundError:
-                log.warning(f"Failed to find {page.path}: ID={page_id}")
-                continue
+        if data["indexed"]:
+            for page in pages:
+                page_id = generate_uuid(page.path)
+                log.debug(f"Removing {page.path}: ID={page_id}")
+                try:
+                    es.delete_document(page_id)
+                except NotFoundError:
+                    log.debug(f"Failed to find {page.path}: ID={page_id}")
+                    continue
 
         # Delete previous results
         if os.path.exists(results_path):
@@ -944,8 +945,6 @@ def index_doc():
             )
 
         page_id = generate_uuid(page.path)
-        log.warning(f"Doc gerado: {page.path}: ID={page_id}, {doc}")
-
         es.add_document(page_id, doc)
 
     update_json_file(data_path, {"indexed": True})
@@ -977,7 +976,6 @@ def remove_index_doc():
     try:
         for page in pages:
             page_id = generate_uuid(page.path)
-            log.warning(f"Apagando {page.path}: ID={page_id}")
             es.delete_document(page_id)
 
         update_json_file(data_path, {"indexed": False})

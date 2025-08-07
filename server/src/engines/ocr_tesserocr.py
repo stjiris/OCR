@@ -66,7 +66,7 @@ def get_structure(
     config: dict | str,
     doc_path: str = "",
     output_types: list[str] | None = None,
-    segment_box=None,
+    segment_box: tuple | list[tuple] | None = None,
     single_page: bool = False,
 ):
     """
@@ -95,7 +95,6 @@ def get_structure(
         psm=INT_TO_PSM[config.get("segmentMode", 3)],
         variables=config.get("otherParams", {}),
     )
-    # TODO: receive other variables
     api.SetVariable("thresholding_method", str(config.get("thresholdMethod", 0)))
     api.SetVariable("user_defined_dpi", str(config.get("dpi", 0)))
 
@@ -105,15 +104,31 @@ def get_structure(
             page = Image.open(page)  # get file descriptor
         api.SetImage(page)
 
-        # err on the side of using a bigger margin
-        coords = {
-            "left": math.floor(segment_box[0]),
-            "top": math.floor(segment_box[1]),
-            "width": math.ceil(segment_box[2] - segment_box[0]),
-            "height": math.ceil(segment_box[3] - segment_box[1]),
-        }
-        api.SetRectangle(**coords)
-        hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
+        if isinstance(segment_box, list):  # Batch multiple segments
+            results = []
+            for box in segment_box:
+                # err on the side of using a bigger margin
+                coords = {
+                    "left": math.floor(box[0]),
+                    "top": math.floor(box[1]),
+                    "width": math.ceil(box[2] - box[0]),
+                    "height": math.ceil(box[3] - box[1]),
+                }
+                api.SetRectangle(**coords)
+                hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
+                results.append(parse_hocr(hocr, box))
+            api.End()
+            return results, raw_results_paths  # raw results expected to be empty
+        else:
+            # err on the side of using a bigger margin
+            coords = {
+                "left": math.floor(segment_box[0]),
+                "top": math.floor(segment_box[1]),
+                "width": math.ceil(segment_box[2] - segment_box[0]),
+                "height": math.ceil(segment_box[3] - segment_box[1]),
+            }
+            api.SetRectangle(**coords)
+            hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
 
     elif not single_page:
         if isinstance(page, str):

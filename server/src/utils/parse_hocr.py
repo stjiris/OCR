@@ -1,16 +1,14 @@
 import re
-from lxml import etree
-from lxml import html
 
 p1 = re.compile(r"bbox((\s+\d+){4})")
 p2 = re.compile(r"baseline((\s+[\d\.\-]+){2})")
 
 
+"""
 def is_left(point_a, point_b, point_c):
     dx = 5
     return ((point_b[0] + dx) - (point_a[0] + dx)) * (point_c[1] - point_a[1]) - (point_b[1] - point_a[1]) * (
             point_c[0] - (point_a[0] + dx)) >= 0
-
 
 def remove_extra_paragraphs(lines):
     new_lines = [lines[0]]
@@ -29,6 +27,7 @@ def remove_extra_paragraphs(lines):
                 new_lines.append(lines[i])
 
     return new_lines
+"""
 
 
 def parse_hocr(hocr, segment_box):
@@ -75,8 +74,9 @@ def parse_hocr(hocr, segment_box):
         if words:
             lines.append(words)
 
-    if segment_box and lines:
-        lines = remove_extra_paragraphs(lines)
+    # Turns segment into a single line. Not needed(?)
+    # if segment_box and lines:
+    #     lines = remove_extra_paragraphs(lines)
 
     return lines
 
