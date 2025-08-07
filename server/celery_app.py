@@ -158,7 +158,6 @@ def task_perform_direct_ocr(
 @celery.task(name="prepare_file")
 def task_prepare_file_ocr(path: str, callback: Signature | None = None):
     try:
-        log.debug(f"Creating {path}/_pages")
         if not os.path.exists(f"{path}/_pages"):
             os.mkdir(f"{path}/_pages")
 
@@ -166,11 +165,6 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
         extension = data["extension"]
 
         basename = get_file_basename(path)
-
-        log.debug(f"Path: {path}")
-        log.debug(f"Extensao: {extension}")
-        log.debug(f"Basename: {basename}")
-        log.debug(f"{path}: A preparar páginas")
 
         if extension == "pdf":
             pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
@@ -208,7 +202,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                 )  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
 
-        elif extension == "tif" or extension == "tiff":
+        elif extension in ("tif", "tiff"):
             img = Image.open(f"{path}/{basename}.{extension}", formats=["tiff"])
             n_frames = img.n_frames
             if n_frames == 1:
@@ -218,7 +212,6 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                     os.link(original_path, link_path)
             else:
                 compression = img._compression
-                log.warning(f"TIFF with {n_frames} frames, compression {compression}")
                 img.save(
                     f"{path}/_pages/{basename}_0.{extension}",
                     save_all=False,
