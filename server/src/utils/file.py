@@ -452,7 +452,7 @@ def get_page_count(target_path, extension):
     """
     Get the number of pages of a file
     """
-    if extension == "pdf" or extension == "zip":
+    if extension in ("pdf", "zip", "tif", "tiff"):
         return len(os.listdir(f"{target_path}/_pages"))
     elif extension in ALLOWED_EXTENSIONS:  # some other than pdf or zip
         return 1

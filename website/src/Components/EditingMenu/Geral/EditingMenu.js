@@ -1,4 +1,5 @@
 import React from 'react';
+import UTIF from 'utif';
 
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -81,6 +82,7 @@ class EditingMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            loaded: false,
             contents: [],
             words_list: [],
             corpusOptions: [],
@@ -135,6 +137,12 @@ class EditingMenu extends React.Component {
         this.getContents();
     }
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (!prevState.loaded && this.state.loaded) {
+            UTIF.replaceIMG();  // automatically replace TIFF <img> sources
+        }
+    }
+
     goBack() {
         if (this.state.uncommittedChanges) {
             this.confirmLeave.current.toggleOpen();
@@ -171,7 +179,13 @@ class EditingMenu extends React.Component {
                 newCorpusList.push({"name": item, "code": item});
             });
 
-            this.setState({totalPages: pages, contents: contents, words_list: sortedWords, corpusOptions: newCorpusList});
+            this.setState({
+                totalPages: pages,
+                contents: contents,
+                words_list: sortedWords,
+                corpusOptions: newCorpusList,
+                loaded: true
+            });
         });
     }
 
@@ -770,7 +784,6 @@ class EditingMenu extends React.Component {
     }
 
     render() {
-        const loaded = this.state.contents.length !== 0;
         const incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
         return (
             <Box>
@@ -797,7 +810,7 @@ class EditingMenu extends React.Component {
                             {
                             this.state.addLineMode
                                 ? <Button
-                                    disabled={!loaded}
+                                    disabled={!this.state.loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -808,7 +821,7 @@ class EditingMenu extends React.Component {
                                 </Button>
 
                                 : <Button
-                                    disabled={!loaded}
+                                    disabled={!this.state.loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({addLineMode: true, removeLineMode: false})}}
@@ -821,7 +834,7 @@ class EditingMenu extends React.Component {
                             {
                             this.state.removeLineMode
                                 ? <Button
-                                    disabled={!loaded}
+                                    disabled={!this.state.loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -832,7 +845,7 @@ class EditingMenu extends React.Component {
                                 </Button>
 
                                 : <Button
-                                    disabled={!loaded}
+                                    disabled={!this.state.loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({removeLineMode: true, addLineMode: false})}}
@@ -845,7 +858,7 @@ class EditingMenu extends React.Component {
                             {
                             this.state.wordsMode
                                 ? <Button
-                                    disabled={!loaded}
+                                    disabled={!this.state.loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
@@ -862,7 +875,7 @@ class EditingMenu extends React.Component {
                                     }
                                 </Button>
                                 : <Button
-                                    disabled={!loaded}
+                                    disabled={!this.state.loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
                                     onClick={() => {this.setState({wordsMode: true})}}
@@ -880,7 +893,7 @@ class EditingMenu extends React.Component {
                             }
 
                             <Button
-                                disabled={!loaded}
+                                disabled={!this.state.loaded}
                                 color="success"
                                 variant="contained"
                                 className="menuFunctionButton"
@@ -891,7 +904,7 @@ class EditingMenu extends React.Component {
                             </Button>
 
                             <Button
-                                disabled={!loaded}
+                                disabled={!this.state.loaded}
                                 variant="contained"
                                 color="success"
                                 className="menuFunctionButton noMarginRight"
@@ -904,7 +917,7 @@ class EditingMenu extends React.Component {
                     </Box>
 
                     {
-                    loaded
+                    this.state.loaded
                     ? <>
                     <Box sx={{
                         display: "flex",
@@ -922,7 +935,7 @@ class EditingMenu extends React.Component {
                                     <img
                                         ref={this.imageRef}
                                         src={this.state.contents[this.state.currentPage - 1]["page_url"]}
-                                        alt="Imagem da pagina"
+                                        alt={`Imagem da página ${this.state.currentPage}`}
                                         className={"pageImage"}
                                         style={{
                                             maxWidth: `${this.state.imageZoom}%`,

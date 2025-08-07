@@ -1,4 +1,6 @@
 import React from 'react';
+import UTIF from "utif";
+
 import Box from '@mui/material/Box';
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -256,8 +258,6 @@ class LayoutImage extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            menu: props.menu,
-
             imageZoom: 100,
             minImageZoom: 20,
             maxImageZoom: 600,
@@ -276,7 +276,9 @@ class LayoutImage extends React.Component {
 
     componentDidMount() {
         window.addEventListener('resize', this.recreateBoxes);
+        UTIF.replaceIMG();  // automatically replace TIFF <img> sources
         this.loadBoxes();
+        //this.displayTIFF(this.props.imageURL);
     }
 
     componentWillUnmount() {
@@ -288,6 +290,34 @@ class LayoutImage extends React.Component {
             this.loadBoxes();
         }
     }
+
+    /*
+    async displayTIFF(tiffUrl) {
+        const response = await axios.get(tiffUrl, {
+            responseType: 'arraybuffer'
+        })
+        this.imgLoaded({ target: { response: response.data } })
+    }
+
+    imgLoaded(e) {
+        const ifds = UTIF.decode(e.target.response)
+        //const ifds = decode(e.target.response)
+        const _tiffs = ifds.map((ifd, index) => {
+            UTIF.decodeImage(e.target.response, ifd)
+            const rgba = UTIF.toRGBA8(ifd)
+            const canvas = document.getElementById('image-canvas')
+            canvas.width = ifd.width
+            canvas.height = ifd.height
+            const ctx = canvas.getContext('2d')
+            const img = ctx.createImageData(ifd.width, ifd.height)
+            img.data.set(rgba)
+            ctx.putImageData(img, 0, 0)
+            //if (index === 0)
+            //    document.getElementById('tiff-inner-container').appendChild(canvas)
+            return canvas
+        })
+    }
+    */
 
     createLayoutBox(ref, box, type, checked = false) {
         return <LayoutBox
@@ -399,8 +429,8 @@ class LayoutImage extends React.Component {
         const ratioX = image.naturalWidth / image.offsetWidth;
         const ratioY = image.naturalHeight / image.offsetHeight;
 
-        const domX = x - this.imageRef.current.offsetLeft;
-        const domY = y - this.imageRef.current.offsetTop;
+        const domX = x - image.offsetLeft;
+        const domY = y - image.offsetTop;
 
         const imgX = domX * ratioX;
         const imgY = domY * ratioY;
@@ -473,14 +503,13 @@ class LayoutImage extends React.Component {
     }
 
     render() {
-        console.log("Rerendering image");
         return (
             <Box ref={this.viewRef}
                 className="pageImageContainer">
                 <img
                     ref={this.imageRef}
                     src={this.props.imageURL}
-                    alt={`Página de ${this.props.imageURL}`}
+                    alt={`Imagem da página ${this.props.pageIndex}`}
                     className={"pageImage"}
                     style={{
                         maxWidth: `${this.state.imageZoom}%`,
@@ -495,6 +524,23 @@ class LayoutImage extends React.Component {
                     onDragEnd={(e) => this.dragEnd(e)}
                     onLoad={() => this.loadBoxes()}
                 />
+                {/*
+                <canvas
+                    id="image-canvas"
+                    className={"pageImage"}
+                    style={{
+                        maxWidth: `${this.state.imageZoom}%`,
+                        maxHeight: `${this.state.imageZoom}%`,
+                    }}
+                    onDragStart={(e) => {
+                        e.dataTransfer.setDragImage(transparentPixel, 0, 0);
+                        this.dragStart(e);
+                    }}
+                    onDragOver={(e) => this.duringDrag(e)}
+                    onDragEnd={(e) => this.dragEnd(e)}
+                    onLoad={() => this.loadBoxes()}
+                />
+                */}
 
                 {
                     this.state.boxes.map((box) => {
