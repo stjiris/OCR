@@ -910,7 +910,7 @@ class EditingMenu extends React.Component {
                             {
                                 this.state.showConfidence
                                     ? <Button
-                                        disabled={!loaded}
+                                        disabled={!this.state.loaded}
                                         color="error"
                                         variant="contained"
                                         className="menuFunctionButton"
@@ -921,7 +921,7 @@ class EditingMenu extends React.Component {
                                     </Button>
 
                                     : <Button
-                                        disabled={!loaded}
+                                        disabled={!this.state.loaded}
                                         variant="contained"
                                         className="menuFunctionButton"
                                         onClick={() => {this.setState({showConfidence: true})}}
