@@ -947,7 +947,7 @@ class FileExplorer extends React.Component {
                 items.push(
                     <DocumentRow
                         ref={ref}
-                        key={item}
+                        key={this.props.current_folder + "/" + item}
                         name={item}
                         _private={this.props._private}
                         info={this.getInfo(item)}
@@ -977,7 +977,7 @@ class FileExplorer extends React.Component {
                 items.push(
                     <FolderRow
                         ref={ref}
-                        key={key}
+                        key={this.props.current_folder + "/" + key}
                         name={key}
                         info={this.getInfo(key)}
                         enterFolder={this.enterFolder}

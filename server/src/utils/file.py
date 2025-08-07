@@ -136,9 +136,9 @@ def get_file_parsed(path, is_private):
 
                         if t == "" or t.isdigit():
                             continue
-                        """
 
                         hocr[sectionId][lineId][wordId]["clean_text"] = t
+                        """
 
                         if t in words:
                             words[t]["pages"].append(id)

@@ -6,6 +6,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
 import FormHelperText from "@mui/material/FormHelperText";
 import FormLabel from "@mui/material/FormLabel";
+import Box from "@mui/material/Box";
 
 function CheckboxList(
     {
@@ -14,6 +15,7 @@ function CheckboxList(
         title = "",
         required = false,
         disabled = false,
+        showOrder = false,
         helperText = null,
         errorText = null,
         // functions:
@@ -46,9 +48,16 @@ function CheckboxList(
         >
             <FormLabel component="legend">{title}</FormLabel>
             <FormGroup>
-            {/*<List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>*/}
                 {options.map((option, index) => {
+                    const order = showOrder ? checked.indexOf(option.value)+1 : -1;
                     return (
+                    <Box style={{position: "relative"}}>
+                        {order > 0
+                            ? <span style={{position: "absolute", left: "-2em", bottom: "0.7em"}}>
+                                {order}º&nbsp;
+                            </span>
+                            : null
+                        }
                         <FormControlLabel
                             disabled={option.disabled}
                             control={
@@ -63,7 +72,7 @@ function CheckboxList(
                             }
                             label={option.description}
                         />
-                    );
+                    </Box>);
                 })}
             </FormGroup>
             {helperText && <FormHelperText>{helperText}</FormHelperText>}

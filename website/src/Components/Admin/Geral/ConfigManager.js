@@ -467,7 +467,7 @@ const ConfigManager = (props) => {
                         onClick={() => toggleEditingExistingConfig()}
                     >
                         {isEditingExistingConfig
-                            ? "Cancelar"
+                            ? "Terminar"
                             : "Alterar Configuração Existente"
                         }
                     </Button>
@@ -513,6 +513,7 @@ const ConfigManager = (props) => {
                                   checked={lang}
                                   onChangeCallback={(checked) => setLangList(checked)}
                                   required
+                                  showOrder
                                   helperText="Para melhores resultados, selecione por ordem de relevância"
                                   errorText="Deve selecionar pelo menos uma língua"/>
                 </Box>

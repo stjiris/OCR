@@ -6,7 +6,8 @@ import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import EditIcon from '@mui/icons-material/Edit';
+import BorderAllIcon from '@mui/icons-material/BorderAll';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
@@ -176,16 +177,16 @@ class DocumentRow extends React.Component {
                                         className="actionButton"
                                         message="Criar Layout"
                                         clickFunction={(e) => this.createLayout(e)}
-                                        icon={<LayoutIcon/>}
+                                        icon={<BorderAllIcon/>}
                                     />
 
                                     <TooltipIcon
                                         key={"Edit " + this.props.name}
                                         className="actionButton"
-                                        message="Editar"
+                                        message="Editar Resultados"
                                         disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
                                         clickFunction={(e) => this.editFile(e)}
-                                        icon={<EditIcon/>}
+                                        icon={<EditNoteIcon/>}
                                     />
 
                                     {

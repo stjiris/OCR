@@ -401,6 +401,7 @@ class OcrMenu extends React.Component {
                                   checked={this.state.lang}
                                   onChangeCallback={this.setLangList}
                                   required
+                                  showOrder
                                   helperText="Para melhores resultados, selecione por ordem de relevância"
                                   errorText="Deve selecionar pelo menos uma língua"/>
                 </Box>
