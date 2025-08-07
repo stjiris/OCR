@@ -551,116 +551,38 @@ def task_page_ocr(
         ocr_engine = globals()[ocr_engine_name.lower()]
 
         layout_path = f"{path}/_layouts/{get_file_basename(filename)}.json"
-        only_ignored_areas = True
 
         parsed_json = []
+        text_groups = []
+        image_groups = []
+        ignore_groups = []
         if os.path.exists(layout_path):
             with open(layout_path, encoding="utf-8") as json_file:
                 parsed_json = json.load(json_file)
-                for x in parsed_json:
-                    if x["type"] != "remove":
-                        only_ignored_areas = False
-                        break
 
-        if only_ignored_areas:
-            image = Image.open(f"{path}/_pages/{filename}")
+        for item in parsed_json:
+            area_type = item["type"]
+            if area_type == "text":
+                text_groups.append(item)
+            elif area_type == "image":
+                image_groups.append(item)
+            elif area_type == "remove":
+                ignore_groups.append(item)
 
-            for item in parsed_json:
-                for sq in item["squares"]:
-                    box_coords = ((sq["left"], sq["top"]), (sq["right"], sq["bottom"]))
-                    img_draw = ImageDraw.Draw(image)
-                    img_draw.rectangle(box_coords, fill="white")
+        image_filename = f"{path}/_pages/{filename}"
+        image = None
 
-            # Perform OCR
-            # ocr_start = time.time()
-            # If single-page document, take advantage of output types to immediately generate results with Tesseract
-            if n_doc_pages == 1:
-                json_d, raw_results = ocr_engine.get_structure(
-                    page=image,
-                    lang=lang,
-                    config=config,
-                    doc_path=path,
-                    output_types=output_types,
-                    single_page=True,
-                )
-            else:
-                json_d, _ = ocr_engine.get_structure(
-                    page=image,
-                    lang=lang,
-                    doc_path=path,
-                    config=config,
-                )
-            # ocr_time = time.time() - ocr_start
-            # page_metrics["ocr_time"] = ocr_time
-            json_d = [[x] for x in json_d]
-            # Save results
-            # save_start = time.time()
+        # extract images, if any selected
+        if image_groups:
+            image = Image.open(image_filename)
 
-            # Store formatted OCR output for the page in JSON
-            with open(
-                f"{path}/_ocr_results/{get_file_basename(filename)}.json",
-                "w",
-                encoding="utf-8",
-            ) as f:
-                json.dump(json_d, f, indent=2, ensure_ascii=False)
-            # save_time = time.time() - save_start
-            # page_metrics["save_time"] = save_time
+            if not os.path.exists(f"{path}/_images"):
+                os.mkdir(f"{path}/_images")
 
-        else:  # OCR only selected areas
-            with open(layout_path, encoding="utf-8") as json_file:
-                parsed_json = json.load(json_file)
+            basename = get_file_basename(filename)
+            page_number = int(basename.split("_")[-1]) + 1
 
-            text_groups = []
-            image_groups = []
-            ignore_groups = []
-
-            for item in parsed_json:
-                area_type = item["type"]
-                if area_type == "text":
-                    text_groups.append(item)
-                elif area_type == "image":
-                    image_groups.append(item)
-                elif area_type == "remove":
-                    ignore_groups.append(item)
-
-            image = Image.open(f"{path}/_pages/{filename}")
-            img_draw = ImageDraw.Draw(image)
-
-            if ignore_groups:
-                for item in ignore_groups:
-                    for sq in item["squares"]:
-                        left = sq["left"]
-                        top = sq["top"]
-                        right = sq["right"]
-                        bottom = sq["bottom"]
-
-                        box_coords = ((left, top), (right, bottom))
-                        img_draw.rectangle(box_coords, fill="white")
-
-            if image_groups:
-                if not os.path.exists(f"{path}/_images"):
-                    os.mkdir(f"{path}/_images")
-
-                basename = get_file_basename(filename)
-                page_number = int(basename.split("_")[-1]) + 1
-
-                for item_id, item in enumerate(image_groups):
-                    for sq in item["squares"]:
-                        left = sq["left"]
-                        top = sq["top"]
-                        right = sq["right"]
-                        bottom = sq["bottom"]
-
-                        box_coords = (left, top, right, bottom)
-                        cropped_image = image.crop(box_coords)
-                        cropped_image.save(
-                            f"{path}/_images/page{page_number}_{item_id + 1}.{filename.split('.')[-1].lower()}"
-                        )
-
-            box_coordinates_list = []
-            for item in text_groups:
-                if item["type"] != "text":
-                    continue
+            for item_id, item in enumerate(image_groups):
                 for sq in item["squares"]:
                     left = sq["left"]
                     top = sq["top"]
@@ -668,12 +590,42 @@ def task_page_ocr(
                     bottom = sq["bottom"]
 
                     box_coords = (left, top, right, bottom)
-                    box_coordinates_list.append(box_coords)
+                    cropped_image = image.crop(box_coords)
+                    cropped_image.save(
+                        f"{path}/_images/page{page_number}_{item_id + 1}.{filename.split('.')[-1].lower()}"
+                    )
 
-            all_jsons = []
+        # cover ignored segments, if any selected
+        if ignore_groups:
+            if image is None:
+                image = Image.open(image_filename)
+
+            img_draw = ImageDraw.Draw(image)
+            for item in ignore_groups:
+                for sq in item["squares"]:
+                    box_coords = ((sq["left"], sq["top"]), (sq["right"], sq["bottom"]))
+                    img_draw.rectangle(box_coords, fill="white")
+
+        box_coordinates_list = []
+        for item in text_groups:
+            for sq in item["squares"]:
+                left = sq["left"]
+                top = sq["top"]
+                right = sq["right"]
+                bottom = sq["bottom"]
+
+                box_coords = (left, top, right, bottom)
+                box_coordinates_list.append(box_coords)
+
+        page_json = []
+        if box_coordinates_list:
+            if image is None:
+                image = Image.open(image_filename)
+            # Must OCR each text box. raw_results received but not expected, as currently can only be done with full page
+
             if ocr_engine_name.lower() == "ocr_tesserocr":
-                # TesserOCR can load an image once and OCR multiple segments within it.
-                all_jsons, _ = ocr_engine.get_structure(
+                # TesserOCR can load an image once and OCR multiple segments within it
+                page_json, raw_results = ocr_engine.get_structure(
                     page=image,
                     lang=lang,
                     config=config,
@@ -681,31 +633,53 @@ def task_page_ocr(
                     segment_box=box_coordinates_list,
                 )
             else:
+                all_jsons = []
+                # Get JSON result for each box and append to final list
                 for box in box_coordinates_list:
-                    json_d, _ = ocr_engine.get_structure(
+                    box_json, raw_results = ocr_engine.get_structure(
                         page=image,
                         lang=lang,
                         config=config,
                         doc_path=path,
                         segment_box=box,
                     )
-                    if json_d:
-                        all_jsons.append(json_d)
+                    if box_json:
+                        all_jsons.append(box_json)
 
-            page_json = []
-            for sublist in all_jsons:
-                page_json.append(sublist)
+                for sublist in all_jsons:
+                    page_json.append(sublist)
+        else:
+            # OCR entire page, may have covered ignored areas
 
-            # Save results
-            # save_start = time.time()
-            with open(
-                f"{path}/_ocr_results/{get_file_basename(filename)}.json",
-                "w",
-                encoding="utf-8",
-            ) as f:
-                json.dump(page_json, f, indent=2, ensure_ascii=False)
-            # save_time = time.time() - save_start
-            # page_metrics["save_time"] = save_time
+            if (
+                n_doc_pages == 1
+                and not ignore_groups
+                and ocr_engine_name.lower() == "ocr_tesserocr"
+            ):
+                # TesserOCR needs stored file to generate direct results
+                # Use original filename if no ignored areas were covered in memory, else memory data will be stored in /tmp
+                image = image_filename
+            elif image is None:
+                image = Image.open(image_filename)
+
+            json_results, raw_results = ocr_engine.get_structure(
+                page=image,
+                lang=lang,
+                config=config,
+                doc_path=path,
+                output_types=output_types,
+                # If single-page document, take advantage of output types to immediately generate results with Tesseract
+                single_page=n_doc_pages == 1,
+            )
+            page_json = [[x] for x in json_results]
+
+        # Store formatted OCR output for the page in JSON
+        with open(
+            f"{path}/_ocr_results/{get_file_basename(filename)}.json",
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(page_json, f, indent=2, ensure_ascii=False)
 
         # Performed OCR of page, update data
         files = os.listdir(f"{path}/_ocr_results")
