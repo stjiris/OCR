@@ -1072,10 +1072,10 @@ class EditingMenu extends React.Component {
                                 >
                                     {
                                         this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
-                                            return <Box key={`section${sectionIndex}`} className="section" sx={{display: "flex", flexDirection: "column", maxWidth: "100%"}}>
+                                            return <Box key={`section${sectionIndex}`} className="editingSection">
                                                 {
                                                     section.map((line, lineIndex) => {
-                                                        return <Box key={`line${lineIndex} section${sectionIndex}`} style={{marginBottom: "0px", marginTop: "10px", maxWidth: "100%"}}>
+                                                        return <Box key={`line${lineIndex} section${sectionIndex}`} className="editingLine">
                                                             {
                                                                 line.map((word, wordIndex) => {
                                                                     if ("input" in word) {
@@ -1085,9 +1085,16 @@ class EditingMenu extends React.Component {
                                                                             variant='outlined'
                                                                             defaultValue={word["text"]}
                                                                             size="small"
-                                                                            style={{margin: "0px 2px", fontFamily: "inherit", fontSize: "14px", padding: "0px 5px",
-                                                                                width: word["text"].length+'ch', maxWidth: '100%',
-                                                                                overflowWrap: "break-word", resize: "none"}}
+                                                                            style={{
+                                                                                margin: "0px 2px",
+                                                                                fontFamily: "inherit",
+                                                                                fontSize: "14px",
+                                                                                padding: "0px 5px",
+                                                                                width: word["text"].length+'ch',
+                                                                                maxWidth: '100%',
+                                                                                overflowWrap: "break-word",
+                                                                                resize: "none"
+                                                                            }}
                                                                             autoFocus={true}
                                                                             onChange={(e) => {
                                                                                 this.updateInputSize(e.target.value);

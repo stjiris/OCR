@@ -112,6 +112,17 @@ body {
     object-fit: contain;
 }
 
+.editingSection {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    margin-bottom: 20px;
+}
+
+.editingLine {
+    max-width: 100%;
+}
+
 /*
 input field within a TextField used within Autocomplete
 cannot be styled with props, interferes with functioning of Autocomplete

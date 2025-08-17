@@ -43,63 +43,65 @@ def parse_hocr(hocr, segment_box):
     :param segment_box: Bounding box of the segment, if applicable.
     :return: List of lines, each containing words with text and coordinates.
     """
-    lines = []
+    paragraphs = []
+    for paragraph in hocr.xpath('//*[@class="ocr_par"]'):
+        lines = []
+        for line in paragraph.xpath('.//*[@class="ocr_line"]'):
+            line_title = line.attrib["title"]
+            linebox = bbox_re.search(line_title).group(1).split()
+            try:
+                baseline = baseline_re.search(line_title).group(1).split()
+            except AttributeError:
+                baseline = [0, 0]
+            linebox = [float(i) for i in linebox]
+            baseline = [float(i) for i in baseline]
 
-    for line in hocr.xpath('//*[@class="ocr_line"]'):
-        line_title = line.attrib["title"]
-        linebox = bbox_re.search(line_title).group(1).split()
-        try:
-            baseline = baseline_re.search(line_title).group(1).split()
-        except AttributeError:
-            baseline = [0, 0]
-        linebox = [float(i) for i in linebox]
-        baseline = [float(i) for i in baseline]
+            words = []
 
-        words = []
+            xpath_elements = './/*[@class="ocrx_word"]'
+            if not (line.xpath("boolean(" + xpath_elements + ")")):
+                # If there are no word elements present, switch to lines as elements
+                xpath_elements = "."
 
-        xpath_elements = './/*[@class="ocrx_word"]'
-        if not (line.xpath("boolean(" + xpath_elements + ")")):
-            # If there are no word elements present, switch to lines as elements
-            xpath_elements = "."
+            for word in line.xpath(xpath_elements):
+                rawtext = word.text_content().strip()
+                if rawtext == "":
+                    continue
 
-        for word in line.xpath(xpath_elements):
-            rawtext = word.text_content().strip()
-            if rawtext == "":
-                continue
+                word_title = word.attrib["title"]
+                box = bbox_re.search(word_title).group(1).split()
+                confidence = int(confidence_re.search(word_title).group(1))
 
-            word_title = word.attrib["title"]
-            box = bbox_re.search(word_title).group(1).split()
-            confidence = int(confidence_re.search(word_title).group(1))
+                font_result = font_re.search(word_title)
+                font = font_result.group(1) if font_result is not None else None
 
-            font_result = font_re.search(word_title)
-            font = font_result.group(1) if font_result is not None else None
+                if segment_box:
+                    # Compensate for the box coordinates being relative to the segment bounds
+                    box = [
+                        float(i) + segment_box[box_id % 2]
+                        for box_id, i in enumerate(box)
+                    ]
+                else:
+                    box = [float(i) for i in box]
+                b = polyval(baseline, (box[0] + box[2]) / 2 - linebox[0]) + linebox[3]
 
-            if segment_box:
-                # Compensate for the box coordinates being relative to the segment bounds
-                box = [float(i) + segment_box[id % 2] for id, i in enumerate(box)]
-            else:
-                box = [float(i) for i in box]
-            b = polyval(baseline, (box[0] + box[2]) / 2 - linebox[0]) + linebox[3]
+                word_data = {
+                    "text": rawtext,
+                    "box": box,
+                    "b": b,
+                    "confidence": confidence,
+                }
+                if font is not None:
+                    word_data["font"] = font
 
-            word_data = {
-                "text": rawtext,
-                "box": box,
-                "b": b,
-                "confidence": confidence,
-            }
-            if font is not None:
-                word_data["font"] = font
+                words.append(word_data)
 
-            words.append(word_data)
+            if words:
+                lines.append(words)
+        if lines:
+            paragraphs.append(lines)
 
-        if words:
-            lines.append(words)
-
-    # Turns segment into a single line. Not needed(?)
-    # if segment_box and lines:
-    #     lines = remove_extra_paragraphs(lines)
-
-    return lines
+    return paragraphs
 
 
 def polyval(poly, x):

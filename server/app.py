@@ -355,7 +355,7 @@ def create_folder():
 
 @app.route("/get-text-content", methods=["GET"])
 @requires_arg_path
-def get_file():
+def get_text_content():
     path, is_private = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
