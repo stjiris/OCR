@@ -75,6 +75,7 @@ def parse_hocr(hocr, segment_box):
             font = font_result.group(1) if font_result is not None else None
 
             if segment_box:
+                # Compensate for the box coordinates being relative to the segment bounds
                 box = [float(i) + segment_box[id % 2] for id, i in enumerate(box)]
             else:
                 box = [float(i) for i in box]

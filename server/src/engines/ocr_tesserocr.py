@@ -116,7 +116,9 @@ def get_structure(
                 }
                 api.SetRectangle(**coords)
                 hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
-                results.append(parse_hocr(hocr, box))
+                # TesserOCR result coordinates are relative to original page edges, not segment edges.
+                # No need to reposition the results according to segment coordinates.
+                results.append(parse_hocr(hocr, segment_box=None))
             api.End()
             return results, raw_results_paths  # raw results expected to be empty
         else:
@@ -205,7 +207,9 @@ def get_structure(
 
     api.End()
 
-    lines = parse_hocr(hocr, segment_box)
+    # TesserOCR result coordinates are relative to original page edges, not segment edges.
+    # No need to reposition the results according to segment coordinates.
+    lines = parse_hocr(hocr, segment_box=None)
 
     return lines, raw_results_paths
 
