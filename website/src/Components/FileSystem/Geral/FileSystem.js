@@ -1227,7 +1227,7 @@ class FileExplorer extends React.Component {
                     <>
                     <Box className="toolbar">
                         <ReturnButton
-                            disabled={this.props.current_folder === ""}
+                            disabled={this.props.current_folder === "" && (!this.props._private || this.props.current_file_name == null)}
                             returnFunction={this.props.returnToParentFolder}
                         />
                     </Box>
