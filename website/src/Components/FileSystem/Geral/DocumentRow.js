@@ -84,7 +84,7 @@ class DocumentRow extends React.Component {
     }
 
     render() {
-        const buttonsDisabled = !(this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] >= this.state.info["pages"])
+        const buttonsDisabled = !(this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] === "completed")
         const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
         return (
             <>
@@ -230,7 +230,7 @@ class DocumentRow extends React.Component {
                                         </Box>
                                     </TableCell>
 
-                                : this.state.info["ocr"]["progress"] >= this.state.info["pages"]
+                                : this.state.info["ocr"]["progress"] === "completed"
                                     ? <TableCell className="explorerCell stateCell successCell" align='center'>
                                         <Box className="stateBox">
                                           <span>OCR concluído</span>
@@ -241,6 +241,16 @@ class DocumentRow extends React.Component {
                                     ? <TableCell className="explorerCell stateCell errorCell" align='center'>
                                         <Box className="stateBox">
                                           <span>Erro ao fazer OCR</span>
+                                        </Box>
+                                    </TableCell>
+
+                                : this.state.info["ocr"]["progress"] === this.state.info["pages"]
+                                    ? <TableCell className="explorerCell stateCell infoCell" align='center'>
+                                        <Box className="stateBox">
+                                          <span style={{textAlign: "left"}}>
+                                              A exportar resultados
+                                              <CircularProgress sx={{ml: '1rem'}} size='1rem' />
+                                          </span>
                                         </Box>
                                     </TableCell>
 

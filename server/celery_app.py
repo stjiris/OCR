@@ -847,8 +847,8 @@ def task_export_results(path: str, output_types: list[str]):
             else:
                 data["ner"] = {"complete": False, "error": True}
 
+        data["ocr"]["progress"] = "completed"
         update_json_file(data_file, data)
-        # return {"status": "success", "metricas": page_metrics}
         return {"status": "success"}
     except Exception as e:
         traceback.print_exc()
