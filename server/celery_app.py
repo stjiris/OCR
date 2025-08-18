@@ -608,7 +608,6 @@ def task_page_ocr(
                 )
             # ocr_time = time.time() - ocr_start
             # page_metrics["ocr_time"] = ocr_time
-            json_d = [[x] for x in json_d]
             # Save results
             # save_start = time.time()
 
