@@ -438,7 +438,7 @@ const StorageManager = (props) => {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    width: '22%',
+                    width: '24%',
                     alignItems: 'center',
                 }}>
                     <Button
