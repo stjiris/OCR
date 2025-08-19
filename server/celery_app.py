@@ -140,7 +140,6 @@ def task_count_doc_pages(path: str, extension: str):
         {
             "pages": get_page_count(path, extension),
             "stored": True,
-            "creation": get_current_time(),
         },
     )
 

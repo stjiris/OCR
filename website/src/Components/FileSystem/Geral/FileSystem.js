@@ -40,8 +40,10 @@ const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
 const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
 const FullStorageMenu = loadComponent('Notifications', 'FullStorageMenu');
 
-const UPDATE_TIME = 15;
-const STUCK_UPDATE_TIME = 20 * 60; // 20 Minutes
+const UPDATE_PERIOD_SECONDS = 15;
+const UPLOAD_UPDATE_SECONDS = 5;
+const STUCK_CHECK_PERIOD_SECONDS = 2 * 60;  // check for stuck uploads every 2 minutes
+const STUCK_UPLOAD_TIMEOUT_MINUTES = 4; // files still not ready for OCR after these minutes are considered stuck
 
 const validExtensions = ["application/pdf",
                                 "image/jpeg",
@@ -54,7 +56,7 @@ const validExtensions = ["application/pdf",
                                 "image/jp2",
                                 "application/zip"];
 
-const chunkSize = 1024 * 1024 * 3; // 3 MB
+const chunkSize = 1024 * 1024 * 1024; // 1GB
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
@@ -67,10 +69,6 @@ class FileExplorer extends React.Component {
             maxAge: null,
             components: [],
             sorting: 0,
-
-            updatingRows: [],
-            updatingRate: 15,
-            updateCount: 0,
 
             fetched: false,
         }
@@ -88,6 +86,7 @@ class FileExplorer extends React.Component {
 
         this.infoInterval = null;
         this.stuckInterval = null;
+        this.uploadingCheckInterval = null;
         this.rowRefs = [];
 
         this.fetchInfo = this.fetchInfo.bind(this);
@@ -134,10 +133,10 @@ class FileExplorer extends React.Component {
          // Fetch the files and info from the server
         this.fetchFileSystem();
 
-        // Update the info every UPDATE_TIME seconds
+        // Update the info every UPDATE_PERIOD_SECONDS seconds
         this.createFetchInfoInterval();
 
-        // Check for stuck uploads every STUCK_UPDATE_TIME seconds
+        // Check for stuck uploads every STUCK_CHECK_PERIOD_SECONDS seconds
         this.stuckInterval = setInterval(() => {
             axios.get(API_URL + '/info', {
                 params: {
@@ -153,34 +152,10 @@ class FileExplorer extends React.Component {
                 }
                 const info = response.data["info"];
                 // Find if a upload is stuck
-                for (const [path, value] of Object.entries(info)) {
-                    if (value.type === "file") {
-                        if ("stored" in value && value["stored"] !== true) {
-                            const creationTime = new Date(value.creation.replace(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
-                            const currentTime = new Date();
-                            const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
-
-                            if (timeDiffMinutes >= STUCK_UPDATE_TIME) {
-                                fetch(API_URL + '/set-upload-stuck', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({
-                                        _private: this.props._private,
-                                        path: (this.props._private
-                                                ?  this.props.sessionId + '/' + path.replace(/^\//, '')
-                                                : path.replace(/^\//, '')),
-                                    }),
-                                })
-                                .then(response => response.json());
-                            }
-                        }
-                    }
-                }
+                this.checkStuckUploads(info);
                 this.fetchInfo();
             });
-        }, 1000 * STUCK_UPDATE_TIME);
+        }, 1000 * STUCK_CHECK_PERIOD_SECONDS);
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -192,6 +167,35 @@ class FileExplorer extends React.Component {
             this.displayFileSystem();
         } else if (this.state.info !== prevState.info) {  // fetched updated info
             this.updateInfo();
+        }
+    }
+
+    checkStuckUploads(info) {
+        // Find if a upload is stuck
+        for (const [path, value] of Object.entries(info)) {
+            if (value.type === "file") {
+                if ("stored" in value && value["stored"] !== true) {
+                    const creationTime = new Date(value.creation.replace(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/, '$3-$2-$1T$4:$5:$6'));
+                    const currentTime = new Date();
+                    const timeDiffMinutes = (currentTime - creationTime) / (1000 * 60);
+
+                    if (timeDiffMinutes >= STUCK_UPLOAD_TIMEOUT_MINUTES) {
+                        fetch(API_URL + '/set-upload-stuck', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                _private: this.props._private,
+                                path: (this.props._private
+                                    ?  this.props.sessionId + '/' + path.replace(/^\//, '')
+                                    : path.replace(/^\//, '')),
+                            }),
+                        })
+                            .then(response => response.json());
+                    }
+                }
+            }
         }
     }
 
@@ -211,6 +215,7 @@ class FileExplorer extends React.Component {
                     }
                 }
                 const info = response.data["info"];
+                this.checkStuckUploads(info);  // check for stuck uploads on initial filesystem fetch
                 const files = response.data["files"];
                 const maxAge = response.data["maxAge"];
                 this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
@@ -248,7 +253,7 @@ class FileExplorer extends React.Component {
     }
 
     createFetchInfoInterval() {
-        this.infoInterval = setInterval(this.fetchInfo, 1000 * UPDATE_TIME);  // TODO: replace with WebSockets
+        this.infoInterval = setInterval(this.fetchInfo, 1000 * UPDATE_PERIOD_SECONDS);  // TODO: replace with WebSockets
     }
 
     /**
@@ -295,12 +300,9 @@ class FileExplorer extends React.Component {
             // update info of rows for current folder's contents
             this.rowRefs.forEach(ref => {
                 const filename = ref.current.props.name;
-                if (this.state.updatingRows.length === 0 || this.state.updatingRows.includes(filename)) {
-                    const rowInfo = this.getInfo(filename);
-                    ref.current.updateInfo(rowInfo);
-                }
+                const rowInfo = this.getInfo(filename);
+                ref.current.updateInfo(rowInfo);
             });
-            this.setState({updatingRows: []});
         }
     }
 
@@ -309,6 +311,8 @@ class FileExplorer extends React.Component {
             clearInterval(this.infoInterval);
         if (this.stuckInterval)
             clearInterval(this.stuckInterval);
+        if (this.uploadingCheckInterval)
+            clearInterval(this.uploadingCheckInterval);
     }
 
     /**
@@ -350,25 +354,34 @@ class FileExplorer extends React.Component {
         }).then(response => {return response.json()})
         .then(data => {
             if (data['success']) {
-                const info = data["info"];
+                // Update upload status every UPLOAD_UPDATE_SECONDS seconds
+                if (!this.uploadingCheckInterval) {
+                    this.uploadingCheckInterval = setInterval((fileName) => {
+                        axios.get(API_URL + '/info', {
+                            params: {
+                                _private: this.props._private,
+                                path: (this.props._private
+                                    ? this.props.sessionId
+                                    : this.props.current_folder)
+                            }
+                        })
+                            .then(response => {
+                                if (response.status !== 200) {
+                                    throw new Error("Não foi possível obter os dados do servidor.");
+                                }
+                                const info = response.data["info"];
+                                const uploadInfo = this.getInfo(fileName)
+                                // If upload is finished, end interval
+                                if (uploadInfo["stored"]) {
+                                    clearInterval(this.uploadingCheckInterval);
+                                }
+                                this.setState({info: info});
 
-                const updatingList = this.state.updatingRows;
-                if (!updatingList.includes(fileName)) {
-                    updatingList.push(fileName);
-                }
-
-                if (data["finished"] || this.state.updateCount === this.state.updatingRate) {
-                    this.setState({info: info, updateCount: 0, updatingRows: updatingList});
-                } else {
-                    this.setState({updateCount: this.state.updateCount + 1});
+                            });
+                    }, 1000 * UPLOAD_UPDATE_SECONDS, fileName);
                 }
             } else {
                 this.storageMenu.current.openWithMessage(data.error);
-            }
-
-            // Update list of files on screen after upload of first chunk
-            if (i === 0) {
-                this.fetchFiles();
             }
         })
         .catch(error => {
@@ -388,7 +401,7 @@ class FileExplorer extends React.Component {
         let path = this.props.current_folder;
         if (this.props._private) { path = this.props.sessionId + '/' + path }
 
-        var el = window._protected_reference = document.createElement("INPUT");
+        const el = window._protected_reference = document.createElement("INPUT");
         el.type = "file";
         el.accept = validExtensions.join(',');
         el.multiple = true;
@@ -397,17 +410,16 @@ class FileExplorer extends React.Component {
             if (el.files.length === 0) return;
 
             // Sort files by size (ascending)
-            var files = Array.from(el.files).sort((a, b) => a.size - b.size);
+            const files = Array.from(el.files).sort((a, b) => a.size - b.size);
 
             for (let i = 0; i < files.length; i++) {
                 let fileBlob = files[i];
                 let fileSize = files[i].size;
                 let fileName = files[i].name;
                 let fileType = files[i].type;
-
                 const _totalCount = fileSize % chunkSize === 0
-                ? fileSize / chunkSize
-                : Math.floor(fileSize / chunkSize) + 1;
+                                            ? fileSize / chunkSize
+                                            : Math.floor(fileSize / chunkSize) + 1;
 
                 const _fileID = uuidv4() + "." + fileName.split('.').pop();
 
@@ -424,7 +436,10 @@ class FileExplorer extends React.Component {
                 }).then(response => {return response.json()})
                 .then(data => {
                     if (data['success']) {
-                        fileName = data["filename"];
+                        fileName = data["filename"];  // update filename if server changed it due to name collisions
+
+                        //// Update list of files on screen after upload of first chunk
+                        this.fetchFiles();
 
                         // Send chunks
                         let startChunk = 0;
