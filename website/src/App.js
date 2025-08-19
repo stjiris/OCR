@@ -367,10 +367,10 @@ function App() {
                                         && !this.state.currentFileName
                                         && (this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession())))
                                         ? <Button
-                                            variant="text"
+                                            variant="contained"
                                             startIcon={<NoteAddIcon/>}
                                             onClick={() => this.fileSystem.current.createFile()}
-                                            className="pathElement"
+                                            className="menuButton pathElement"
                                         >
                                             Adicionar Documento
                                         </Button>
