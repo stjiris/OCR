@@ -641,6 +641,7 @@ def prepare_upload():
                 "type": "file",
                 "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
                 "stored": 0.00,
+                "creation": get_current_time(),
             },
             f,
             indent=2,

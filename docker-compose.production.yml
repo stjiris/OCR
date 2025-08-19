@@ -110,7 +110,7 @@ services:
       - files_data:/usr/share/nginx/html/files
     environment:
       NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
-      CLIENT_MAX_BODY_SIZE: 200M
+      CLIENT_MAX_BODY_SIZE: 2G
     restart: unless-stopped
     networks:
       - internal-network

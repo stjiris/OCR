@@ -52,7 +52,7 @@ class PrivateSessionMenu extends React.Component {
         this.setState({ open: !this.state.open });
     }
 
-    createPrivateSession() {
+    uploadFile() {
         this.setState({ buttonDisabled: true, open: false });
         this.props.createFile();
     }
@@ -96,7 +96,7 @@ class PrivateSessionMenu extends React.Component {
                                 disabled={this.checkHasFile()}
                                 variant="contained"
                                 sx={{border: '1px solid black'}}
-                                onClick={() => this.createPrivateSession()}
+                                onClick={() => this.uploadFile()}
                             >
                                 Adicionar documento
                             </Button>
