@@ -858,11 +858,9 @@ def request_ocr():
         if data.get("indexed", False):
             for page in pages:
                 page_id = generate_uuid(page.path)
-                log.debug(f"Removing {page.path}: ID={page_id}")
                 try:
                     es.delete_document(page_id)
                 except NotFoundError:
-                    log.debug(f"Failed to find {page.path}: ID={page_id}")
                     continue
 
         # Delete previous results
