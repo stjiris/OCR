@@ -226,7 +226,7 @@ class DocumentRow extends React.Component {
                                 this.state.info?.["ocr"] === undefined
                                     ? <TableCell className="explorerCell stateCell waitingCell" align='center'>
                                         <Box className="stateBox">
-                                            <span>Aguarda pedido de OCR</span>
+                                            <span>Aguarda...</span>
                                         </Box>
                                     </TableCell>
 

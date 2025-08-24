@@ -950,7 +950,7 @@ class EditingMenu extends React.Component {
                                 onClick={() => this.saveChanges(true)}
                                 startIcon={<CheckRoundedIcon />
                                 }>
-                                Terminar
+                                Recriar Ficheiros
                             </Button>
                         </Box>
                     </Box>
