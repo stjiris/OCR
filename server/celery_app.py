@@ -280,8 +280,11 @@ def task_file_ocr(
     try:
         with open(DEFAULT_CONFIG_FILE) as f:
             default_config = json.load(f)
-
-        if config is None or isinstance(config, str) and config == "default":
+        if (
+            not config
+            or config == "{}"
+            or (isinstance(config, str) and config == "default")
+        ):
             config = default_config
         else:
             # Build string with Tesseract run configuration
