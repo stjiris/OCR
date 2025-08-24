@@ -11,7 +11,7 @@ const ReturnButton = ({ disabled = false, returnFunction = null, sx = {} }) => {
             variant="contained"
             startIcon={<UndoIcon />}
             onClick={() => returnFunction()}
-            className="menuFunctionButton noMarginRight"
+            className="menuFunctionButton"
             sx={Object.assign({
                 backgroundColor: '#ffffff',
                 color: '#000000',

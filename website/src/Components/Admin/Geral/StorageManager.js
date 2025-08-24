@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import RotateLeft from "@mui/icons-material/RotateLeft";
 import Typography from "@mui/material/Typography";
 
 import TextField from "@mui/material/TextField";
@@ -26,8 +27,6 @@ const API_URL = `${window.location.protocol}//${window.location.host}/${process.
 const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
                             ? `/${process.env.REACT_APP_BASENAME}/admin`
                             : '/admin';
-
-const UPDATE_TIME = 30;  // period of fetching system info, in seconds
 
 const numberHoursRegex = /^[1-9][0-9]*$/;
 const dayRegex = /^([1-9]|0[1-9]|[1-2][0-9]|3[0-1])$/;
@@ -52,6 +51,9 @@ const StorageManager = (props) => {
     const [lastCleanup, setLastCleanup] = useState("nunca");
     const [maxPrivateSessionAge, setMaxPrivateSessionAge] = useState("5");
 
+    const [refreshing, setRefreshing] = useState(true);
+    const [lastUpdate, setLastUpdate] = useState(null);
+
     const [scheduleType, setScheduleType] = useState("monthly");
 
     const [everyHours, setEveryHours] = useState('');
@@ -73,6 +75,7 @@ const StorageManager = (props) => {
     const errorNotif = useRef(null);
 
     function getStorageInfo() {
+        setRefreshing(true);
         axios.get(API_URL + '/admin/storage-info')
             .then(({ data }) => {
                 setFreeSpace(data["free_space"]);
@@ -81,15 +84,13 @@ const StorageManager = (props) => {
                 setApiFiles(data["api_files"]);
                 setLastCleanup(data["last_cleanup"]);
                 setMaxPrivateSessionAge(data["max_age"]);
+                setLastUpdate(new Date());
+                setRefreshing(false);
             });
     }
 
     useEffect(() => {
         getStorageInfo();
-        const interval = setInterval(getStorageInfo, 1000 * UPDATE_TIME);
-        return () => {
-            clearInterval(interval);
-        }
     }, []);
 
     const deleteApiDocument = useCallback(() => {
@@ -132,12 +133,11 @@ const StorageManager = (props) => {
                 if (response.status !== 200) {
                     throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
                 }
-                if (response.data["success"]) {
-                    setPrivateSessions(response.data["private_sessions"]);
-                } else {
+                if (!response.data["success"]) {
                     throw new Error(response.data["message"]);
                 }
                 closeConfirmationPopup();
+                getStorageInfo();
             })
             .catch(err => {
                 errorNotif.current.openNotif(err.message);
@@ -358,21 +358,25 @@ const StorageManager = (props) => {
             </Box>
 
             <Box className="toolbar">
-                <ReturnButton
-                    disabled={false}
-                    returnFunction={() => navigate('/admin')}
-                />
+                <Box>
+                    <ReturnButton
+                        disabled={false}
+                        returnFunction={() => navigate('/admin')}
+                    />
 
-                <Button
-                    disabled={!valid}
-                    color="success"
-                    variant="contained"
-                    className="menuFunctionButton noMarginRight"
-                    startIcon={<CheckRoundedIcon />}
-                    onClick={(e) => updateSchedule(e)}
-                >
-                    Confirmar
-                </Button>
+                    <Button
+                        disabled={refreshing}
+                        variant="contained"
+                        className="menuFunctionButton"
+                        startIcon={<RotateLeft />}
+                        onClick={() => getStorageInfo()}
+                    >
+                        Refresh
+                    </Button>
+                    <span>
+                        Último update: {lastUpdate ? lastUpdate.toLocaleString("pt-PT") : "nunca"}
+                    </span>
+                </Box>
             </Box>
 
             <Box sx={{
@@ -388,7 +392,8 @@ const StorageManager = (props) => {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    width: '24%',
+                    minWidth: '24%',
+                    width: 'fit-content',
                 }}>
                     <Box sx = {{
                         display: "flex",
@@ -403,7 +408,7 @@ const StorageManager = (props) => {
                         width: "fit-content",
                         height: "fit-content",
                     }}>
-                        <span>Ficheiros de API</span>
+                        <span>Documentos de API</span>
                         {
                             Object.entries(apiFiles).map(([apiFile, info], index) => {
                                 return (
@@ -417,17 +422,23 @@ const StorageManager = (props) => {
                                             height: "2rem",
                                             lineHeight: "2rem",
                                             borderTop: index !== 0 ? "1px solid black" : "0px solid black",
-                                            cursor: "pointer"
                                         }}
                                     >
-                                        <code>{apiFile}</code>
-                                        <span>&nbsp;–&nbsp;{info["size"]}&nbsp;–&nbsp;{info["creation"]}</span>
-                                        <TooltipIcon
-                                            className="negActionButton"
-                                            message="Apagar"
-                                            clickFunction={(e) => openDeleteApiDocumentPopup(e, apiFile)}
-                                            icon={<DeleteForeverIcon />}
-                                        />
+                                        <code>{apiFile}&nbsp;—&nbsp;</code>
+                                        <Box sx={{
+                                            display: 'flex',
+                                            flexDirection: 'row',
+                                        }}>
+                                            <span style={{alignContent: 'center'}}>
+                                                {info["size"]}&nbsp;–&nbsp;{info["creation"]}
+                                            </span>
+                                            <TooltipIcon
+                                                className="negActionButton"
+                                                message="Apagar"
+                                                clickFunction={(e) => openDeleteApiDocumentPopup(e, apiFile)}
+                                                icon={<DeleteForeverIcon />}
+                                            />
+                                        </Box>
                                     </Box>
                                 )
                             })
@@ -438,7 +449,8 @@ const StorageManager = (props) => {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    width: '24%',
+                    minWidth: '24%',
+                    width: 'fit-content',
                     alignItems: 'center',
                 }}>
                     <Button
@@ -483,14 +495,21 @@ const StorageManager = (props) => {
                                             navigate(`/session/${privateSession}`);
                                         }}
                                     >
-                                        <code>{privateSession}</code>
-                                        <span>&nbsp;–&nbsp;{info["size"]}&nbsp;–&nbsp;{info["creation"]}</span>
-                                        <TooltipIcon
-                                            className="negActionButton"
-                                            message="Apagar"
-                                            clickFunction={(e) => openDeleteSessionPopup(e, privateSession)}
-                                            icon={<DeleteForeverIcon />}
-                                        />
+                                        <code>{privateSession}&nbsp;—&nbsp;</code>
+                                        <Box sx={{
+                                            display: 'flex',
+                                            flexDirection: 'row',
+                                        }}>
+                                            <span style={{alignContent: 'center'}}>
+                                                {info["size"]}&nbsp;–&nbsp;{info["creation"]}
+                                            </span>
+                                            <TooltipIcon
+                                                className="negActionButton"
+                                                message="Apagar"
+                                                clickFunction={(e) => openDeleteSessionPopup(e, privateSession)}
+                                                icon={<DeleteForeverIcon />}
+                                            />
+                                        </Box>
                                     </Box>
                                 )
                             })
@@ -501,172 +520,205 @@ const StorageManager = (props) => {
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    width: '15%',
+                    width: '45%',
+                    paddingLeft: '10px',
+                    borderLeft: '1px solid black',
                 }}>
-                    <FormControlLabel
-                        label="Por intervalo"
-                        checked={scheduleType === "interval"}
-                        control={<Radio size="small"/>}
-                        onChange={() => handleScheduleTypeChange("interval")}
-                    />
-
                     <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
                     }}>
-                        <span>A cada </span>
-                        <TextField
-                            disabled={scheduleType !== "interval"}
-                            error={!(numberHoursRegex.test(everyHours))}
-                            value={everyHours}
-                            onChange={(e) => handleEveryHoursChange(e.target.value)}
-                            hiddenLabel
-                            size="small"
-                            variant="outlined"
-                            className="simpleInput"
-                            sx={{
-                                width: '4rem',
-                                marginLeft: '0.3rem',
-                                marginRight: '0.3rem',
-                                textAlign: "center",
-                            }}
-                        />
-                        <span> horas</span>
+                        <Typography variant="h5" component="h2">
+                            Definir horário de limpeza automática
+                        </Typography>
+
+                        <Button
+                            disabled={!valid}
+                            color="success"
+                            variant="contained"
+                            className="menuFunctionButton noMarginRight"
+                            startIcon={<CheckRoundedIcon />}
+                            onClick={(e) => updateSchedule(e)}
+                        >
+                            Confirmar
+                        </Button>
                     </Box>
-                </Box>
-
-
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    width: '15%',
-                }}>
-                    <FormControlLabel
-                        label="Mensalmente"
-                        checked={scheduleType === "monthly"}
-                        control={<Radio size="small"/>}
-                        onChange={() => handleScheduleTypeChange("monthly")}
-                    />
 
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
+                        justifyContent: 'space-around',
                     }}>
-                        <TimePicker
-                            disabled={scheduleType !== "monthly"}
-                            required={scheduleType === "monthly"}
-                            label="Hora"
-                            views={['hours', 'minutes']}
-                            ampm={false}
-                            value={monthTime}
-                            onChange={(value, ctx) => setMonthTime(value)}
-                            className="simpleInput hourInput"
-                            slotProps={{ textField: { size: "small", error: scheduleType === "monthly" && monthTime === null } }}
-                        />
 
-                        <TextField
-                            disabled={scheduleType !== "monthly"}
-                            required={scheduleType === "monthly"}
-                            error={scheduleType === "monthly" && !(dayRegex.test(monthDay))}
-                            value={monthDay}
-                            onChange={(e) => handleMonthDayChange(e.target.value)}
-                            label="Dia"
-                            size="small"
-                            variant="outlined"
-                            className="simpleInput"
-                            sx={{
-                                width: '4rem',
-                                marginLeft: '0.3rem',
-                                marginRight: '0.3rem',
-                                textAlign: "center",
-                            }}
-                        />
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }}>
+                            <FormControlLabel
+                                label="Por intervalo"
+                                checked={scheduleType === "interval"}
+                                control={<Radio size="small"/>}
+                                onChange={() => handleScheduleTypeChange("interval")}
+                            />
+
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                            }}>
+                                <span>A cada </span>
+                                <TextField
+                                    disabled={scheduleType !== "interval"}
+                                    error={!(numberHoursRegex.test(everyHours))}
+                                    value={everyHours}
+                                    onChange={(e) => handleEveryHoursChange(e.target.value)}
+                                    hiddenLabel
+                                    size="small"
+                                    variant="outlined"
+                                    className="simpleInput"
+                                    sx={{
+                                        width: '4rem',
+                                        marginLeft: '0.3rem',
+                                        marginRight: '0.3rem',
+                                        textAlign: "center",
+                                    }}
+                                />
+                                <span> horas</span>
+                            </Box>
+                        </Box>
+
+
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }}>
+                            <FormControlLabel
+                                label="Mensalmente"
+                                checked={scheduleType === "monthly"}
+                                control={<Radio size="small"/>}
+                                onChange={() => handleScheduleTypeChange("monthly")}
+                            />
+
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                            }}>
+                                <TimePicker
+                                    disabled={scheduleType !== "monthly"}
+                                    required={scheduleType === "monthly"}
+                                    label="Hora"
+                                    views={['hours', 'minutes']}
+                                    ampm={false}
+                                    value={monthTime}
+                                    onChange={(value, ctx) => setMonthTime(value)}
+                                    className="simpleInput hourInput"
+                                    slotProps={{ textField: { size: "small", error: scheduleType === "monthly" && monthTime === null } }}
+                                />
+
+                                <TextField
+                                    disabled={scheduleType !== "monthly"}
+                                    required={scheduleType === "monthly"}
+                                    error={scheduleType === "monthly" && !(dayRegex.test(monthDay))}
+                                    value={monthDay}
+                                    onChange={(e) => handleMonthDayChange(e.target.value)}
+                                    label="Dia"
+                                    size="small"
+                                    variant="outlined"
+                                    className="simpleInput"
+                                    sx={{
+                                        width: '4rem',
+                                        marginLeft: '0.3rem',
+                                        marginRight: '0.3rem',
+                                        textAlign: "center",
+                                    }}
+                                />
+                            </Box>
+                        </Box>
+
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }}>
+                            <FormControlLabel
+                                label="Semanalmente"
+                                checked={scheduleType === "weekly"}
+                                control={<Radio size="small"/>}
+                                onChange={() => handleScheduleTypeChange("weekly")}
+                            />
+
+                            <TimePicker
+                                disabled={scheduleType !== "weekly"}
+                                required={scheduleType === "weekly"}
+                                label="Hora"
+                                views={['hours', 'minutes']}
+                                ampm={false}
+                                value={weekTime}
+                                onAccept={(value, ctx) => setWeekTime(value)}
+                                className="simpleInput hourInput"
+                                slotProps={{ textField: { size: "small", error: scheduleType === "weekly" && weekTime === null } }}
+                            />
+                            {/*
+                        <FormControl>
+                            <InputLabel>Dia da semana</InputLabel>
+                            <Select
+                                disabled={scheduleType !== "weekly"}
+                                label="Dia da semana"
+                                multiple
+                                value={weekDays}
+                                onChange={(e) => setWeekDays(e.target.value)}
+                                input={<OutlinedInput label="Dia da semana" />}
+                                variant="standard"
+                                renderValue={(selected) => (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {selected.map((x) => (
+                                            <Chip key={x.code} label={x.name} />
+                                        ))}
+                                    </Box>
+                                )}>
+                                {
+                                    weekDaysOptions.map((day) => (
+                                        <MenuItem key={day.code} value={day}>
+                                            <ListItemText primary={day.name} />
+                                        </MenuItem>
+                                    ))
+                                }
+                            </Select>
+
+                        </FormControl>
+
+
+                        <FormControl>
+                            <InputLabel>Dia da semana</InputLabel>
+                            <Select
+                                disabled={scheduleType !== "weekly"}
+                                label="Dia da semana"
+                                value={weekDays}
+                                onChange={(e) => setWeekDays(e.target.value)}
+                                input={<OutlinedInput label="Dia da semana" />}
+                                variant="standard"
+                            >
+                                <MenuItem value={0}>Segunda-feira</MenuItem>
+                                <MenuItem value={1}>Terça-feira</MenuItem>
+                                <MenuItem value={2}>Quarta-feira</MenuItem>
+                                <MenuItem value={3}>Quinta-feira</MenuItem>
+                                <MenuItem value={4}>Sexta-feira</MenuItem>
+                                <MenuItem value={5}>Sábado</MenuItem>
+                                <MenuItem value={6}>Domingo</MenuItem>
+                            </Select>
+                        </FormControl>*/}
+
+                            <CheckboxList
+                                disabled={scheduleType !== "weekly"}
+                                title="Dias da semana"
+                                options={weekDaysOptions}
+                                checked={weekDays}
+                                required={scheduleType === "weekly"}
+                                onChangeCallback={handleWeekDaysChange}
+                                errorText="Deve selecionar pelo menos um dia"
+                            />
+                        </Box>
                     </Box>
-                </Box>
-
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    width: '15%',
-                }}>
-                    <FormControlLabel
-                        label="Semanalmente"
-                        checked={scheduleType === "weekly"}
-                        control={<Radio size="small"/>}
-                        onChange={() => handleScheduleTypeChange("weekly")}
-                    />
-
-                    <TimePicker
-                        disabled={scheduleType !== "weekly"}
-                        required={scheduleType === "weekly"}
-                        label="Hora"
-                        views={['hours', 'minutes']}
-                        ampm={false}
-                        value={weekTime}
-                        onAccept={(value, ctx) => setWeekTime(value)}
-                        className="simpleInput hourInput"
-                        slotProps={{ textField: { size: "small", error: scheduleType === "weekly" && weekTime === null } }}
-                    />
-                    {/*
-                    <FormControl>
-                        <InputLabel>Dia da semana</InputLabel>
-                        <Select
-                            disabled={scheduleType !== "weekly"}
-                            label="Dia da semana"
-                            multiple
-                            value={weekDays}
-                            onChange={(e) => setWeekDays(e.target.value)}
-                            input={<OutlinedInput label="Dia da semana" />}
-                            variant="standard"
-                            renderValue={(selected) => (
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                    {selected.map((x) => (
-                                        <Chip key={x.code} label={x.name} />
-                                    ))}
-                                </Box>
-                            )}>
-                            {
-                                weekDaysOptions.map((day) => (
-                                    <MenuItem key={day.code} value={day}>
-                                        <ListItemText primary={day.name} />
-                                    </MenuItem>
-                                ))
-                            }
-                        </Select>
-
-                    </FormControl>
-
-
-                    <FormControl>
-                        <InputLabel>Dia da semana</InputLabel>
-                        <Select
-                            disabled={scheduleType !== "weekly"}
-                            label="Dia da semana"
-                            value={weekDays}
-                            onChange={(e) => setWeekDays(e.target.value)}
-                            input={<OutlinedInput label="Dia da semana" />}
-                            variant="standard"
-                        >
-                            <MenuItem value={0}>Segunda-feira</MenuItem>
-                            <MenuItem value={1}>Terça-feira</MenuItem>
-                            <MenuItem value={2}>Quarta-feira</MenuItem>
-                            <MenuItem value={3}>Quinta-feira</MenuItem>
-                            <MenuItem value={4}>Sexta-feira</MenuItem>
-                            <MenuItem value={5}>Sábado</MenuItem>
-                            <MenuItem value={6}>Domingo</MenuItem>
-                        </Select>
-                    </FormControl>*/}
-
-                    <CheckboxList
-                        disabled={scheduleType !== "weekly"}
-                        title="Dias da semana"
-                        options={weekDaysOptions}
-                        checked={weekDays}
-                        required={scheduleType === "weekly"}
-                        onChangeCallback={handleWeekDaysChange}
-                        errorText="Deve selecionar pelo menos um dia"
-                    />
                 </Box>
             </Box>
 
