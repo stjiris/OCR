@@ -41,6 +41,14 @@ const weekDaysOptions = [
     { value: "sun", description: "Domingo"},
 ]
 
+const sizeRegex = /(\d+) ([A-Za-z]+)/;
+const sizeMap = {
+    B: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+}
+
 const StorageManager = (props) => {
     const navigate = useNavigate();
 
@@ -74,14 +82,27 @@ const StorageManager = (props) => {
     const successNotif = useRef(null);
     const errorNotif = useRef(null);
 
+    function parseSize(sizeStr) {
+        const match = sizeStr.match(sizeRegex);
+        if (!match) return 0;
+        const value = parseInt(match[1], 10);
+        const unit = match[2].toUpperCase();
+        return value * (sizeMap[unit] || 1);
+    }
+
     function getStorageInfo() {
         setRefreshing(true);
         axios.get(API_URL + '/admin/storage-info')
             .then(({ data }) => {
+                const privateSessions = Object.entries(data["private_sessions"]);
+                const apiFiles = Object.entries(data["api_files"]);
+                privateSessions.sort((a, b) => parseSize(b[1].size) - parseSize(a[1].size));
+                apiFiles.sort((a, b) => parseSize(b[1].size) - parseSize(a[1].size));
+
                 setFreeSpace(data["free_space"]);
                 setFreeSpacePercent(data["free_space_percentage"]);
-                setPrivateSessions(data["private_sessions"]);
-                setApiFiles(data["api_files"]);
+                setPrivateSessions(privateSessions);
+                setApiFiles(apiFiles);
                 setLastCleanup(data["last_cleanup"]);
                 setMaxPrivateSessionAge(data["max_age"]);
                 setLastUpdate(new Date());
@@ -410,7 +431,7 @@ const StorageManager = (props) => {
                     }}>
                         <span>Documentos de API</span>
                         {
-                            Object.entries(apiFiles).map(([apiFile, info], index) => {
+                            apiFiles.map(([apiFile, info], index) => {
                                 return (
                                     <Box
                                         key={index}
@@ -477,7 +498,7 @@ const StorageManager = (props) => {
                     }}>
                         <span>Sessões Privadas</span>
                         {
-                            Object.entries(privateSessions).map(([privateSession, info], index) => {
+                            privateSessions.map(([privateSession, info], index) => {
                                 return (
                                     <Box
                                         key={index}
