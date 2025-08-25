@@ -84,8 +84,10 @@ class DocumentRow extends React.Component {
     }
 
     render() {
-        const buttonsDisabled = !(this.state.info["ocr"] === undefined || this.state.info["ocr"]["progress"] === "completed")
-        const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
+        const info = this.state.info;
+        const usingCustomConfig = info?.["config"] && info["config"] !== "default";
+        const status = info?.["status"];
+        const buttonsDisabled = !(status.stage === "waiting" || status.stage === "post-ocr");
         return (
             <>
                 <TableRow className="explorerRow"
@@ -102,16 +104,16 @@ class DocumentRow extends React.Component {
                             flexDirection: 'row',
                             alignItems: 'center',
                         }}>
-                            <FileIcon extension={this.state.info["extension"]}/>
+                            <FileIcon extension={info["extension"]}/>
                             <span>{this.props.name}</span>
                         </Box>
                     </TableCell>
 
                     {
-                        this.state.info?.["stored"] === undefined || this.state.info["stored"] !== true
+                        info?.["stored"] === undefined || info["stored"] !== true
                         ? <>
                             {
-                                this.state.info["upload_stuck"] === true
+                                info["upload_stuck"] === true
                                     ? <>
                                         <TableCell className="explorerCell actionsCell" align='center'>
                                             <Box>
@@ -131,23 +133,25 @@ class DocumentRow extends React.Component {
                                         </TableCell>
                                     </>
 
-                                    : this.state.info["stored"] !== 100.00
+                                    : status.stage === "uploading"
                                         ? <TableCell colSpan={5} className="explorerCell infoCell" align='center'>
                                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                                                <span>Carregamento</span>
+                                                <span>{status.message}</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
-                                                    <span>{this.state.info["stored"]}%</span>
+                                                    <span>{info["stored"]}%</span>
                                                     <CircularProgress sx={{ml: '1rem'}} size='0.8rem' />
                                                 </Box>
                                             </Box>
                                         </TableCell>
 
-                                        : <TableCell colSpan={5} className="explorerCell infoCell" align='center'>
+                                    : status.stage === "preparing"
+                                        ? <TableCell colSpan={5} className="explorerCell infoCell" align='center'>
                                             <Box>
                                                 <span>A preparar o documento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
                                             </Box>
                                         </TableCell>
+                                    : null
                             }
                         </>
                         : <>
@@ -155,7 +159,7 @@ class DocumentRow extends React.Component {
                                 <Box className="actionsCell-inner">
                                     <TooltipIcon
                                         key={"OCR " + this.props.name}
-                                        disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
+                                        disabled={buttonsDisabled && status.stage !== "error"}
                                         className="actionButton"
                                         message="Fazer OCR"
                                         clickFunction={(e) => this.performOCR(e, usingCustomConfig)}
@@ -164,7 +168,7 @@ class DocumentRow extends React.Component {
 
                                     <TooltipIcon
                                         key={"Config " + this.props.name}
-                                        disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
+                                        disabled={buttonsDisabled && status.stage !== "error"}
                                         className={"actionButton"
                                             // highlight custom configs with different color
                                             + (usingCustomConfig
@@ -177,7 +181,7 @@ class DocumentRow extends React.Component {
 
                                     <TooltipIcon
                                         key={"Layout " + this.props.name}
-                                        disabled={buttonsDisabled && this.state.info["ocr"]["exceptions"] === undefined}
+                                        disabled={buttonsDisabled && status.stage !== "error"}
                                         className="actionButton"
                                         message="Criar Layout"
                                         clickFunction={(e) => this.createLayout(e)}
@@ -188,7 +192,7 @@ class DocumentRow extends React.Component {
                                         key={"Edit " + this.props.name}
                                         className="actionButton"
                                         message="Editar Resultados"
-                                        disabled={buttonsDisabled || this.state.info["ocr"] === undefined}
+                                        disabled={status.stage !== "post-ocr"}
                                         clickFunction={(e) => this.editFile(e)}
                                         icon={<EditNoteIcon/>}
                                     />
@@ -196,12 +200,12 @@ class DocumentRow extends React.Component {
                                     {
                                         this.props._private
                                         ? null
-                                        : (this.state.info?.["indexed"]
+                                        : (info?.["indexed"]
                                             ? <TooltipIcon
                                                 key={"Remove " + this.props.name}
                                                 className="negActionButton"
                                                 message="Desindexar"
-                                                disabled={buttonsDisabled || this.state.info?.["ocr"] === undefined}
+                                                disabled={status.stage !== "post-ocr"}
                                                 clickFunction={(e) => this.removeIndex(e)}
                                                 icon={<IconDatabaseOff/>}
                                             />
@@ -210,7 +214,7 @@ class DocumentRow extends React.Component {
                                                 key={"Index " + this.props.name}
                                                 className="actionButton"
                                                 message="Indexar"
-                                                disabled={buttonsDisabled || this.state.info?.["ocr"] === undefined}
+                                                disabled={status.stage !== "post-ocr"}
                                                 clickFunction={(e) => this.indexFile(e)}
                                                 icon={<IconDatabaseImport/>}
                                             />)
@@ -227,51 +231,54 @@ class DocumentRow extends React.Component {
                             </TableCell>
 
                             {
-                                this.state.info?.["ocr"] === undefined
+                                status.stage === "waiting"
                                     ? <TableCell className="explorerCell stateCell waitingCell" align='center'>
                                         <Box className="stateBox">
                                             <span>Aguarda...</span>
                                         </Box>
                                     </TableCell>
 
-                                : this.state.info["ocr"]["progress"] === "completed"
-                                    ? <TableCell className="explorerCell stateCell successCell" align='center'>
-                                        <Box className="stateBox">
-                                          <span>OCR concluído</span>
-                                        </Box>
-                                    </TableCell>
-
-                                : this.state.info?.["ocr"]["exceptions"]
-                                    ? <TableCell className="explorerCell stateCell errorCell" align='center'>
-                                        <Box className="stateBox">
-                                          <span>Erro ao fazer OCR</span>
-                                        </Box>
-                                    </TableCell>
-
-                                : this.state.info["ocr"]["progress"] === this.state.info["pages"]
+                                : status.stage === "ocr"
                                     ? <TableCell className="explorerCell stateCell infoCell" align='center'>
                                         <Box className="stateBox">
-                                          <span style={{textAlign: "left"}}>
-                                              A exportar resultados
-                                              <CircularProgress sx={{ml: '1rem'}} size='1rem' />
-                                          </span>
+                                            <span>
+                                                {info["ocr"]["progress"]}/{info["pages"]}
+                                                <CircularProgress sx={{ml: '1rem'}} size='1rem' />
+                                                <br />{status.message}
+                                            </span>
                                         </Box>
                                     </TableCell>
 
-                                : <TableCell className="explorerCell stateCell infoCell" align='center'>
-                                    <Box className="stateBox">
-                                      <span>
-                                        {this.state.info["ocr"]["progress"]}/{this.state.info["pages"]}
-                                          <CircularProgress sx={{ml: '1rem'}} size='1rem' />
-                                        <br />({calculateEstimatedTime(this.state.info["ocr"]["progress"], this.state.info["pages"])}min)
-                                      </span>
-                                    </Box>
-                                </TableCell>
+                                : status.stage === "exporting"
+                                    ? <TableCell className="explorerCell stateCell infoCell" align='center'>
+                                        <Box className="stateBox">
+                                            <span style={{textAlign: "left"}}>
+                                                {status.message}
+                                                <CircularProgress sx={{ml: '1rem'}} size='1rem' />
+                                            </span>
+                                        </Box>
+                                    </TableCell>
+
+                                : status.stage === "post-ocr"
+                                    ? <TableCell className="explorerCell stateCell successCell" align='center'>
+                                        <Box className="stateBox">
+                                            <span>OCR concluído</span>
+                                        </Box>
+                                    </TableCell>
+
+                                : status.stage === "error"
+                                    ? <TableCell className="explorerCell stateCell errorCell" align='center'>
+                                        <Box className="stateBox">
+                                            <span>{status.message}</span>
+                                        </Box>
+                                    </TableCell>
+
+                                : null
                             }
 
-                            <TableCell className="explorerCell dateCreatedCell" align='center'><span>{this.state.info["creation"]}</span></TableCell>
-                            <TableCell className="explorerCell detailsCell" align='center'><span>{this.state.info["pages"]} página(s)</span></TableCell>
-                            <TableCell className="explorerCell sizeCell" align='center'><span>{this.state.info["size"]}</span></TableCell>
+                            <TableCell className="explorerCell dateCreatedCell" align='center'><span>{info["creation"]}</span></TableCell>
+                            <TableCell className="explorerCell detailsCell" align='center'><span>{info["pages"]} página(s)</span></TableCell>
+                            <TableCell className="explorerCell sizeCell" align='center'><span>{info["size"]}</span></TableCell>
                         </>
                     }
                 </TableRow>
