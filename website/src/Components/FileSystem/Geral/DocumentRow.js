@@ -89,7 +89,11 @@ class DocumentRow extends React.Component {
         return (
             <>
                 <TableRow className="explorerRow"
-                    sx={{":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}
+                    sx={{
+                        ":hover": (!buttonsDisabled)
+                                    ? {backgroundColor: "#f5f5f5", cursor: 'pointer'}
+                                    : {}
+                    }}
                     onClick={() => { if (!buttonsDisabled) this.documentClicked() }}
                 >
                     <TableCell className="explorerCell nameCell">
