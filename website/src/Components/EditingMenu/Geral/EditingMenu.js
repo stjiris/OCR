@@ -932,7 +932,7 @@ class EditingMenu extends React.Component {
                             }
 
                             <Button
-                                disabled={!this.state.loaded}
+                                disabled={!this.state.loaded || !this.state.uncommittedChanges}
                                 color="success"
                                 variant="contained"
                                 className="menuFunctionButton"
@@ -943,7 +943,7 @@ class EditingMenu extends React.Component {
                             </Button>
 
                             <Button
-                                disabled={!this.state.loaded}
+                                disabled={!this.state.loaded || !this.state.uncommittedChanges}
                                 variant="contained"
                                 color="success"
                                 className="menuFunctionButton noMarginRight"
