@@ -643,7 +643,7 @@ def task_page_ocr(
 
             if ocr_engine_name.lower() == "ocr_tesserocr":
                 # TesserOCR can load an image once and OCR multiple segments within it
-                page_json, raw_results = ocr_engine.get_structure(
+                all_jsons, raw_results = ocr_engine.get_structure(
                     page=image,
                     lang=lang,
                     config=config,
@@ -664,8 +664,9 @@ def task_page_ocr(
                     if box_json:
                         all_jsons.append(box_json)
 
-                for sublist in all_jsons:
-                    page_json.append(sublist)
+            for json_result in all_jsons:
+                for paragraph in json_result:
+                    page_json.append(paragraph)
         else:
             # OCR entire page, may have covered ignored areas
 
@@ -689,7 +690,7 @@ def task_page_ocr(
                 # If single-page document, take advantage of output types to immediately generate results with Tesseract
                 single_page=n_doc_pages == 1,
             )
-            page_json = [[x] for x in json_results]
+            page_json = json_results
 
         # Store formatted OCR output for the page in JSON
         with open(

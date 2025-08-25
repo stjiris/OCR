@@ -499,11 +499,11 @@ def json_to_text(json_d):
     :param json_d: json with the hOCR data
     :return: text
     """
-    lines = []
-    for section in json_d:
-        l = [w["text"] for l in section for w in l]
-        lines.append(" ".join(l))
-    return "\n".join(lines).strip()
+    pars = []
+    for paragraph in json_d:
+        lines = [" ".join(word["text"] for word in line) for line in paragraph]
+        pars.append("\n".join(lines))
+    return "\n\n".join(pars).strip()
 
 
 ##################################################
