@@ -84,7 +84,8 @@ class DocumentRow extends React.Component {
         const info = this.state.info;
         const usingCustomConfig = info?.["config"] && info["config"] !== "default";
         const status = info?.["status"];
-        const buttonsDisabled = !(status.stage === "waiting" || status.stage === "post-ocr");
+        const buttonsDisabled = status.stage !== "waiting" && status.stage !== "post-ocr";
+        const uploadIsStuck = info["upload_stuck"] === true;
         return (
             <>
                 <TableRow className="explorerRow"
@@ -106,32 +107,95 @@ class DocumentRow extends React.Component {
                         </Box>
                     </TableCell>
 
+                    <TableCell className="explorerCell actionsCell" align='center'>
+                        <Box className="actionsCell-inner">
+                            <TooltipIcon
+                                key={"OCR " + this.props.name}
+                                disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
+                                className="actionButton"
+                                message="Fazer OCR"
+                                clickFunction={(e) => this.performOCR(e, usingCustomConfig)}
+                                icon={<OcrIcon/>}
+                            />
+
+                            <TooltipIcon
+                                key={"Config " + this.props.name}
+                                disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
+                                className={"actionButton"
+                                    // highlight custom configs with different color
+                                    + (usingCustomConfig
+                                        ? " altColor"
+                                        : "")}
+                                message="Configurar OCR"
+                                clickFunction={(e) => this.configureOCR(e, usingCustomConfig)}
+                                icon={usingCustomConfig ? <SettingsSuggestIcon/> : <SettingsIcon/>}
+                            />
+
+                            <TooltipIcon
+                                key={"Layout " + this.props.name}
+                                disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
+                                className="actionButton"
+                                message="Criar Layout"
+                                clickFunction={(e) => this.createLayout(e)}
+                                icon={<BorderAllIcon/>}
+                            />
+
+                            <TooltipIcon
+                                key={"Edit " + this.props.name}
+                                className="actionButton"
+                                message="Editar Resultados"
+                                disabled={status.stage !== "post-ocr"}
+                                clickFunction={(e) => this.editFile(e)}
+                                icon={<EditNoteIcon/>}
+                            />
+
+                            {
+                                this.props._private
+                                    ? null
+                                    : (info?.["indexed"]
+                                        ? <TooltipIcon
+                                            key={"Remove " + this.props.name}
+                                            className="negActionButton"
+                                            message="Desindexar"
+                                            disabled={status.stage !== "post-ocr"}
+                                            clickFunction={(e) => this.removeIndex(e)}
+                                            icon={<IconDatabaseOff/>}
+                                        />
+
+                                        : <TooltipIcon
+                                            key={"Index " + this.props.name}
+                                            className="actionButton"
+                                            message="Indexar"
+                                            disabled={status.stage !== "post-ocr"}
+                                            clickFunction={(e) => this.indexFile(e)}
+                                            icon={<IconDatabaseImport/>}
+                                        />)
+                            }
+
+                            <TooltipIcon
+                                disabled={buttonsDisabled && status.stage !== "error"}
+                                key={"Delete " + this.props.name}
+                                className="negActionButton"
+                                message="Apagar"
+                                clickFunction={(e) => this.delete(e)}
+                                icon={<DeleteForeverIcon/>}
+                            />
+                        </Box>
+                    </TableCell>
+
                     {
                         info?.["stored"] === undefined || info["stored"] !== true
                         ? <>
                             {
-                                info["upload_stuck"] === true
-                                    ? <>
-                                        <TableCell className="explorerCell actionsCell" align='center'>
-                                            <Box>
-                                                <TooltipIcon
-                                                    key="delete"
-                                                    className="negActionButton"
-                                                    message="Apagar"
-                                                    clickFunction={(e) => this.delete(e)}
-                                                    icon={<DeleteForeverIcon/>}
-                                                />
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell colSpan={4} className="explorerCell errorCell" align='center'>
-                                            <Box>
-                                                <span>Erro ao carregar ficheiro</span>
-                                            </Box>
-                                        </TableCell>
-                                    </>
+                                uploadIsStuck
+                                    ? <TableCell colSpan={4} className="explorerCell errorCell" align='center'>
+                                        <Box>
+                                            <span>Erro ao carregar ficheiro</span>
+                                        </Box>
+                                    </TableCell>
 
                                     : status.stage === "uploading"
-                                        ? <TableCell colSpan={5} className="explorerCell infoCell" align='center'>
+                                        ? <TableCell colSpan={4} className="explorerCell infoCell" align='center'>
                                             <Box sx={{display: 'flex', flexDirection: 'column'}}>
                                                 <span>{status.message}</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
@@ -142,7 +206,7 @@ class DocumentRow extends React.Component {
                                         </TableCell>
 
                                     : status.stage === "preparing"
-                                        ? <TableCell colSpan={5} className="explorerCell infoCell" align='center'>
+                                        ? <TableCell colSpan={4} className="explorerCell infoCell" align='center'>
                                             <Box>
                                                 <span>A preparar o documento</span>
                                                 <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
@@ -152,81 +216,6 @@ class DocumentRow extends React.Component {
                             }
                         </>
                         : <>
-                            <TableCell className="explorerCell actionsCell" align='center'>
-                                <Box className="actionsCell-inner">
-                                    <TooltipIcon
-                                        key={"OCR " + this.props.name}
-                                        disabled={buttonsDisabled && status.stage !== "error"}
-                                        className="actionButton"
-                                        message="Fazer OCR"
-                                        clickFunction={(e) => this.performOCR(e, usingCustomConfig)}
-                                        icon={<OcrIcon/>}
-                                    />
-
-                                    <TooltipIcon
-                                        key={"Config " + this.props.name}
-                                        disabled={buttonsDisabled && status.stage !== "error"}
-                                        className={"actionButton"
-                                            // highlight custom configs with different color
-                                            + (usingCustomConfig
-                                                ? " altColor"
-                                                : "")}
-                                        message="Configurar OCR"
-                                        clickFunction={(e) => this.configureOCR(e, usingCustomConfig)}
-                                        icon={usingCustomConfig ? <SettingsSuggestIcon/> : <SettingsIcon/>}
-                                    />
-
-                                    <TooltipIcon
-                                        key={"Layout " + this.props.name}
-                                        disabled={buttonsDisabled && status.stage !== "error"}
-                                        className="actionButton"
-                                        message="Criar Layout"
-                                        clickFunction={(e) => this.createLayout(e)}
-                                        icon={<BorderAllIcon/>}
-                                    />
-
-                                    <TooltipIcon
-                                        key={"Edit " + this.props.name}
-                                        className="actionButton"
-                                        message="Editar Resultados"
-                                        disabled={status.stage !== "post-ocr"}
-                                        clickFunction={(e) => this.editFile(e)}
-                                        icon={<EditNoteIcon/>}
-                                    />
-
-                                    {
-                                        this.props._private
-                                        ? null
-                                        : (info?.["indexed"]
-                                            ? <TooltipIcon
-                                                key={"Remove " + this.props.name}
-                                                className="negActionButton"
-                                                message="Desindexar"
-                                                disabled={status.stage !== "post-ocr"}
-                                                clickFunction={(e) => this.removeIndex(e)}
-                                                icon={<IconDatabaseOff/>}
-                                            />
-
-                                            : <TooltipIcon
-                                                key={"Index " + this.props.name}
-                                                className="actionButton"
-                                                message="Indexar"
-                                                disabled={status.stage !== "post-ocr"}
-                                                clickFunction={(e) => this.indexFile(e)}
-                                                icon={<IconDatabaseImport/>}
-                                            />)
-                                    }
-
-                                    <TooltipIcon
-                                        key={"Delete " + this.props.name}
-                                        className="negActionButton"
-                                        message="Apagar"
-                                        clickFunction={(e) => this.delete(e)}
-                                        icon={<DeleteForeverIcon/>}
-                                    />
-                                </Box>
-                            </TableCell>
-
                             {
                                 status.stage === "waiting"
                                     ? <TableCell className="explorerCell stateCell waitingCell" align='center'>
