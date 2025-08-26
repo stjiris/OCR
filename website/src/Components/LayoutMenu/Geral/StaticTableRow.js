@@ -15,13 +15,15 @@ const StyledStaticTableRow = styled.tr`
 export const StaticTableRow = ({ group, textModeState }) => {
     return (
         <StyledStaticTableRow>
-            <TableCell align='center' sx={{borderBottom: '1px solid #aaa', p: "4px 16px"}}>
+        {
+            [
+            <TableCell align='center' className='layoutCell' sx={{width: '15%'}}>
                 <DragHandle isDragging />
                 <Checkbox checked={group.checked} sx={{m: 0, p: 0}}
                           disabled={true}  // disable checkbox for row being dragged
                           onClick={null}/>
             </TableCell>,
-            <TableCell align='center' sx={{borderBottom: '1px solid #aaa', p: "4px 16px"}}>
+            <TableCell align='center' className='layoutCell no-text-select' sx={{width: '17.5%'}}>
                 <Box>
                     {
                         group.squares.map((box, _index) => {
@@ -57,7 +59,7 @@ export const StaticTableRow = ({ group, textModeState }) => {
                     }
                 </Box>
             </TableCell>,
-            <TableCell align='center' sx={{borderBottom: '1px solid #aaa', p: "4px 16px"}}>
+            <TableCell align='center' className='layoutCell no-text-select'>
                 <Box sx={{display: "flex", flexDirection: "column"}}>
                     {
                         group.squares.map((box, _index) => {
@@ -67,7 +69,7 @@ export const StaticTableRow = ({ group, textModeState }) => {
                     }
                 </Box>
             </TableCell>,
-            <TableCell align='center' sx={{borderBottom: '1px solid #aaa', p: "4px 16px"}}>
+            <TableCell align='center' className='layoutCell no-text-select'>
                 {
                     textModeState || group.squares.length > 1
                         ? <span>Texto</span>
@@ -89,6 +91,8 @@ export const StaticTableRow = ({ group, textModeState }) => {
                 />
                 <span>Imagem</span>
             </TableCell>
+            ]
+        }
         </StyledStaticTableRow>
     );
 };

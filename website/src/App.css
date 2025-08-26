@@ -267,6 +267,39 @@ cannot be styled with props, interferes with functioning of Autocomplete
     text-align: center;
 }
 
+/*
+  Layout boxes list table formatting
+*/
+
+.MuiTableRow-head.layoutHeaderRow {
+    border-bottom: 1px solid #aaa;
+}
+
+.MuiTableCell-head.layoutHeaderCell {
+    height: 1rem;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #aaa;
+}
+
+.MuiTableRow-root.layoutRow {
+    border-bottom: 1px solid #aaa;
+}
+
+/* Color odd rows, ensures recolor when table is re-ordered */
+.MuiTableRow-root.layoutRow:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+/* Color even rows, ensures recolor when table is re-ordered */
+.MuiTableRow-root.layoutRow:nth-child(even) {
+    background-color: #f5f5f5;
+}
+
+.MuiTableCell-root.layoutCell {
+    height: 1rem;
+    border-bottom: 1px solid #aaa;
+}
+
 span {
   font-size: 1rem;
   white-space: pre-line;
@@ -283,5 +316,14 @@ img:hover {
 .fancy-font {
   font-family: 'Cinzel', serif;
   font-weight: 500;
-  margin: 0px;
+  margin: 0;
+}
+
+.no-text-select {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
+                          supported by Chrome, Edge, Opera and Firefox */
 }
