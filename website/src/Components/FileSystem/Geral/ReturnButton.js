@@ -13,6 +13,7 @@ const ReturnButton = ({ disabled = false, returnFunction = null, sx = {} }) => {
             onClick={() => returnFunction()}
             className="menuFunctionButton"
             sx={Object.assign({
+                marginLeft: "0.5rem",
                 backgroundColor: '#ffffff',
                 color: '#000000',
                 ':hover': { bgcolor: '#ddd' },

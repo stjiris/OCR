@@ -83,6 +83,10 @@ body {
     font-size: 1rem;
     height: 2rem;
     width: fit-content;
+    margin-left: 1rem;
+    margin-top: auto;
+    margin-bottom: auto;
+    padding: 0 10px 0 10px;
 }
 
 .fileIcon {
@@ -154,6 +158,17 @@ cannot be styled with props, interferes with functioning of Autocomplete
 /*
   File Explorer table formatting
 */
+
+/* Color odd rows, ensures recolor when table is re-ordered */
+.MuiTableRow-root.explorerRow:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+/* Color even rows, ensures recolor when table is re-ordered */
+.MuiTableRow-root.explorerRow:nth-child(even) {
+    background-color: #f5f5f5;
+}
+
 .MuiTableRow-root.explorerRow {
     height: 4rem;
 }

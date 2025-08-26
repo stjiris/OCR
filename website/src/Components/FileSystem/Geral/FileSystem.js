@@ -1035,7 +1035,7 @@ class FileExplorer extends React.Component {
             <TableContainer component={Paper}>
                 <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
                     <TableHead>
-                        <TableRow>
+                        <TableRow sx={{backgroundColor: "#f5f5f5"}}>
                             <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticNameCell" : "nameCell")}>
                                 <Button
                                     startIcon={

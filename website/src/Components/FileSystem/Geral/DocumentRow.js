@@ -11,15 +11,12 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
-import calculateEstimatedTime from '../../../utils/waitingTime';
 import loadComponent from '../../../utils/loadComponents';
 const IconDatabaseImport = loadComponent('Icons', 'DatabaseInIcon');
 const IconDatabaseOff = loadComponent('Icons', 'DatabaseOffIcon');
 const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 const FileIcon = loadComponent('CustomIcons', 'FileIcon');
 const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
-const LayoutIcon = loadComponent('CustomIcons', 'LayoutIcon');
-
 
 class DocumentRow extends React.Component {
     constructor(props) {
@@ -93,7 +90,7 @@ class DocumentRow extends React.Component {
                 <TableRow className="explorerRow"
                     sx={{
                         ":hover": (!buttonsDisabled)
-                                    ? {backgroundColor: "#f5f5f5", cursor: 'pointer'}
+                                    ? {backgroundColor: "#d7d7d7", cursor: 'pointer'}
                                     : {}
                     }}
                     onClick={() => { if (!buttonsDisabled) this.documentClicked() }}

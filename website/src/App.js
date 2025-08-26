@@ -230,21 +230,57 @@ function App() {
             const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: "100vh", display: "flex", flexDirection: "column"}}>
-                    <Typography
-                        id="modal-modal-title"
-                        variant="h3"
-                        component="h1"
-                        sx={{
-                            textAlign: "center",
-                            color: "#1976d2",
-                        }}
-                    >
+                    <Box sx={{
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                    }}>
                         {
                             this.getPrivateSession()
-                                ? `Sessão Privada - ${this.getPrivateSession()}`
-                                : "OCR - Reconhecimento Ótico de Caracteres"
+                                ? <Button
+                                    disabled={buttonsDisabled}
+                                    variant="contained"
+                                    startIcon={<LockIcon/>}
+                                    onClick={() => { this.props.navigate("/"); }}
+                                    className="menuButton"
+                                    color="error"
+                                >
+                                    Sair da Sessão
+                                </Button>
+                                : <Button
+                                    disabled={buttonsDisabled}
+                                    variant="contained"
+                                    startIcon={<LockIcon/>}
+                                    onClick={() => {
+                                        this.createPrivateSession().then((sessionId) => {
+                                            //this.setCurrentPath([""]);
+                                            this.setState({currentFolderPathList: [""]});
+                                            this.props.navigate(`/session/${sessionId}`);
+                                        });
+                                    }}
+                                    className="menuButton"
+                                >
+                                    Nova Sessão Privada
+                                </Button>
                         }
-                    </Typography>
+
+                        <Typography
+                            id="modal-modal-title"
+                            variant="h3"
+                            component="h1"
+                            sx={{
+                                textAlign: "center",
+                                color: "#1976d2",
+                                margin: "auto",
+                            }}
+                        >
+                            {
+                                this.getPrivateSession()
+                                    ? `Sessão Privada - ${this.getPrivateSession()}`
+                                    : "OCR - Reconhecimento Ótico de Caracteres"
+                            }
+                        </Typography>
+                    </Box>
 
                     <Box sx={{
                         display: 'flex',
@@ -252,47 +288,34 @@ function App() {
                         justifyContent: 'space-between',
                         zIndex: '5',
                         // border: '1px solid #000000',
-                        padding: '0.5rem',
+                        paddingTop: '0.5rem',
+                        paddingBottom: '0.5rem',
                     }}>
                         <Box sx={{display: "flex", flexDirection: "row"}}>
-                        {
-                            this.getPrivateSession()
-                            ? <Button
-                                disabled={buttonsDisabled}
-                                variant="contained"
-                                startIcon={<LockIcon/>}
-                                onClick={() => { this.props.navigate("/"); }}
-                                className="menuButton"
-                                color="error"
-                            >
-                                Sair da Sessão
-                            </Button>
-                            : <Button
-                                disabled={buttonsDisabled}
-                                variant="contained"
-                                startIcon={<LockIcon/>}
-                                onClick={() => {
-                                    this.createPrivateSession().then((sessionId) => {
-                                        //this.setCurrentPath([""]);
-                                        this.setState({currentFolderPathList: [""]});
-                                        this.props.navigate(`/session/${sessionId}`);
-                                    });
-                                }}
-                                className="menuButton"
-                            >
-                                Nova Sessão Privada
-                            </Button>
-                        }
-
                             <Button
                                 disabled={buttonsDisabled}
                                 variant="contained"
                                 startIcon={<CreateNewFolderIcon/>}
                                 onClick={() => this.fileSystem.current.createFolder()}
                                 className="menuButton"
-                                sx={{ml: '0.5rem'}}
+                                sx={{marginLeft: '0.5rem'}}
                             >
                                 Nova Pasta
+                            </Button>
+
+                            <Button
+                                disabled={
+                                    buttonsDisabled
+                                    || this.state.currentFileName
+                                    /* in private session, root level can have docs */
+                                    || !(this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession()))
+                                }
+                                variant="contained"
+                                startIcon={<NoteAddIcon/>}
+                                onClick={() => this.fileSystem.current.createFile()}
+                                className="menuButton pathElement"
+                            >
+                                Adicionar Documento
                             </Button>
 
                             <Box
@@ -361,39 +384,18 @@ function App() {
                                 <p className="pathElement">
                                     {this.state.currentFileName}
                                 </p>
-                                {
-                                    // in private session, root level can have docs
-                                    (!buttonsDisabled
-                                        && !this.state.currentFileName
-                                        && (this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession())))
-                                        ? <Button
-                                            variant="contained"
-                                            startIcon={<NoteAddIcon/>}
-                                            onClick={() => this.fileSystem.current.createFile()}
-                                            className="menuButton pathElement"
-                                        >
-                                            Adicionar Documento
-                                        </Button>
-                                        : null
-                                }
                             </Box>
                         </Box>
 
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
                             <Button
                                 disabled={buttonsDisabled || Boolean(this.getPrivateSession())}
-                                variant="text"
+                                variant="contained"
                                 onClick={() => {
                                     this.setState(searchMenuState)
                                 }}
-                                sx={{
-                                    mr: '1.5rem',
-                                    textTransform: 'none',
-                                    fontWeight: 'bold',
-                                    p: 0,
-                                    fontSize: '1rem',
-                                    textDecoration: 'underline'
-                                }}
+                                className="menuButton"
+                                sx={{mr: '1.5rem'}}
                             >
                                 Pesquisar
                             </Button>
@@ -406,7 +408,8 @@ function App() {
                                 onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vTjGei4_szYIrD8G7x2UmNKlbOsW_JZmVj0E2J4933-hXjkU9iuKGr0J8Aj6qpF25HlCb9y3vMadC23/pub", '_blank')}
                                 startIcon={<HelpIcon/>}
                                 sx={{
-                                    ml: '1.5rem',
+                                    marginLeft: '1.5rem',
+                                    marginRight: '0.5rem',
                                     textTransform: 'none',
                                     p: 0
                                 }}

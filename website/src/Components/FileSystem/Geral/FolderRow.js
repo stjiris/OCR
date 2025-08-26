@@ -51,7 +51,9 @@ class FolderRow extends React.Component {
         const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
         return (
             <TableRow className="explorerRow"
-                sx={{":hover": {backgroundColor: "#f5f5f5", cursor: 'pointer'} }}
+                sx={{
+                    ":hover": {backgroundColor: "#d7d7d7", cursor: 'pointer'},
+                }}
                 onClick={() => this.folderClicked()}
             >
                 <TableCell className="explorerCell nameCell">
