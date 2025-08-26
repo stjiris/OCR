@@ -13,6 +13,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
+import SearchIcon from '@mui/icons-material/Search';
 
 import {
     BrowserRouter,
@@ -235,35 +236,6 @@ function App() {
                         flexDirection: "row",
                         justifyContent: "center",
                     }}>
-                        {
-                            this.getPrivateSession()
-                                ? <Button
-                                    disabled={buttonsDisabled}
-                                    variant="contained"
-                                    startIcon={<LockIcon/>}
-                                    onClick={() => { this.props.navigate("/"); }}
-                                    className="menuButton"
-                                    color="error"
-                                >
-                                    Sair da Sessão
-                                </Button>
-                                : <Button
-                                    disabled={buttonsDisabled}
-                                    variant="contained"
-                                    startIcon={<LockIcon/>}
-                                    onClick={() => {
-                                        this.createPrivateSession().then((sessionId) => {
-                                            //this.setCurrentPath([""]);
-                                            this.setState({currentFolderPathList: [""]});
-                                            this.props.navigate(`/session/${sessionId}`);
-                                        });
-                                    }}
-                                    className="menuButton"
-                                >
-                                    Nova Sessão Privada
-                                </Button>
-                        }
-
                         <Typography
                             id="modal-modal-title"
                             variant="h3"
@@ -280,6 +252,37 @@ function App() {
                                     : "OCR - Reconhecimento Ótico de Caracteres"
                             }
                         </Typography>
+
+                        {
+                            this.getPrivateSession()
+                                ? <Button
+                                    disabled={buttonsDisabled}
+                                    variant="contained"
+                                    startIcon={<LockIcon/>}
+                                    onClick={() => { this.props.navigate("/"); }}
+                                    className="menuButton"
+                                    color="error"
+                                    sx={{marginRight: "1rem"}}
+                                >
+                                    Sair da Sessão
+                                </Button>
+                                : <Button
+                                    disabled={buttonsDisabled}
+                                    variant="contained"
+                                    startIcon={<LockIcon/>}
+                                    onClick={() => {
+                                        this.createPrivateSession().then((sessionId) => {
+                                            //this.setCurrentPath([""]);
+                                            this.setState({currentFolderPathList: [""]});
+                                            this.props.navigate(`/session/${sessionId}`);
+                                        });
+                                    }}
+                                    className="menuButton"
+                                    sx={{marginRight: "1rem"}}
+                                >
+                                    Nova Sessão Privada
+                                </Button>
+                        }
                     </Box>
 
                     <Box sx={{
@@ -388,17 +391,20 @@ function App() {
                         </Box>
 
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
-                            <Button
-                                disabled={buttonsDisabled || Boolean(this.getPrivateSession())}
-                                variant="contained"
-                                onClick={() => {
-                                    this.setState(searchMenuState)
-                                }}
-                                className="menuButton"
-                                sx={{mr: '1.5rem'}}
-                            >
-                                Pesquisar
-                            </Button>
+                            {buttonsDisabled || Boolean(this.getPrivateSession())
+                                ? null
+                                : <Button
+                                    variant="contained"
+                                    startIcon={<SearchIcon />}
+                                    onClick={() => {
+                                        this.setState(searchMenuState)
+                                    }}
+                                    className="menuButton"
+                                    sx={{mr: '1.5rem'}}
+                                >
+                                    Pesquisar
+                                </Button>
+                            }
 
                             <p style={{margin: 0}}>{`Versão: ${VERSION}`}</p>
 
