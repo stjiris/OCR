@@ -13,6 +13,8 @@ const Notification = loadComponent('Notifications', 'Notification');
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
+const folderNameRegex = /(^[_\/\\].*)|(.*[\/\\].*)/;
+
 const style = {
     position: 'absolute',
     top: '50%',
@@ -95,10 +97,18 @@ class FolderMenu extends React.Component {
                         <Typography id="modal-modal-title" variant="h6" component="h2">
                             Crie uma nova pasta
                         </Typography>
-                        <TextField onChange={this.textFieldUpdate} ref={this.textField} sx={{width: '100%', mt: '0.5rem'}} id="outlined-basic" label="Nome da pasta" variant="outlined"
-                                   onKeyUp={e => { if (e.key === 'Enter') { this.createFolder() }}}/>
+                        <TextField
+                            ref={this.textField}
+                            label="Nome da pasta"
+                            error={folderNameRegex.test(this.state.textFieldValue)}
+                            helperText="O nome não pode começar por '_' nem conter '/' ou '\'"
+                            onChange={this.textFieldUpdate}
+                            onKeyUp={e => { if (e.key === 'Enter') { this.createFolder() }}}
+                            variant="outlined"
+                            sx={{width: '100%', mt: '0.5rem'}}
+                        />
                         <Button
-                            disabled={this.state.buttonDisabled}
+                            disabled={this.state.buttonDisabled || folderNameRegex.test(this.state.textFieldValue)}
                             variant="contained"
                             sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem'}}
                             onClick={() => this.createFolder()}

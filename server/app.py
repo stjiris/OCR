@@ -326,8 +326,11 @@ def create_folder():
 
     folder = data["folder"]
 
-    if folder.startswith("_"):
-        return {"success": False, "error": "O nome da pasta não pode começar com _"}
+    if folder.startswith("_") or "/" in folder or "\\" in folder:
+        return {
+            "success": False,
+            "error": "O nome da pasta não pode começar com '_' nem conter '/' ou '\\'",
+        }
 
     new_folder_path = safe_join(path, folder)
     if os.path.exists(new_folder_path):
