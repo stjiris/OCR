@@ -12,6 +12,8 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import Typography from "@mui/material/Typography";
 
+import CreateNewFolderIcon from "@mui/icons-material/CreateNewFolder";
+import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -1037,18 +1039,48 @@ class FileExplorer extends React.Component {
                     <TableHead>
                         <TableRow sx={{backgroundColor: "#f5f5f5"}}>
                             <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticNameCell" : "nameCell")}>
-                                <Button
-                                    startIcon={
-                                        this.state.sorting === 0
-                                            ? <SwapVertIcon />
-                                        : this.state.sorting === 1
-                                            ? <ArrowDownAZIcon />
-                                        : <ArrowUpZAIcon />
+                                <Box sx={{display: "flex"}}>
+                                    <Button
+                                        startIcon={
+                                            this.state.sorting === 0
+                                                ? <SwapVertIcon />
+                                            : this.state.sorting === 1
+                                                ? <ArrowDownAZIcon />
+                                            : <ArrowUpZAIcon />
+                                        }
+                                        sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
+                                        onClick={() => this.toggleSortByName()}>
+                                        <span><b>Nome</b></span>
+                                    </Button>
+
+                                    {this.props.current_file_name
+                                        ? null
+                                        : <>
+                                            <Button
+                                                variant="contained"
+                                                startIcon={<CreateNewFolderIcon/>}
+                                                onClick={() => this.createFolder()}
+                                                className="menuButton"
+                                                sx={{marginLeft: '0.5rem'}}
+                                            >
+                                                Nova Pasta
+                                            </Button>
+
+                                            <Button
+                                                disabled={
+                                                    /* in private session, root level can have docs */
+                                                    !(this.props.current_folder === "" || this.props._private)
+                                                }
+                                                variant="contained"
+                                                startIcon={<NoteAddIcon/>}
+                                                onClick={() => this.createFile()}
+                                                className="menuButton pathElement"
+                                            >
+                                                Adicionar Documento
+                                            </Button>
+                                        </>
                                     }
-                                    sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
-                                    onClick={() => this.toggleSortByName()}>
-                                    <span><b>Nome</b></span>
-                                </Button>
+                                </Box>
                             </TableCell>
                             <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticActionsCell" : "actionsCell")}>
                                 <span><b>Ações</b></span>
@@ -1248,9 +1280,10 @@ class FileExplorer extends React.Component {
                     </Box>
 
                     <Box sx={{
-                        ml: '1.5rem',
-                        mr: '1.5rem',
-                        mb: '1.5rem',
+                        width: '80%',
+                        marginLeft: 'auto',
+                        marginRight: 'auto',
+                        marginBottom: '1.5rem',
                     }}>
                         <Notification message={""} severity={"success"} ref={this.successNot}/>
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>

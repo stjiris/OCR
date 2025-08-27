@@ -10,8 +10,6 @@ import Button from '@mui/material/Button';
 import Typography from "@mui/material/Typography";
 
 import LockIcon from '@mui/icons-material/Lock';
-import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
 import SearchIcon from '@mui/icons-material/Search';
 
@@ -295,32 +293,6 @@ function App() {
                         paddingBottom: '0.5rem',
                     }}>
                         <Box sx={{display: "flex", flexDirection: "row"}}>
-                            <Button
-                                disabled={buttonsDisabled}
-                                variant="contained"
-                                startIcon={<CreateNewFolderIcon/>}
-                                onClick={() => this.fileSystem.current.createFolder()}
-                                className="menuButton"
-                                sx={{marginLeft: '0.5rem'}}
-                            >
-                                Nova Pasta
-                            </Button>
-
-                            <Button
-                                disabled={
-                                    buttonsDisabled
-                                    || this.state.currentFileName
-                                    /* in private session, root level can have docs */
-                                    || !(this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession()))
-                                }
-                                variant="contained"
-                                startIcon={<NoteAddIcon/>}
-                                onClick={() => this.fileSystem.current.createFile()}
-                                className="menuButton pathElement"
-                            >
-                                Adicionar Documento
-                            </Button>
-
                             <Box
                                 sx={{
                                     display: 'flex',
