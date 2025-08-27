@@ -549,6 +549,7 @@ def set_upload_stuck():
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
     data["upload_stuck"] = True
+    data["status"]["stage"] = "error"
     update_json_file(f"{path}/_data.json", data)
 
     return {
