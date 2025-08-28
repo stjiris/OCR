@@ -6,9 +6,11 @@ import TableRow from '@mui/material/TableRow';
 
 import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
+import IconDatabaseImport from "../../Icons/Geral/DatabaseInIcon";
 import loadComponent from '../../../utils/loadComponents';
 const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
@@ -50,13 +52,16 @@ class FolderRow extends React.Component {
         const buttonsDisabled = this.state.info["contents"] === 0;
         const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
         return (
-            <TableRow className="explorerRow"
-                sx={{
-                    ":hover": {backgroundColor: "#d7d7d7", cursor: 'pointer'},
-                }}
-                onClick={() => this.folderClicked()}
+            <TableRow
+                className="explorerRow"
             >
-                <TableCell className="explorerCell nameCell">
+                <TableCell
+                    className="explorerCell nameCell"
+                    sx={{
+                        ":hover": {cursor: "pointer", fontWeight: "bold", fontStyle: "oblique"}
+                    }}
+                    onClick={() => this.folderClicked()}
+                >
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -89,6 +94,22 @@ class FolderRow extends React.Component {
                             message="Configurar OCR"
                             clickFunction={(e) => this.configureOCR(e, usingCustomConfig)}
                             icon={usingCustomConfig ? <SettingsSuggestIcon/> : <SettingsIcon/>}
+                        />
+
+                        <TooltipIcon
+                            key={"Edit " + this.props.name}
+                            className="actionButton"
+                            sx={{visibility: "hidden"}}
+                            disabled
+                            icon={<EditNoteIcon/>}
+                        />
+
+                        <TooltipIcon
+                            key={"Index " + this.props.name}
+                            className="actionButton"
+                            sx={{visibility: "hidden"}}
+                            disabled
+                            icon={<IconDatabaseImport/>}
                         />
 
                         <TooltipIcon

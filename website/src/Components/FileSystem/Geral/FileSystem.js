@@ -14,14 +14,13 @@ import Typography from "@mui/material/Typography";
 
 import CreateNewFolderIcon from "@mui/icons-material/CreateNewFolder";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
-import SwapVertIcon from '@mui/icons-material/SwapVert';
 
+import {TableSortLabel} from "@mui/material";
+import {visuallyHidden} from "@mui/utils";
 import { v4 as uuidv4 } from 'uuid';
 
 import loadComponent from '../../../utils/loadComponents';
 const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
-const ArrowDownAZIcon = loadComponent('Icons', 'ArrowDownAZIcon');
-const ArrowUpZAIcon = loadComponent('Icons', 'ArrowUpZAIcon');
 const DocumentRow = loadComponent('FileSystem', 'DocumentRow');
 const StaticFileRow = loadComponent('FileSystem', 'StaticFileRow');
 const FileIcon = loadComponent('CustomIcons', 'FileIcon');
@@ -70,7 +69,8 @@ class FileExplorer extends React.Component {
             info: null,
             maxAge: null,
             components: [],
-            sorting: 0,
+            order: "asc",
+            orderBy: "name",
 
             fetched: false,
         }
@@ -741,6 +741,14 @@ class FileExplorer extends React.Component {
         return this.state.info[path];
     }
 
+    handleRequestSort(columnName) {
+        const isAsc = this.state.orderBy === columnName && this.state.order === "asc";
+        this.setState({
+           order: isAsc ? "desc" : "asc",
+           orderBy: columnName,
+        });
+    }
+
     /**
      * Sorts the contents of the current folder
      * First order by type (folder, file)
@@ -769,21 +777,24 @@ class FileExplorer extends React.Component {
         return folders.concat(files);
     }
 
-    toggleSortByName() {
-        this.setState({ sorting: (this.state.sorting + 1) % 3 });
-    }
+    getSortedRows() {
+        if (this.props.current_file_name) return this.state.components;
 
-    sortByName() {
-        switch (this.state.sorting) {
-            case 0:
+        const order = this.state.order === "asc" ? 1 : -1;
+        switch (this.state.orderBy) {
+            case "name":
                 // Default server-provided order
+                return this.state.components.toSorted((a, b) => {
+                    if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "file") {
+                        return (-order);
+                    } else if (a.props.info?.["type"] === "file" && b.props.info?.["type"] === "folder") {
+                        return order;
+                    } else {
+                        return order * (a.key).localeCompare(b.key);
+                    }
+                });
+            default:
                 return this.state.components;
-            case 1:
-                // Sort in alphabetical order
-                return this.state.components.toSorted((a, b) => (a.key).localeCompare(b.key));
-            case 2:
-                // Sort in reverse alphabetical order
-                return this.state.components.toSorted((a, b) => (b.key).localeCompare(a.key));
         }
     }
 
@@ -1035,23 +1046,33 @@ class FileExplorer extends React.Component {
     generateTable() {
         return (
             <TableContainer component={Paper}>
-                <Table aria-label="filesystem table" sx={{border:"1px solid #aaa"}}>
+                <Table aria-label="filesystem table" sx={{tableLayout: "fixed", border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow sx={{backgroundColor: "#f5f5f5"}}>
-                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticNameCell" : "nameCell")}>
+                            <TableCell
+                                key="name"
+                                scope="column"
+                                sortDirection={this.state.orderBy === "name" ? this.state.order : false}
+                                className={"headerCell explorerCell " + (this.props.current_file_name ? "staticNameCell" : "nameCell")}
+                            >
                                 <Box sx={{display: "flex"}}>
-                                    <Button
-                                        startIcon={
-                                            this.state.sorting === 0
-                                                ? <SwapVertIcon />
-                                            : this.state.sorting === 1
-                                                ? <ArrowDownAZIcon />
-                                            : <ArrowUpZAIcon />
-                                        }
-                                        sx={{backgroundColor: '#ffffff', color: '#000000', ':hover': {bgcolor: '#dddddd'}, textTransform: 'none'}}
-                                        onClick={() => this.toggleSortByName()}>
+                                    <TableSortLabel
+                                        active={!this.props.current_file_name && this.state.orderBy === "name"}
+                                        direction={this.state.orderBy === "name" ? this.state.order : false}
+                                        onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("name")}}
+                                        sx={{
+                                            display: "flex",
+                                            flexWrap: "wrap",
+                                            width: "fit-content",
+                                        }}
+                                    >
                                         <span><b>Nome</b></span>
-                                    </Button>
+                                        {this.state.orderBy === "name" ? (
+                                            <Box component="span" sx={visuallyHidden}>
+                                                {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
+                                            </Box>
+                                        ) : null}
+                                    </TableSortLabel>
 
                                     {this.props.current_file_name
                                         ? null
@@ -1069,35 +1090,35 @@ class FileExplorer extends React.Component {
                                             <Button
                                                 disabled={
                                                     /* in private session, root level can have docs */
-                                                    !(this.props.current_folder === "" || this.props._private)
+                                                    this.props.current_folder === "" && !this.props._private
                                                 }
                                                 variant="contained"
                                                 startIcon={<NoteAddIcon/>}
                                                 onClick={() => this.createFile()}
                                                 className="menuButton pathElement"
                                             >
-                                                Adicionar Documento
+                                                Novo Documento
                                             </Button>
                                         </>
                                     }
                                 </Box>
                             </TableCell>
-                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticActionsCell" : "actionsCell")}>
+                            <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticActionsCell" : "actionsCell")}>
                                 <span><b>Ações</b></span>
                             </TableCell>
                             { !this.props.current_file_name
-                                ? <TableCell className="explorerCell stateCell">
+                                ? <TableCell scope="column" className="headerCell explorerCell stateCell">
                                     <span><b>Estado</b></span>
                                 </TableCell>
                                 : null
                             }
-                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticDateCreatedCell" : "dateCreatedCell")}>
+                            <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticDateCreatedCell" : "dateCreatedCell")}>
                                 <b>Data de criação</b>
                             </TableCell>
-                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticDetailsCell" : "detailsCell")}>
+                            <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticDetailsCell" : "detailsCell")}>
                                 <span><b>Detalhes</b></span>
                             </TableCell>
-                            <TableCell className={"explorerCell " + (this.props.current_file_name ? "staticSizeCell" : "sizeCell")}>
+                            <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticSizeCell" : "sizeCell")}>
                                 <span><b>Tamanho</b></span>
                             </TableCell>
                         </TableRow>
@@ -1107,7 +1128,7 @@ class FileExplorer extends React.Component {
                             ? <Typography variant="body1" sx={{marginTop: "1rem", marginBottom: "1rem", marginLeft: "1rem"}}>
                                 A pasta está vazia. Adicione um documento ou sub-pasta.
                             </Typography>
-                            : this.sortByName()
+                            : this.getSortedRows()
                         }
                     </TableBody>
                 </Table>
@@ -1280,7 +1301,7 @@ class FileExplorer extends React.Component {
                     </Box>
 
                     <Box sx={{
-                        width: '80%',
+                        width: '87vw',
                         marginLeft: 'auto',
                         marginRight: 'auto',
                         marginBottom: '1.5rem',

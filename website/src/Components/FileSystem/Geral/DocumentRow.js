@@ -88,15 +88,16 @@ class DocumentRow extends React.Component {
         const uploadIsStuck = info["upload_stuck"] === true;
         return (
             <>
-                <TableRow className="explorerRow"
-                    sx={{
-                        ":hover": (!buttonsDisabled)
-                                    ? {backgroundColor: "#d7d7d7", cursor: 'pointer'}
-                                    : {}
-                    }}
-                    onClick={() => { if (!buttonsDisabled) this.documentClicked() }}
-                >
-                    <TableCell className="explorerCell nameCell">
+                <TableRow className="explorerRow">
+                    <TableCell
+                        className="explorerCell nameCell"
+                        sx={{
+                            ":hover": buttonsDisabled
+                                        ? {}
+                                        : {cursor: "pointer", fontWeight: "bold", fontStyle: "oblique"}
+                        }}
+                        onClick={() => { if (!buttonsDisabled) this.documentClicked() }}
+                    >
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'row',

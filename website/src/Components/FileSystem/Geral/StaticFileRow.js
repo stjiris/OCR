@@ -1,13 +1,9 @@
 import React from 'react';
 import Box from '@mui/material/Box';
+import Button from "@mui/material/Button";
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-
-import loadComponent from '../../../utils/loadComponents';
-const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
 class StaticFileRow extends React.Component {
     constructor(props) {
@@ -34,19 +30,18 @@ class StaticFileRow extends React.Component {
                         flexDirection: 'row',
                         alignItems: 'center',
                     }}>
-                        {this.props.fileIcon}
-                        <span>{this.props.name}</span>
-                    </Box>
-                </TableCell>
-
-                <TableCell className="explorerCell staticActionsCell">
-                    <Box className="actionsCell-inner">
-                        <TooltipIcon
-                            className="actionButton"
-                            message="Transferir"
-                            clickFunction={() => this.props.downloadFile(this.props.filename)}
-                            icon={<FileDownloadIcon/>}
-                        />
+                        <Button
+                            onClick={() => this.props.downloadFile(this.props.filename)}
+                            variant="outlined"
+                            sx={{
+                                textTransform: "none",
+                                padding: 0,
+                                lineHeight: 0.75,
+                            }}
+                        >
+                            {this.props.fileIcon}
+                            <span>{this.props.name}</span>
+                        </Button>
                     </Box>
                 </TableCell>
 
