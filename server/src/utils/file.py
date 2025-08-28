@@ -14,7 +14,7 @@ import requests
 
 FILES_PATH = environ.get("FILES_PATH", "_files")
 TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
-PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
+PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_spaces")
 API_TEMP_PATH = environ.get("API_TEMP_PATH", "_files/_tmp")
 
 ALLOWED_EXTENSIONS = (
@@ -94,7 +94,7 @@ def get_file_parsed(path, is_private):
     )
     url_prefix = IMAGE_PREFIX + (
         "/private/" if is_private else "/images/"
-    )  # TODO: secure private session images
+    )  # TODO: secure private space images
 
     path += "/_ocr_results"
     files = [
@@ -248,14 +248,14 @@ def delete_structure(client, path):
 
 
 # TODO
-def get_filesystem(path, private_session: str = None, is_private: bool = False) -> dict:
+def get_filesystem(path, private_space: str = None, is_private: bool = False) -> dict:
     """
     :param path: path to the folder
-    :param private_session: name of the private session, if applicable
-    :param is_private: whether the target path is a private session
+    :param private_space: name of the private space, if applicable
+    :param is_private: whether the target path is a private space
     """
-    files = get_structure(path, private_session, is_private)
-    info = get_structure_info(path, private_session, is_private)
+    files = get_structure(path, private_space, is_private)
+    info = get_structure_info(path, private_space, is_private)
 
     if files is None:
         if path != FILES_PATH and PRIVATE_PATH not in path:
@@ -317,7 +317,7 @@ def get_size(path, path_complete=False):
         return f"{size / 1024 ** 3:.2f} GB"
 
 
-def get_folder_info(path, private_session=None):
+def get_folder_info(path, private_space=None):
     """
     Get the info of the folder
     :param path: path to the folder
@@ -340,7 +340,7 @@ def get_folder_info(path, private_session=None):
 
     # sanitize important paths from the info key
     path = (
-        path.replace(f"{PRIVATE_PATH}/{private_session}", "")
+        path.replace(f"{PRIVATE_PATH}/{private_space}", "")
         .replace(PRIVATE_PATH, "")
         .replace(FILES_PATH, "")
         .strip("/")
@@ -349,7 +349,7 @@ def get_folder_info(path, private_session=None):
     return info
 
 
-def get_structure_info(path, private_session=None, is_private=False):
+def get_structure_info(path, private_space=None, is_private=False):
     """
     Get the info of each file/folder
     """
@@ -369,17 +369,17 @@ def get_structure_info(path, private_session=None, is_private=False):
         # ignore possible private path folders
         if not is_private and (PRIVATE_PATH in root or root in PRIVATE_PATH.split("/")):
             continue
-        # if in a private session, ignore folders not from this private session
-        if is_private and f"{PRIVATE_PATH}/{private_session}" not in root:
+        # if in a private space, ignore folders not from this private space
+        if is_private and f"{PRIVATE_PATH}/{private_space}" not in root:
             continue
 
         folder_path = root.replace("\\", "/")
-        folder_info = get_folder_info(folder_path, private_session)
+        folder_info = get_folder_info(folder_path, private_space)
         info = {**info, **folder_info}
     return info
 
 
-def get_structure(path, private_session=None, is_private=False):
+def get_structure(path, private_space=None, is_private=False):
     """
     Put the file system structure in a dict
     {
@@ -401,7 +401,7 @@ def get_structure(path, private_session=None, is_private=False):
         raise FileNotFoundError
 
     filesystem = {}
-    if path == FILES_PATH or path == f"{PRIVATE_PATH}/{private_session}":
+    if path == FILES_PATH or path == f"{PRIVATE_PATH}/{private_space}":
         name = "files"
     else:
         name = path.split("/")[-1]
@@ -429,12 +429,12 @@ def get_structure(path, private_session=None, is_private=False):
         # ignore possible private path folders
         if not is_private and folder in PRIVATE_PATH.split("/"):
             continue
-        # if in a private session, ignore folders not from this private session
-        if is_private and f"{PRIVATE_PATH}/{private_session}" not in f"{path}/{folder}":
+        # if in a private space, ignore folders not from this private space
+        if is_private and f"{PRIVATE_PATH}/{private_space}" not in f"{path}/{folder}":
             continue
 
         folder = f"{path}/{folder}"
-        file = get_structure(folder, private_session, is_private)
+        file = get_structure(folder, private_space, is_private)
 
         if file is not None:
             contents.append(file)

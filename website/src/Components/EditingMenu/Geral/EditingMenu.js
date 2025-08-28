@@ -174,7 +174,7 @@ class EditingMenu extends React.Component {
     }
 
     getContents(page = 1) {
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
         fetch(API_URL + '/get-text-content?' + is_private + 'path=' + path + '&page=' + page, {
             method: 'GET'
@@ -1309,7 +1309,7 @@ Word.defaultProps = {
 
 EditingMenu.defaultProps = {
     _private: false,
-    sessionId: "",
+    spaceId: "",
     current_folder: null,
     filename: null,
     // functions:

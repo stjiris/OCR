@@ -20,7 +20,7 @@ ES_URL = http://elasticsearch:9200/
 
 # IMAGE_PREFIX must be set to the same value as website's PUBLIC_URL if PUBLIC_URL is not '/'
 FILES_PATH = _files
-PRIVATE_PATH = _files/_private_sessions
+PRIVATE_PATH = _files/_private_spaces
 
 FLASK_DEBUG = False
 FLASK_SECRET_KEY = something_very_long_and_complex # (for example, use python's secrets.token_hex())

@@ -1058,10 +1058,10 @@ def task_delete_file(path: str):
 #####################################
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
-    # Clean up old private sessions daily at midnight
+    # Clean up old private spaces daily at midnight
     entry = RedBeatSchedulerEntry(
-        "cleanup_private_sessions",
-        task_delete_old_private_sessions.s().task,
+        "cleanup_private_spaces",
+        task_delete_old_private_spaces.s().task,
         crontab(minute="0", hour="0"),
         # args=["first", "second"], # example of sending args to task scheduled with redbeat
         app=celery,
@@ -1070,25 +1070,23 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     log.info(f"Created periodic task {entry}")
 
 
-@celery.task(name="set_max_private_session_age")
-def task_set_max_private_session_age(new_max_age: int | str):
+@celery.task(name="set_max_private_space_age")
+def task_set_max_private_space_age(new_max_age: int | str):
     try:
-        os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
+        os.environ["MAX_PRIVATE_SPACE_AGE"] = str(int(new_max_age))
         return {"status": "success"}
     except ValueError:
         return {"status": "error"}
 
 
-@celery.task(name="cleanup_private_sessions")
-def task_delete_old_private_sessions():
-    max_private_session_age = int(
-        os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
-    )  # days
-    log.info(f"Deleting private sessions older than {max_private_session_age} days")
+@celery.task(name="cleanup_private_spaces")
+def task_delete_old_private_spaces():
+    max_private_space_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "5"))  # days
+    log.info(f"Deleting private spaces older than {max_private_space_age} days")
 
-    priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
+    private_spaces = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
     n_deleted = 0
-    for folder in priv_sessions:
+    for folder in private_spaces:
         data = get_data(f"{folder}/_data.json")
         created_time = data["creation"]
         as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(
@@ -1096,13 +1094,13 @@ def task_delete_old_private_sessions():
         )
         now = datetime.now().astimezone(TIMEZONE)
         log.debug(
-            f"{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_session_age}"
+            f"{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_space_age}"
         )
-        if (now - as_datetime).days > max_private_session_age:
+        if (now - as_datetime).days > max_private_space_age:
             shutil.rmtree(folder)
             n_deleted += 1
 
     update_json_file(
         f"./{PRIVATE_PATH}/_data.json", {"last_cleanup": get_current_time()}
     )
-    return f"{n_deleted} private session(s) deleted"
+    return f"{n_deleted} private space(s) deleted"

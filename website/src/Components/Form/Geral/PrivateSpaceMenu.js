@@ -30,7 +30,7 @@ const crossStyle = {
     right: '0.5rem'
 }
 
-class PrivateSessionMenu extends React.Component {
+class PrivateSpaceMenu extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -63,11 +63,11 @@ class PrivateSessionMenu extends React.Component {
                 <Modal open={this.state.open}>
                     <Box sx={style}>
                         <Typography id="modal-modal-title" variant="h6" component="h2">
-                            <b>Sessão privada</b>
+                            <b>Espaço Privado</b>
                         </Typography>
                         <Typography variant="body1" component="p" sx={{mt: '1rem', mb: '1rem'}}>
-                            Para poder aceder a esta sessão novamente no futuro, certifique-se que guarda o link da sessão privada num lugar seguro.
-                            As sessões privadas são removidas ao fim de {this.props.maxAge} dias.
+                            Para poder aceder a este espaço novamente no futuro, certifique-se que guarda o link do espaço privado num lugar seguro.
+                            Os espaços privados são removidos ao fim de {this.props.maxAge} dias.
                         </Typography>
                         <Button
                             disabled={this.state.buttonDisabled}
@@ -86,7 +86,7 @@ class PrivateSessionMenu extends React.Component {
                             <ContentCopyIcon />
                         </Button>
                         <Typography variant="body1" component="p" sx={{mt: '1rem', mb: '1rem'}}>
-                            Caso perca o link, não conseguirá aceder novamente a esta sessão privada.
+                            Caso perca o link, não conseguirá aceder novamente a este espaço privado.
                         </Typography>
                         <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
                             <IconButton disabled={this.state.buttonDisabled} sx={crossStyle} aria-label="close" onClick={() => this.toggleOpen()}>
@@ -108,11 +108,11 @@ class PrivateSessionMenu extends React.Component {
     }
 }
 
-PrivateSessionMenu.defaultProps = {
+PrivateSpaceMenu.defaultProps = {
     maxAge: null,
     rowRefsLength: null,
     // functions:
     createFile: null
 }
 
-export default PrivateSessionMenu;
+export default PrivateSpaceMenu;

@@ -99,8 +99,8 @@ http {
         location /images/ {
             alias /usr/share/nginx/html/files/;
 
-            # Don't serve private session images through this location
-            location ~* /images/_private_sessions/.* {
+            # Don't serve private space images through this location
+            location ~* /images/_private_spaces/.* {
                 return 404;
             }
 
@@ -111,8 +111,8 @@ http {
             return 404;
         }
 
-        location /private/ {  # TODO: secure private session images
-            alias /usr/share/nginx/html/files/_private_sessions/;
+        location /private/ {  # TODO: secure private space images
+            alias /usr/share/nginx/html/files/_private_spaces/;
 
             # Serve only extensions that may be stored as document pages, from "_pages" folders
             location ~* /_pages/.+\.(jpg|jpeg|jfif|pjpeg|pjp|png|tif|tiff|bmp|gif|webp|pnm|jp2)$ {

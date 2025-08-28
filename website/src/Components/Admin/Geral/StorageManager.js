@@ -54,10 +54,10 @@ const StorageManager = (props) => {
 
     const [freeSpace, setFreeSpace] = useState("");
     const [freeSpacePercent, setFreeSpacePercent] = useState("");
-    const [privateSessions, setPrivateSessions] = useState([]);
+    const [privateSpaces, setPrivateSpaces] = useState([]);
     const [apiFiles, setApiFiles] = useState([]);
     const [lastCleanup, setLastCleanup] = useState("nunca");
-    const [maxPrivateSessionAge, setMaxPrivateSessionAge] = useState("5");
+    const [maxPrivateSpaceAge, setMaxPrivateSpaceAge] = useState("5");
 
     const [refreshing, setRefreshing] = useState(true);
     const [lastUpdate, setLastUpdate] = useState(null);
@@ -72,7 +72,7 @@ const StorageManager = (props) => {
     const [weekTime, setWeekTime] = useState(null);
     const [weekDays, setWeekDays] = useState([]);
 
-    const [deleteSessionId, setDeleteSessionId] = useState(null);
+    const [deleteSpaceId, setDeleteSpaceId] = useState(null);
     const [deleteApiDocumentId, setDeleteApiDocumentId] = useState(null);
 
     const [confirmPopupOpened, setConfirmPopupOpened] = useState(false);
@@ -94,17 +94,17 @@ const StorageManager = (props) => {
         setRefreshing(true);
         axios.get(API_URL + '/admin/storage-info')
             .then(({ data }) => {
-                const privateSessions = Object.entries(data["private_sessions"]);
+                const privateSpaces = Object.entries(data["private_spaces"]);
                 const apiFiles = Object.entries(data["api_files"]);
-                privateSessions.sort((a, b) => parseSize(b[1].size) - parseSize(a[1].size));
+                privateSpaces.sort((a, b) => parseSize(b[1].size) - parseSize(a[1].size));
                 apiFiles.sort((a, b) => parseSize(b[1].size) - parseSize(a[1].size));
 
                 setFreeSpace(data["free_space"]);
                 setFreeSpacePercent(data["free_space_percentage"]);
-                setPrivateSessions(privateSessions);
+                setPrivateSpaces(privateSpaces);
                 setApiFiles(apiFiles);
                 setLastCleanup(data["last_cleanup"]);
-                setMaxPrivateSessionAge(data["max_age"]);
+                setMaxPrivateSpaceAge(data["max_age"]);
                 setLastUpdate(new Date());
                 setRefreshing(false);
             });
@@ -140,10 +140,10 @@ const StorageManager = (props) => {
             });
     }, [deleteApiDocumentId]);
 
-    const deletePrivateSession = useCallback(() => {
-        axios.post(API_URL + "/admin/delete-private-session",
+    const deletePrivateSpace = useCallback(() => {
+        axios.post(API_URL + "/admin/delete-private-space",
             {
-                "session_id": deleteSessionId
+                "space_id": deleteSpaceId
             },
             {
                 headers: {
@@ -164,20 +164,20 @@ const StorageManager = (props) => {
                 errorNotif.current.openNotif(err.message);
                 closeConfirmationPopup();
             });
-    }, [deleteSessionId]);
+    }, [deleteSpaceId]);
 
-    // setup confirmation popup after deleteSessionId is set by openDeletePopup()
+    // setup confirmation popup after deleteSpaceId is set by openDeletePopup()
     useEffect(() => {
-        if (deleteSessionId !== null) {
+        if (deleteSpaceId !== null) {
             setConfirmPopupOpened(true);
-            setConfirmPopupMessage(`Tem a certeza que quer apagar a sessão ${deleteSessionId}?`);
-            setConfirmPopupSubmitCallback(() => deletePrivateSession);  // set value as function deletePrivateSession
+            setConfirmPopupMessage(`Tem a certeza que quer apagar o espaço ${deleteSpaceId}?`);
+            setConfirmPopupSubmitCallback(() => deletePrivateSpace);  // set value as function deletePrivateSpace
         } else if (deleteApiDocumentId !== null) {
             setConfirmPopupOpened(true);
             setConfirmPopupMessage(`Tem a certeza que quer apagar o documento com ID ${deleteApiDocumentId}?`);
             setConfirmPopupSubmitCallback(() => deleteApiDocument);  // set value as function deleteApiDocument
         }
-    }, [deleteSessionId, deleteApiDocumentId, deletePrivateSession, deleteApiDocument])
+    }, [deleteSpaceId, deleteApiDocumentId, deletePrivateSpace, deleteApiDocument])
 
     function handleScheduleTypeChange(newType) {
         switch (newType) {
@@ -226,29 +226,29 @@ const StorageManager = (props) => {
         // confirm popup is set up in useEffect
     }
 
-    function openDeleteSessionPopup(e, privateSession) {
+    function openDeleteSpacePopup(e, privateSpace) {
         e.stopPropagation();
-        setDeleteSessionId(privateSession);
+        setDeleteSpaceId(privateSpace);
         // confirm popup is set up in useEffect
     }
 
     function openCleanupPopup(e) {
         e.stopPropagation();
         setConfirmPopupOpened(true);
-        setConfirmPopupMessage(`Tem a certeza que quer remover as sessões com mais de ${maxPrivateSessionAge} dias?`);
-        setConfirmPopupSubmitCallback(() => runPrivateSessionCleanup);  // set value as function runPrivateSessionCleanup
+        setConfirmPopupMessage(`Tem a certeza que quer remover as sessões com mais de ${maxPrivateSpaceAge} dias?`);
+        setConfirmPopupSubmitCallback(() => runPrivateSpaceCleanup);  // set value as function runPrivateSpaceCleanup
     }
 
     function closeConfirmationPopup() {
-        setDeleteSessionId(null);  // needed when closing or cancelling popup for deletion of single private session
+        setDeleteSpaceId(null);  // needed when closing or cancelling popup for deletion of single private space
         setDeleteApiDocumentId(null);
         setConfirmPopupOpened(false);
         setConfirmPopupMessage("");
         setConfirmPopupSubmitCallback(null);
     }
 
-    const runPrivateSessionCleanup = () => {
-        axios.post(API_URL + "/admin/cleanup-sessions")
+    const runPrivateSpaceCleanup = () => {
+        axios.post(API_URL + "/admin/cleanup-private-spaces")
             .then(response => {
                 if (response.status !== 200) {
                     throw new Error("Não foi possível concluir o pedido.");
@@ -480,7 +480,7 @@ const StorageManager = (props) => {
                         className="menuButton"
                         sx={{alignSelf: 'center'}}
                     >
-                        Remover sessões com mais de {maxPrivateSessionAge} dias
+                        Remover espaços privados com mais de {maxPrivateSpaceAge} dias
                     </Button>
 
                     <Box sx = {{
@@ -496,9 +496,9 @@ const StorageManager = (props) => {
                             width: "fit-content",
                             height: "fit-content",
                     }}>
-                        <span>Sessões Privadas</span>
+                        <span>Espaços Privados</span>
                         {
-                            privateSessions.map(([privateSession, info], index) => {
+                            privateSpaces.map(([privateSpace, info], index) => {
                                 return (
                                     <Box
                                         key={index}
@@ -513,10 +513,10 @@ const StorageManager = (props) => {
                                             cursor: "pointer"
                                         }}
                                         onClick={() => {
-                                            navigate(`/session/${privateSession}`);
+                                            navigate(`/space/${privateSpace}`);
                                         }}
                                     >
-                                        <code>{privateSession}&nbsp;—&nbsp;</code>
+                                        <code>{privateSpace}&nbsp;—&nbsp;</code>
                                         <Box sx={{
                                             display: 'flex',
                                             flexDirection: 'row',
@@ -527,7 +527,7 @@ const StorageManager = (props) => {
                                             <TooltipIcon
                                                 className="negActionButton"
                                                 message="Apagar"
-                                                clickFunction={(e) => openDeleteSessionPopup(e, privateSession)}
+                                                clickFunction={(e) => openDeleteSpacePopup(e, privateSpace)}
                                                 icon={<DeleteForeverIcon />}
                                             />
                                         </Box>

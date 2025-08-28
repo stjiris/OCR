@@ -89,7 +89,7 @@ class LayoutMenu extends React.Component {
 	}
 
     getLayouts() {
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
         fetch(API_URL + '/get-layouts?' + is_private + 'path=' + path, {
             method: 'GET'
@@ -383,7 +383,7 @@ class LayoutMenu extends React.Component {
 	}
 
 	saveLayout(closeWindow = false) {
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
 		fetch(API_URL + '/save-layouts', {
 			method: 'POST',
 			headers: {
@@ -414,7 +414,7 @@ class LayoutMenu extends React.Component {
 		this.setState({ segmentLoading: true });
 		this.successNot.current.openNotif("A gerar layouts automaticamente... Por favor aguarde.");
 
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const is_private = this.props._private ? '_private=true&' : '';
 		fetch(API_URL + '/generate-automatic-layouts?' + is_private + 'path=' + path, {
 			method: 'GET'
@@ -994,7 +994,7 @@ class LayoutMenu extends React.Component {
 
 LayoutMenu.defaultProps = {
     _private: false,
-    sessionId: "",
+    spaceId: "",
     current_folder: null,
     filename: null,
     // functions:

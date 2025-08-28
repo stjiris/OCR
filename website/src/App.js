@@ -62,7 +62,7 @@ function App() {
     };
 
     useEffect(() => {
-        // Check if session already logged in
+        // Check if admin already logged in
         axios.get(API_URL + "/account/check-auth")
             .then(r => {
                 login();
@@ -77,16 +77,16 @@ function App() {
         : <Navigate to="/admin/login" state={{ originPath: location.pathname }} replace />);
     };
 
-    // Allow Form to get the session ID parameter from the route URL
+    // Allow Form to get the space ID parameter from the route URL
     const WrappedForm = (props) => {
-        const { sessionId } = useParams();
+        const { spaceId } = useParams();
         const navigate = useNavigate();
-        return <Form sessionId={sessionId} navigate={navigate} />;
+        return <Form spaceId={spaceId} navigate={navigate} />;
     }
 
     class Form extends React.Component {
         static defaultProps = {
-            sessionId: null,
+            spaceId: null,
             navigate: null,
         }
         constructor(props) {
@@ -107,8 +107,8 @@ function App() {
                 algorithmChoice: [],
                 configChoice: [],
 
-                privateSessionsOpen: false,
-                privateSessions: [],
+                privateSpacesOpen: false,
+                privateSpaces: [],
                 freeSpace: props.freeSpace || 0,
                 freeSpacePercentage: props.freeSpacePercentage || 0,
             }
@@ -127,9 +127,9 @@ function App() {
             this.closeSearchMenu = this.closeSearchMenu.bind(this);
         }
 
-        getPrivateSession() {
-            if (["", "ocr", "ocr-dev", "ocr-prod"].includes(this.props.sessionId)) return null;
-            return this.props.sessionId;
+        getPrivateSpaceId() {
+            if (["", "ocr", "ocr-dev", "ocr-prod"].includes(this.props.spaceId)) return null;
+            return this.props.spaceId;
         }
 
         /*
@@ -149,9 +149,9 @@ function App() {
         }
          */
 
-        createPrivateSession() {
-            return axios.get(API_URL + '/create-private-session')
-            .then(({data}) => {return data["session_id"]});
+        createPrivateSpace() {
+            return axios.get(API_URL + '/create-private-space')
+            .then(({data}) => {return data["space_id"]});
         }
 
         setCurrentPath(new_path_list, isDocument=false) {
@@ -245,14 +245,14 @@ function App() {
                             }}
                         >
                             {
-                                this.getPrivateSession()
-                                    ? `Sessão Privada - ${this.getPrivateSession()}`
+                                this.getPrivateSpaceId()
+                                    ? `Espaço Privado - ${this.getPrivateSpaceId()}`
                                     : "OCR - Reconhecimento Ótico de Caracteres"
                             }
                         </Typography>
 
                         {
-                            this.getPrivateSession()
+                            this.getPrivateSpaceId()
                                 ? <Button
                                     disabled={buttonsDisabled}
                                     variant="contained"
@@ -262,23 +262,23 @@ function App() {
                                     color="error"
                                     sx={{marginRight: "1rem"}}
                                 >
-                                    Sair da Sessão
+                                    Sair do Espaço
                                 </Button>
                                 : <Button
                                     disabled={buttonsDisabled}
                                     variant="contained"
                                     startIcon={<LockIcon/>}
                                     onClick={() => {
-                                        this.createPrivateSession().then((sessionId) => {
+                                        this.createPrivateSpace().then((spaceId) => {
                                             //this.setCurrentPath([""]);
                                             this.setState({currentFolderPathList: [""]});
-                                            this.props.navigate(`/session/${sessionId}`);
+                                            this.props.navigate(`/space/${spaceId}`);
                                         });
                                     }}
                                     className="menuButton"
                                     sx={{marginRight: "1rem"}}
                                 >
-                                    Nova Sessão Privada
+                                    Novo Espaço Privado
                                 </Button>
                         }
                     </Box>
@@ -363,7 +363,7 @@ function App() {
                         </Box>
 
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
-                            {buttonsDisabled || Boolean(this.getPrivateSession())
+                            {buttonsDisabled || Boolean(this.getPrivateSpaceId())
                                 ? null
                                 : <Button
                                     variant="contained"
@@ -401,8 +401,8 @@ function App() {
                         {
                             !this.state.searchMenu
                             ? <FileExplorer ref={this.fileSystem}
-                                            _private={Boolean(this.getPrivateSession())}
-                                            sessionId={this.props.sessionId || ""}  // sessionId or empty str if null
+                                            _private={Boolean(this.getPrivateSpaceId())}
+                                            spaceId={this.props.spaceId || ""}  // spaceId or empty str if null
                                             current_folder={
                                                 // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
                                                 this.state.currentFolderPathList.join('/').replace(/^\//, '')
@@ -439,7 +439,7 @@ function App() {
             <BrowserRouter basename={`/${process.env.REACT_APP_BASENAME}`}>
                 <Routes>
                     <Route index element={<WrappedForm />} />
-                    <Route path="/session/:sessionId" element={<WrappedForm />} />
+                    <Route path="/space/:spaceId" element={<WrappedForm />} />
 
                     <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
                         <Route exact path="/admin" element={<AdminDashboard />} />

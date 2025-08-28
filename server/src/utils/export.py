@@ -26,7 +26,7 @@ from src.utils.file import json_to_text
 from src.utils.file import update_json_file
 
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
-PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
+PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_spaces")
 
 OUT_DEFAULT_DPI = 150
 
