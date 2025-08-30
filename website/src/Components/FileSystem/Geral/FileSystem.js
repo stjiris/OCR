@@ -9,37 +9,30 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import TableSortLabel from "@mui/material/TableSortLabel";
 import Paper from '@mui/material/Paper';
 import Typography from "@mui/material/Typography";
 
 import CreateNewFolderIcon from "@mui/icons-material/CreateNewFolder";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 
-import {TableSortLabel} from "@mui/material";
-import {visuallyHidden} from "@mui/utils";
+import visuallyHidden from "@mui/utils/visuallyHidden";
+
 import { v4 as uuidv4 } from 'uuid';
 
-import loadComponent from '../../../utils/loadComponents';
-const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
-const DocumentRow = loadComponent('FileSystem', 'DocumentRow');
-const StaticFileRow = loadComponent('FileSystem', 'StaticFileRow');
-const FileIcon = loadComponent('CustomIcons', 'FileIcon');
-const TxtIcon = loadComponent('CustomIcons', 'TxtIcon');
-const PdfIcon = loadComponent('CustomIcons', 'PdfIcon');
-const CsvIcon = loadComponent('CustomIcons', 'CsvIcon');
-const AltoIcon = loadComponent('CustomIcons', 'AltoIcon');
-const JsonIcon = loadComponent('CustomIcons', 'JsonIcon');
-const ZipIcon = loadComponent('CustomIcons', 'ZipIcon');
-const PrivateSpaceMenu = loadComponent('Form', 'PrivateSpaceMenu');
-const FolderRow = loadComponent('FileSystem', 'FolderRow');
-const Notification = loadComponent('Notifications', 'Notification');
-const FolderMenu = loadComponent('Form', 'FolderMenu');
-const DeletePopup = loadComponent('Form', 'DeletePopup');
-const OcrPopup = loadComponent('Form', 'OcrPopup');
-const OcrMenu = loadComponent('OcrMenu', 'OcrMenu');
-const LayoutMenu = loadComponent('LayoutMenu', 'LayoutMenu');
-const EditingMenu = loadComponent('EditingMenu', 'EditingMenu');
-const FullStorageMenu = loadComponent('Notifications', 'FullStorageMenu');
+import DocumentRow from "./DocumentRow";
+import FolderRow from "./FolderRow";
+import FullStorageMenu from "../../Notifications/Geral/FullStorageMenu";
+import OcrMenu from "../../OcrMenu/Geral/OcrMenu";
+import LayoutMenu from "../../LayoutMenu/Geral/LayoutMenu";
+import EditingMenu from "../../EditingMenu/Geral/EditingMenu";
+import ReturnButton from "./ReturnButton";
+import Notification from "../../Notifications/Geral/Notification";
+import FolderMenu from "../../Form/Geral/FolderMenu";
+import OcrPopup from "../../Form/Geral/OcrPopup";
+import DeletePopup from "../../Form/Geral/DeletePopup";
+import PrivateSpaceMenu from "../../Form/Geral/PrivateSpaceMenu";
+
 
 const UPDATE_PERIOD_SECONDS = 15;
 const UPLOAD_UPDATE_SECONDS = 5;
@@ -100,16 +93,10 @@ class FileExplorer extends React.Component {
         this.enterFolder = this.enterFolder.bind(this);
         this.deleteItem = this.deleteItem.bind(this);
         this.getOriginalFile = this.getOriginalFile.bind(this);
-        this.getDelimiterTxt = this.getDelimiterTxt.bind(this);
-        this.getTxt = this.getTxt.bind(this);
+        this.getDocument = this.getDocument.bind(this);
         this.getEntities = this.getEntities.bind(this);
         this.requestEntities = this.requestEntities.bind(this);
-        this.getAlto = this.getAlto.bind(this);
-        this.getCSV = this.getCSV.bind(this);
         this.getImages = this.getImages.bind(this);
-        this.getPdfIndexed = this.getPdfIndexed.bind(this);
-        this.getPdfSimple = this.getPdfSimple.bind(this);
-        this.getHocr = this.getHocr.bind(this);
         this.editText = this.editText.bind(this);
         this.performOCR = this.performOCR.bind(this);
         this.configureOCR = this.configureOCR.bind(this);
@@ -506,6 +493,8 @@ class FileExplorer extends React.Component {
         });
     }
 
+    // TODO: currently not being called;
+    // can be called from a button to request entities from existing OCR results
     requestEntities(file) {
         let path = this.props.current_folder + '/' + file;
         if (this.props._private) { path = this.props.spaceId + '/' + path }
@@ -582,27 +571,6 @@ class FileExplorer extends React.Component {
         });
     }
 
-    /**
-     * Export the .txt file
-     */
-    getTxt(file) {
-        this.getDocument("txt", file, "txt");
-    }
-
-    /**
-     * Export the .txt file
-     * with the delimiter
-     */
-    getDelimiterTxt(file) {
-        this.getDocument("txt_delimited", file, "txt", "_delimitado");
-    }
-
-    /**
-     * Export the .csv file
-     */
-    getCSV(file) {
-         this.getDocument("csv", file, "csv");
-    }
 
     /**
      * Export the .zip file
@@ -626,44 +594,6 @@ class FileExplorer extends React.Component {
             a.remove();
         });
     }
-
-    /**
-     * Export the .pdf file
-     */
-    getPdfIndexed(file) {
-        this.getDocument("pdf_indexed", file, "pdf", "_texto_indice");
-    }
-
-    /**
-     * Export the .pdf file
-     */
-    getPdfSimple(file) {
-        this.getDocument("pdf", file, "pdf", "_texto");
-    }
-
-    getAlto(file) {
-        this.getDocument("alto", file, "xml", "_alto");
-    }
-
-    getHocr(file) {
-        this.getDocument("hocr", file, "hocr", "");
-    }
-
-    /*
-    editFile(file) {
-        const filename = this.props.current_folder + '/' + file;
-        this.state.app.editFile(this.props.current_folder, filename);
-    }
-     */
-
-    /*
-    viewFile(file, algorithm, config) {
-        var path = this.props.current_folder.slice(1).join('/');
-        file = file.split('/')[0];
-        var filename = path + '/' + file;
-        this.state.app.viewFile(filename, algorithm, config);
-    }
-    */
 
     /**
      * Open the delete menu
@@ -792,167 +722,7 @@ class FileExplorer extends React.Component {
         this.rowRefs = [];
         const items = [];
 
-        if (this.props.current_file_name) {
-            const docInfo = this.getInfo(this.props.current_file_name);
-            let ref = React.createRef();
-            this.rowRefs.push(ref);
-            items.push(
-                <StaticFileRow
-                    ref={ref}
-                    key={this.props.current_file_name + " original"}
-                    name={this.props.current_file_name + " (original)"}
-                    filename={this.props.current_file_name}
-                    info={docInfo}
-                    fileIcon={<FileIcon extension={docInfo["extension"]} />}
-                    downloadFile={this.getOriginalFile}
-                />
-            );
-            if (docInfo["pdf_indexed"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " pdf_indexed"}
-                        name={"PDF com texto e índice"}
-                        filename={this.props.current_file_name}
-                        type="pdf_indexed"
-                        info={docInfo["pdf_indexed"]}
-                        fileIcon={<PdfIcon />}
-                        downloadFile={this.getPdfIndexed}
-                    />
-                );
-            }
-            if (docInfo["pdf"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " pdf"}
-                        name={"PDF com texto"}
-                        filename={this.props.current_file_name}
-                        type="pdf"
-                        info={docInfo["pdf"]}
-                        fileIcon={<PdfIcon />}
-                        downloadFile={this.getPdfSimple}
-                    />
-                );
-            }
-            if (docInfo["txt"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " txt"}
-                        name={"Texto"}
-                        filename={this.props.current_file_name}
-                        type="txt"
-                        info={docInfo["txt"]}
-                        fileIcon={<TxtIcon />}
-                        downloadFile={this.getTxt}
-                    />
-                );
-            }
-            if (docInfo["txt_delimited"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " txt_delimited"}
-                        name={"Texto com separadores de páginas"}
-                        filename={this.props.current_file_name}
-                        type="txt_delimited"
-                        info={docInfo["txt_delimited"]}
-                        fileIcon={<TxtIcon />}
-                        downloadFile={this.getDelimiterTxt}
-                    />
-                );
-            }
-            if (docInfo["csv"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " csv"}
-                        name={"Índice de palavras"}
-                        filename={this.props.current_file_name}
-                        type="csv"
-                        info={docInfo["csv"]}
-                        fileIcon={<CsvIcon />}
-                        downloadFile={this.getCSV}
-                    />
-                );
-            }
-            if (docInfo["ner"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " ner"}
-                        name={"Entidades"}
-                        filename={this.props.current_file_name}
-                        type="ner"
-                        info={docInfo["ner"]}
-                        fileIcon={<JsonIcon />}
-                        downloadFile={this.getEntities /* TODO: request and endpoint may need updating */ }
-                    />
-                );
-            }
-            if (docInfo["hocr"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " hocr"}
-                        name={"hOCR"}
-                        filename={this.props.current_file_name}
-                        type="hocr"
-                        info={docInfo["hocr"]}
-                        fileIcon={<AltoIcon />}
-                        downloadFile={this.getHocr}
-                    />
-                );
-            }
-            if (docInfo["xml"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " xml"}
-                        name={"ALTO"}
-                        filename={this.props.current_file_name}
-                        type="xml"
-                        info={docInfo["xml"]}
-                        fileIcon={<AltoIcon />}
-                        downloadFile={this.getAlto}
-                    />
-                );
-            }
-            if (docInfo["zip"]?.complete) {
-                ref = React.createRef();
-                this.rowRefs.push(ref);
-                items.push(
-                    <StaticFileRow
-                        ref={ref}
-                        key={this.props.current_file_name + " zip"}
-                        name={"Imagens extraídas"}
-                        filename={this.props.current_file_name}
-                        type="zip"
-                        info={docInfo["zip"]}
-                        fileIcon={<ZipIcon />}
-                        downloadFile={this.getImages}
-                    />
-                );
-            }
-
-        } else for (let item of this.sortContents(this.getPathContents())) {
+        for (let item of this.sortContents(this.getPathContents())) {
             let ref = React.createRef();
             this.rowRefs.push(ref);
 
@@ -960,23 +730,17 @@ class FileExplorer extends React.Component {
                 items.push(
                     <DocumentRow
                         ref={ref}
-                        key={this.props.current_folder + "/" + item}
+                        key={item}
                         name={item}
                         _private={this.props._private}
                         info={this.getInfo(item)}
                         enterDocument={this.enterFolder}
                         deleteItem={this.deleteItem}
                         getOriginalFile={this.getOriginalFile}
-                        getDelimiterTxt={this.getDelimiterTxt}
-                        getTxt={this.getTxt}
+                        getDocument={this.getDocument}
                         getEntities={this.getEntities}
                         requestEntities={this.requestEntities}
-                        getCSV={this.getCSV}
                         getImages={this.getImages}
-                        getPdfIndexed={this.getPdfIndexed}
-                        getPdfSimple={this.getPdfSimple}
-                        getAlto={this.getAlto}
-                        getHocr={this.getHocr}
                         editText={this.editText}
                         performOCR={this.performOCR}
                         configureOCR={this.configureOCR}
@@ -990,7 +754,7 @@ class FileExplorer extends React.Component {
                 items.push(
                     <FolderRow
                         ref={ref}
-                        key={this.props.current_folder + "/" + key}
+                        key={key}
                         name={key}
                         info={this.getInfo(key)}
                         enterFolder={this.enterFolder}

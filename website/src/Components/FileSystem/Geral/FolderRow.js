@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 
+import BorderAllIcon from "@mui/icons-material/BorderAll";
 import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditNoteIcon from "@mui/icons-material/EditNote";
@@ -57,9 +58,6 @@ class FolderRow extends React.Component {
             >
                 <TableCell
                     className="explorerCell nameCell"
-                    sx={{
-                        ":hover": {cursor: "pointer", fontWeight: "bold", fontStyle: "oblique"}
-                    }}
                     onClick={() => this.folderClicked()}
                 >
                     <Box sx={{
@@ -94,6 +92,14 @@ class FolderRow extends React.Component {
                             message="Configurar OCR"
                             clickFunction={(e) => this.configureOCR(e, usingCustomConfig)}
                             icon={usingCustomConfig ? <SettingsSuggestIcon/> : <SettingsIcon/>}
+                        />
+
+                        <TooltipIcon
+                            key={"Layout " + this.props.name}
+                            className="actionButton"
+                            sx={{visibility: "hidden"}}
+                            disabled
+                            icon={<BorderAllIcon />}
                         />
 
                         <TooltipIcon

@@ -167,10 +167,16 @@ cannot be styled with props, interferes with functioning of Autocomplete
 .MuiTableRow-root.explorerRow {
     height: 4rem;
     background-color: #ffffff;
+    border-top: 1px solid #e0e0e0;
 }
 
 .MuiTableRow-root.explorerRow:hover {
     background-color: #d7d7d7 !important;
+}
+
+.MuiTableRow-root.staticFileRow {
+    background-color: #C4DCF4FF;
+    height: 3rem;
 }
 
 .MuiTableCell-root.MuiTableCell-head.headerCell {
@@ -187,6 +193,7 @@ cannot be styled with props, interferes with functioning of Autocomplete
 .MuiTableCell-root.MuiTableCell-body.explorerCell {
     padding-top: 0;
     padding-bottom: 0;
+    border-bottom: 0;
 }
 
 .explorerCell.errorCell {
@@ -218,20 +225,26 @@ cannot be styled with props, interferes with functioning of Autocomplete
     text-align: left;
 }
 
+.MuiTableCell-root.nameCell:hover {
+    cursor: pointer;
+    font-weight: bold;
+}
+
 .MuiTableCell-root.staticNameCell {
-    width: 65.5%;
+    width: 34%;
     text-align: left;
+    padding-left: 48px;
 }
 
 .MuiTableCell-root.actionsCell {
-    width: 14%;
+    width: 16%;
     text-align: center;
     padding: 0;
 }
 
 .MuiTableCell-root.staticActionsCell {
     display: none;
-    width: 14%;
+    width: 16%;
     text-align: center;
 }
 

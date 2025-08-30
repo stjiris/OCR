@@ -397,6 +397,7 @@ def get_entities():
     return send_file(f"{path}/_export/_entities.json")
 
 
+# TODO: currently not used
 @app.route("/request_entities", methods=["GET"])
 @requires_arg_path
 def request_entities():
@@ -420,7 +421,7 @@ def request_entities():
     }
 
 
-# TODO: check if used
+# TODO: currently not used
 @app.route("/get_zip", methods=["GET"])
 @requires_arg_path
 def get_zip():

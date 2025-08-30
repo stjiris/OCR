@@ -23,8 +23,13 @@ class StaticFileRow extends React.Component {
 
     render() {
         return (
-            <TableRow className="explorerRow">
-                <TableCell className="explorerCell staticNameCell">
+            <TableRow
+                className="staticFileRow"
+                sx={{
+                    display: this.props.expanded ? "table-row" : "none",
+                }}
+            >
+                <TableCell className="explorerCell staticNameCell" align='left'>
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
@@ -32,7 +37,7 @@ class StaticFileRow extends React.Component {
                     }}>
                         <Button
                             onClick={() => this.props.downloadFile(this.props.filename)}
-                            variant="outlined"
+                            variant="text"
                             sx={{
                                 textTransform: "none",
                                 padding: 0,
@@ -45,13 +50,16 @@ class StaticFileRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell staticDateCreatedCell">
+                <TableCell className="explorerCell actionsCell" align='center' />
+                <TableCell className="explorerCell stateCell" align='center' />
+
+                <TableCell className="explorerCell staticDateCreatedCell" align='center'>
                     <span>
                         {this.state.info["creation"]}
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell staticDetailsCell">
+                <TableCell className="explorerCell staticDetailsCell" align='center'>
                     <span>
                         {this.state.info["pages"]
                             ? this.state.info["pages"] + " página(s)"
@@ -60,7 +68,7 @@ class StaticFileRow extends React.Component {
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell staticSizeCell">
+                <TableCell className="explorerCell staticSizeCell" align='right'>
                     <span>
                         {this.state.info["size"]}
                     </span>
@@ -71,6 +79,7 @@ class StaticFileRow extends React.Component {
 }
 
 StaticFileRow.defaultProps = {
+    expanded: false,
     info: null,
     name: null,
     filename: null,
