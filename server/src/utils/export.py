@@ -20,9 +20,10 @@ from reportlab.pdfgen.canvas import Canvas
 from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_file_basename
+from src.utils.file import get_file_size
 from src.utils.file import get_page_count
-from src.utils.file import get_size
 from src.utils.file import json_to_text
+from src.utils.file import size_to_units
 from src.utils.file import update_json_file
 
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
@@ -85,7 +86,7 @@ def export_from_existing(path: str, raw_results: dict | list, output_types: list
                 creation_date = get_current_time()
                 data_update[extension] = {
                     "complete": True,
-                    "size": get_size(file_path, path_complete=True),
+                    "size": size_to_units(get_file_size(file_path, path_complete=True)),
                     "creation": creation_date,
                 }
                 if extension == "pdf":
@@ -102,7 +103,7 @@ def export_from_existing(path: str, raw_results: dict | list, output_types: list
                 creation_date = get_current_time()
                 data_update[ext] = {
                     "complete": True,
-                    "size": get_size(file_path, path_complete=True),
+                    "size": size_to_units(get_file_size(file_path, path_complete=True)),
                     "creation": creation_date,
                 }
                 if ext == "pdf":
@@ -552,10 +553,6 @@ def get_md5_checksum(path):
     with open(path, "rb") as f:
         data = f.read()
         return hashlib.md5(data).hexdigest()
-
-
-def get_file_size(path):
-    return os.path.getsize(path)
 
 
 def generate_file(base_path, path, id, seq, mimetype):

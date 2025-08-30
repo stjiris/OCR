@@ -265,7 +265,7 @@ class DocumentRow extends React.Component {
 
                             <TableCell className="explorerCell dateCreatedCell" align='center'><span>{info["creation"]}</span></TableCell>
                             <TableCell className="explorerCell detailsCell" align='center'><span>{info["pages"]} página(s)</span></TableCell>
-                            <TableCell className="explorerCell sizeCell" align='center'><span>{info["size"]}</span></TableCell>
+                            <TableCell className="explorerCell sizeCell" align='center'><span>{info["total_size"]}</span></TableCell>
                         </>
                     }
                 </TableRow>

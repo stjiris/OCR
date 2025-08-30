@@ -266,6 +266,22 @@ def get_filesystem(path, private_space: str = None, is_private: bool = False) ->
     return {**files, "info": info}
 
 
+def size_to_units(size):
+    """
+    Receives a size in bytes and returns a string formatted with the appropriate unit.
+    :param size: size in bytes
+    :return: string with rounded size and appropriate unit
+    """
+    if size < 1024:
+        return f"{size} B"
+    elif size < 1024**2:
+        return f"{size / 1024:.2f} KB"
+    elif size < 1024**3:
+        return f"{size / 1024 ** 2:.2f} MB"
+    else:
+        return f"{size / 1024 ** 3:.2f} GB"
+
+
 def get_ocr_size(path):
     """
     Get the size of the hocr files
@@ -293,28 +309,49 @@ def get_ocr_size(path):
         return f"{size / 1024 ** 3:.2f} GB"
 
 
-def get_size(path, path_complete=False):
+def get_document_files_size(path):
     """
-    Get the size of the file
+    Get the total size of files related to a document,
+    which are the original copy of the file and result files inside /_export.
+    :param path: path to the document folder
+    :return: total size in bytes
+    """
+    size = get_file_size(path)  # original file's size
+    for dirpath, folders, filenames in os.walk(f"{path}/_export"):
+        for f in filenames:
+            subpath = os.path.join(dirpath, f)
+            if not os.path.islink(subpath):
+                size += os.path.getsize(subpath)
+    return size
 
+
+def get_folder_size(path):
+    """
+    Returns the size of the folder's entire contents recursively.
+    :param path: path to the folder
+    :return: total size in bytes
+    """
+    size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            subpath = os.path.join(dirpath, f)
+            if not os.path.islink(subpath):
+                size += os.path.getsize(subpath)
+    return size
+
+
+def get_file_size(path, path_complete=False):
+    """
+    Returns the file's size.
     :param path: path to the file
-    :return: size of the file
+    :param path_complete: whether the path is complete;
+    if not, seeks the file contained within the target folder which shares its name
+    :return: file size in bytes
     """
-
     name = path.split("/")[-1]
     if not path_complete:
         path = f"{path}/{name}"
-
-    size = os.path.getsize(path)
-
-    if size < 1024:
-        return f"{size} B"
-    elif size < 1024**2:
-        return f"{size / 1024:.2f} KB"
-    elif size < 1024**3:
-        return f"{size / 1024 ** 2:.2f} MB"
-    else:
-        return f"{size / 1024 ** 3:.2f} GB"
+    return os.path.getsize(path)
 
 
 def get_folder_info(path, private_space=None):
@@ -332,7 +369,8 @@ def get_folder_info(path, private_space=None):
         return {}
 
     if data["type"] == "file" and ("stored" not in data or data["stored"] is True):
-        data["size"] = get_size(path)
+        data["size"] = size_to_units(get_file_size(path))
+        data["total_size"] = size_to_units(get_document_files_size(path))
 
     elif data["type"] == "folder":
         n_files = len([f for f in os.scandir(path) if not f.name.startswith("_")])

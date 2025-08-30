@@ -30,11 +30,12 @@ from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_doc_len
 from src.utils.file import get_file_basename
+from src.utils.file import get_file_size
 from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
-from src.utils.file import get_size
 from src.utils.file import PRIVATE_PATH
+from src.utils.file import size_to_units
 from src.utils.file import TIMEZONE
 from src.utils.file import update_json_file
 from src.utils.image import parse_images
@@ -95,7 +96,9 @@ def task_make_changes(path, data):
         export_file(path, "txt", force_recreate=True)
         data["txt"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_txt.txt", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_txt.txt", path_complete=True)
+            ),
             "creation": created_time,
         }
 
@@ -112,7 +115,9 @@ def task_make_changes(path, data):
         export_file(path, "txt", delimiter=True, force_recreate=True)
         data["txt_delimited"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_txt_delimited.txt", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_txt_delimited.txt", path_complete=True)
+            ),
             "creation": created_time,
         }
 
@@ -131,7 +136,9 @@ def task_make_changes(path, data):
         export_file(path, "pdf", force_recreate=True, get_csv=recreate_csv)
         data["pdf_indexed"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_pdf_indexed.pdf", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_pdf_indexed.pdf", path_complete=True)
+            ),
             "creation": created_time,
         }
 
@@ -150,7 +157,9 @@ def task_make_changes(path, data):
         export_file(path, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
         data["pdf"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_pdf.pdf", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_pdf.pdf", path_complete=True)
+            ),
             "creation": created_time,
         }
 
@@ -171,7 +180,9 @@ def task_make_changes(path, data):
     if data["csv"]["complete"]:
         data["csv"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_index.csv", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_index.csv", path_complete=True)
+            ),
             "creation": created_time,
         }
 
@@ -343,7 +354,9 @@ def task_request_ner(path):
     if success:
         data["ner"] = {
             "complete": True,
-            "size": get_size(f"{path}/_export/_entities.json", path_complete=True),
+            "size": size_to_units(
+                get_file_size(f"{path}/_export/_entities.json", path_complete=True)
+            ),
             "creation": creation_date,
         }
     else:
@@ -880,7 +893,9 @@ def task_export_results(path: str, output_types: list[str]):
             export_file(path, "txt")
             data["txt"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_txt.txt", path_complete=True),
+                "size": size_to_units(
+                    get_file_size(f"{path}/_export/_txt.txt", path_complete=True)
+                ),
                 "creation": get_current_time(),
             }
 
@@ -897,8 +912,10 @@ def task_export_results(path: str, output_types: list[str]):
             export_file(path, "txt", delimiter=True)
             data["txt_delimited"] = {
                 "complete": True,
-                "size": get_size(
-                    f"{path}/_export/_txt_delimited.txt", path_complete=True
+                "size": size_to_units(
+                    get_file_size(
+                        f"{path}/_export/_txt_delimited.txt", path_complete=True
+                    )
                 ),
                 "creation": get_current_time(),
             }
@@ -916,7 +933,9 @@ def task_export_results(path: str, output_types: list[str]):
             export_file(path, "imgs")
             data["zip"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_images.zip", path_complete=True),
+                "size": size_to_units(
+                    get_file_size(f"{path}/_export/_images.zip", path_complete=True)
+                ),
                 "creation": get_current_time(),
             }
 
@@ -934,8 +953,10 @@ def task_export_results(path: str, output_types: list[str]):
             creation_time = get_current_time()
             data["pdf_indexed"] = {
                 "complete": True,
-                "size": get_size(
-                    f"{path}/_export/_pdf_indexed.pdf", path_complete=True
+                "size": size_to_units(
+                    get_file_size(
+                        f"{path}/_export/_pdf_indexed.pdf", path_complete=True
+                    )
                 ),
                 "creation": creation_time,
                 "pages": get_page_count(path, "pdf") + 1,
@@ -944,7 +965,9 @@ def task_export_results(path: str, output_types: list[str]):
                 # CSV exported as part of PDF export
                 data["csv"] = {
                     "complete": True,
-                    "size": get_size(f"{path}/_export/_index.csv", path_complete=True),
+                    "size": size_to_units(
+                        get_file_size(f"{path}/_export/_index.csv", path_complete=True)
+                    ),
                     "creation": creation_time,
                 }
 
@@ -962,7 +985,9 @@ def task_export_results(path: str, output_types: list[str]):
             creation_time = get_current_time()
             data["pdf"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_pdf.pdf", path_complete=True),
+                "size": size_to_units(
+                    get_file_size(f"{path}/_export/_pdf.pdf", path_complete=True)
+                ),
                 "creation": creation_time,
                 "pages": get_page_count(path, "pdf"),
             }
@@ -970,7 +995,9 @@ def task_export_results(path: str, output_types: list[str]):
                 # CSV exported as part of PDF export
                 data["csv"] = {
                     "complete": True,
-                    "size": get_size(f"{path}/_export/_index.csv", path_complete=True),
+                    "size": size_to_units(
+                        get_file_size(f"{path}/_export/_index.csv", path_complete=True)
+                    ),
                     "creation": creation_time,
                 }
 
@@ -987,7 +1014,9 @@ def task_export_results(path: str, output_types: list[str]):
             export_csv(path)
             data["csv"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_index.csv", path_complete=True),
+                "size": size_to_units(
+                    get_file_size(f"{path}/_export/_index.csv", path_complete=True)
+                ),
                 "creation": get_current_time(),
             }
 
@@ -1005,8 +1034,10 @@ def task_export_results(path: str, output_types: list[str]):
             if success:
                 data["ner"] = {
                     "complete": True,
-                    "size": get_size(
-                        f"{path}/_export/_entities.json", path_complete=True
+                    "size": size_to_units(
+                        get_file_size(
+                            f"{path}/_export/_entities.json", path_complete=True
+                        )
                     ),
                     "creation": get_current_time(),
                 }
