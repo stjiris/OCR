@@ -56,18 +56,6 @@ celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKE
 load_invisible_font()
 
 
-def estimate_ocr_time(config: dict, n_pages: int):
-    engine_name = config["engine"].lower()
-    if engine_name == "tesserocr" or engine_name == "pytesseract":
-        # TODO: adjust estimate for pytesseract
-        if n_pages < 20:
-            return "<1min"
-        else:
-            return f"{math.ceil(0.0176 * n_pages + 0.2632)}min"
-    else:
-        return "?min"
-
-
 @celery.task(name="auto_segment")
 def task_auto_segment(path):
     return parse_images(path)
@@ -449,7 +437,7 @@ def task_file_ocr(
         }
         data["status"] = {
             "stage": "ocr",
-            "message": f"({estimate_ocr_time(config, get_doc_len(data_file))})",
+            "message": f"({ocr_engine.estimate_ocr_time(config, get_doc_len(data_file))})",
         }
         update_json_file(data_file, data)
 
@@ -817,7 +805,7 @@ def task_page_ocr(
         data["ocr"]["progress"] = len(files)
         data["status"] = {
             "stage": "ocr",
-            "message": f"({estimate_ocr_time(config, n_doc_pages - len(files))})",
+            "message": f"({ocr_engine.estimate_ocr_time(config, n_doc_pages - len(files))})",
         }
         update_json_file(data_file, data)
 
