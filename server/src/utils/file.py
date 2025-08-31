@@ -200,20 +200,27 @@ def get_file_layouts(path, is_private):
 
 
 def save_file_layouts(path, layouts):
-    data = get_data(f"{path}/_data.json")
+    data_file = f"{path}/_data.json"
+    data = get_data(data_file)
     if data["type"] != "file":
-        return FileNotFoundError
+        raise FileNotFoundError
 
     basename = get_file_basename(path)
     if not os.path.isdir(f"{path}/_layouts"):
         os.mkdir(f"{path}/_layouts")
 
-    for id, page in enumerate(layouts):
+    has_layout = False
+    for page_id, page in enumerate(layouts):
         layouts = page["boxes"]
-        filename = f"{path}/_layouts/{basename}_{id}.json"
+        if not has_layout and len(layouts) > 0:
+            has_layout = True
 
+        filename = f"{path}/_layouts/{basename}_{page_id}.json"
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(layouts, f, indent=2, ensure_ascii=False)
+
+    data["has_layout"] = has_layout
+    update_json_file(data_file, data)
 
 
 def generate_uuid(path):

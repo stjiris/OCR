@@ -7,6 +7,7 @@ import TableRow from '@mui/material/TableRow';
 
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import BorderAllIcon from '@mui/icons-material/BorderAll';
+import BorderClearIcon from '@mui/icons-material/BorderClear';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -173,6 +174,7 @@ class DocumentRow extends React.Component {
     render() {
         const info = this.state.info;
         const usingCustomConfig = info?.["config"] && info["config"] !== "default";
+        const hasLayoutBoxes = info?.["has_layout"];
         const status = info?.["status"];
         const buttonsDisabled = status.stage !== "waiting" && status.stage !== "post-ocr";
         const uploadIsStuck = info["upload_stuck"] === true;
@@ -225,7 +227,7 @@ class DocumentRow extends React.Component {
                                     + (usingCustomConfig
                                         ? " altColor"
                                         : "")}
-                                message="Configurar OCR"
+                                message={usingCustomConfig ? "Editar Configuração" : "Configurar OCR"}
                                 clickFunction={(e) => this.configureOCR(e, usingCustomConfig)}
                                 icon={usingCustomConfig ? <SettingsSuggestIcon/> : <SettingsIcon/>}
                             />
@@ -233,10 +235,14 @@ class DocumentRow extends React.Component {
                             <TooltipIcon
                                 key={"Layout " + this.props.name}
                                 disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
-                                className="actionButton"
-                                message="Criar Layout"
+                                className={"actionButton"
+                                    // highlight defined layout boxes with different color
+                                    + (hasLayoutBoxes
+                                        ? " altColor"
+                                        : "")}
+                                message={hasLayoutBoxes ? "Alterar Layout" : "Criar Layout"}
                                 clickFunction={(e) => this.createLayout(e)}
-                                icon={<BorderAllIcon/>}
+                                icon={hasLayoutBoxes ? <BorderAllIcon/> : <BorderClearIcon />}
                             />
 
                             <TooltipIcon
