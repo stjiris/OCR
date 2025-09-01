@@ -1,5 +1,6 @@
 import React from 'react';
 import axios from 'axios';
+import dayjs from 'dayjs';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -18,6 +19,7 @@ import NoteAddIcon from "@mui/icons-material/NoteAdd";
 
 import visuallyHidden from "@mui/utils/visuallyHidden";
 
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { v4 as uuidv4 } from 'uuid';
 
 import DocumentRow from "./DocumentRow";
@@ -33,6 +35,7 @@ import OcrPopup from "../../Form/Geral/OcrPopup";
 import DeletePopup from "../../Form/Geral/DeletePopup";
 import PrivateSpaceMenu from "../../Form/Geral/PrivateSpaceMenu";
 
+dayjs.extend(customParseFormat);
 
 const UPDATE_PERIOD_SECONDS = 15;
 const UPLOAD_UPDATE_SECONDS = 5;
@@ -723,6 +726,15 @@ class FileExplorer extends React.Component {
                     }
                 });
 
+            case "dateCreated":
+                return this.state.components.toSorted((a, b) => {
+                    // Format to parse must be ensured to be the same as server-side date format
+                    const dateA = dayjs(a.props.info?.["creation"], "DD/MM/YYYY HH:mm:ss");
+                    const dateB = dayjs(b.props.info?.["creation"], "DD/MM/YYYY HH:mm:ss");
+                    console.log(a.props.info?.["creation"], dateA, b.props.info?.["creation"], dateB);
+                    return dateA.isAfter(dateB) ? order : (-order);
+                });
+
             default:
                 return this.state.components;
         }
@@ -878,7 +890,23 @@ class FileExplorer extends React.Component {
                             }
 
                             <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticDateCreatedCell" : "dateCreatedCell")}>
-                                <b>Data de criação</b>
+                                <TableSortLabel
+                                    active={!this.props.current_file_name && this.state.orderBy === "dateCreated"}
+                                    direction={this.state.orderBy === "dateCreated" ? this.state.order : 'asc'}
+                                    onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("dateCreated")}}
+                                    sx={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        width: "fit-content",
+                                    }}
+                                >
+                                    <b>Data de criação</b>
+                                    {this.state.orderBy === "dateCreated" ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                            {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
+                                        </Box>
+                                    ) : null}
+                                </TableSortLabel>
                             </TableCell>
 
                             <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticDetailsCell" : "detailsCell")}>
