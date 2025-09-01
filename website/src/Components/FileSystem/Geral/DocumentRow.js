@@ -384,7 +384,7 @@ class DocumentRow extends React.Component {
                                         ? <TableCell colSpan={4} className="explorerCell stateCell infoCell" align='left'>
                                             <Box className="stateBox">
                                                 <span>{status.message}</span>
-                                                <CircularProgress sx={{ml: '1rem', mr: '1rem'}} size='1rem' />
+                                                <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
                                                 <span>{info["stored"]}%</span>
                                             </Box>
                                         </TableCell>
@@ -393,7 +393,7 @@ class DocumentRow extends React.Component {
                                         ? <TableCell colSpan={4} className="explorerCell stateCell infoCell" align='left'>
                                             <Box className="stateBox">
                                                 <span>{status.message}</span>
-                                                <CircularProgress sx={{ml: '1rem', mr: '1rem'}} size='1rem' />
+                                                <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
                                             </Box>
                                         </TableCell>
                                     : null
@@ -411,7 +411,8 @@ class DocumentRow extends React.Component {
                                 : status.stage === "ocr"
                                     ? <TableCell className="explorerCell stateCell infoCell" align='left'>
                                         <Box className="stateBox">
-                                            <CircularProgress sx={{ml: '1rem', mr: '1rem'}} size='1rem' />
+                                            <span>OCR</span>
+                                            <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
                                             <span>{info["ocr"]["progress"]}/{info["pages"]}</span>
                                             &nbsp;
                                             &nbsp;
@@ -427,7 +428,7 @@ class DocumentRow extends React.Component {
                                     ? <TableCell className="explorerCell stateCell infoCell" align='left'>
                                         <Box className="stateBox">
                                             <span>{status.message}</span>
-                                            <CircularProgress sx={{ml: '1rem', mr: '1rem'}} size='1rem' />
+                                            <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
                                         </Box>
                                     </TableCell>
 

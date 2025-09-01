@@ -883,7 +883,7 @@ def request_ocr():
                 "ocr": {"progress": 0},
                 "status": {
                     "stage": "ocr",
-                    "message": "A começar OCR...",
+                    "message": "A começar...",
                 },
                 "pdf": {"complete": False},
                 "pdf_indexed": {"complete": False},
