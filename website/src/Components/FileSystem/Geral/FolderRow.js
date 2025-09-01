@@ -4,16 +4,17 @@ import Box from '@mui/material/Box';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 
-import BorderAllIcon from "@mui/icons-material/BorderAll";
 import FolderOpenRoundedIcon from '@mui/icons-material/FolderOpenRounded';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import EditNoteIcon from "@mui/icons-material/EditNote";
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
-import IconDatabaseImport from "../../Icons/Geral/DatabaseInIcon";
 import loadComponent from '../../../utils/loadComponents';
-const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import IconButton from "@mui/material/IconButton";
+import {Tooltip} from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
 
 class FolderRow extends React.Component {
@@ -21,11 +22,59 @@ class FolderRow extends React.Component {
         super(props);
         this.state = {
             info: props.info,
+            contextMenu: null,
         }
     }
 
     updateInfo(info) {
         this.setState({info: info});
+    }
+
+    handleOptionsClick(event) {
+        this.setState({
+                contextMenu:
+                    this.state.contextMenu === null
+                        ? {
+                            anchorEl: event.currentTarget
+                        }
+                        : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
+                          // Other native context menus might behave different.
+                          // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
+                        null
+            },
+        );
+    }
+
+    handleContextMenu(event) {
+        event.preventDefault();
+
+        this.setState({
+                contextMenu:
+                    this.state.contextMenu === null
+                        ? {
+                            mouseX: event.clientX + 2,
+                            mouseY: event.clientY - 6,
+                        }
+                        : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
+                          // Other native context menus might behave different.
+                          // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
+                        null
+            },
+        );
+
+        // Prevent text selection lost after opening the context menu on Safari and Firefox
+        const selection = document.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+
+            setTimeout(() => {
+                selection.addRange(range);
+            });
+        }
+    };
+
+    handleCloseContextMenu() {
+        this.setState({contextMenu: null});
     }
 
     folderClicked() {
@@ -53,12 +102,88 @@ class FolderRow extends React.Component {
         const buttonsDisabled = this.state.info["contents"] === 0;
         const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
         return (
-            <TableRow
-                className="explorerRow"
+        <>
+            <Menu
+                open={this.state.contextMenu !== null}
+                onClose={() => this.handleCloseContextMenu()}
+                anchorReference={this.state.contextMenu?.anchorEl ? "anchorEl" : "anchorPosition"}
+                anchorEl={this.state.contextMenu?.anchorEl}
+                anchorPosition={
+                    this.state.contextMenu?.mouseY
+                        ? { top: this.state.contextMenu.mouseY, left: this.state.contextMenu.mouseX }
+                        : undefined
+                }
             >
+                <Tooltip
+                    placement="right"
+                    title="A pasta está vazia"
+                    disableFocusListener={!buttonsDisabled}
+                    disableHoverListener={!buttonsDisabled}
+                    disableTouchListener={!buttonsDisabled}
+                ><span>
+                    <MenuItem
+                        disabled={buttonsDisabled}
+                        onClick={(e) => this.performOCR(e, usingCustomConfig)}
+                    >
+                        <IconButton className="actionButton">
+                            <OcrIcon />
+                        </IconButton>
+                        &nbsp;Fazer OCR
+                    </MenuItem>
+                </span></Tooltip>
+
+                <Tooltip
+                    placement="right"
+                    title="A pasta está vazia"
+                    disableFocusListener={!buttonsDisabled}
+                    disableHoverListener={!buttonsDisabled}
+                    disableTouchListener={!buttonsDisabled}
+                ><span>
+                    <MenuItem
+                        disabled={buttonsDisabled}
+                        onClick={(e) => this.configureOCR(e, usingCustomConfig)}
+                    >
+                        <IconButton
+                            className={"actionButton"
+                                // highlight custom configs with different color
+                                + (usingCustomConfig
+                                    ? " altColor"
+                                    : "")}
+                        >
+                            {usingCustomConfig ? <SettingsSuggestIcon /> : <SettingsIcon />}
+                        </IconButton>
+                        &nbsp;{usingCustomConfig ? "Editar Configuração" : "Configurar OCR"}
+                    </MenuItem>
+                </span></Tooltip>
+
+                <MenuItem
+                    onClick={(e) => this.delete(e)}
+                >
+                    <IconButton className="negActionButton">
+                        <DeleteForeverIcon />
+                    </IconButton>
+                    &nbsp;Apagar
+                </MenuItem>
+            </Menu>
+
+            <TableRow
+                className={"explorerRow" + (this.state.contextMenu ? " targeted" : "")}
+                onContextMenu={(e) => this.handleContextMenu(e)}
+            >
+                <TableCell className="optionsCell">
+                    <IconButton
+                        aria-label={"Opções para " + this.props.name}
+                        onClick={(e) => this.handleOptionsClick(e)}
+                    >
+                        <MoreVertIcon />
+                    </IconButton>
+                </TableCell>
+
                 <TableCell
                     className="explorerCell nameCell"
                     onClick={() => this.folderClicked()}
+                    sx={{ cursor: "pointer" }}
+                    align="left"
                 >
                     <Box sx={{
                         display: 'flex',
@@ -70,74 +195,17 @@ class FolderRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell actionsCell" align='center'>
-                    <Box className="actionsCell-inner">
-                        <TooltipIcon
-                            key={"OCR folder " + this.props.name}
-                            disabled={buttonsDisabled}
-                            className="actionButton"
-                            message="Fazer OCR"
-                            clickFunction={(e) => this.performOCR(e, usingCustomConfig)}
-                            icon={<OcrIcon/>}
-                        />
-
-                        <TooltipIcon
-                            key={"Config folder " + this.props.name}
-                            disabled={buttonsDisabled}
-                            className={"actionButton"
-                                // highlight custom configs with different color
-                                + (usingCustomConfig
-                                    ? " altColor"
-                                    : "")}
-                            message="Configurar OCR"
-                            clickFunction={(e) => this.configureOCR(e, usingCustomConfig)}
-                            icon={usingCustomConfig ? <SettingsSuggestIcon/> : <SettingsIcon/>}
-                        />
-
-                        <TooltipIcon
-                            key={"Layout " + this.props.name}
-                            className="actionButton"
-                            sx={{visibility: "hidden"}}
-                            disabled
-                            icon={<BorderAllIcon />}
-                        />
-
-                        <TooltipIcon
-                            key={"Edit " + this.props.name}
-                            className="actionButton"
-                            sx={{visibility: "hidden"}}
-                            disabled
-                            icon={<EditNoteIcon/>}
-                        />
-
-                        <TooltipIcon
-                            key={"Index " + this.props.name}
-                            className="actionButton"
-                            sx={{visibility: "hidden"}}
-                            disabled
-                            icon={<IconDatabaseImport/>}
-                        />
-
-                        <TooltipIcon
-                            className="negActionButton"
-                            message="Apagar"
-                            clickFunction={(e) => this.delete(e)}
-                            icon={<DeleteForeverIcon/>}
-                        />
-                    </Box>
-                </TableCell>
-
                 <TableCell className="explorerCell stateCell" align='center'>
                     <b>—</b>
                 </TableCell>
 
-                <TableCell className="explorerCell dateCreatedCell" align='center'>
+                <TableCell className="explorerCell dateCreatedCell" align='left'>
                     <span>
                         {this.state.info["creation"]}
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell detailsCell" align='center'>
+                <TableCell className="explorerCell detailsCell" align='left'>
                     <span>
                         {this.state.info["contents"]} ficheiro(s) ou sub-pasta(s)
                     </span>
@@ -145,7 +213,7 @@ class FolderRow extends React.Component {
 
                 <TableCell className="explorerCell sizeCell" align='center'>—</TableCell>
             </TableRow>
-        )
+        </>)
     }
 }
 

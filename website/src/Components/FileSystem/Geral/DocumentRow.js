@@ -9,14 +9,14 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import BorderAllIcon from '@mui/icons-material/BorderAll';
 import BorderClearIcon from '@mui/icons-material/BorderClear';
 import EditNoteIcon from '@mui/icons-material/EditNote';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 import StaticFileRow from "./StaticFileRow";
 import FileIcon from "../../CustomIcons/Geral/FileIcon";
-import TooltipIcon from "../../TooltipIcon/Geral/TooltipIcon";
 import OcrIcon from "../../CustomIcons/Geral/OcrIcon";
 import IconDatabaseOff from "../../Icons/Geral/DatabaseOffIcon";
 import IconDatabaseImport from "../../Icons/Geral/DatabaseInIcon";
@@ -26,6 +26,8 @@ import CsvIcon from "../../CustomIcons/Geral/CsvIcon";
 import JsonIcon from "../../CustomIcons/Geral/JsonIcon";
 import AltoIcon from "../../CustomIcons/Geral/AltoIcon";
 import ZipIcon from "../../CustomIcons/Geral/ZipIcon";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 
 const loadingStages = new Set(["uploading", "preparing"]);
 
@@ -35,6 +37,7 @@ class DocumentRow extends React.Component {
         this.state = {
             info: props.info,
             expanded: false,
+            contextMenu: null,
         }
         this.getOriginalFile = this.getOriginalFile.bind(this);
         this.getTxt = this.getTxt.bind(this);
@@ -64,6 +67,53 @@ class DocumentRow extends React.Component {
         }
     }
     */
+
+    handleOptionsClick(event) {
+        this.setState({
+                contextMenu:
+                    this.state.contextMenu === null
+                        ? {
+                            anchorEl: event.currentTarget
+                        }
+                        : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
+                          // Other native context menus might behave different.
+                          // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
+                        null
+            },
+        );
+    }
+
+    handleContextMenu(event) {
+        event.preventDefault();
+
+        this.setState({
+                contextMenu:
+                    this.state.contextMenu === null
+                        ? {
+                            mouseX: event.clientX + 2,
+                            mouseY: event.clientY - 6,
+                        }
+                        : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
+                          // Other native context menus might behave different.
+                          // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
+                        null
+            },
+        );
+
+        // Prevent text selection lost after opening the context menu on Safari and Firefox
+        const selection = document.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+
+            setTimeout(() => {
+                selection.addRange(range);
+            });
+        }
+    };
+
+    handleCloseContextMenu() {
+        this.setState({contextMenu: null});
+    }
 
     getOriginalFile() {
         this.props.getOriginalFile(this.props.name);
@@ -180,15 +230,126 @@ class DocumentRow extends React.Component {
         const uploadIsStuck = info["upload_stuck"] === true;
         return (
             <>
-                <TableRow
-                    className="explorerRow"
+                <Menu
+                    open={this.state.contextMenu !== null}
+                    onClose={() => this.handleCloseContextMenu()}
+                    anchorReference={this.state.contextMenu?.anchorEl ? "anchorEl" : "anchorPosition"}
+                    anchorEl={this.state.contextMenu?.anchorEl}
+                    anchorPosition={
+                        this.state.contextMenu?.mouseY
+                            ? { top: this.state.contextMenu.mouseY, left: this.state.contextMenu.mouseX }
+                            : undefined
+                    }
                 >
+                    <MenuItem
+                        disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
+                        onClick={(e) => this.performOCR(e, usingCustomConfig)}
+                    >
+                        <IconButton className="actionButton">
+                            <OcrIcon />
+                        </IconButton>
+                        &nbsp;Fazer OCR
+                    </MenuItem>
+
+                    <MenuItem
+                        disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
+                        onClick={(e) => this.configureOCR(e, usingCustomConfig)}
+                    >
+                        <IconButton
+                            className={"actionButton"
+                                // highlight custom configs with different color
+                                + (usingCustomConfig
+                                    ? " altColor"
+                                    : "")}
+                            >
+                            {usingCustomConfig ? <SettingsSuggestIcon /> : <SettingsIcon />}
+                        </IconButton>
+                        &nbsp;{usingCustomConfig ? "Editar Configuração" : "Configurar OCR"}
+                    </MenuItem>
+
+                    <MenuItem
+                        disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
+                        onClick={(e) => this.createLayout(e)}
+                    >
+                        <IconButton
+                            className={"actionButton"
+                                // highlight defined layout boxes with different color
+                                + (hasLayoutBoxes
+                                    ? " altColor"
+                                    : "")}
+                            >
+                            {hasLayoutBoxes ? <BorderAllIcon /> : <BorderClearIcon />}
+                        </IconButton>
+                        &nbsp;{hasLayoutBoxes ? "Alterar Layout" : "Criar Layout"}
+                    </MenuItem>
+
+                    <MenuItem
+                        disabled={status.stage !== "post-ocr"}
+                        onClick={(e) => this.editFile(e)}
+                    >
+                        <IconButton className="actionButton">
+                            <EditNoteIcon />
+                        </IconButton>
+                        &nbsp;Editar Resultados
+                    </MenuItem>
+
+                    {
+                        this.props._private
+                            ? null
+                            : (info?.["indexed"]
+                                ? <MenuItem
+                                    disabled={status.stage !== "post-ocr"}
+                                    onClick={(e) => this.removeIndex(e)}
+                                >
+                                    <IconButton className="negActionButton">
+                                        <IconDatabaseOff />
+                                    </IconButton>
+                                    &nbsp;Desindexar
+                                </MenuItem>
+
+                                : <MenuItem
+                                    disabled={status.stage !== "post-ocr"}
+                                    onClick={(e) => this.indexFile(e)}
+                                >
+                                    <IconButton className="actionButton">
+                                        <IconDatabaseImport />
+                                    </IconButton>
+                                    &nbsp;Indexar
+                                </MenuItem>)
+                    }
+
+                    <MenuItem
+                        disabled={buttonsDisabled && status.stage !== "error"}
+                        onClick={(e) => this.delete(e)}
+                    >
+                        <IconButton className="negActionButton">
+                            <DeleteForeverIcon />
+                        </IconButton>
+                        &nbsp;Apagar
+                    </MenuItem>
+                </Menu>
+
+                <TableRow
+                    className={"explorerRow" + (this.state.contextMenu ? " targeted" : "")}
+                    onContextMenu={(e) => this.handleContextMenu(e)}
+                    sx={{ cursor: loadingStages.has(status.stage) ? "wait" : "context-menu" }}
+                >
+                    <TableCell className="optionsCell">
+                        <IconButton
+                            aria-label={"Opções para " + this.props.name}
+                            onClick={(e) => this.handleOptionsClick(e)}
+                        >
+                            <MoreVertIcon />
+                        </IconButton>
+                    </TableCell>
+
                     <TableCell
                         className="explorerCell nameCell"
                         onClick={() => {
                             if (!loadingStages.has(status.stage))
                                 this.setState({expanded: !this.state.expanded})
                         }}
+                        sx={{ cursor: loadingStages.has(status.stage) ? "wait" : "pointer" }}
                     >
                         <Box sx={{
                             display: 'flex',
@@ -201,90 +362,10 @@ class DocumentRow extends React.Component {
                                 loading={loadingStages.has(status.stage)}
                                 disableRipple
                             >
-                                {this.state.expanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                                {this.state.expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                             </IconButton>
                             <FileIcon extension={info["extension"]}/>
                             <span>{this.props.name}</span>
-                        </Box>
-                    </TableCell>
-
-                    <TableCell className="explorerCell actionsCell" align='center'>
-                        <Box className="actionsCell-inner">
-                            <TooltipIcon
-                                key={"OCR " + this.props.name}
-                                disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
-                                className="actionButton"
-                                message="Fazer OCR"
-                                clickFunction={(e) => this.performOCR(e, usingCustomConfig)}
-                                icon={<OcrIcon/>}
-                            />
-
-                            <TooltipIcon
-                                key={"Config " + this.props.name}
-                                disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
-                                className={"actionButton"
-                                    // highlight custom configs with different color
-                                    + (usingCustomConfig
-                                        ? " altColor"
-                                        : "")}
-                                message={usingCustomConfig ? "Editar Configuração" : "Configurar OCR"}
-                                clickFunction={(e) => this.configureOCR(e, usingCustomConfig)}
-                                icon={usingCustomConfig ? <SettingsSuggestIcon/> : <SettingsIcon/>}
-                            />
-
-                            <TooltipIcon
-                                key={"Layout " + this.props.name}
-                                disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
-                                className={"actionButton"
-                                    // highlight defined layout boxes with different color
-                                    + (hasLayoutBoxes
-                                        ? " altColor"
-                                        : "")}
-                                message={hasLayoutBoxes ? "Alterar Layout" : "Criar Layout"}
-                                clickFunction={(e) => this.createLayout(e)}
-                                icon={hasLayoutBoxes ? <BorderAllIcon/> : <BorderClearIcon />}
-                            />
-
-                            <TooltipIcon
-                                key={"Edit " + this.props.name}
-                                className="actionButton"
-                                message="Editar Resultados"
-                                disabled={status.stage !== "post-ocr"}
-                                clickFunction={(e) => this.editFile(e)}
-                                icon={<EditNoteIcon/>}
-                            />
-
-                            {
-                                this.props._private
-                                    ? null
-                                    : (info?.["indexed"]
-                                        ? <TooltipIcon
-                                            key={"Remove " + this.props.name}
-                                            className="negActionButton"
-                                            message="Desindexar"
-                                            disabled={status.stage !== "post-ocr"}
-                                            clickFunction={(e) => this.removeIndex(e)}
-                                            icon={<IconDatabaseOff/>}
-                                        />
-
-                                        : <TooltipIcon
-                                            key={"Index " + this.props.name}
-                                            className="actionButton"
-                                            message="Indexar"
-                                            disabled={status.stage !== "post-ocr"}
-                                            clickFunction={(e) => this.indexFile(e)}
-                                            icon={<IconDatabaseImport/>}
-                                        />)
-                            }
-
-                            <TooltipIcon
-                                disabled={buttonsDisabled && status.stage !== "error"}
-                                key={"Delete " + this.props.name}
-                                className="negActionButton"
-                                message="Apagar"
-                                clickFunction={(e) => this.delete(e)}
-                                icon={<DeleteForeverIcon/>}
-                            />
                         </Box>
                     </TableCell>
 
@@ -293,28 +374,26 @@ class DocumentRow extends React.Component {
                         ? <>
                             {
                                 uploadIsStuck
-                                    ? <TableCell colSpan={4} className="explorerCell errorCell" align='center'>
-                                        <Box>
-                                            <span>Erro ao carregar ficheiro</span>
+                                    ? <TableCell colSpan={4} className="explorerCell stateCell errorCell" align='left'>
+                                        <Box className="stateBox">
+                                            <span>Erro ao carregar documento</span>
                                         </Box>
                                     </TableCell>
 
                                     : status.stage === "uploading"
-                                        ? <TableCell colSpan={4} className="explorerCell infoCell" align='center'>
-                                            <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                                        ? <TableCell colSpan={4} className="explorerCell stateCell infoCell" align='left'>
+                                            <Box className="stateBox">
                                                 <span>{status.message}</span>
-                                                <Box sx={{ paddingTop: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent:'center' }}>
-                                                    <span>{info["stored"]}%</span>
-                                                    <CircularProgress sx={{ml: '1rem'}} size='0.8rem' />
-                                                </Box>
+                                                <CircularProgress sx={{ml: '1rem', mr: '1rem'}} size='1rem' />
+                                                <span>{info["stored"]}%</span>
                                             </Box>
                                         </TableCell>
 
                                     : status.stage === "preparing"
-                                        ? <TableCell colSpan={4} className="explorerCell infoCell" align='center'>
-                                            <Box>
-                                                <span>A preparar o documento</span>
-                                                <Box sx={{ paddingTop: 1, overflow: 'hidden' }}><CircularProgress size='1rem' /></Box>
+                                        ? <TableCell colSpan={4} className="explorerCell stateCell infoCell" align='left'>
+                                            <Box className="stateBox">
+                                                <span>{status.message}</span>
+                                                <CircularProgress sx={{ml: '1rem', mr: '1rem'}} size='1rem' />
                                             </Box>
                                         </TableCell>
                                     : null
@@ -323,42 +402,44 @@ class DocumentRow extends React.Component {
                         : <>
                             {
                                 status.stage === "waiting"
-                                    ? <TableCell className="explorerCell stateCell waitingCell" align='center'>
+                                    ? <TableCell className="explorerCell stateCell waitingCell" align='left'>
                                         <Box className="stateBox">
                                             <span>Aguarda...</span>
                                         </Box>
                                     </TableCell>
 
                                 : status.stage === "ocr"
-                                    ? <TableCell className="explorerCell stateCell infoCell" align='center'>
+                                    ? <TableCell className="explorerCell stateCell infoCell" align='left'>
                                         <Box className="stateBox">
+                                            <CircularProgress sx={{ml: '1rem', mr: '1rem'}} size='1rem' />
+                                            <span>{info["ocr"]["progress"]}/{info["pages"]}</span>
+                                            &nbsp;
+                                            &nbsp;
                                             <span>
-                                                {info["ocr"]["progress"]}/{info["pages"]}
-                                                <CircularProgress sx={{ml: '1rem'}} size='1rem' />
-                                                <br />{status.message}
+                                                { /* message is expected to be time estimate */
+                                                    status.message
+                                                }
                                             </span>
                                         </Box>
                                     </TableCell>
 
                                 : status.stage === "exporting"
-                                    ? <TableCell className="explorerCell stateCell infoCell" align='center'>
+                                    ? <TableCell className="explorerCell stateCell infoCell" align='left'>
                                         <Box className="stateBox">
-                                            <span style={{textAlign: "left"}}>
-                                                {status.message}
-                                                <CircularProgress sx={{ml: '1rem'}} size='1rem' />
-                                            </span>
+                                            <span>{status.message}</span>
+                                            <CircularProgress sx={{ml: '1rem', mr: '1rem'}} size='1rem' />
                                         </Box>
                                     </TableCell>
 
                                 : status.stage === "post-ocr"
-                                    ? <TableCell className="explorerCell stateCell successCell" align='center'>
+                                    ? <TableCell className="explorerCell stateCell successCell" align='left'>
                                         <Box className="stateBox">
                                             <span>OCR concluído</span>
                                         </Box>
                                     </TableCell>
 
                                 : status.stage === "error"
-                                    ? <TableCell className="explorerCell stateCell errorCell" align='center'>
+                                    ? <TableCell className="explorerCell stateCell errorCell" align='left'>
                                         <Box className="stateBox">
                                             <span>{status.message}</span>
                                         </Box>
@@ -367,9 +448,13 @@ class DocumentRow extends React.Component {
                                 : null
                             }
 
-                            <TableCell className="explorerCell dateCreatedCell" align='center'><span>{info["creation"]}</span></TableCell>
-                            <TableCell className="explorerCell detailsCell" align='center'><span>{info["pages"]} página(s)</span></TableCell>
-                            <TableCell className="explorerCell sizeCell" align='center'><span>{info["total_size"]}</span></TableCell>
+                            <TableCell className="explorerCell dateCreatedCell" align='left'><span>{info["creation"]}</span></TableCell>
+                            <TableCell className="explorerCell detailsCell" align='left'><span>{info["pages"]} página(s)</span></TableCell>
+                            <TableCell className="explorerCell sizeCell" align='left'>
+                                <span style={{fontSize: "0.92rem"}}>
+                                    {info["total_size"]}
+                                </span>
+                            </TableCell>
                         </>
                     }
                 </TableRow>

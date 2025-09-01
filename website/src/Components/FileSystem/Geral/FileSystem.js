@@ -798,6 +798,8 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table" sx={{tableLayout: "fixed", border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow sx={{backgroundColor: "#f5f5f5"}}>
+                            <TableCell scope="column" className="optionsCell" />
+
                             <TableCell
                                 key="name"
                                 scope="column"
@@ -852,11 +854,8 @@ class FileExplorer extends React.Component {
                                     }
                                 </Box>
                             </TableCell>
-                            <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticActionsCell" : "actionsCell")}>
-                                <span><b>Ações</b></span>
-                            </TableCell>
                             { !this.props.current_file_name
-                                ? <TableCell scope="column" className="headerCell explorerCell stateCell">
+                                ? <TableCell scope="column" className="headerCell explorerCell stateCell" align="left">
                                     <span><b>Estado</b></span>
                                 </TableCell>
                                 : null
@@ -874,9 +873,12 @@ class FileExplorer extends React.Component {
                     </TableHead>
                     <TableBody>
                         {this.state.components.length === 0
-                            ? <Typography variant="body1" sx={{marginTop: "1rem", marginBottom: "1rem", marginLeft: "1rem"}}>
-                                A pasta está vazia. Adicione um documento ou sub-pasta.
-                            </Typography>
+                            ? <>
+                                <TableCell scope="column" className="optionsCell" />
+                                <Typography variant="body1" sx={{marginTop: "1rem", marginBottom: "1rem", marginLeft: "1rem"}}>
+                                    A pasta está vazia. Adicione um documento ou sub-pasta.
+                                </Typography>
+                            </>
                             : this.getSortedRows()
                         }
                     </TableBody>

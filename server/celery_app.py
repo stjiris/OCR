@@ -250,6 +250,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
             {
                 "status": {
                     "stage": "preparing",
+                    "message": "A preparar o documento",
                 }
             },
         )

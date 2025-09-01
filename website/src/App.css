@@ -61,15 +61,15 @@ body {
     color: black;
 }
 
-.actionButton {
+.MuiButtonBase-root.actionButton {
     color: #1976d2;
 }
 
-.actionButton.altColor {
+.MuiButtonBase-root.actionButton.altColor {
     color: #19a942;
 }
 
-.negActionButton {
+.MuiButtonBase-root.negActionButton {
     color: #f00;
 }
 
@@ -192,13 +192,16 @@ cannot be styled with props, interferes with functioning of Autocomplete
     background-color: #d7d7d7 !important;
 }
 
+.MuiTableRow-root.explorerRow.targeted {
+    background-color: #d7d7d7 !important;
+}
+
 .MuiTableRow-root.staticFileRow {
     background-color: #C4DCF4FF;
     height: 3rem;
 }
 
 .MuiTableCell-root.MuiTableCell-head.headerCell {
-    text-align: left;
     height: 2rem;
     padding: 16px;
 }
@@ -233,22 +236,28 @@ cannot be styled with props, interferes with functioning of Autocomplete
 .stateCell .stateBox {
     overflow: hidden;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: space-evenly;
+    justify-content: left;
+}
+
+.MuiTableCell-root.optionsCell {
+    padding: 0;
+    width: 1%;
 }
 
 .MuiTableCell-root.nameCell {
+    border-left: 0;
     width: 34%;
     text-align: left;
 }
 
 .MuiTableCell-root.nameCell:hover {
-    cursor: pointer;
     font-weight: bold;
 }
 
 .MuiTableCell-root.staticNameCell {
+    border-left: 0;
     width: 34%;
     text-align: left;
     padding-left: 48px;
