@@ -1,4 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+@font-face {
+    font-family: "Cinzel";
+    src: url("fonts/Cinzel-VariableFont_wght.ttf")
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("fonts/NotoSans-VariableFont_wdth,wght.ttf")
+}
+
+@font-face {
+    font-family: "Roboto";
+    src: url("fonts/Roboto-VariableFont_wdth,wght.ttf")
+}
+
+@font-face {
+    font-family: "Roboto Mono";
+    src: url("fonts/RobotoMono-VariableFont_wght.ttf")
+}
 
 body {
   font-family: 'Noto Sans', 'Arial', sans-serif;
@@ -286,11 +304,13 @@ cannot be styled with props, interferes with functioning of Autocomplete
 .MuiTableCell-root.sizeCell {
     width: 8%;
     text-align: right;
+    font-family: "Roboto Mono", monospace;
 }
 
 .MuiTableCell-root.staticSizeCell {
     width: 8%;
     text-align: right;
+    font-family: "Roboto Mono", monospace;
 }
 
 /*
