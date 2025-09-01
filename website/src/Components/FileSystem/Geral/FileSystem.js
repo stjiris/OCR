@@ -708,6 +708,21 @@ class FileExplorer extends React.Component {
                         return order * (a.key).localeCompare(b.key);
                     }
                 });
+
+            case "details":
+                return this.state.components.toSorted((a, b) => {
+                    if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "file") {
+                        return -1;  // list folders first
+                    } else if (a.props.info?.["type"] === "file" && b.props.info?.["type"] === "folder") {
+                        return 1;  // list folders first
+                    } else {
+                        // For now, assumed that details are just number of pages or contents
+                        const detailsA = a.props.info?.["type"] === "folder" ? a.props.info?.["contents"] : a.props.info?.["pages"];
+                        const detailsB = b.props.info?.["type"] === "folder" ? b.props.info?.["contents"] : b.props.info?.["pages"];
+                        return order * (detailsA - detailsB);
+                    }
+                });
+
             default:
                 return this.state.components;
         }
@@ -809,7 +824,7 @@ class FileExplorer extends React.Component {
                                 <Box sx={{display: "flex"}}>
                                     <TableSortLabel
                                         active={!this.props.current_file_name && this.state.orderBy === "name"}
-                                        direction={this.state.orderBy === "name" ? this.state.order : false}
+                                        direction={this.state.orderBy === "name" ? this.state.order : 'asc'}
                                         onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("name")}}
                                         sx={{
                                             display: "flex",
@@ -854,18 +869,38 @@ class FileExplorer extends React.Component {
                                     }
                                 </Box>
                             </TableCell>
+
                             { !this.props.current_file_name
                                 ? <TableCell scope="column" className="headerCell explorerCell stateCell" align="left">
                                     <span><b>Estado</b></span>
                                 </TableCell>
                                 : null
                             }
+
                             <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticDateCreatedCell" : "dateCreatedCell")}>
                                 <b>Data de criação</b>
                             </TableCell>
+
                             <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticDetailsCell" : "detailsCell")}>
-                                <span><b>Detalhes</b></span>
+                                <TableSortLabel
+                                    active={!this.props.current_file_name && this.state.orderBy === "details"}
+                                    direction={this.state.orderBy === "details" ? this.state.order : 'asc'}
+                                    onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("details")}}
+                                    sx={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        width: "fit-content",
+                                    }}
+                                >
+                                    <span><b>Detalhes</b></span>
+                                    {this.state.orderBy === "details" ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                            {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
+                                        </Box>
+                                    ) : null}
+                                </TableSortLabel>
                             </TableCell>
+
                             <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticSizeCell" : "sizeCell")}>
                                 <span><b>Tamanho</b></span>
                             </TableCell>
