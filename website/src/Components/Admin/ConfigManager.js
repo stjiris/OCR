@@ -94,12 +94,12 @@ const ConfigManager = (props) => {
        })
            .then(({ data }) => {
                setConfigName(name);
-               setLang([...data.lang]);
-               setEngine(data.engine);
-               setEngineMode(Number(data.engineMode));
-               setSegmentMode(Number(data.segmentMode));
-               setThresholdMethod(Number(data.thresholdMethod));
-               setOutputs([...data.outputs]);
+               setLang(data.lang ?? [...data.lang]);
+               setEngine(data.engine ?? data.engine);
+               setEngineMode(data.engineMode ?? Number(data.engineMode));
+               setSegmentMode(data.segmentMode ?? Number(data.segmentMode));
+               setThresholdMethod(data.thresholdMethod ?? Number(data.thresholdMethod));
+               setOutputs(data.outputs ?? [...data.outputs]);
                setDpiVal(data.dpiVal ?? null);
                setOtherParams(data.otherParams ?? null);
            });
@@ -241,22 +241,42 @@ const ConfigManager = (props) => {
     }
 
     function changeEngine(value) {
-        setEngine(value);
+        if (value === undefined) return;
+        if (value === engine) {
+            setEngine("");  // second click on engine, unset choice
+        } else {
+            setEngine(value);  // click on engine, set choice
+        }
         setUncommittedChanges(true);
     }
 
     function changeEngineMode(value) {
-        setEngineMode(Number(value));
+        if (value === undefined) return;
+        if (Number(value) === engineMode) {
+            setEngineMode(-1);  // second click on engine mode, unset choice
+        } else {
+            setEngineMode(Number(value));  // click on engine mode, set choice
+        }
         setUncommittedChanges(true);
     }
 
     function changeSegmentationMode(value) {
-        setSegmentMode(Number(value));
+        if (value === undefined) return;
+        if (Number(value) === segmentMode) {
+            setSegmentMode(-1);  // second click on segment mode, unset choice
+        } else {
+            setSegmentMode(Number(value));  // click on segment mode, set choice
+        }
         setUncommittedChanges(true);
     }
 
     function changeThresholdingMethod(value) {
-        setThresholdMethod(Number(value));
+        if (value === undefined) return;
+        if (Number(value) === thresholdMethod) {
+            setThresholdMethod(-1);  // second click on threshold mode, unset choice
+        } else {
+            setThresholdMethod(Number(value));  // click on threshold mode, set choice
+        }
         setUncommittedChanges(true);
     }
 
@@ -266,13 +286,24 @@ const ConfigManager = (props) => {
     }
 
     function getConfig() {
-        const config = {
-            engine: engine,
-            lang: lang,
-            outputs: outputs,
-            engineMode: engineMode,
-            segmentMode: segmentMode,
-            thresholdMethod: thresholdMethod,
+        const config = {};
+        if (engine !== "") {
+            config.engine = engine;
+        }
+        if (lang != _emptylist) {
+            config.lang = lang;
+        }
+        if (outputs != _emptylist) {
+            config.outputs = outputs;
+        }
+        if (engineMode !== -1) {
+            config.engineMode = engineMode;
+        }
+        if (segmentMode !== -1) {
+            config.segmentMode = segmentMode;
+        }
+        if (thresholdMethod !== -1) {
+            config.thresholdMethod = thresholdMethod;
         }
         if (dpiVal !== null && dpiVal !== "") {
             config.dpi = dpiVal;
@@ -331,12 +362,12 @@ const ConfigManager = (props) => {
     }
 
     const validConfigName = configName !== null && configName !== "";
-    const validLang = lang.length !== 0 && lang.every(chosenValue => langOptions.some(option => option.value === chosenValue));
-    const validOutputs = outputs.length !== 0 && outputs.every(chosenValue => outputOptions.some(option => option.value === chosenValue));
-    const validEngine = engineOptions.some(option => option.value === engine);
-    const validEngineMode = engineModeOptions.some(option => option.value === engineMode);
-    const validSegmentMode = segmentModeOptions.some(option => option.value === segmentMode);
-    const validThresholdMethod = thresholdMethodOptions.some(option => option.value === thresholdMethod)
+    const validLang = lang.length === 0 || lang.every(chosenValue => langOptions.some(option => option.value === chosenValue));
+    const validOutputs = outputs.length === 0 || outputs.every(chosenValue => outputOptions.some(option => option.value === chosenValue));
+    const validEngine = engine === "" || engineOptions.some(option => option.value === engine);
+    const validEngineMode = engineMode === -1 || engineModeOptions.some(option => option.value === engineMode);
+    const validSegmentMode = segmentMode === -1 || segmentModeOptions.some(option => option.value === segmentMode);
+    const validThresholdMethod = thresholdMethod === -1 || thresholdMethodOptions.some(option => option.value === thresholdMethod)
     const validDpiVal = !(
         isNaN(dpiVal)
         || (dpiVal !== null && dpiVal !== "" && !(/^[1-9][0-9]*$/.test(dpiVal)))
@@ -511,10 +542,9 @@ const ConfigManager = (props) => {
                                   options={langOptions}
                                   checked={lang}
                                   onChangeCallback={(checked) => setLangList(checked)}
-                                  required
                                   showOrder
                                   helperText="Para melhores resultados, selecione por ordem de relevância"
-                                  errorText="Deve selecionar pelo menos uma língua"/>
+                    />
                 </Box>
 
                 <Box sx={{
@@ -537,7 +567,6 @@ const ConfigManager = (props) => {
                     />
 
                     <FormControl
-                        required
                         error={!validEngine}
                         className="simpleDropdown borderTop"
                     >
@@ -545,17 +574,21 @@ const ConfigManager = (props) => {
                         <RadioGroup
                             aria-labelledby="label-ocr-engine-select"
                             value={engine}
-                            onChange={(e) => changeEngine(e.target.value)}>
+                            onClick={(e) => changeEngine(e.target.value)}
+                        >
                             {
                                 engineOptions.map((option) =>
-                                    <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
+                                    <FormControlLabel
+                                        value={option.value}
+                                        control={<Radio disableRipple />}
+                                        label={option.description}
+                                    />
                                 )
                             }
                         </RadioGroup>
                     </FormControl>
 
                     <FormControl
-                        required
                         error={!validEngineMode}
                         className="simpleDropdown borderTop"
                     >
@@ -563,7 +596,7 @@ const ConfigManager = (props) => {
                         <RadioGroup
                             aria-labelledby="label-engine-type-select"
                             value={engineMode}
-                            onChange={(e) => changeEngineMode(e.target.value)}>
+                            onClick={(e) => changeEngineMode(e.target.value)}>
                             {
                                 engineModeOptions.map((option) =>
                                     <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
@@ -573,7 +606,6 @@ const ConfigManager = (props) => {
                     </FormControl>
 
                     <FormControl
-                        required
                         error={!validSegmentMode}
                         className="simpleDropdown borderTop"
                     >
@@ -581,7 +613,7 @@ const ConfigManager = (props) => {
                         <RadioGroup
                             aria-labelledby="label-segmentation-select"
                             value={segmentMode}
-                            onChange={(e) => changeSegmentationMode(e.target.value)}>
+                            onClick={(e) => changeSegmentationMode(e.target.value)}>
                             {
                                 segmentModeOptions.map((option) =>
                                     <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
@@ -591,7 +623,6 @@ const ConfigManager = (props) => {
                     </FormControl>
 
                     <FormControl
-                        required
                         error={!validThresholdMethod}
                         className="simpleDropdown borderTop"
                     >
@@ -599,7 +630,7 @@ const ConfigManager = (props) => {
                         <RadioGroup
                             aria-labelledby="label-thresholding-select"
                             value={thresholdMethod}
-                            onChange={(e) => changeThresholdingMethod(e.target.value)}>
+                            onClick={(e) => changeThresholdingMethod(e.target.value)}>
                             {
                                 thresholdMethodOptions.map((option) =>
                                     <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
@@ -629,8 +660,7 @@ const ConfigManager = (props) => {
                                   options={outputOptions}
                                   checked={outputs}
                                   onChangeCallback={(checked) => setOutputList(checked)}
-                                  required
-                                  errorText="Deve selecionar pelo menos um formato de resultado"/>
+                    />
                 </Box>
             </Box>
 
