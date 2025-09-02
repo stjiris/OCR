@@ -32,7 +32,7 @@ import {
 } from "./states";
 
 import FileExplorer from 'Components/FileSystem/Geral/FileSystem';
-import ESPage from 'Components/ElasticSearchPage/Geral/ESPage';
+import ESPage from 'Components/ElasticSearchPage/ESPage';
 import LoginPage from 'Components/Admin/LoginPage';
 import AdminDashboard from 'Components/Admin/Dashboard';
 import StorageManager from 'Components/Admin/StorageManager';
