@@ -17,8 +17,8 @@ import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 
 import ReturnButton from 'Components/FileSystem/ReturnButton';
 import Notification from 'Components/Notifications/Geral/Notification';
-import ConfirmActionPopup from 'Components/Form/Geral/ConfirmActionPopup';
-import CheckboxList from 'Components/Form/Geral/CheckboxList';
+import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
+import CheckboxList from 'Components/Form/CheckboxList';
 import TooltipIcon from 'Components/TooltipIcon/Geral/TooltipIcon';
 import Footer from 'Components/Footer/Footer';
 

@@ -31,7 +31,7 @@ import ReturnButton from 'Components/FileSystem/ReturnButton';
 import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
 import Notification from 'Components/Notifications/Geral/Notification';
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
-import CheckboxList from 'Components/Form/Geral/CheckboxList';
+import CheckboxList from 'Components/Form/CheckboxList';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

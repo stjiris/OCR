@@ -29,8 +29,8 @@ import {
 import ReturnButton from 'Components/FileSystem/ReturnButton';
 import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
 import Notification from 'Components/Notifications/Geral/Notification';
-import ConfirmActionPopup from 'Components/Form/Geral/ConfirmActionPopup';
-import CheckboxList from 'Components/Form/Geral/CheckboxList';
+import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
+import CheckboxList from 'Components/Form/CheckboxList';
 import Footer from 'Components/Footer/Footer';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
