@@ -37,7 +37,7 @@ import LoginPage from 'Components/Admin/LoginPage';
 import AdminDashboard from 'Components/Admin/Dashboard';
 import StorageManager from 'Components/Admin/StorageManager';
 import ConfigManager from 'Components/Admin/ConfigManager';
-import Footer from 'Components/Footer/Geral/Footer';
+import Footer from 'Components/Footer/Footer';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

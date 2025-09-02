@@ -4,7 +4,7 @@ import axios from "axios";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 
-import Footer  from 'Components/Footer/Geral/Footer';
+import Footer  from 'Components/Footer/Footer';
 // const VersionsMenu = loadComponent('Form', 'VersionsMenu');
 // const LogsMenu = loadComponent('Form', 'LogsMenu');
 // const Notification = loadComponent('Notifications', 'Notification');
