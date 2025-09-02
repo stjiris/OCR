@@ -51,7 +51,7 @@ export default class DraggableTooltipIcon extends React.Component {
                             borderStyle: "solid",
                             borderColor: `${this.state.color} transparent transparent transparent`,
                         }}></Box>
-                    </>                        
+                    </>
                     : null
                 }
                 <IconButton disabled={this.state.disabled} draggable sx={{

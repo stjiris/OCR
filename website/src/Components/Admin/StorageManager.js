@@ -19,7 +19,7 @@ import ReturnButton from 'Components/FileSystem/ReturnButton';
 import Notification from 'Components/Notifications/Notification';
 import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
 import CheckboxList from 'Components/Form/CheckboxList';
-import TooltipIcon from 'Components/TooltipIcon/Geral/TooltipIcon';
+import TooltipIcon from 'Components/TooltipIcon/TooltipIcon';
 import Footer from 'Components/Footer/Footer';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
