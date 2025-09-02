@@ -19,8 +19,8 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 import FileIcon from 'Components/CustomIcons/FileIcon';
 import OcrIcon from 'Components/CustomIcons/OcrIcon';
-import IconDatabaseOff from 'Components/Icons/Geral/DatabaseOffIcon';
-import IconDatabaseImport from 'Components/Icons/Geral/DatabaseInIcon';
+import IconDatabaseOff from 'Components/Icons/DatabaseOffIcon';
+import IconDatabaseImport from 'Components/Icons/DatabaseInIcon';
 import PdfIcon from 'Components/CustomIcons/PdfIcon';
 import TxtIcon from 'Components/CustomIcons/TxtIcon';
 import CsvIcon from 'Components/CustomIcons/CsvIcon';
