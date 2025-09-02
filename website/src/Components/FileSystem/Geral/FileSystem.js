@@ -57,6 +57,14 @@ const chunkSize = 1024 * 1024 * 1024; // 1GB
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
+const _zerobytes = ["0", "B"];
+const sizeMap = {
+    B: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+}
+
 class FileExplorer extends React.Component {
     constructor(props) {
         super(props);
@@ -731,8 +739,24 @@ class FileExplorer extends React.Component {
                     // Format to parse must be ensured to be the same as server-side date format
                     const dateA = dayjs(a.props.info?.["creation"], "DD/MM/YYYY HH:mm:ss");
                     const dateB = dayjs(b.props.info?.["creation"], "DD/MM/YYYY HH:mm:ss");
-                    console.log(a.props.info?.["creation"], dateA, b.props.info?.["creation"], dateB);
                     return dateA.isAfter(dateB) ? order : (-order);
+                });
+
+            case "size":
+                return this.state.components.toSorted((a, b) => {
+                    if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "file") {
+                        return -1;  // list folders first
+                    } else if (a.props.info?.["type"] === "file" && b.props.info?.["type"] === "folder") {
+                        return 1;  // list folders first
+                    } else if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "folder") {
+                        return (a.key).localeCompare(b.key);  // list folders always alphabetically A-Z
+                    } else {
+                        let sizeA = a.props.info?.["total_size"]?.split(" ") ?? _zerobytes;
+                        let sizeB = b.props.info?.["total_size"]?.split(" ") ?? _zerobytes;
+                        sizeA = Number(sizeA[0]) * (sizeMap[sizeA[1]] || 1);
+                        sizeB = Number(sizeB[0]) * (sizeMap[sizeB[1]] || 1);
+                        return order * (sizeA - sizeB);
+                    }
                 });
 
             default:
@@ -930,7 +954,23 @@ class FileExplorer extends React.Component {
                             </TableCell>
 
                             <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticSizeCell" : "sizeCell")}>
-                                <span><b>Tamanho</b></span>
+                                <TableSortLabel
+                                    active={!this.props.current_file_name && this.state.orderBy === "size"}
+                                    direction={this.state.orderBy === "size" ? this.state.order : 'asc'}
+                                    onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("size")}}
+                                    sx={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        width: "fit-content",
+                                    }}
+                                >
+                                    <span><b>Tamanho</b></span>
+                                    {this.state.orderBy === "size" ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                            {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
+                                        </Box>
+                                    ) : null}
+                                </TableSortLabel>
                             </TableCell>
                         </TableRow>
                     </TableHead>
