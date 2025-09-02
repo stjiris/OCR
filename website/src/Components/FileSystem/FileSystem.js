@@ -24,7 +24,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import Notification from 'Components/Notifications/Notification';
 import FullStorageMenu from "Components/Notifications/FullStorageMenu";
-import OcrMenu from 'Components/OcrMenu/Geral/OcrMenu';
+import OcrMenu from 'Components/OcrMenu/OcrMenu';
 import LayoutMenu from 'Components/LayoutMenu/LayoutMenu';
 import EditingMenu from 'Components/EditingMenu/EditingMenu';
 import FolderMenu from 'Components/Form/FolderMenu';
