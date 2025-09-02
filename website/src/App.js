@@ -260,7 +260,7 @@ function App() {
                                     onClick={() => { this.props.navigate("/"); }}
                                     className="menuButton"
                                     color="error"
-                                    sx={{marginRight: "1rem"}}
+                                    sx={{marginRight: "1rem", marginTop: "auto", marginBottom: "auto"}}
                                 >
                                     Sair do Espaço
                                 </Button>
@@ -276,7 +276,7 @@ function App() {
                                         });
                                     }}
                                     className="menuButton"
-                                    sx={{marginRight: "1rem"}}
+                                    sx={{marginRight: "1rem", marginTop: "auto", marginBottom: "auto"}}
                                 >
                                     Novo Espaço Privado
                                 </Button>
