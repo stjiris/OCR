@@ -31,7 +31,7 @@ import {
     ocrMenuState
 } from "./states";
 
-import FileExplorer from 'Components/FileSystem/Geral/FileSystem';
+import FileExplorer from 'Components/FileSystem/FileSystem';
 import ESPage from 'Components/ElasticSearchPage/ESPage';
 import LoginPage from 'Components/Admin/LoginPage';
 import AdminDashboard from 'Components/Admin/Dashboard';

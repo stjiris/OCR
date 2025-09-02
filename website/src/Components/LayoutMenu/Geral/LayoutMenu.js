@@ -19,7 +19,7 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 
-import ReturnButton from 'Components/FileSystem/Geral/ReturnButton';
+import ReturnButton from 'Components/FileSystem/ReturnButton';
 import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
 import Notification from 'Components/Notifications/Geral/Notification';
 import ZoomingTool from 'Components/ZoomingTool/Geral/ZoomingTool';

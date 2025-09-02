@@ -21,7 +21,7 @@ import LastPageIcon from '@mui/icons-material/LastPage';
 import AddLineIcon from 'static/addLine.svg';
 import RemoveLineIcon from 'static/removeLine.svg';
 
-import ReturnButton from 'Components/FileSystem/Geral/ReturnButton';
+import ReturnButton from 'Components/FileSystem/ReturnButton';
 import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
 import Notification from 'Components/Notifications/Geral/Notification';
 import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';

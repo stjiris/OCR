@@ -27,7 +27,7 @@ import {
     tesseractThreshList,
 } from "defaultOcrConfigs";
 
-import ReturnButton from 'Components/FileSystem/Geral/ReturnButton';
+import ReturnButton from 'Components/FileSystem/ReturnButton';
 import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
 import Notification from 'Components/Notifications/Geral/Notification';
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');

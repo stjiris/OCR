@@ -6,7 +6,7 @@ import TextField from '@mui/material/TextField';
 import Divider from '@mui/material/Divider';
 import InboxIcon from '@mui/icons-material/Inbox';
 
-import ReturnButton from 'Components/FileSystem/Geral/ReturnButton';
+import ReturnButton from 'Components/FileSystem/ReturnButton';
 import PageDisplayer from 'Components/ElasticSearchPage/PageDisplayer';
 import ChecklistDropdown from 'Components/Dropdown/ChecklistDropdown';
 
