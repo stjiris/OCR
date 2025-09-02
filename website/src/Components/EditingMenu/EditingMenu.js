@@ -25,7 +25,7 @@ import ReturnButton from 'Components/FileSystem/ReturnButton';
 import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
 import Notification from 'Components/Notifications/Notification';
 import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
-import ZoomingTool from 'Components/ZoomingTool/Geral/ZoomingTool';
+import ZoomingTool from 'Components/ZoomingTool/ZoomingTool';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

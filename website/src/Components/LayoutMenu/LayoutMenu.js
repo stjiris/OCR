@@ -22,7 +22,7 @@ import LastPageIcon from "@mui/icons-material/LastPage";
 import ReturnButton from 'Components/FileSystem/ReturnButton';
 import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
 import Notification from 'Components/Notifications/Notification';
-import ZoomingTool from 'Components/ZoomingTool/Geral/ZoomingTool';
+import ZoomingTool from 'Components/ZoomingTool/ZoomingTool';
 import LayoutImage from './LayoutImage';
 import LayoutTable from './LayoutTable';
 
