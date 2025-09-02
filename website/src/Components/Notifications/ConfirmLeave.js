@@ -6,7 +6,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
-import Notification from 'Components/Notifications/Geral/Notification';
+import Notification from 'Components/Notifications/Notification';
 
 const style = {
     position: 'absolute',

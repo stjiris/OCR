@@ -28,8 +28,8 @@ import {
 } from "defaultOcrConfigs";
 
 import ReturnButton from 'Components/FileSystem/ReturnButton';
-import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
-import Notification from 'Components/Notifications/Geral/Notification';
+import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
+import Notification from 'Components/Notifications/Notification';
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
 import CheckboxList from 'Components/Form/CheckboxList';
 

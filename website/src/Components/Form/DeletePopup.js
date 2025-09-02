@@ -8,7 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 
-import Notification from 'Components/Notifications/Geral/Notification';
+import Notification from 'Components/Notifications/Notification';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const style = {

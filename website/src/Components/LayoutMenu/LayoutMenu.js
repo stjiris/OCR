@@ -20,8 +20,8 @@ import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 
 import ReturnButton from 'Components/FileSystem/ReturnButton';
-import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
-import Notification from 'Components/Notifications/Geral/Notification';
+import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
+import Notification from 'Components/Notifications/Notification';
 import ZoomingTool from 'Components/ZoomingTool/Geral/ZoomingTool';
 import LayoutImage from './LayoutImage';
 import LayoutTable from './LayoutTable';

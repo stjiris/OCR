@@ -22,8 +22,8 @@ import visuallyHidden from "@mui/utils/visuallyHidden";
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { v4 as uuidv4 } from 'uuid';
 
-import Notification from 'Components/Notifications/Geral/Notification';
-import FullStorageMenu from "Components/Notifications/Geral/FullStorageMenu";
+import Notification from 'Components/Notifications/Notification';
+import FullStorageMenu from "Components/Notifications/FullStorageMenu";
 import OcrMenu from 'Components/OcrMenu/Geral/OcrMenu';
 import LayoutMenu from 'Components/LayoutMenu/LayoutMenu';
 import EditingMenu from 'Components/EditingMenu/EditingMenu';

@@ -23,8 +23,8 @@ import RemoveLineIcon from 'static/removeLine.svg';
 
 import ReturnButton from 'Components/FileSystem/ReturnButton';
 import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
-import Notification from 'Components/Notifications/Geral/Notification';
-import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
+import Notification from 'Components/Notifications/Notification';
+import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
 import ZoomingTool from 'Components/ZoomingTool/Geral/ZoomingTool';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;

@@ -16,7 +16,7 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 
 import ReturnButton from 'Components/FileSystem/ReturnButton';
-import Notification from 'Components/Notifications/Geral/Notification';
+import Notification from 'Components/Notifications/Notification';
 import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
 import CheckboxList from 'Components/Form/CheckboxList';
 import TooltipIcon from 'Components/TooltipIcon/Geral/TooltipIcon';

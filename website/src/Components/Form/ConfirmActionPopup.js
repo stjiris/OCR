@@ -8,7 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 
-import Notification from 'Components/Notifications/Geral/Notification';
+import Notification from 'Components/Notifications/Notification';
 
 const style = {
     position: 'absolute',
