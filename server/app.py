@@ -855,7 +855,7 @@ def request_ocr():
             if os.path.splitext(f.name)[1] == ".json"
         ]
 
-        if data["indexed"]:
+        if data.get("indexed", False):
             for page in pages:
                 page_id = generate_uuid(page.path)
                 log.debug(f"Removing {page.path}: ID={page_id}")
