@@ -1,18 +1,18 @@
 pytz
-Pillow==11.1.0
+Pillow==11.3.0
 celery==5.5.3
-celery-redbeat==2.3.2
+celery-redbeat==2.3.3
 flower==2.0.*
-redis==6.2.0
-lxml==4.9.3
-psutil==5.9.5
+redis==6.4.0
+lxml==6.0.1
+psutil==7.0.0
 pytesseract==0.3.10
-opencv-python-headless==4.11.0.86
+opencv-python-headless==4.12.0.88
 hdbscan==0.8.40
-reportlab==3.6.13
-pypdfium2==5.0.0b1
+reportlab==4.4.3
+pypdfium2==5.0.0b2
 requests==2.*
-dnspython<2.6.0  #eventlet breaks with any higher version
 #numpy<2
 #memory-profiler
 tesserocr==2.8.0
+python-dotenv==1.1.1

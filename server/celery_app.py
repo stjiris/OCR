@@ -15,6 +15,7 @@ from celery import chord
 from celery import group
 from celery.canvas import Signature
 from celery.schedules import crontab
+from dotenv import load_dotenv
 from PIL import Image
 from PIL import ImageDraw
 from redbeat import RedBeatSchedulerEntry
@@ -44,6 +45,8 @@ OCR_ENGINES = (
     "pytesseract",
     "tesserocr",
 )
+
+load_dotenv()
 
 DEFAULT_CONFIG_FILE = os.environ.get("DEFAULT_CONFIG_FILE", "_configs/default.json")
 
