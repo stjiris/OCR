@@ -22,7 +22,7 @@ import AddLineIcon from 'static/addLine.svg';
 import RemoveLineIcon from 'static/removeLine.svg';
 
 import ReturnButton from 'Components/FileSystem/Geral/ReturnButton';
-import CorpusDropdown from 'Components/Dropdown/Geral/CorpusDropdown';
+import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
 import Notification from 'Components/Notifications/Geral/Notification';
 import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
 import ZoomingTool from 'Components/ZoomingTool/Geral/ZoomingTool';

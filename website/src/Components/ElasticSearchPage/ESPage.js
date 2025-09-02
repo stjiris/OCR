@@ -8,7 +8,7 @@ import InboxIcon from '@mui/icons-material/Inbox';
 
 import ReturnButton from 'Components/FileSystem/Geral/ReturnButton';
 import PageDisplayer from 'Components/ElasticSearchPage/PageDisplayer';
-import ChecklistDropdown from 'Components/Dropdown/Geral/ChecklistDropdown';
+import ChecklistDropdown from 'Components/Dropdown/ChecklistDropdown';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
