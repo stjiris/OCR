@@ -33,10 +33,10 @@ import {
 
 import FileExplorer from 'Components/FileSystem/Geral/FileSystem';
 import ESPage from 'Components/ElasticSearchPage/Geral/ESPage';
-import LoginPage from 'Components/Admin/Geral/LoginPage';
-import AdminDashboard from 'Components/Admin/Geral/Dashboard';
-import StorageManager from 'Components/Admin/Geral/StorageManager';
-import ConfigManager from 'Components/Admin/Geral/ConfigManager';
+import LoginPage from 'Components/Admin/LoginPage';
+import AdminDashboard from 'Components/Admin/Dashboard';
+import StorageManager from 'Components/Admin/StorageManager';
+import ConfigManager from 'Components/Admin/ConfigManager';
 import Footer from 'Components/Footer/Geral/Footer';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
