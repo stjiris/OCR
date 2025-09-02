@@ -17,16 +17,16 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
-import FileIcon from 'Components/CustomIcons/Geral/FileIcon';
-import OcrIcon from 'Components/CustomIcons/Geral/OcrIcon';
+import FileIcon from 'Components/CustomIcons/FileIcon';
+import OcrIcon from 'Components/CustomIcons/OcrIcon';
 import IconDatabaseOff from 'Components/Icons/Geral/DatabaseOffIcon';
 import IconDatabaseImport from 'Components/Icons/Geral/DatabaseInIcon';
-import PdfIcon from 'Components/CustomIcons/Geral/PdfIcon';
-import TxtIcon from 'Components/CustomIcons/Geral/TxtIcon';
-import CsvIcon from 'Components/CustomIcons/Geral/CsvIcon';
-import JsonIcon from 'Components/CustomIcons/Geral/JsonIcon';
-import AltoIcon from 'Components/CustomIcons/Geral/AltoIcon';
-import ZipIcon from 'Components/CustomIcons/Geral/ZipIcon';
+import PdfIcon from 'Components/CustomIcons/PdfIcon';
+import TxtIcon from 'Components/CustomIcons/TxtIcon';
+import CsvIcon from 'Components/CustomIcons/CsvIcon';
+import JsonIcon from 'Components/CustomIcons/JsonIcon';
+import AltoIcon from 'Components/CustomIcons/AltoIcon';
+import ZipIcon from 'Components/CustomIcons/ZipIcon';
 import StaticFileRow from './StaticFileRow';
 
 const loadingStages = new Set(["uploading", "preparing"]);

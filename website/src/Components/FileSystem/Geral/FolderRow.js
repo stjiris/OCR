@@ -15,7 +15,7 @@ import IconButton from "@mui/material/IconButton";
 import {Tooltip} from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 
-import OcrIcon from 'Components/CustomIcons/Geral/OcrIcon';
+import OcrIcon from 'Components/CustomIcons/OcrIcon';
 
 class FolderRow extends React.Component {
     constructor(props) {
