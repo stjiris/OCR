@@ -9,13 +9,13 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
-import loadComponent from '../../../utils/loadComponents';
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import IconButton from "@mui/material/IconButton";
 import {Tooltip} from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-const OcrIcon = loadComponent('CustomIcons', 'OcrIcon');
+
+import OcrIcon from 'Components/CustomIcons/Geral/OcrIcon';
 
 class FolderRow extends React.Component {
     constructor(props) {

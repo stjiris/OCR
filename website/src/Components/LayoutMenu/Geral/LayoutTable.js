@@ -12,8 +12,9 @@ import {
 } from "@dnd-kit/core";
 import {restrictToVerticalAxis} from "@dnd-kit/modifiers";
 import {SortableContext, verticalListSortingStrategy} from "@dnd-kit/sortable";
-import {DraggableTableRow} from "./DraggableTableRow";
-import {StaticTableRow} from "./StaticTableRow";
+
+import {DraggableTableRow} from './DraggableTableRow';
+import {StaticTableRow} from './StaticTableRow';
 
 const LayoutTable = ({
         data = [],

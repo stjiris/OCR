@@ -25,14 +25,13 @@ import {
     tesseractOutputsList,
     tesseractSegmentList,
     tesseractThreshList,
-} from "../../../defaultOcrConfigs";
+} from "defaultOcrConfigs";
 
-import loadComponent from '../../../utils/loadComponents';
-const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
-const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
-const Notification = loadComponent('Notifications', 'Notification');
+import ReturnButton from 'Components/FileSystem/Geral/ReturnButton';
+import ConfirmLeave from 'Components/Notifications/Geral/ConfirmLeave';
+import Notification from 'Components/Notifications/Geral/Notification';
 //const AlgoDropdown = loadComponent('Dropdown', 'AlgoDropdown');
-const CheckboxList = loadComponent('Form', 'CheckboxList');
+import CheckboxList from 'Components/Form/Geral/CheckboxList';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

@@ -1,7 +1,9 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from "@mui/material/IconButton";
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 
@@ -15,19 +17,17 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
-import StaticFileRow from "./StaticFileRow";
-import FileIcon from "../../CustomIcons/Geral/FileIcon";
-import OcrIcon from "../../CustomIcons/Geral/OcrIcon";
-import IconDatabaseOff from "../../Icons/Geral/DatabaseOffIcon";
-import IconDatabaseImport from "../../Icons/Geral/DatabaseInIcon";
-import PdfIcon from "../../CustomIcons/Geral/PdfIcon";
-import TxtIcon from "../../CustomIcons/Geral/TxtIcon";
-import CsvIcon from "../../CustomIcons/Geral/CsvIcon";
-import JsonIcon from "../../CustomIcons/Geral/JsonIcon";
-import AltoIcon from "../../CustomIcons/Geral/AltoIcon";
-import ZipIcon from "../../CustomIcons/Geral/ZipIcon";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
+import FileIcon from 'Components/CustomIcons/Geral/FileIcon';
+import OcrIcon from 'Components/CustomIcons/Geral/OcrIcon';
+import IconDatabaseOff from 'Components/Icons/Geral/DatabaseOffIcon';
+import IconDatabaseImport from 'Components/Icons/Geral/DatabaseInIcon';
+import PdfIcon from 'Components/CustomIcons/Geral/PdfIcon';
+import TxtIcon from 'Components/CustomIcons/Geral/TxtIcon';
+import CsvIcon from 'Components/CustomIcons/Geral/CsvIcon';
+import JsonIcon from 'Components/CustomIcons/Geral/JsonIcon';
+import AltoIcon from 'Components/CustomIcons/Geral/AltoIcon';
+import ZipIcon from 'Components/CustomIcons/Geral/ZipIcon';
+import StaticFileRow from './StaticFileRow';
 
 const loadingStages = new Set(["uploading", "preparing"]);
 

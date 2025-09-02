@@ -2,8 +2,7 @@ import React, {useRef, useState} from 'react';
 import axios from 'axios';
 import {useLocation, useNavigate} from "react-router";
 
-import loadComponent from "../../../utils/loadComponents";
-const Notification = loadComponent('Notifications', 'Notification');
+import Notification from 'Components/Notifications/Geral/Notification';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

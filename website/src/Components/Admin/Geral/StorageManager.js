@@ -15,13 +15,12 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 
-import loadComponent from "../../../utils/loadComponents";
-const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
-const Notification = loadComponent('Notifications', 'Notification');
-const ConfirmActionPopup = loadComponent('Form', 'ConfirmActionPopup');
-const TooltipIcon = loadComponent("TooltipIcon", "TooltipIcon");
-const CheckboxList = loadComponent("Form", "CheckboxList");
-const Footer = loadComponent('Footer', 'Footer');
+import ReturnButton from 'Components/FileSystem/Geral/ReturnButton';
+import Notification from 'Components/Notifications/Geral/Notification';
+import ConfirmActionPopup from 'Components/Form/Geral/ConfirmActionPopup';
+import CheckboxList from 'Components/Form/Geral/CheckboxList';
+import TooltipIcon from 'Components/TooltipIcon/Geral/TooltipIcon';
+import Footer from 'Components/Footer/Geral/Footer';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
