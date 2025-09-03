@@ -22,18 +22,18 @@ import visuallyHidden from "@mui/utils/visuallyHidden";
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { v4 as uuidv4 } from 'uuid';
 
+import Notification from 'Components/Notifications/Notification';
+import FullStorageMenu from "Components/Notifications/FullStorageMenu";
+import OcrMenu from 'Components/OcrMenu/OcrMenu';
+import LayoutMenu from 'Components/LayoutMenu/LayoutMenu';
+import EditingMenu from 'Components/EditingMenu/EditingMenu';
+import FolderMenu from 'Components/Form/FolderMenu';
+import OcrPopup from 'Components/Form/OcrPopup';
+import DeletePopup from 'Components/Form/DeletePopup';
+import PrivateSpaceMenu from 'Components/Form/PrivateSpaceMenu';
 import DocumentRow from "./DocumentRow";
 import FolderRow from "./FolderRow";
-import FullStorageMenu from "../../Notifications/Geral/FullStorageMenu";
-import OcrMenu from "../../OcrMenu/Geral/OcrMenu";
-import LayoutMenu from "../../LayoutMenu/Geral/LayoutMenu";
-import EditingMenu from "../../EditingMenu/Geral/EditingMenu";
-import ReturnButton from "./ReturnButton";
-import Notification from "../../Notifications/Geral/Notification";
-import FolderMenu from "../../Form/Geral/FolderMenu";
-import OcrPopup from "../../Form/Geral/OcrPopup";
-import DeletePopup from "../../Form/Geral/DeletePopup";
-import PrivateSpaceMenu from "../../Form/Geral/PrivateSpaceMenu";
+import ReturnButton from './ReturnButton';
 
 dayjs.extend(customParseFormat);
 

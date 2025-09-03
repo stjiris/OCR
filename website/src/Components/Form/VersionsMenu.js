@@ -89,92 +89,92 @@ class VersionsMenu extends React.Component {
                                 <li>Menu para editar o layout</li>
                             </ul>
                             <p><b>Versão 0.13.0 - 04/07/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Adiciona estilo da NOVA SBE</li>
                             </ul>
                             <p><b>Versão 0.12.7 - 20/06/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Adiciona tooltip para quando começa a transferência de ficheiros nas sessões privadas</li>
                                 <li>Adiciona nr de páginas do índice</li>
                                 <li>Ajusta o tamanho ocupado pelo índice</li>
                             </ul>
                             <p><b>Versão 0.12.6 - 07/06/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Adiciona tooltip para quando começa a transferência de ficheiros</li>
                             </ul>
                             <p><b>Versão 0.12.5 - 02/06/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Melhoria da qualidade do PDF gerado</li>
                                 <li>Melhoria da velocidade de download de .txt e de pdf gerado</li>
                             </ul>
                             <p><b>Versão 0.12.4 - 01/06/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>OCR reconhece caracteres Portugueses</li>
                             </ul>
                             <p><b>Versão 0.12.3 - 24/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Adiciona botão de ajuda</li>
                                 <li>Adiciona botão OCR</li>
                                 <li>Melhorias no texto</li>
                             </ul>
                             <p><b>Versão 0.12.2 - 23/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Remoção de colunas do sistema de ficheiros</li>
                             </ul>
                             <p><b>Versão 0.12.1 - 17/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Mudança visual em alguns botões</li>
                                 <li>Mudança na quantidade de threads que cada pool usa</li>
                             </ul>
                             <p><b>Versão 0.12.0 - 15/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Mensagens de erro para o OCR e para o carregamento de ficheiros</li>
                             </ul>
                             <p><b>Versão 0.11.3 - 09/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Mais melhorias de usabilidade</li>
                             </ul>
                             <p><b>Versão 0.11.2 - 09/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Melhorias de usabilidade</li>
                             </ul>
                             <p><b>Versão 0.11.1 - 04/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Estimativa do tempo de execução do OCR</li>
                             </ul>
                             <p><b>Versão 0.11.0 - 04/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Criação de sessões privadas</li>
                             </ul>
                             <p><b>Versão 0.10.0 - 01/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Índice de palavras passa a não converter todas as letras em letras minúsculas</li>
                             </ul>
                             <p><b>Versão 0.9.6 - 01/05/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Melhoria da legibilidade do índice de palavras</li>
                                 <li>Mudança do nome de documentos gerados</li>
                             </ul>
                             <p><b>Versão 0.9.5 - 26/04/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Correção da ordem das páginas do PDF gerado</li>
                             </ul>
                             <p><b>Versão 0.9.4 - 21/04/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Adiciona roda de progressão e mudança de cor em todas as células que estão a trabalhar</li>
                                 <li>Alteração de cores de botões</li>
                                 <li>Correção da função que permite usar o botão 'Realizar o OCR'</li>
                             </ul>
                             <p><b>Versão 0.9.3 - 21/04/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Correção das horas</li>
                             </ul>
                             <p><b>Versão 0.9.2 - 20/04/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Introdução do caminho atual e respetivos links para rápido acesso</li>
                             </ul>
                             <p><b>Versão 0.9.1 - 20/04/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Redução do tamanho do PDF gerado após OCR</li>
                             </ul>
                             <p><b>Versão 0.9.0 - 19/04/2023</b></p>
@@ -183,7 +183,7 @@ class VersionsMenu extends React.Component {
                                 <li>PDF gerado inclui índice de palavas extraídas</li>
                             </ul>
                             <p><b>Versão 0.8.1 - 07/04/2023</b></p>
-                            <ul>                            
+                            <ul>
                                 <li>Redução do tempo de submissão dos documentos</li>
                             </ul>
                             <p><b>Versão 0.8.0 - 22/03/2023</b></p>

@@ -31,14 +31,13 @@ import {
     ocrMenuState
 } from "./states";
 
-import loadComponent from './utils/loadComponents';
-const FileExplorer = loadComponent('FileSystem', 'FileSystem');
-const ESPage = loadComponent('ElasticSearchPage', 'ESPage');
-const LoginPage = loadComponent('Admin', 'LoginPage');
-const AdminDashboard = loadComponent('Admin', 'Dashboard');
-const StorageManager = loadComponent('Admin', 'StorageManager');
-const ConfigManager = loadComponent('Admin', 'ConfigManager');
-const Footer = loadComponent('Footer', 'Footer');
+import FileExplorer from 'Components/FileSystem/FileSystem';
+import ESPage from 'Components/ElasticSearchPage/ESPage';
+import LoginPage from 'Components/Admin/LoginPage';
+import AdminDashboard from 'Components/Admin/Dashboard';
+import StorageManager from 'Components/Admin/StorageManager';
+import ConfigManager from 'Components/Admin/ConfigManager';
+import Footer from 'Components/Footer/Footer';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

@@ -19,13 +19,12 @@ import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 
-import loadComponent from '../../../utils/loadComponents';
-const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
-const LayoutImage = loadComponent('LayoutMenu', 'LayoutImage');
-const LayoutTable = loadComponent('LayoutMenu', 'LayoutTable');
-const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
-const Notification = loadComponent('Notifications', 'Notification');
-const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
+import ReturnButton from 'Components/FileSystem/ReturnButton';
+import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
+import Notification from 'Components/Notifications/Notification';
+import ZoomingTool from 'Components/ZoomingTool/ZoomingTool';
+import LayoutImage from './LayoutImage';
+import LayoutTable from './LayoutTable';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

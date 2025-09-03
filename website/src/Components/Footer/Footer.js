@@ -2,7 +2,7 @@ import React from 'react';
 
 import Box from "@mui/material/Box";
 
-import footerBanner from "../../../static/footerBanner.png";
+import footerBanner from "static/footerBanner.png";
 
 const Footer = (props) => {
     return(

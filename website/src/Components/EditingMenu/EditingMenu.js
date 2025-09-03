@@ -18,15 +18,14 @@ import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
 
-import AddLineIcon from '../../../static/addLine.svg';
-import RemoveLineIcon from '../../../static/removeLine.svg';
+import AddLineIcon from 'static/addLine.svg';
+import RemoveLineIcon from 'static/removeLine.svg';
 
-import loadComponent from '../../../utils/loadComponents';
-const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
-const CorpusDropdown = loadComponent('Dropdown', 'CorpusDropdown');
-const Notification = loadComponent('Notifications', 'Notification');
-const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
-const ZoomingTool = loadComponent('ZoomingTool', 'ZoomingTool');
+import ReturnButton from 'Components/FileSystem/ReturnButton';
+import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
+import Notification from 'Components/Notifications/Notification';
+import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
+import ZoomingTool from 'Components/ZoomingTool/ZoomingTool';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

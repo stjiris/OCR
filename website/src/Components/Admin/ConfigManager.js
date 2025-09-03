@@ -24,15 +24,14 @@ import {
     tesseractOutputsList,
     tesseractSegmentList,
     tesseractThreshList,
-} from "../../../defaultOcrConfigs";
+} from "defaultOcrConfigs";
 
-import loadComponent from "../../../utils/loadComponents";
-const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
-const ConfirmLeave = loadComponent('Notifications', 'ConfirmLeave');
-const Notification = loadComponent('Notifications', 'Notification');
-const ConfirmActionPopup = loadComponent('Form', 'ConfirmActionPopup');
-const CheckboxList = loadComponent('Form', 'CheckboxList');
-const Footer = loadComponent('Footer', 'Footer');
+import ReturnButton from 'Components/FileSystem/ReturnButton';
+import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
+import Notification from 'Components/Notifications/Notification';
+import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
+import CheckboxList from 'Components/Form/CheckboxList';
+import Footer from 'Components/Footer/Footer';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")

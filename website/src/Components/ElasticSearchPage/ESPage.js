@@ -6,10 +6,9 @@ import TextField from '@mui/material/TextField';
 import Divider from '@mui/material/Divider';
 import InboxIcon from '@mui/icons-material/Inbox';
 
-import loadComponent from '../../../utils/loadComponents';
-const ReturnButton = loadComponent('FileSystem', 'ReturnButton');
-const PageDisplayer = loadComponent('Displayer', 'PageDisplayer');
-const ChecklistDropdown = loadComponent('Dropdown', 'ChecklistDropdown');
+import ReturnButton from 'Components/FileSystem/ReturnButton';
+import PageDisplayer from 'Components/ElasticSearchPage/PageDisplayer';
+import ChecklistDropdown from 'Components/Dropdown/ChecklistDropdown';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 

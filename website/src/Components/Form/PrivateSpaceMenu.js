@@ -8,8 +8,6 @@ import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import loadComponent from '../../../utils/loadComponents';
-const Notification = loadComponent('Notifications', 'Notification');
 
 const style = {
     position: 'absolute',
