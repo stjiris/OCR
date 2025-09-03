@@ -252,3 +252,10 @@ def build_ocr_config(config: dict) -> tuple[str, dict]:
     lang = "+".join(config["lang"])
     config["lang"] = lang
     return lang, config
+
+
+def estimate_ocr_time(config: dict, n_pages: int):
+    if n_pages < 20:
+        return "<1min"
+    else:
+        return f"{math.ceil(0.0176 * n_pages + 0.2632)}min"

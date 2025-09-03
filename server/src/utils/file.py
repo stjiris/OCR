@@ -14,7 +14,7 @@ import requests
 
 FILES_PATH = environ.get("FILES_PATH", "_files")
 TEMP_PATH = environ.get("TEMP_PATH", "_pending-files")
-PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_sessions")
+PRIVATE_PATH = environ.get("PRIVATE_PATH", "_files/_private_spaces")
 API_TEMP_PATH = environ.get("API_TEMP_PATH", "_files/_tmp")
 
 ALLOWED_EXTENSIONS = (
@@ -94,7 +94,7 @@ def get_file_parsed(path, is_private):
     )
     url_prefix = IMAGE_PREFIX + (
         "/private/" if is_private else "/images/"
-    )  # TODO: secure private session images
+    )  # TODO: secure private space images
 
     path += "/_ocr_results"
     files = [
@@ -200,20 +200,27 @@ def get_file_layouts(path, is_private):
 
 
 def save_file_layouts(path, layouts):
-    data = get_data(f"{path}/_data.json")
+    data_file = f"{path}/_data.json"
+    data = get_data(data_file)
     if data["type"] != "file":
-        return FileNotFoundError
+        raise FileNotFoundError
 
     basename = get_file_basename(path)
     if not os.path.isdir(f"{path}/_layouts"):
         os.mkdir(f"{path}/_layouts")
 
-    for id, page in enumerate(layouts):
+    has_layout = False
+    for page_id, page in enumerate(layouts):
         layouts = page["boxes"]
-        filename = f"{path}/_layouts/{basename}_{id}.json"
+        if not has_layout and len(layouts) > 0:
+            has_layout = True
 
+        filename = f"{path}/_layouts/{basename}_{page_id}.json"
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(layouts, f, indent=2, ensure_ascii=False)
+
+    data["has_layout"] = has_layout
+    update_json_file(data_file, data)
 
 
 def generate_uuid(path):
@@ -248,14 +255,14 @@ def delete_structure(client, path):
 
 
 # TODO
-def get_filesystem(path, private_session: str = None, is_private: bool = False) -> dict:
+def get_filesystem(path, private_space: str = None, is_private: bool = False) -> dict:
     """
     :param path: path to the folder
-    :param private_session: name of the private session, if applicable
-    :param is_private: whether the target path is a private session
+    :param private_space: name of the private space, if applicable
+    :param is_private: whether the target path is a private space
     """
-    files = get_structure(path, private_session, is_private)
-    info = get_structure_info(path, private_session, is_private)
+    files = get_structure(path, private_space, is_private)
+    info = get_structure_info(path, private_space, is_private)
 
     if files is None:
         if path != FILES_PATH and PRIVATE_PATH not in path:
@@ -264,6 +271,22 @@ def get_filesystem(path, private_session: str = None, is_private: bool = False) 
             files = {"files": []}
 
     return {**files, "info": info}
+
+
+def size_to_units(size):
+    """
+    Receives a size in bytes and returns a string formatted with the appropriate unit.
+    :param size: size in bytes
+    :return: string with rounded size and appropriate unit
+    """
+    if size < 1024:
+        return f"{size} B"
+    elif size < 1024**2:
+        return f"{size / 1024:.2f} KB"
+    elif size < 1024**3:
+        return f"{size / 1024 ** 2:.2f} MB"
+    else:
+        return f"{size / 1024 ** 3:.2f} GB"
 
 
 def get_ocr_size(path):
@@ -293,31 +316,52 @@ def get_ocr_size(path):
         return f"{size / 1024 ** 3:.2f} GB"
 
 
-def get_size(path, path_complete=False):
+def get_document_files_size(path):
     """
-    Get the size of the file
+    Get the total size of files related to a document,
+    which are the original copy of the file and result files inside /_export.
+    :param path: path to the document folder
+    :return: total size in bytes
+    """
+    size = get_file_size(path)  # original file's size
+    for dirpath, folders, filenames in os.walk(f"{path}/_export"):
+        for f in filenames:
+            subpath = os.path.join(dirpath, f)
+            if not os.path.islink(subpath):
+                size += os.path.getsize(subpath)
+    return size
 
+
+def get_folder_size(path):
+    """
+    Returns the size of the folder's entire contents recursively.
+    :param path: path to the folder
+    :return: total size in bytes
+    """
+    size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            subpath = os.path.join(dirpath, f)
+            if not os.path.islink(subpath):
+                size += os.path.getsize(subpath)
+    return size
+
+
+def get_file_size(path, path_complete=False):
+    """
+    Returns the file's size.
     :param path: path to the file
-    :return: size of the file
+    :param path_complete: whether the path is complete;
+    if not, seeks the file contained within the target folder which shares its name
+    :return: file size in bytes
     """
-
     name = path.split("/")[-1]
     if not path_complete:
         path = f"{path}/{name}"
-
-    size = os.path.getsize(path)
-
-    if size < 1024:
-        return f"{size} B"
-    elif size < 1024**2:
-        return f"{size / 1024:.2f} KB"
-    elif size < 1024**3:
-        return f"{size / 1024 ** 2:.2f} MB"
-    else:
-        return f"{size / 1024 ** 3:.2f} GB"
+    return os.path.getsize(path)
 
 
-def get_folder_info(path, private_session=None):
+def get_folder_info(path, private_space=None):
     """
     Get the info of the folder
     :param path: path to the folder
@@ -332,7 +376,8 @@ def get_folder_info(path, private_session=None):
         return {}
 
     if data["type"] == "file" and ("stored" not in data or data["stored"] is True):
-        data["size"] = get_size(path)
+        data["size"] = size_to_units(get_file_size(path))
+        data["total_size"] = size_to_units(get_document_files_size(path))
 
     elif data["type"] == "folder":
         n_files = len([f for f in os.scandir(path) if not f.name.startswith("_")])
@@ -340,7 +385,7 @@ def get_folder_info(path, private_session=None):
 
     # sanitize important paths from the info key
     path = (
-        path.replace(f"{PRIVATE_PATH}/{private_session}", "")
+        path.replace(f"{PRIVATE_PATH}/{private_space}", "")
         .replace(PRIVATE_PATH, "")
         .replace(FILES_PATH, "")
         .strip("/")
@@ -349,7 +394,7 @@ def get_folder_info(path, private_session=None):
     return info
 
 
-def get_structure_info(path, private_session=None, is_private=False):
+def get_structure_info(path, private_space=None, is_private=False):
     """
     Get the info of each file/folder
     """
@@ -369,17 +414,17 @@ def get_structure_info(path, private_session=None, is_private=False):
         # ignore possible private path folders
         if not is_private and (PRIVATE_PATH in root or root in PRIVATE_PATH.split("/")):
             continue
-        # if in a private session, ignore folders not from this private session
-        if is_private and f"{PRIVATE_PATH}/{private_session}" not in root:
+        # if in a private space, ignore folders not from this private space
+        if is_private and f"{PRIVATE_PATH}/{private_space}" not in root:
             continue
 
         folder_path = root.replace("\\", "/")
-        folder_info = get_folder_info(folder_path, private_session)
+        folder_info = get_folder_info(folder_path, private_space)
         info = {**info, **folder_info}
     return info
 
 
-def get_structure(path, private_session=None, is_private=False):
+def get_structure(path, private_space=None, is_private=False):
     """
     Put the file system structure in a dict
     {
@@ -401,7 +446,7 @@ def get_structure(path, private_session=None, is_private=False):
         raise FileNotFoundError
 
     filesystem = {}
-    if path == FILES_PATH or path == f"{PRIVATE_PATH}/{private_session}":
+    if path == FILES_PATH or path == f"{PRIVATE_PATH}/{private_space}":
         name = "files"
     else:
         name = path.split("/")[-1]
@@ -429,12 +474,12 @@ def get_structure(path, private_session=None, is_private=False):
         # ignore possible private path folders
         if not is_private and folder in PRIVATE_PATH.split("/"):
             continue
-        # if in a private session, ignore folders not from this private session
-        if is_private and f"{PRIVATE_PATH}/{private_session}" not in f"{path}/{folder}":
+        # if in a private space, ignore folders not from this private space
+        if is_private and f"{PRIVATE_PATH}/{private_space}" not in f"{path}/{folder}":
             continue
 
         folder = f"{path}/{folder}"
-        file = get_structure(folder, private_session, is_private)
+        file = get_structure(folder, private_space, is_private)
 
         if file is not None:
             contents.append(file)

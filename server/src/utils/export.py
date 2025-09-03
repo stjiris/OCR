@@ -20,13 +20,14 @@ from reportlab.pdfgen.canvas import Canvas
 from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_file_basename
+from src.utils.file import get_file_size
 from src.utils.file import get_page_count
-from src.utils.file import get_size
 from src.utils.file import json_to_text
+from src.utils.file import size_to_units
 from src.utils.file import update_json_file
 
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
-PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
+PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_spaces")
 
 OUT_DEFAULT_DPI = 150
 
@@ -85,7 +86,7 @@ def export_from_existing(path: str, raw_results: dict | list, output_types: list
                 creation_date = get_current_time()
                 data_update[extension] = {
                     "complete": True,
-                    "size": get_size(file_path, path_complete=True),
+                    "size": size_to_units(get_file_size(file_path, path_complete=True)),
                     "creation": creation_date,
                 }
                 if extension == "pdf":
@@ -102,7 +103,7 @@ def export_from_existing(path: str, raw_results: dict | list, output_types: list
                 creation_date = get_current_time()
                 data_update[ext] = {
                     "complete": True,
-                    "size": get_size(file_path, path_complete=True),
+                    "size": size_to_units(get_file_size(file_path, path_complete=True)),
                     "creation": creation_date,
                 }
                 if ext == "pdf":
@@ -224,6 +225,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
     """
     Export the file as a .pdf file
     """
+    data_file = f"{path}/_data.json"
     filename = f"{path}/_export/_pdf_indexed.pdf"
     simple_filename = f"{path}/_export/_pdf.pdf"
     filename_csv = f"{path}/_export/_index.csv"
@@ -237,7 +239,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         return target
 
     else:
-        data = get_data(f"{path}/_data.json")
+        data = get_data(data_file)
         original_extension = data["extension"]
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
@@ -313,6 +315,16 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
 
             pdf.showPage()
 
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": f"A gerar PDF {'com índice ' if simple else ''}{i + 1}/{len(images)}",
+                    }
+                },
+            )
+
         # Sort the `words` dict by key
         words = [
             item
@@ -322,9 +334,27 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         ]
 
         if get_csv:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar CSV",
+                    }
+                },
+            )
             export_csv_from_words(filename_csv, words)
 
         if not simple:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar índice",
+                    }
+                },
+            )
             rows = 100
             cols = 2
             title_size = 38
@@ -523,10 +553,6 @@ def get_md5_checksum(path):
     with open(path, "rb") as f:
         data = f.read()
         return hashlib.md5(data).hexdigest()
-
-
-def get_file_size(path):
-    return os.path.getsize(path)
 
 
 def generate_file(base_path, path, id, seq, mimetype):

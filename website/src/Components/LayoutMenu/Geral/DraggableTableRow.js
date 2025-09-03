@@ -9,6 +9,8 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Switch from "@mui/material/Switch";
 
 const DraggingRow = styled.td`
+  height: 1rem;
+  padding: 16px;
   background: rgba(127, 207, 250, 0.3);
 `;
 
@@ -28,15 +30,20 @@ export const DraggableTableRow = ({ group, index, textModeState, changeChecked, 
         transition: transition
     };
     return (
-        <TableRow ref={setNodeRef} key={group._uniq_id} style={style} sx={{borderBottom: '1px solid #aaa'}}>
+        <TableRow
+            ref={setNodeRef}
+            key={group._uniq_id}
+            style={style}
+            className='layoutRow'
+        >
             {isDragging ? <DraggingRow colSpan={4}>&nbsp;</DraggingRow>
             : [
-                <TableCell align='center' sx={{width: '15%', borderBottom: '1px solid #aaa', p: "4px 16px"}}>
+                <TableCell align='center' className='layoutCell' sx={{width: '15%'}}>
                     <DragHandle {...attributes} {...listeners} />
                     <Checkbox checked={group.checked} sx={{m: 0, p: 0}}
                               onClick={(e) => changeChecked(e, index)}/>
                 </TableCell>,
-                <TableCell align='center' sx={{width: '17.5%', borderBottom: '1px solid #aaa', p: "4px 16px"}}>
+                <TableCell align='center' className='layoutCell' sx={{width: '17.5%'}}>
                     <Box>
                         {
                             group.squares.map((box, _index) => {
@@ -72,7 +79,7 @@ export const DraggableTableRow = ({ group, index, textModeState, changeChecked, 
                         }
                     </Box>
                 </TableCell>,
-                <TableCell align='center' sx={{borderBottom: '1px solid #aaa', p: "4px 16px"}}>
+                <TableCell align='center' className='layoutCell'>
                     <Box sx={{display: "flex", flexDirection: "column"}}>
                         {
                             group.squares.map((box, _index) => {
@@ -82,7 +89,7 @@ export const DraggableTableRow = ({ group, index, textModeState, changeChecked, 
                         }
                     </Box>
                 </TableCell>,
-                <TableCell align='center' sx={{borderBottom: '1px solid #aaa', p: "4px 16px"}}>
+                <TableCell align='center' className='layoutCell'>
                     {
                         textModeState || group.squares.length > 1
                             ? <span>Texto</span>

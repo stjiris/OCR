@@ -247,7 +247,7 @@ class OcrMenu extends React.Component {
     }
 
     saveConfig(exit = false) {
-        const path = (this.props.sessionId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
         const config = this.state.usingDefault ? "default" : this.getConfig();
         axios.post(API_URL + '/save-config',
             {
@@ -533,7 +533,7 @@ class OcrMenu extends React.Component {
 
 OcrMenu.defaultProps = {
     _private: false,
-    sessionId: "",
+    spaceId: "",
     current_folder: null,
     filename: null,
     isFolder: false,

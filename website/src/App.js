@@ -10,9 +10,8 @@ import Button from '@mui/material/Button';
 import Typography from "@mui/material/Typography";
 
 import LockIcon from '@mui/icons-material/Lock';
-import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import HelpIcon from '@mui/icons-material/Help';
+import SearchIcon from '@mui/icons-material/Search';
 
 import {
     BrowserRouter,
@@ -51,7 +50,7 @@ const API_URL = `${window.location.protocol}//${window.location.host}/${process.
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "1.2.0";
+const VERSION = "1.3.0a";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -63,7 +62,7 @@ function App() {
     };
 
     useEffect(() => {
-        // Check if session already logged in
+        // Check if admin already logged in
         axios.get(API_URL + "/account/check-auth")
             .then(r => {
                 login();
@@ -78,16 +77,16 @@ function App() {
         : <Navigate to="/admin/login" state={{ originPath: location.pathname }} replace />);
     };
 
-    // Allow Form to get the session ID parameter from the route URL
+    // Allow Form to get the space ID parameter from the route URL
     const WrappedForm = (props) => {
-        const { sessionId } = useParams();
+        const { spaceId } = useParams();
         const navigate = useNavigate();
-        return <Form sessionId={sessionId} navigate={navigate} />;
+        return <Form spaceId={spaceId} navigate={navigate} />;
     }
 
     class Form extends React.Component {
         static defaultProps = {
-            sessionId: null,
+            spaceId: null,
             navigate: null,
         }
         constructor(props) {
@@ -108,8 +107,8 @@ function App() {
                 algorithmChoice: [],
                 configChoice: [],
 
-                privateSessionsOpen: false,
-                privateSessions: [],
+                privateSpacesOpen: false,
+                privateSpaces: [],
                 freeSpace: props.freeSpace || 0,
                 freeSpacePercentage: props.freeSpacePercentage || 0,
             }
@@ -128,9 +127,9 @@ function App() {
             this.closeSearchMenu = this.closeSearchMenu.bind(this);
         }
 
-        getPrivateSession() {
-            if (["", "ocr", "ocr-dev", "ocr-prod"].includes(this.props.sessionId)) return null;
-            return this.props.sessionId;
+        getPrivateSpaceId() {
+            if (["", "ocr", "ocr-dev", "ocr-prod"].includes(this.props.spaceId)) return null;
+            return this.props.spaceId;
         }
 
         /*
@@ -150,9 +149,9 @@ function App() {
         }
          */
 
-        createPrivateSession() {
-            return axios.get(API_URL + '/create-private-session')
-            .then(({data}) => {return data["session_id"]});
+        createPrivateSpace() {
+            return axios.get(API_URL + '/create-private-space')
+            .then(({data}) => {return data["space_id"]});
         }
 
         setCurrentPath(new_path_list, isDocument=false) {
@@ -230,21 +229,59 @@ function App() {
             const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: "100vh", display: "flex", flexDirection: "column"}}>
-                    <Typography
-                        id="modal-modal-title"
-                        variant="h3"
-                        component="h1"
-                        sx={{
-                            textAlign: "center",
-                            color: "#1976d2",
-                        }}
-                    >
+                    <Box sx={{
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                    }}>
+                        <Typography
+                            id="modal-modal-title"
+                            variant="h3"
+                            component="h1"
+                            sx={{
+                                textAlign: "center",
+                                color: "#1976d2",
+                                margin: "auto",
+                            }}
+                        >
+                            {
+                                this.getPrivateSpaceId()
+                                    ? `Espaço Privado - ${this.getPrivateSpaceId()}`
+                                    : "OCR - Reconhecimento Ótico de Caracteres"
+                            }
+                        </Typography>
+
                         {
-                            this.getPrivateSession()
-                                ? `Sessão Privada - ${this.getPrivateSession()}`
-                                : "OCR - Reconhecimento Ótico de Caracteres"
+                            this.getPrivateSpaceId()
+                                ? <Button
+                                    disabled={buttonsDisabled}
+                                    variant="contained"
+                                    startIcon={<LockIcon/>}
+                                    onClick={() => { this.props.navigate("/"); }}
+                                    className="menuButton"
+                                    color="error"
+                                    sx={{marginRight: "1rem", marginTop: "auto", marginBottom: "auto"}}
+                                >
+                                    Sair do Espaço
+                                </Button>
+                                : <Button
+                                    disabled={buttonsDisabled}
+                                    variant="contained"
+                                    startIcon={<LockIcon/>}
+                                    onClick={() => {
+                                        this.createPrivateSpace().then((spaceId) => {
+                                            //this.setCurrentPath([""]);
+                                            this.setState({currentFolderPathList: [""]});
+                                            this.props.navigate(`/space/${spaceId}`);
+                                        });
+                                    }}
+                                    className="menuButton"
+                                    sx={{marginRight: "1rem", marginTop: "auto", marginBottom: "auto"}}
+                                >
+                                    Novo Espaço Privado
+                                </Button>
                         }
-                    </Typography>
+                    </Box>
 
                     <Box sx={{
                         display: 'flex',
@@ -252,49 +289,10 @@ function App() {
                         justifyContent: 'space-between',
                         zIndex: '5',
                         // border: '1px solid #000000',
-                        padding: '0.5rem',
+                        paddingTop: '0.5rem',
+                        paddingBottom: '0.5rem',
                     }}>
                         <Box sx={{display: "flex", flexDirection: "row"}}>
-                        {
-                            this.getPrivateSession()
-                            ? <Button
-                                disabled={buttonsDisabled}
-                                variant="contained"
-                                startIcon={<LockIcon/>}
-                                onClick={() => { this.props.navigate("/"); }}
-                                className="menuButton"
-                                color="error"
-                            >
-                                Sair da Sessão
-                            </Button>
-                            : <Button
-                                disabled={buttonsDisabled}
-                                variant="contained"
-                                startIcon={<LockIcon/>}
-                                onClick={() => {
-                                    this.createPrivateSession().then((sessionId) => {
-                                        //this.setCurrentPath([""]);
-                                        this.setState({currentFolderPathList: [""]});
-                                        this.props.navigate(`/session/${sessionId}`);
-                                    });
-                                }}
-                                className="menuButton"
-                            >
-                                Nova Sessão Privada
-                            </Button>
-                        }
-
-                            <Button
-                                disabled={buttonsDisabled}
-                                variant="contained"
-                                startIcon={<CreateNewFolderIcon/>}
-                                onClick={() => this.fileSystem.current.createFolder()}
-                                className="menuButton"
-                                sx={{ml: '0.5rem'}}
-                            >
-                                Nova Pasta
-                            </Button>
-
                             <Box
                                 sx={{
                                     display: 'flex',
@@ -361,42 +359,24 @@ function App() {
                                 <p className="pathElement">
                                     {this.state.currentFileName}
                                 </p>
-                                {
-                                    // in private session, root level can have docs
-                                    (!buttonsDisabled
-                                        && !this.state.currentFileName
-                                        && (this.state.currentFolderPathList.length > 1 || Boolean(this.getPrivateSession())))
-                                        ? <Button
-                                            variant="contained"
-                                            startIcon={<NoteAddIcon/>}
-                                            onClick={() => this.fileSystem.current.createFile()}
-                                            className="menuButton pathElement"
-                                        >
-                                            Adicionar Documento
-                                        </Button>
-                                        : null
-                                }
                             </Box>
                         </Box>
 
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
-                            <Button
-                                disabled={buttonsDisabled || Boolean(this.getPrivateSession())}
-                                variant="text"
-                                onClick={() => {
-                                    this.setState(searchMenuState)
-                                }}
-                                sx={{
-                                    mr: '1.5rem',
-                                    textTransform: 'none',
-                                    fontWeight: 'bold',
-                                    p: 0,
-                                    fontSize: '1rem',
-                                    textDecoration: 'underline'
-                                }}
-                            >
-                                Pesquisar
-                            </Button>
+                            {buttonsDisabled || Boolean(this.getPrivateSpaceId())
+                                ? null
+                                : <Button
+                                    variant="contained"
+                                    startIcon={<SearchIcon />}
+                                    onClick={() => {
+                                        this.setState(searchMenuState)
+                                    }}
+                                    className="menuButton"
+                                    sx={{mr: '1.5rem'}}
+                                >
+                                    Pesquisar
+                                </Button>
+                            }
 
                             <p style={{margin: 0}}>{`Versão: ${VERSION}`}</p>
 
@@ -406,7 +386,8 @@ function App() {
                                 onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vTjGei4_szYIrD8G7x2UmNKlbOsW_JZmVj0E2J4933-hXjkU9iuKGr0J8Aj6qpF25HlCb9y3vMadC23/pub", '_blank')}
                                 startIcon={<HelpIcon/>}
                                 sx={{
-                                    ml: '1.5rem',
+                                    marginLeft: '1.5rem',
+                                    marginRight: '0.5rem',
                                     textTransform: 'none',
                                     p: 0
                                 }}
@@ -420,8 +401,8 @@ function App() {
                         {
                             !this.state.searchMenu
                             ? <FileExplorer ref={this.fileSystem}
-                                            _private={Boolean(this.getPrivateSession())}
-                                            sessionId={this.props.sessionId || ""}  // sessionId or empty str if null
+                                            _private={Boolean(this.getPrivateSpaceId())}
+                                            spaceId={this.props.spaceId || ""}  // spaceId or empty str if null
                                             current_folder={
                                                 // replace(/^\//, '') removes '/' from the start of the path. the server expects non-absolute paths
                                                 this.state.currentFolderPathList.join('/').replace(/^\//, '')
@@ -458,7 +439,7 @@ function App() {
             <BrowserRouter basename={`/${process.env.REACT_APP_BASENAME}`}>
                 <Routes>
                     <Route index element={<WrappedForm />} />
-                    <Route path="/session/:sessionId" element={<WrappedForm />} />
+                    <Route path="/space/:spaceId" element={<WrappedForm />} />
 
                     <Route element={<ProtectedRoute isAuthenticated={isAuthenticated}/>} >
                         <Route exact path="/admin" element={<AdminDashboard />} />

@@ -1,4 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+@font-face {
+    font-family: "Cinzel";
+    src: url("fonts/Cinzel-VariableFont_wght.ttf")
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("fonts/NotoSans-VariableFont_wdth,wght.ttf")
+}
+
+@font-face {
+    font-family: "Roboto";
+    src: url("fonts/Roboto-VariableFont_wdth,wght.ttf")
+}
+
+@font-face {
+    font-family: "Roboto Mono";
+    src: url("fonts/RobotoMono-VariableFont_wght.ttf")
+}
 
 body {
   font-family: 'Noto Sans', 'Arial', sans-serif;
@@ -43,15 +61,15 @@ body {
     color: black;
 }
 
-.actionButton {
+.MuiButtonBase-root.actionButton {
     color: #1976d2;
 }
 
-.actionButton.altColor {
+.MuiButtonBase-root.actionButton.altColor {
     color: #19a942;
 }
 
-.negActionButton {
+.MuiButtonBase-root.negActionButton {
     color: #f00;
 }
 
@@ -82,10 +100,13 @@ body {
     text-transform: none;
     font-size: 1rem;
     height: 2rem;
-    width: fit-content;
+    width: max-content;
+    margin-left: 0.7rem;
+    padding: 0 10px 0 10px;
 }
 
 .fileIcon {
+    color: black;
     font-size: 25px;
     margin: 0.5rem 0.5rem 0.5rem 0.2rem;  /* 0.2rem left */
 }
@@ -103,6 +124,10 @@ body {
     width: 100%;
     overflow: scroll;
     border: 1px solid grey;
+}
+
+.pageImageContainer:hover {
+    cursor: crosshair;
 }
 
 .pageImageContainer .pageImage {  /* pageImage within a pageImageContainer */
@@ -154,8 +179,30 @@ cannot be styled with props, interferes with functioning of Autocomplete
 /*
   File Explorer table formatting
 */
+
 .MuiTableRow-root.explorerRow {
     height: 4rem;
+    background-color: #ffffff;
+    border-top: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.MuiTableRow-root.explorerRow:hover {
+    background-color: #d7d7d7 !important;
+}
+
+.MuiTableRow-root.explorerRow.targeted {
+    background-color: #d7d7d7 !important;
+}
+
+.MuiTableRow-root.staticFileRow {
+    background-color: #C4DCF4FF;
+    height: 3rem;
+}
+
+.MuiTableCell-root.MuiTableCell-head.headerCell {
+    height: 2rem;
+    padding: 16px;
 }
 
 .MuiTableCell-root.explorerCell {
@@ -166,6 +213,7 @@ cannot be styled with props, interferes with functioning of Autocomplete
 .MuiTableCell-root.MuiTableCell-body.explorerCell {
     padding-top: 0;
     padding-bottom: 0;
+    border-bottom: 0;
 }
 
 .explorerCell.errorCell {
@@ -187,69 +235,123 @@ cannot be styled with props, interferes with functioning of Autocomplete
 .stateCell .stateBox {
     overflow: hidden;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: space-evenly;
+    justify-content: left;
+}
+
+.MuiTableCell-root.optionsCell {
+    padding: 0;
+    width: 1%;
 }
 
 .MuiTableCell-root.nameCell {
-    width: 30%;
+    border-left: 0;
+    width: 34%;
+    text-align: left;
+}
+
+.MuiTableCell-root.nameCell:hover {
+    font-weight: bold;
 }
 
 .MuiTableCell-root.staticNameCell {
-    width: 38%;
+    border-left: 0;
+    width: 34%;
+    text-align: left;
+    padding-left: 48px;
 }
 
 .MuiTableCell-root.actionsCell {
-    width: 20%;
+    width: 16%;
     text-align: center;
+    padding: 0;
 }
 
 .MuiTableCell-root.staticActionsCell {
-    width: 20%;
+    display: none;
+    width: 16%;
     text-align: center;
 }
 
 .actionsCell-inner {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
     justify-content: center;
     align-items: center;
+    float: right;
 }
 
 .MuiTableCell-root.stateCell {
-    width: 8%;
-    text-align: center;
+    width: 13%;
+    text-align: left;
 }
 
 .MuiTableCell-root.dateCreatedCell {
-    width: 15%;
-    text-align: center;
+    width: 13%;
+    text-align: left;
 }
 
 .MuiTableCell-root.staticDateCreatedCell {
-    width: 15%;
-    text-align: center;
+    width: 13%;
+    text-align: left;
 }
 
 .MuiTableCell-root.detailsCell {
-    width: 20%;
-    text-align: center;
+    width: 10%;
+    text-align: left;
 }
 
 .MuiTableCell-root.staticDetailsCell {
-    width: 20%;
-    text-align: center;
+    width: 10%;
+    text-align: left;
 }
 
 .MuiTableCell-root.sizeCell {
-    width: 12%;
-    text-align: center;
+    width: 8%;
+    text-align: right;
+    font-family: "Roboto Mono", monospace;
 }
 
 .MuiTableCell-root.staticSizeCell {
-    width: 12%;
-    text-align: center;
+    width: 8%;
+    text-align: right;
+    font-family: "Roboto Mono", monospace;
+}
+
+/*
+  Layout boxes list table formatting
+*/
+
+.MuiTableRow-head.layoutHeaderRow {
+    border-bottom: 1px solid #aaa;
+}
+
+.MuiTableCell-head.layoutHeaderCell {
+    height: 1rem;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #aaa;
+}
+
+.MuiTableRow-root.layoutRow {
+    border-bottom: 1px solid #aaa;
+}
+
+/* Color odd rows, ensures recolor when table is re-ordered */
+.MuiTableRow-root.layoutRow:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+/* Color even rows, ensures recolor when table is re-ordered */
+.MuiTableRow-root.layoutRow:nth-child(even) {
+    background-color: #f5f5f5;
+}
+
+.MuiTableCell-root.layoutCell {
+    height: 1rem;
+    border-bottom: 1px solid #aaa;
 }
 
 span {
@@ -268,5 +370,14 @@ img:hover {
 .fancy-font {
   font-family: 'Cinzel', serif;
   font-weight: 500;
-  margin: 0px;
+  margin: 0;
+}
+
+.no-text-select {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
+                          supported by Chrome, Edge, Opera and Firefox */
 }

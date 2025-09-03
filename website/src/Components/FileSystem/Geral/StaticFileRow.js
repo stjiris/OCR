@@ -1,13 +1,9 @@
 import React from 'react';
 import Box from '@mui/material/Box';
+import Button from "@mui/material/Button";
 
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-
-import loadComponent from '../../../utils/loadComponents';
-const TooltipIcon = loadComponent('TooltipIcon', 'TooltipIcon');
 
 class StaticFileRow extends React.Component {
     constructor(props) {
@@ -27,36 +23,44 @@ class StaticFileRow extends React.Component {
 
     render() {
         return (
-            <TableRow className="explorerRow">
-                <TableCell className="explorerCell staticNameCell">
+            <TableRow
+                className="staticFileRow"
+                sx={{
+                    display: this.props.expanded ? "table-row" : "none",
+                }}
+            >
+                <TableCell scope="column" className="explorerCell optionsCell" />
+
+                <TableCell className="explorerCell staticNameCell" align='left'>
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
                         alignItems: 'center',
                     }}>
-                        {this.props.fileIcon}
-                        <span>{this.props.name}</span>
+                        <Button
+                            onClick={() => this.props.downloadFile(this.props.filename)}
+                            variant="text"
+                            sx={{
+                                textTransform: "none",
+                                padding: 0,
+                                lineHeight: 0.75,
+                            }}
+                        >
+                            {this.props.fileIcon}
+                            <span>{this.props.name}</span>
+                        </Button>
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell staticActionsCell">
-                    <Box className="actionsCell-inner">
-                        <TooltipIcon
-                            className="actionButton"
-                            message="Transferir"
-                            clickFunction={() => this.props.downloadFile(this.props.filename)}
-                            icon={<FileDownloadIcon/>}
-                        />
-                    </Box>
-                </TableCell>
+                <TableCell className="explorerCell stateCell" align='center' />
 
-                <TableCell className="explorerCell staticDateCreatedCell">
+                <TableCell className="explorerCell staticDateCreatedCell" align='left'>
                     <span>
                         {this.state.info["creation"]}
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell staticDetailsCell">
+                <TableCell className="explorerCell staticDetailsCell" align='left'>
                     <span>
                         {this.state.info["pages"]
                             ? this.state.info["pages"] + " página(s)"
@@ -65,8 +69,8 @@ class StaticFileRow extends React.Component {
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell staticSizeCell">
-                    <span>
+                <TableCell className="explorerCell staticSizeCell" align='right'>
+                    <span style={{fontSize: "0.92rem"}}>
                         {this.state.info["size"]}
                     </span>
                 </TableCell>
@@ -76,6 +80,7 @@ class StaticFileRow extends React.Component {
 }
 
 StaticFileRow.defaultProps = {
+    expanded: false,
     info: null,
     name: null,
     filename: null,

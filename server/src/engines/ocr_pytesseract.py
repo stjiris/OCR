@@ -1,3 +1,4 @@
+import math
 import os
 from tempfile import NamedTemporaryFile
 
@@ -186,3 +187,11 @@ def build_ocr_config(config: dict) -> tuple[str, str]:
         config_str = " ".join(other_params)
 
     return lang, config_str
+
+
+def estimate_ocr_time(config: dict, n_pages: int):
+    # TODO: adjust estimate for pytesseract
+    if n_pages < 20:
+        return "<1min"
+    else:
+        return f"{math.ceil(0.0176 * n_pages + 0.2632)}min"

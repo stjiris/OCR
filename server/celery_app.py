@@ -1,5 +1,6 @@
 import json
 import logging as log
+import math
 import os
 import shutil
 import tempfile
@@ -29,11 +30,12 @@ from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_doc_len
 from src.utils.file import get_file_basename
+from src.utils.file import get_file_size
 from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
-from src.utils.file import get_size
 from src.utils.file import PRIVATE_PATH
+from src.utils.file import size_to_units
 from src.utils.file import TIMEZONE
 from src.utils.file import update_json_file
 from src.utils.image import parse_images
@@ -67,64 +69,143 @@ def task_export(path, filetype, delimiter=False, force_recreate=False, simple=Fa
 
 @celery.task(name="make_changes")
 def task_make_changes(path, data):
+    data_file = path + "/_data.json"
+    update_json_file(
+        data_file,
+        {
+            "status": {
+                "stage": "exporting",
+                "message": "A gerar resultados",
+            }
+        },
+    )
+
     export_folder = path + "/_export"
     created_time = get_current_time()
 
     if data["txt"]["complete"]:
+        update_json_file(
+            data_file,
+            {
+                "status": {
+                    "stage": "exporting",
+                    "message": "A gerar texto",
+                }
+            },
+        )
         export_file(path, "txt", force_recreate=True)
         data["txt"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_txt.txt", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_txt.txt", path_complete=True)
+            ),
             "creation": created_time,
         }
 
     if data["txt_delimited"]["complete"]:
+        update_json_file(
+            data_file,
+            {
+                "status": {
+                    "stage": "exporting",
+                    "message": "A gerar texto delimitado",
+                }
+            },
+        )
         export_file(path, "txt", delimiter=True, force_recreate=True)
         data["txt_delimited"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_txt_delimited.txt", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_txt_delimited.txt", path_complete=True)
+            ),
             "creation": created_time,
         }
 
     if data["pdf_indexed"]["complete"]:
+        update_json_file(
+            data_file,
+            {
+                "status": {
+                    "stage": "exporting",
+                    "message": "A gerar PDF com índice",
+                }
+            },
+        )
         recreate_csv = data["csv"]["complete"]
         os.remove(export_folder + "/_pdf_indexed.pdf")
         export_file(path, "pdf", force_recreate=True, get_csv=recreate_csv)
         data["pdf_indexed"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_pdf_indexed.pdf", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_pdf_indexed.pdf", path_complete=True)
+            ),
             "creation": created_time,
         }
 
     if data["pdf"]["complete"]:
+        update_json_file(
+            data_file,
+            {
+                "status": {
+                    "stage": "exporting",
+                    "message": "A gerar PDF",
+                }
+            },
+        )
         recreate_csv = data["csv"]["complete"] and not data["pdf_indexed"]["complete"]
         os.remove(export_folder + "/_pdf.pdf")
         export_file(path, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
         data["pdf"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_pdf.pdf", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_pdf.pdf", path_complete=True)
+            ),
             "creation": created_time,
         }
 
     if data["csv"]["complete"] and not (
         data["pdf_indexed"]["complete"] or data["pdf"]["complete"]
     ):
+        update_json_file(
+            data_file,
+            {
+                "status": {
+                    "stage": "exporting",
+                    "message": "A gerar CSV",
+                }
+            },
+        )
         export_csv(path, force_recreate=True)
 
     if data["csv"]["complete"]:
         data["csv"] = {
             "complete": True,
-            "size": get_size(export_folder + "/_index.csv", path_complete=True),
+            "size": size_to_units(
+                get_file_size(export_folder + "/_index.csv", path_complete=True)
+            ),
             "creation": created_time,
         }
 
-    try:
-        task_request_ner(path)
-    except Exception as e:
-        print(e)
-        data["ner"] = {"complete": False, "error": True}
+    if data["ner"]["complete"]:
+        try:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A obter entidades",
+                    }
+                },
+            )
+            task_request_ner(path)
+        except Exception as e:
+            log.error(f"Error fetching NER for {path}: {e}")
+            data["ner"] = {"complete": False, "error": True}
 
-    update_json_file(path + "/_data.json", data)
+    data["status"] = {
+        "stage": "post-ocr",
+    }
+    update_json_file(data_file, data)
     return {"status": "success"}
 
 
@@ -140,6 +221,9 @@ def task_count_doc_pages(path: str, extension: str):
         {
             "pages": get_page_count(path, extension),
             "stored": True,
+            "status": {
+                "stage": "waiting",
+            },
         },
     )
 
@@ -156,9 +240,20 @@ def task_perform_direct_ocr(
 
 @celery.task(name="prepare_file")
 def task_prepare_file_ocr(path: str, callback: Signature | None = None):
+    data_folder = f"{path}/_data.json"
     try:
         if not os.path.exists(f"{path}/_pages"):
             os.mkdir(f"{path}/_pages")
+
+        update_json_file(
+            data_folder,
+            {
+                "status": {
+                    "stage": "preparing",
+                    "message": "A preparar o documento",
+                }
+            },
+        )
 
         data = get_data(f"{path}/_data.json")
         extension = data["extension"]
@@ -239,10 +334,13 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
             callback.apply_async()
 
     except Exception as e:
-        data_folder = f"{path}/_data.json"
         data = get_data(data_folder)
         data["ocr"] = data.get("ocr", {})
         data["ocr"]["exceptions"] = str(e)
+        data["status"] = {
+            "stage": "error",
+            "message": "Erro a preparar documento",
+        }
         update_json_file(data_folder, data)
         log.error(f"Error in preparing OCR for file at {path}: {e}")
         raise e
@@ -257,7 +355,9 @@ def task_request_ner(path):
     if success:
         data["ner"] = {
             "complete": True,
-            "size": get_size(f"{path}/_export/_entities.json", path_complete=True),
+            "size": size_to_units(
+                get_file_size(f"{path}/_export/_entities.json", path_complete=True)
+            ),
             "creation": creation_date,
         }
     else:
@@ -276,7 +376,7 @@ def task_file_ocr(
     :param config: config to use
     :param delete_on_finish: whether the original file and pages should be deleted after processing, keeping only the results
     """
-    data_folder = f"{path}/_data.json"
+    data_file = f"{path}/_data.json"
     try:
         with open(DEFAULT_CONFIG_FILE) as f:
             default_config = json.load(f)
@@ -329,23 +429,31 @@ def task_file_ocr(
         ocr_engine = globals()[f'ocr_{config["engine"]}'.lower()]
         valid, errors = ocr_engine.verify_params(config)
         if not valid:
-            data = get_data(data_folder)
+            data = get_data(data_file)
             data["ocr"].update(
                 {"progress": 0, "exceptions": {"Parâmetros inválidos:": errors}}
             )
-            update_json_file(data_folder, data)
+            data["status"] = {
+                "stage": "error",
+                "message": f"Parâmetros inválidos: {errors}",
+            }
+            update_json_file(data_file, data)
             log.error(
                 f'Error in performing OCR for file at {path}: {data["ocr"]["exceptions"]}'
             )
             return {"status": "error", "errors": errors}
 
         # Update the information related to the OCR
-        data = get_data(data_folder)
+        data = get_data(data_file)
         data["ocr"] = {
             "config": config,
             "progress": 0,
         }
-        update_json_file(data_folder, data)
+        data["status"] = {
+            "stage": "ocr",
+            "message": f"({ocr_engine.estimate_ocr_time(config, get_doc_len(data_file))})",
+        }
+        update_json_file(data_file, data)
 
         # Build config according to specified engine
         lang, config_formatted = ocr_engine.build_ocr_config(config)
@@ -418,9 +526,13 @@ def task_file_ocr(
         return {"status": "success"}
 
     except Exception as e:
-        data = get_data(data_folder)
+        data = get_data(data_file)
         data["ocr"]["exceptions"] = str(e)
-        update_json_file(data_folder, data)
+        data["status"] = {
+            "stage": "error",
+            "message": "Erro durante OCR",
+        }
+        update_json_file(data_file, data)
         log.error(f"Error in performing OCR for file at {path}: {e}")
 
         return {"status": "error"}
@@ -705,6 +817,10 @@ def task_page_ocr(
 
         data = get_data(data_file)
         data["ocr"]["progress"] = len(files)
+        data["status"] = {
+            "stage": "ocr",
+            "message": f"({ocr_engine.estimate_ocr_time(config, n_doc_pages - len(files))})",
+        }
         update_json_file(data_file, data)
 
         # If last page has been processed, generate results
@@ -738,6 +854,10 @@ def task_page_ocr(
         traceback.print_exc()
         data = get_data(data_file)
         data["ocr"]["exceptions"] = str(e)
+        data["status"] = {
+            "stage": "error",
+            "message": f"Erro durante OCR da página {int(get_file_basename(filename).split('_')[-1]) + 1}",
+        }
         update_json_file(data_file, data)
         log.error(f"Error in performing a page's OCR for file at {path}: {e}")
 
@@ -748,43 +868,96 @@ def task_page_ocr(
 def task_export_results(path: str, output_types: list[str]):
     data_file = f"{path}/_data.json"
     data = get_data(data_file)
+    update_json_file(
+        data_file,
+        {
+            "status": {
+                "stage": "exporting",
+                "message": "A gerar resultados",
+            }
+        },
+    )
 
     try:
         if ("ner" in output_types or "txt" in output_types) and not data["txt"][
             "complete"
         ]:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar texto",
+                    }
+                },
+            )
             export_file(path, "txt")
             data["txt"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_txt.txt", path_complete=True),
+                "size": size_to_units(
+                    get_file_size(f"{path}/_export/_txt.txt", path_complete=True)
+                ),
                 "creation": get_current_time(),
             }
 
         if "txt_delimited" in output_types and not data["txt_delimited"]["complete"]:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar texto delimitado",
+                    }
+                },
+            )
             export_file(path, "txt", delimiter=True)
             data["txt_delimited"] = {
                 "complete": True,
-                "size": get_size(
-                    f"{path}/_export/_txt_delimited.txt", path_complete=True
+                "size": size_to_units(
+                    get_file_size(
+                        f"{path}/_export/_txt_delimited.txt", path_complete=True
+                    )
                 ),
                 "creation": get_current_time(),
             }
 
         if os.path.exists(f"{path}/_images") and os.listdir(f"{path}/_images"):
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar imagens",
+                    }
+                },
+            )
             export_file(path, "imgs")
             data["zip"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_images.zip", path_complete=True),
+                "size": size_to_units(
+                    get_file_size(f"{path}/_export/_images.zip", path_complete=True)
+                ),
                 "creation": get_current_time(),
             }
 
         if "pdf_indexed" in output_types and not data["pdf_indexed"]["complete"]:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar PDF com índice",
+                    }
+                },
+            )
             export_file(path, "pdf", get_csv=("csv" in output_types))
             creation_time = get_current_time()
             data["pdf_indexed"] = {
                 "complete": True,
-                "size": get_size(
-                    f"{path}/_export/_pdf_indexed.pdf", path_complete=True
+                "size": size_to_units(
+                    get_file_size(
+                        f"{path}/_export/_pdf_indexed.pdf", path_complete=True
+                    )
                 ),
                 "creation": creation_time,
                 "pages": get_page_count(path, "pdf") + 1,
@@ -793,16 +966,29 @@ def task_export_results(path: str, output_types: list[str]):
                 # CSV exported as part of PDF export
                 data["csv"] = {
                     "complete": True,
-                    "size": get_size(f"{path}/_export/_index.csv", path_complete=True),
+                    "size": size_to_units(
+                        get_file_size(f"{path}/_export/_index.csv", path_complete=True)
+                    ),
                     "creation": creation_time,
                 }
 
         if "pdf" in output_types and not data["pdf"]["complete"]:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar PDF",
+                    }
+                },
+            )
             export_file(path, "pdf", simple=True, get_csv=("csv" in output_types))
             creation_time = get_current_time()
             data["pdf"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_pdf.pdf", path_complete=True),
+                "size": size_to_units(
+                    get_file_size(f"{path}/_export/_pdf.pdf", path_complete=True)
+                ),
                 "creation": creation_time,
                 "pages": get_page_count(path, "pdf"),
             }
@@ -810,25 +996,49 @@ def task_export_results(path: str, output_types: list[str]):
                 # CSV exported as part of PDF export
                 data["csv"] = {
                     "complete": True,
-                    "size": get_size(f"{path}/_export/_index.csv", path_complete=True),
+                    "size": size_to_units(
+                        get_file_size(f"{path}/_export/_index.csv", path_complete=True)
+                    ),
                     "creation": creation_time,
                 }
 
         if "csv" in output_types and not data["csv"]["complete"]:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar CSV",
+                    }
+                },
+            )
             export_csv(path)
             data["csv"] = {
                 "complete": True,
-                "size": get_size(f"{path}/_export/_index.csv", path_complete=True),
+                "size": size_to_units(
+                    get_file_size(f"{path}/_export/_index.csv", path_complete=True)
+                ),
                 "creation": get_current_time(),
             }
 
         if "ner" in output_types:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A obter entidades",
+                    }
+                },
+            )
             success = get_ner_file(path)
             if success:
                 data["ner"] = {
                     "complete": True,
-                    "size": get_size(
-                        f"{path}/_export/_entities.json", path_complete=True
+                    "size": size_to_units(
+                        get_file_size(
+                            f"{path}/_export/_entities.json", path_complete=True
+                        )
                     ),
                     "creation": get_current_time(),
                 }
@@ -836,12 +1046,20 @@ def task_export_results(path: str, output_types: list[str]):
                 data["ner"] = {"complete": False, "error": True}
 
         data["ocr"]["progress"] = "completed"
+        data["status"] = {
+            "stage": "post-ocr",
+        }
         update_json_file(data_file, data)
         return {"status": "success"}
+
     except Exception as e:
         traceback.print_exc()
         data = get_data(data_file)
         data["ocr"]["exceptions"] = str(e)
+        data["status"] = {
+            "stage": "error",
+            "message": "Erro a gerar resultados",
+        }
         update_json_file(data_file, data)
         log.error(f"Error in exporting results for file at {path}: {e}")
 
@@ -860,10 +1078,10 @@ def task_delete_file(path: str):
 #####################################
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
-    # Clean up old private sessions daily at midnight
+    # Clean up old private spaces daily at midnight
     entry = RedBeatSchedulerEntry(
-        "cleanup_private_sessions",
-        task_delete_old_private_sessions.s().task,
+        "cleanup_private_spaces",
+        task_delete_old_private_spaces.s().task,
         crontab(minute="0", hour="0"),
         # args=["first", "second"], # example of sending args to task scheduled with redbeat
         app=celery,
@@ -872,25 +1090,23 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     log.info(f"Created periodic task {entry}")
 
 
-@celery.task(name="set_max_private_session_age")
-def task_set_max_private_session_age(new_max_age: int | str):
+@celery.task(name="set_max_private_space_age")
+def task_set_max_private_space_age(new_max_age: int | str):
     try:
-        os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
+        os.environ["MAX_PRIVATE_SPACE_AGE"] = str(int(new_max_age))
         return {"status": "success"}
     except ValueError:
         return {"status": "error"}
 
 
-@celery.task(name="cleanup_private_sessions")
-def task_delete_old_private_sessions():
-    max_private_session_age = int(
-        os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
-    )  # days
-    log.info(f"Deleting private sessions older than {max_private_session_age} days")
+@celery.task(name="cleanup_private_spaces")
+def task_delete_old_private_spaces():
+    max_private_space_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "5"))  # days
+    log.info(f"Deleting private spaces older than {max_private_space_age} days")
 
-    priv_sessions = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
+    private_spaces = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
     n_deleted = 0
-    for folder in priv_sessions:
+    for folder in private_spaces:
         data = get_data(f"{folder}/_data.json")
         created_time = data["creation"]
         as_datetime = datetime.strptime(created_time, "%d/%m/%Y %H:%M:%S").astimezone(
@@ -898,13 +1114,13 @@ def task_delete_old_private_sessions():
         )
         now = datetime.now().astimezone(TIMEZONE)
         log.debug(
-            f"{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_session_age}"
+            f"{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_space_age}"
         )
-        if (now - as_datetime).days > max_private_session_age:
+        if (now - as_datetime).days > max_private_space_age:
             shutil.rmtree(folder)
             n_deleted += 1
 
     update_json_file(
         f"./{PRIVATE_PATH}/_data.json", {"last_cleanup": get_current_time()}
     )
-    return f"{n_deleted} private session(s) deleted"
+    return f"{n_deleted} private space(s) deleted"

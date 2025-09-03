@@ -11,8 +11,9 @@ const ReturnButton = ({ disabled = false, returnFunction = null, sx = {} }) => {
             variant="contained"
             startIcon={<UndoIcon />}
             onClick={() => returnFunction()}
-            className="menuFunctionButton noMarginRight"
+            className="menuFunctionButton"
             sx={Object.assign({
+                marginLeft: "0.5rem",
                 backgroundColor: '#ffffff',
                 color: '#000000',
                 ':hover': { bgcolor: '#ddd' },

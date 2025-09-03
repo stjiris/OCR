@@ -112,7 +112,7 @@ const Dashboard = (props) => {
                         className="adminMenuButton"
                         sx={{width: '100%'}}
                     >
-                        Gerir Workers e Processos
+                        Ver Workers e Processos
                     </Button>
                 </Link>
             </Box>

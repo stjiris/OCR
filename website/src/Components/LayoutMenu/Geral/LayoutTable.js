@@ -80,14 +80,14 @@ const LayoutTable = ({
             <TableContainer sx={{width: "100%", maxHeight: '80vh', border: '1px solid #aaa'}}>
                 <Table stickyHeader>
                     <TableHead>
-                        <TableRow>
-                            <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}>
+                        <TableRow className='layoutHeaderRow'>
+                            <TableCell align='center' className='layoutHeaderCell'>
                                 <Checkbox checked={confirmAllChecked()} sx={{m: 0, p: 0}}
                                           onChange={(e) => commitAllCheckBoxes(e)}/>
                             </TableCell>
-                            <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}><b>ID</b></TableCell>
-                            <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}><b>Pixels</b></TableCell>
-                            <TableCell align='center' sx={{borderBottom: '1px solid #aaa'}}><b>Tipo</b></TableCell>
+                            <TableCell align='center' className='layoutHeaderCell'><b>ID</b></TableCell>
+                            <TableCell align='center' className='layoutHeaderCell'><b>Pixels</b></TableCell>
+                            <TableCell align='center' className='layoutHeaderCell'><b>Tipo</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -96,7 +96,14 @@ const LayoutTable = ({
                             !data || data.length === 0
                                 ? null
                                 : data.map((group, index) => {
-                                    return (<DraggableTableRow group={group} index={index} textModeState={textModeState} changeChecked={changeChecked} switchType={switchType}/>);
+                                    return (
+                                        <DraggableTableRow
+                                            group={group}
+                                            index={index}
+                                            textModeState={textModeState}
+                                            changeChecked={changeChecked}
+                                            switchType={switchType}
+                                        />);
                                 })
                         }
                         </SortableContext>
