@@ -316,14 +316,11 @@ const ConfigManager = (props) => {
 
     const saveConfig = () => {
         const config = getConfig();
-        let endpoint = "save-config";
-        if (isEditingExistingConfig) {
-            endpoint = "edit-config";
-        }
-        axios.put(API_URL + `/admin/${endpoint}`,
+        axios.put(API_URL + `/admin/save-config`,
             {
                 config_name: configName,
                 config: config,
+                edit: isEditingExistingConfig,
             },
             {
                 headers: {

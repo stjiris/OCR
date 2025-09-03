@@ -1532,16 +1532,28 @@ def save_ocr_config():
     if config_path is None:
         return bad_request(f"Invalid config name: {config_name}")
 
-    # TODO: check validity of config
-    if not os.path.exists(config_path):
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(config, f, ensure_ascii=False, indent=2)
-        return {"success": True, "message": "Configuração guardada."}
+    if "edit" in data:
+        if data["edit"] and not os.path.exists(config_path):
+            return {
+                "success": False,
+                "message": f"A configuração '{config_name}' não existe.",
+            }
+        elif not data["edit"] and os.path.exists(config_path):
+            return {
+                "success": False,
+                "message": f"A configuração '{config_name}' já existe.",
+            }
+
+    if "edit" in data and data["edit"]:
+        message = "Configuração atualizada."
     else:
-        return {
-            "success": False,
-            "message": f"A configuração '{config_name}' já existe.",
-        }
+        message = "Configuração guardada."
+
+    # TODO: check validity of config
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+    return {"success": True, "message": message}
 
 
 @app.route("/admin/edit-config", methods=["PUT"])
