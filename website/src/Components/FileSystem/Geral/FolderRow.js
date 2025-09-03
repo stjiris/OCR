@@ -170,7 +170,7 @@ class FolderRow extends React.Component {
                 className={"explorerRow" + (this.state.contextMenu ? " targeted" : "")}
                 onContextMenu={(e) => this.handleContextMenu(e)}
             >
-                <TableCell className="optionsCell">
+                <TableCell className="explorerCell optionsCell">
                     <IconButton
                         aria-label={"Opções para " + this.props.name}
                         onClick={(e) => this.handleOptionsClick(e)}

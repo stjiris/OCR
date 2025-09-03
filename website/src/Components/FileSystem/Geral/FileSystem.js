@@ -849,7 +849,7 @@ class FileExplorer extends React.Component {
                 <Table aria-label="filesystem table" sx={{tableLayout: "fixed", border:"1px solid #aaa"}}>
                     <TableHead>
                         <TableRow sx={{backgroundColor: "#f5f5f5"}}>
-                            <TableCell scope="column" className="optionsCell" />
+                            <TableCell scope="column" className="explorerCell optionsCell" />
 
                             <TableCell
                                 key="name"
@@ -977,7 +977,7 @@ class FileExplorer extends React.Component {
                     <TableBody>
                         {this.state.components.length === 0
                             ? <>
-                                <TableCell scope="column" className="optionsCell" />
+                                <TableCell scope="column" className="explorerCell optionsCell" />
                                 <Typography variant="body1" sx={{marginTop: "1rem", marginBottom: "1rem", marginLeft: "1rem"}}>
                                     A pasta está vazia. Adicione um documento ou sub-pasta.
                                 </Typography>

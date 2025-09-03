@@ -334,7 +334,7 @@ class DocumentRow extends React.Component {
                     onContextMenu={(e) => this.handleContextMenu(e)}
                     sx={{ cursor: loadingStages.has(status.stage) ? "wait" : "context-menu" }}
                 >
-                    <TableCell className="optionsCell">
+                    <TableCell className="explorerCell optionsCell">
                         <IconButton
                             aria-label={"Opções para " + this.props.name}
                             onClick={(e) => this.handleOptionsClick(e)}

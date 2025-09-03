@@ -29,7 +29,7 @@ class StaticFileRow extends React.Component {
                     display: this.props.expanded ? "table-row" : "none",
                 }}
             >
-                <TableCell scope="column" className="optionsCell" />
+                <TableCell scope="column" className="explorerCell optionsCell" />
 
                 <TableCell className="explorerCell staticNameCell" align='left'>
                     <Box sx={{
