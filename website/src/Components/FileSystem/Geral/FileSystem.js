@@ -709,12 +709,11 @@ class FileExplorer extends React.Component {
         const order = this.state.order === "asc" ? 1 : -1;
         switch (this.state.orderBy) {
             case "name":
-                // Default server-provided order
                 return this.state.components.toSorted((a, b) => {
                     if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "file") {
-                        return (-order);
+                        return -1;  // list folders first
                     } else if (a.props.info?.["type"] === "file" && b.props.info?.["type"] === "folder") {
-                        return order;
+                        return 1;  // list folders first
                     } else {
                         return order * (a.key).localeCompare(b.key);
                     }
@@ -736,10 +735,16 @@ class FileExplorer extends React.Component {
 
             case "dateCreated":
                 return this.state.components.toSorted((a, b) => {
-                    // Format to parse must be ensured to be the same as server-side date format
-                    const dateA = dayjs(a.props.info?.["creation"], "DD/MM/YYYY HH:mm:ss");
-                    const dateB = dayjs(b.props.info?.["creation"], "DD/MM/YYYY HH:mm:ss");
-                    return dateA.isAfter(dateB) ? order : (-order);
+                    if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "file") {
+                        return -1;  // list folders first
+                    } else if (a.props.info?.["type"] === "file" && b.props.info?.["type"] === "folder") {
+                        return 1;  // list folders first
+                    } else {
+                        // Format to parse must be ensured to be the same as server-side date format
+                        const dateA = dayjs(a.props.info?.["creation"], "DD/MM/YYYY HH:mm:ss");
+                        const dateB = dayjs(b.props.info?.["creation"], "DD/MM/YYYY HH:mm:ss");
+                        return dateA.isAfter(dateB) ? order : (-order);
+                    }
                 });
 
             case "size":
