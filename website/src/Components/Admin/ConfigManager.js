@@ -207,6 +207,20 @@ const ConfigManager = (props) => {
     }
 
     /**
+     * Remove values from all parameter fields
+     */
+    function resetParameters() {
+        setLang(_emptylist);
+        setEngine("");
+        setEngineMode(-1);
+        setSegmentMode(-1);
+        setThresholdMethod(-1);
+        setOutputs(_emptylist);
+        setDpiVal(null);
+        setOtherParams(null);
+    }
+
+    /**
      * Fill empty fields with default values
      */
     function autoFillWithDefault() {
@@ -368,9 +382,21 @@ const ConfigManager = (props) => {
     const validDpiVal = !(
         isNaN(dpiVal)
         || (dpiVal !== null && dpiVal !== "" && !(/^[1-9][0-9]*$/.test(dpiVal)))
+    );  // valid dpiVal is either null or fits the regex
+
+    const atLeastOneParam = (
+        lang.length !== 0
+        || outputs.length !== 0
+        || engine !== ""
+        || engineMode !== -1
+        || segmentMode !== -1
+        || thresholdMethod !== -1
+        || (otherParams !== null && otherParams !== "")
+        || (!isNaN(dpiVal) && dpiVal !== null && dpiVal !== "" && /^[1-9][0-9]*$/.test(dpiVal))
     );
-    const validFields = (
-        validLang
+    const validConfig = (
+        atLeastOneParam
+        && validLang
         && validOutputs
         && validEngine
         && validEngineMode
@@ -500,16 +526,16 @@ const ConfigManager = (props) => {
                     </Button>
 
                     <Button
-                        disabled={validFields}
+                        disabled={!atLeastOneParam}
                         variant="contained"
                         className="menuFunctionButton"
-                        onClick={() => autoFillWithDefault()}
+                        onClick={() => resetParameters()}
                     >
-                        Preencher campos restantes
+                        Limpar Tudo
                     </Button>
 
                     <Button
-                        disabled={!validFields || !validConfigName || !uncommittedChanges}
+                        disabled={!validConfig || !validConfigName || !uncommittedChanges}
                         color="success"
                         variant="contained"
                         className="menuFunctionButton noMarginRight"
