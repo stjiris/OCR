@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import axios from "axios";
 import { useNavigate } from "react-router";
 
@@ -13,8 +13,10 @@ import FormLabel from "@mui/material/FormLabel";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import EditIcon from "@mui/icons-material/Edit";
 
 import {
@@ -32,7 +34,7 @@ import Notification from 'Components/Notifications/Notification';
 import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
 import CheckboxList from 'Components/Form/CheckboxList';
 import Footer from 'Components/Footer/Footer';
-import Tooltip from "@mui/material/Tooltip";
+import TooltipIcon from "Components/TooltipIcon/TooltipIcon";
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
@@ -74,7 +76,7 @@ const ConfigManager = (props) => {
 
     const [confirmPopupOpened, setConfirmPopupOpened] = useState(false);
     const [confirmPopupMessage, setConfirmPopupMessage] = useState("");
-    // const [confirmPopupSubmitCallback, setConfirmPopupSubmitCallback] = useState(null);
+    const [confirmPopupSubmitCallback, setConfirmPopupSubmitCallback] = useState(null);
 
     const successNotifRef = useRef(null);
     const errorNotifRef = useRef(null);
@@ -329,9 +331,9 @@ const ConfigManager = (props) => {
         return config;
     }
 
-    const saveConfig = () => {
+    const saveConfig = useCallback(() => {
         const config = getConfig();
-        axios.put(API_URL + `/admin/save-config`,
+        axios.post(API_URL + `/admin/save-config`,
             {
                 config_name: configName,
                 config: config,
@@ -355,22 +357,62 @@ const ConfigManager = (props) => {
                     throw new Error(response.data["message"])
                 }
                 closeConfirmationPopup();
+                fetchExistingPresetNames();
             })
             .catch(err => {
                 errorNotifRef.current.openNotif(err.message);
                 closeConfirmationPopup();
             });
-    }
+    },  [configName, isEditingExistingConfig]);
+
+    const deleteConfig = useCallback(() => {
+        axios.post(API_URL + "/admin/delete-config",
+            {
+                "config_name": configName,
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
+                }
+                if (response.data["success"]) {
+                    successNotifRef.current.openNotif(response.data["message"]);
+                } else {
+                    throw new Error(response.data["message"]);
+                }
+                closeConfirmationPopup();
+                setConfigName(null);
+                resetParameters();
+                fetchExistingPresetNames();
+            })
+            .catch(err => {
+                errorNotifRef.current.openNotif(err.message);
+                closeConfirmationPopup();
+            });
+    }, [configName]);
 
     function openSaveConfigPopup(e) {
         e.stopPropagation();
         setConfirmPopupOpened(true);
         setConfirmPopupMessage(`Guardar a configuração "${configName}"`);
+        setConfirmPopupSubmitCallback(() => saveConfig);  // set value as function saveConfig
+    }
+
+    function openDeleteConfigPopup(e) {
+        e.stopPropagation();
+        setConfirmPopupOpened(true);
+        setConfirmPopupMessage(`Tem a certeza que quer apagar a configuração "${configName}"?`);
+        setConfirmPopupSubmitCallback(() => deleteConfig);  // set value as function deleteConfig
     }
 
     function closeConfirmationPopup() {
         setConfirmPopupOpened(false);
         setConfirmPopupMessage("");
+        setConfirmPopupSubmitCallback(null);
     }
 
     const validConfigName = configName !== null && configName !== "";
@@ -426,7 +468,7 @@ const ConfigManager = (props) => {
                 open={confirmPopupOpened}
                 message={confirmPopupMessage}
                 confirmButtonColor="info"
-                submitCallback={saveConfig}
+                submitCallback={confirmPopupSubmitCallback}
                 cancelCallback={closeConfirmationPopup}
             />
 
@@ -504,6 +546,25 @@ const ConfigManager = (props) => {
                                     }
                                 }}
                             />
+
+                            {configName
+                                ? <Tooltip
+                                    placement="right"
+                                    title="A configuração default não pode ser apagada"
+                                    disableFocusListener={configName !== "default"}
+                                    disableHoverListener={configName !== "default"}
+                                    disableTouchListener={configName !== "default"}
+                                ><span>
+                                    <TooltipIcon
+                                        disabled={configName === "default"}
+                                        className="negActionButton"
+                                        message="Apagar"
+                                        clickFunction={(e) => openDeleteConfigPopup(e)}
+                                        icon={<DeleteForeverIcon />}
+                                    />
+                                </span></Tooltip>
+                                : null
+                            }
                         </span>
                         : <span
                             className="toolbarTitle"
