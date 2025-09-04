@@ -94,14 +94,14 @@ const ConfigManager = (props) => {
        })
            .then(({ data }) => {
                setConfigName(name);
-               setLang(data.lang ?? [...data.lang]);
-               setEngine(data.engine ?? data.engine);
-               setEngineMode(data.engineMode ?? Number(data.engineMode));
-               setSegmentMode(data.segmentMode ?? Number(data.segmentMode));
-               setThresholdMethod(data.thresholdMethod ?? Number(data.thresholdMethod));
-               setOutputs(data.outputs ?? [...data.outputs]);
-               setDpiVal(data.dpiVal ?? null);
-               setOtherParams(data.otherParams ?? null);
+               setLang(data.hasOwnProperty("lang") ? [...data.lang] : _emptylist);
+               setEngine(data.hasOwnProperty("engine") ? data.engine : "");
+               setEngineMode(data.hasOwnProperty("engineMode") ? Number(data.engineMode) : -1);
+               setSegmentMode(data.hasOwnProperty("segmentMode") ? Number(data.segmentMode) : -1);
+               setThresholdMethod(data.hasOwnProperty("thresholdMethod") ? Number(data.thresholdMethod) : -1);
+               setOutputs(data.hasOwnProperty("outputs") ? [...data.outputs] : _emptylist);
+               setDpiVal(data.hasOwnProperty("dpiVal") ? data.dpiVal : null);
+               setOtherParams(data.hasOwnProperty("otherParams") ? data.otherParams : null);
            });
     }
 
