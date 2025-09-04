@@ -442,7 +442,7 @@ const ConfigManager = (props) => {
                 paddingRight: '2rem',
                 paddingTop: '1rem',
             }}>
-                <Typography variant="h4" component="h2" sx={{marginLeft: "auto"}}>
+                <Typography variant="h4" component="h2" sx={{flexGrow: "1", textAlign: "center"}}>
                     Gerir Configurações de OCR
                 </Typography>
 
@@ -467,7 +467,10 @@ const ConfigManager = (props) => {
                     />
 
                     {isEditingExistingConfig
-                        ?  <span style={{marginLeft: "1rem", fontSize: "1.5rem", display: "flex", flexDirection: "row"}}>
+                        ?  <span
+                            className="toolbarTitle"
+                            style={{fontSize: "1.5rem", display: "flex", flexDirection: "row"}}
+                        >
                             A alterar configuração
                             &nbsp;
                             <Autocomplete
@@ -502,7 +505,10 @@ const ConfigManager = (props) => {
                                 }}
                             />
                         </span>
-                        : <span style={{marginLeft: "1rem", fontSize: "1.5rem"}}>
+                        : <span
+                            className="toolbarTitle"
+                            style={{fontSize: "1.5rem"}}
+                        >
                             A criar nova configuração:
                             &nbsp;
                             <TextField
@@ -575,6 +581,7 @@ const ConfigManager = (props) => {
                 height: 'auto',
                 width: 'auto',
                 margin: 'auto',
+                marginBottom: '1rem',
                 /*overflow: 'scroll'*/
             }}>
                 <Box sx={{

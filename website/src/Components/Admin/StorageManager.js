@@ -393,7 +393,7 @@ const StorageManager = (props) => {
                     >
                         Refresh
                     </Button>
-                    <span>
+                    <span style={{marginTop: "0.5rem"}}>
                         Último update: {lastUpdate ? lastUpdate.toLocaleString("pt-PT") : "nunca"}
                     </span>
                 </Box>
@@ -404,7 +404,7 @@ const StorageManager = (props) => {
                 flexDirection: 'row',
                 justifyContent: 'space-evenly',
                 height: 'auto',
-                minHeight: '70vh',
+                minHeight: '77vh',
                 width: 'auto',
                 margin: 'auto',
                 /*overflow: 'scroll'*/

@@ -301,7 +301,7 @@ class OcrMenu extends React.Component {
                     <Typography
                         variant="h5"
                         component="h2"
-                        sx={{ marginLeft: "1rem", textAlign: "center" }}
+                        className="toolbarTitle"
                     >
                         Configurar OCR {this.props.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
                     </Typography>
@@ -327,7 +327,7 @@ class OcrMenu extends React.Component {
                                 }}
                             />
                         )}
-                        sx={{marginRight: "1rem"}}
+                        sx={{marginRight: "1rem", marginTop: "0.5rem"}}
                         slotProps={{
                             paper: {  // dropdown popup props
                                 sx: {
