@@ -32,6 +32,7 @@ import Notification from 'Components/Notifications/Notification';
 import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
 import CheckboxList from 'Components/Form/CheckboxList';
 import Footer from 'Components/Footer/Footer';
+import Tooltip from "@mui/material/Tooltip";
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
@@ -395,7 +396,18 @@ const ConfigManager = (props) => {
         || (!isNaN(dpiVal) && dpiVal !== null && dpiVal !== "" && /^[1-9][0-9]*$/.test(dpiVal))
     );
     const validConfig = (
-        atLeastOneParam
+        (
+            (configName !== "default" && atLeastOneParam)
+                // default config must define all mandatory parameters
+            || (configName === "default"
+                && lang.length !== 0
+                && outputs.length !== 0
+                && engine !== ""
+                && engineMode !== -1
+                && segmentMode !== -1
+                && thresholdMethod !== -1
+            )
+        )
         && validLang
         && validOutputs
         && validEngine
@@ -534,16 +546,24 @@ const ConfigManager = (props) => {
                         Limpar Tudo
                     </Button>
 
-                    <Button
-                        disabled={!validConfig || !validConfigName || !uncommittedChanges}
-                        color="success"
-                        variant="contained"
-                        className="menuFunctionButton noMarginRight"
-                        startIcon={<CheckRoundedIcon />}
-                        onClick={(e) => openSaveConfigPopup(e)}
-                    >
-                        Confirmar
-                    </Button>
+                    <Tooltip
+                        placement="bottom"
+                        title="A configuração default deve definir os parâmetros obrigatórios"
+                        disableFocusListener={configName !== "default" || (validConfig && uncommittedChanges)}
+                        disableHoverListener={configName !== "default" || (validConfig && uncommittedChanges)}
+                        disableTouchListener={configName !== "default" || (validConfig && uncommittedChanges)}
+                    ><span>
+                        <Button
+                            disabled={!validConfig || !validConfigName || !uncommittedChanges}
+                            color="success"
+                            variant="contained"
+                            className="menuFunctionButton noMarginRight"
+                            startIcon={<CheckRoundedIcon />}
+                            onClick={(e) => openSaveConfigPopup(e)}
+                        >
+                            Confirmar
+                        </Button>
+                </span></Tooltip>
                 </Box>
             </Box>
 
@@ -567,6 +587,8 @@ const ConfigManager = (props) => {
                                   onChangeCallback={(checked) => setLangList(checked)}
                                   showOrder
                                   helperText="Para melhores resultados, selecione por ordem de relevância"
+                                  required={configName === "default"}
+                                  errorText="Deve selecionar pelo menos uma língua"
                     />
                 </Box>
 
@@ -590,7 +612,8 @@ const ConfigManager = (props) => {
                     />
 
                     <FormControl
-                        error={!validEngine}
+                        required={configName === "default"}
+                        error={!validEngine || (configName === "default" && engine === "")}
                         className="simpleDropdown borderTop"
                     >
                         <FormLabel id="label-ocr-engine-select">Motor de OCR</FormLabel>
@@ -612,7 +635,8 @@ const ConfigManager = (props) => {
                     </FormControl>
 
                     <FormControl
-                        error={!validEngineMode}
+                        required={configName === "default"}
+                        error={!validEngineMode || (configName === "default" && engineMode === -1)}
                         className="simpleDropdown borderTop"
                     >
                         <FormLabel id="label-engine-type-select">Modo do motor</FormLabel>
@@ -629,7 +653,8 @@ const ConfigManager = (props) => {
                     </FormControl>
 
                     <FormControl
-                        error={!validSegmentMode}
+                        required={configName === "default"}
+                        error={!validSegmentMode || (configName === "default" && segmentMode === -1)}
                         className="simpleDropdown borderTop"
                     >
                         <FormLabel id="label-segmentation-select">Segmentação</FormLabel>
@@ -646,7 +671,8 @@ const ConfigManager = (props) => {
                     </FormControl>
 
                     <FormControl
-                        error={!validThresholdMethod}
+                        required={configName === "default"}
+                        error={!validThresholdMethod || (configName === "default" && thresholdMethod === -1)}
                         className="simpleDropdown borderTop"
                     >
                         <FormLabel id="label-thresholding-select">Thresholding</FormLabel>
@@ -683,6 +709,8 @@ const ConfigManager = (props) => {
                                   options={outputOptions}
                                   checked={outputs}
                                   onChangeCallback={(checked) => setOutputList(checked)}
+                                  required={configName === "default"}
+                                  errorText="Deve selecionar pelo menos um formato de resultado"
                     />
                 </Box>
             </Box>

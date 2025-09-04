@@ -12,7 +12,7 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import IconButton from "@mui/material/IconButton";
-import {Tooltip} from "@mui/material";
+import Tooltip from "@mui/material/Tooltip";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 import OcrIcon from 'Components/CustomIcons/OcrIcon';
