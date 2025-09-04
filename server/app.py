@@ -1510,7 +1510,7 @@ def delete_private_space():
     }
 
 
-@app.route("/admin/save-config", methods=["PUT"])
+@app.route("/admin/save-config", methods=["POST"])
 @auth_required("token", "session")
 @roles_required("Admin")
 def save_ocr_config():
@@ -1532,49 +1532,57 @@ def save_ocr_config():
     if config_path is None:
         return bad_request(f"Invalid config name: {config_name}")
 
-    # TODO: check validity of config
-    if not os.path.exists(config_path):
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(config, f, ensure_ascii=False, indent=2)
-        return {"success": True, "message": "Configuração guardada."}
+    if "edit" in data:
+        if data["edit"] and not os.path.exists(config_path):
+            return {
+                "success": False,
+                "message": f"A configuração '{config_name}' não existe.",
+            }
+        elif not data["edit"] and os.path.exists(config_path):
+            return {
+                "success": False,
+                "message": f"A configuração '{config_name}' já existe.",
+            }
+
+    if "edit" in data and data["edit"]:
+        message = "Configuração atualizada."
     else:
-        return {
-            "success": False,
-            "message": f"A configuração '{config_name}' já existe.",
-        }
+        message = "Configuração guardada."
+
+    # TODO: check validity of config
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+    return {"success": True, "message": message}
 
 
-@app.route("/admin/edit-config", methods=["PUT"])
+@app.route("/admin/delete-config", methods=["POST"])
 @auth_required("token", "session")
 @roles_required("Admin")
-def edit_ocr_config():
+def delete_ocr_config():
     data = request.json
     if "config_name" not in data or data["config_name"] == "":
         return bad_request("Missing parameter 'config_name'")
-    if (
-        "config" not in data
-        or not isinstance(data["config"], dict)
-        or not data["config"]
-    ):  # not empty dict
-        return bad_request(
-            "Missing parameter 'config'. Must be a non-empty dictionary."
-        )
     config_name = data["config_name"]
-    config = data["config"]
+
+    if config_name == "default":
+        return {
+            "success": False,
+            "message": "A configuração predefinida não pode ser apagada.",
+        }
 
     config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
     if config_path is None:
-        abort(HTTPStatus.NOT_FOUND)
+        return bad_request(f"Invalid config name: {config_name}")
 
-    # TODO: check validity of config
-    if os.path.exists(config_path):
-        update_json_file(config_path, config)
-        return {"success": True, "message": "Configuração atualizada."}
-    else:
+    if not os.path.exists(config_path):
         return {
             "success": False,
             "message": f"A configuração '{config_name}' não existe.",
         }
+
+    os.remove(config_path)
+    return {"success": True, "message": "Configuração apagada."}
 
 
 @app.route("/admin/flower/", defaults={"fullpath": ""}, methods=["GET", "POST"])

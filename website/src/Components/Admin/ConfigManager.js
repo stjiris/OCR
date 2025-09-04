@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import axios from "axios";
 import { useNavigate } from "react-router";
 
@@ -13,8 +13,10 @@ import FormLabel from "@mui/material/FormLabel";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import EditIcon from "@mui/icons-material/Edit";
 
 import {
@@ -32,6 +34,7 @@ import Notification from 'Components/Notifications/Notification';
 import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
 import CheckboxList from 'Components/Form/CheckboxList';
 import Footer from 'Components/Footer/Footer';
+import TooltipIcon from "Components/TooltipIcon/TooltipIcon";
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 const ADMIN_HOME = (process.env.REACT_APP_BASENAME !== null && process.env.REACT_APP_BASENAME !== "")
@@ -73,7 +76,7 @@ const ConfigManager = (props) => {
 
     const [confirmPopupOpened, setConfirmPopupOpened] = useState(false);
     const [confirmPopupMessage, setConfirmPopupMessage] = useState("");
-    // const [confirmPopupSubmitCallback, setConfirmPopupSubmitCallback] = useState(null);
+    const [confirmPopupSubmitCallback, setConfirmPopupSubmitCallback] = useState(null);
 
     const successNotifRef = useRef(null);
     const errorNotifRef = useRef(null);
@@ -94,14 +97,14 @@ const ConfigManager = (props) => {
        })
            .then(({ data }) => {
                setConfigName(name);
-               setLang([...data.lang]);
-               setEngine(data.engine);
-               setEngineMode(Number(data.engineMode));
-               setSegmentMode(Number(data.segmentMode));
-               setThresholdMethod(Number(data.thresholdMethod));
-               setOutputs([...data.outputs]);
-               setDpiVal(data.dpiVal ?? null);
-               setOtherParams(data.otherParams ?? null);
+               setLang(data.hasOwnProperty("lang") ? [...data.lang] : _emptylist);
+               setEngine(data.hasOwnProperty("engine") ? data.engine : "");
+               setEngineMode(data.hasOwnProperty("engineMode") ? Number(data.engineMode) : -1);
+               setSegmentMode(data.hasOwnProperty("segmentMode") ? Number(data.segmentMode) : -1);
+               setThresholdMethod(data.hasOwnProperty("thresholdMethod") ? Number(data.thresholdMethod) : -1);
+               setOutputs(data.hasOwnProperty("outputs") ? [...data.outputs] : _emptylist);
+               setDpiVal(data.hasOwnProperty("dpiVal") ? data.dpiVal : null);
+               setOtherParams(data.hasOwnProperty("otherParams") ? data.otherParams : null);
            });
     }
 
@@ -207,6 +210,20 @@ const ConfigManager = (props) => {
     }
 
     /**
+     * Remove values from all parameter fields
+     */
+    function resetParameters() {
+        setLang(_emptylist);
+        setEngine("");
+        setEngineMode(-1);
+        setSegmentMode(-1);
+        setThresholdMethod(-1);
+        setOutputs(_emptylist);
+        setDpiVal(null);
+        setOtherParams(null);
+    }
+
+    /**
      * Fill empty fields with default values
      */
     function autoFillWithDefault() {
@@ -241,22 +258,42 @@ const ConfigManager = (props) => {
     }
 
     function changeEngine(value) {
-        setEngine(value);
+        if (value === undefined) return;
+        if (value === engine) {
+            setEngine("");  // second click on engine, unset choice
+        } else {
+            setEngine(value);  // click on engine, set choice
+        }
         setUncommittedChanges(true);
     }
 
     function changeEngineMode(value) {
-        setEngineMode(Number(value));
+        if (value === undefined) return;
+        if (Number(value) === engineMode) {
+            setEngineMode(-1);  // second click on engine mode, unset choice
+        } else {
+            setEngineMode(Number(value));  // click on engine mode, set choice
+        }
         setUncommittedChanges(true);
     }
 
     function changeSegmentationMode(value) {
-        setSegmentMode(Number(value));
+        if (value === undefined) return;
+        if (Number(value) === segmentMode) {
+            setSegmentMode(-1);  // second click on segment mode, unset choice
+        } else {
+            setSegmentMode(Number(value));  // click on segment mode, set choice
+        }
         setUncommittedChanges(true);
     }
 
     function changeThresholdingMethod(value) {
-        setThresholdMethod(Number(value));
+        if (value === undefined) return;
+        if (Number(value) === thresholdMethod) {
+            setThresholdMethod(-1);  // second click on threshold mode, unset choice
+        } else {
+            setThresholdMethod(Number(value));  // click on threshold mode, set choice
+        }
         setUncommittedChanges(true);
     }
 
@@ -266,13 +303,24 @@ const ConfigManager = (props) => {
     }
 
     function getConfig() {
-        const config = {
-            engine: engine,
-            lang: lang,
-            outputs: outputs,
-            engineMode: engineMode,
-            segmentMode: segmentMode,
-            thresholdMethod: thresholdMethod,
+        const config = {};
+        if (engine !== "") {
+            config.engine = engine;
+        }
+        if (lang != _emptylist) {
+            config.lang = lang;
+        }
+        if (outputs != _emptylist) {
+            config.outputs = outputs;
+        }
+        if (engineMode !== -1) {
+            config.engineMode = engineMode;
+        }
+        if (segmentMode !== -1) {
+            config.segmentMode = segmentMode;
+        }
+        if (thresholdMethod !== -1) {
+            config.thresholdMethod = thresholdMethod;
         }
         if (dpiVal !== null && dpiVal !== "") {
             config.dpi = dpiVal;
@@ -283,16 +331,13 @@ const ConfigManager = (props) => {
         return config;
     }
 
-    const saveConfig = () => {
+    const saveConfig = useCallback(() => {
         const config = getConfig();
-        let endpoint = "save-config";
-        if (isEditingExistingConfig) {
-            endpoint = "edit-config";
-        }
-        axios.put(API_URL + `/admin/${endpoint}`,
+        axios.post(API_URL + `/admin/save-config`,
             {
                 config_name: configName,
                 config: config,
+                edit: isEditingExistingConfig,
             },
             {
                 headers: {
@@ -312,37 +357,100 @@ const ConfigManager = (props) => {
                     throw new Error(response.data["message"])
                 }
                 closeConfirmationPopup();
+                fetchExistingPresetNames();
             })
             .catch(err => {
                 errorNotifRef.current.openNotif(err.message);
                 closeConfirmationPopup();
             });
-    }
+    },  [configName, isEditingExistingConfig]);
+
+    const deleteConfig = useCallback(() => {
+        axios.post(API_URL + "/admin/delete-config",
+            {
+                "config_name": configName,
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.status !== 200) {
+                    throw new Error(response.data["message"] || "Não foi possível concluir o pedido.");
+                }
+                if (response.data["success"]) {
+                    successNotifRef.current.openNotif(response.data["message"]);
+                } else {
+                    throw new Error(response.data["message"]);
+                }
+                closeConfirmationPopup();
+                setConfigName(null);
+                resetParameters();
+                fetchExistingPresetNames();
+            })
+            .catch(err => {
+                errorNotifRef.current.openNotif(err.message);
+                closeConfirmationPopup();
+            });
+    }, [configName]);
 
     function openSaveConfigPopup(e) {
         e.stopPropagation();
         setConfirmPopupOpened(true);
         setConfirmPopupMessage(`Guardar a configuração "${configName}"`);
+        setConfirmPopupSubmitCallback(() => saveConfig);  // set value as function saveConfig
+    }
+
+    function openDeleteConfigPopup(e) {
+        e.stopPropagation();
+        setConfirmPopupOpened(true);
+        setConfirmPopupMessage(`Tem a certeza que quer apagar a configuração "${configName}"?`);
+        setConfirmPopupSubmitCallback(() => deleteConfig);  // set value as function deleteConfig
     }
 
     function closeConfirmationPopup() {
         setConfirmPopupOpened(false);
         setConfirmPopupMessage("");
+        setConfirmPopupSubmitCallback(null);
     }
 
     const validConfigName = configName !== null && configName !== "";
-    const validLang = lang.length !== 0 && lang.every(chosenValue => langOptions.some(option => option.value === chosenValue));
-    const validOutputs = outputs.length !== 0 && outputs.every(chosenValue => outputOptions.some(option => option.value === chosenValue));
-    const validEngine = engineOptions.some(option => option.value === engine);
-    const validEngineMode = engineModeOptions.some(option => option.value === engineMode);
-    const validSegmentMode = segmentModeOptions.some(option => option.value === segmentMode);
-    const validThresholdMethod = thresholdMethodOptions.some(option => option.value === thresholdMethod)
+    const validLang = lang.length === 0 || lang.every(chosenValue => langOptions.some(option => option.value === chosenValue));
+    const validOutputs = outputs.length === 0 || outputs.every(chosenValue => outputOptions.some(option => option.value === chosenValue));
+    const validEngine = engine === "" || engineOptions.some(option => option.value === engine);
+    const validEngineMode = engineMode === -1 || engineModeOptions.some(option => option.value === engineMode);
+    const validSegmentMode = segmentMode === -1 || segmentModeOptions.some(option => option.value === segmentMode);
+    const validThresholdMethod = thresholdMethod === -1 || thresholdMethodOptions.some(option => option.value === thresholdMethod)
     const validDpiVal = !(
         isNaN(dpiVal)
         || (dpiVal !== null && dpiVal !== "" && !(/^[1-9][0-9]*$/.test(dpiVal)))
+    );  // valid dpiVal is either null or fits the regex
+
+    const atLeastOneParam = (
+        lang.length !== 0
+        || outputs.length !== 0
+        || engine !== ""
+        || engineMode !== -1
+        || segmentMode !== -1
+        || thresholdMethod !== -1
+        || (otherParams !== null && otherParams !== "")
+        || (!isNaN(dpiVal) && dpiVal !== null && dpiVal !== "" && /^[1-9][0-9]*$/.test(dpiVal))
     );
-    const validFields = (
-        validLang
+    const validConfig = (
+        (
+            (configName !== "default" && atLeastOneParam)
+                // default config must define all mandatory parameters
+            || (configName === "default"
+                && lang.length !== 0
+                && outputs.length !== 0
+                && engine !== ""
+                && engineMode !== -1
+                && segmentMode !== -1
+                && thresholdMethod !== -1
+            )
+        )
+        && validLang
         && validOutputs
         && validEngine
         && validEngineMode
@@ -360,7 +468,7 @@ const ConfigManager = (props) => {
                 open={confirmPopupOpened}
                 message={confirmPopupMessage}
                 confirmButtonColor="info"
-                submitCallback={saveConfig}
+                submitCallback={confirmPopupSubmitCallback}
                 cancelCallback={closeConfirmationPopup}
             />
 
@@ -376,7 +484,7 @@ const ConfigManager = (props) => {
                 paddingRight: '2rem',
                 paddingTop: '1rem',
             }}>
-                <Typography variant="h4" component="h2" sx={{marginLeft: "auto"}}>
+                <Typography variant="h4" component="h2" sx={{flexGrow: "1", textAlign: "center"}}>
                     Gerir Configurações de OCR
                 </Typography>
 
@@ -401,7 +509,10 @@ const ConfigManager = (props) => {
                     />
 
                     {isEditingExistingConfig
-                        ?  <span style={{marginLeft: "1rem", fontSize: "1.5rem", display: "flex", flexDirection: "row"}}>
+                        ?  <span
+                            className="toolbarTitle"
+                            style={{fontSize: "1.5rem", display: "flex", flexDirection: "row"}}
+                        >
                             A alterar configuração
                             &nbsp;
                             <Autocomplete
@@ -435,8 +546,30 @@ const ConfigManager = (props) => {
                                     }
                                 }}
                             />
+
+                            {configName
+                                ? <Tooltip
+                                    placement="right"
+                                    title="A configuração default não pode ser apagada"
+                                    disableFocusListener={configName !== "default"}
+                                    disableHoverListener={configName !== "default"}
+                                    disableTouchListener={configName !== "default"}
+                                ><span>
+                                    <TooltipIcon
+                                        disabled={configName === "default"}
+                                        className="negActionButton"
+                                        message="Apagar"
+                                        clickFunction={(e) => openDeleteConfigPopup(e)}
+                                        icon={<DeleteForeverIcon />}
+                                    />
+                                </span></Tooltip>
+                                : null
+                            }
                         </span>
-                        : <span style={{marginLeft: "1rem", fontSize: "1.5rem"}}>
+                        : <span
+                            className="toolbarTitle"
+                            style={{fontSize: "1.5rem"}}
+                        >
                             A criar nova configuração:
                             &nbsp;
                             <TextField
@@ -472,24 +605,32 @@ const ConfigManager = (props) => {
                     </Button>
 
                     <Button
-                        disabled={validFields}
+                        disabled={!atLeastOneParam}
                         variant="contained"
                         className="menuFunctionButton"
-                        onClick={() => autoFillWithDefault()}
+                        onClick={() => resetParameters()}
                     >
-                        Preencher campos restantes
+                        Limpar Tudo
                     </Button>
 
-                    <Button
-                        disabled={!validFields || !validConfigName || !uncommittedChanges}
-                        color="success"
-                        variant="contained"
-                        className="menuFunctionButton noMarginRight"
-                        startIcon={<CheckRoundedIcon />}
-                        onClick={(e) => openSaveConfigPopup(e)}
-                    >
-                        Confirmar
-                    </Button>
+                    <Tooltip
+                        placement="bottom"
+                        title="A configuração default deve definir os parâmetros obrigatórios"
+                        disableFocusListener={configName !== "default" || (validConfig && uncommittedChanges)}
+                        disableHoverListener={configName !== "default" || (validConfig && uncommittedChanges)}
+                        disableTouchListener={configName !== "default" || (validConfig && uncommittedChanges)}
+                    ><span>
+                        <Button
+                            disabled={!validConfig || !validConfigName || !uncommittedChanges}
+                            color="success"
+                            variant="contained"
+                            className="menuFunctionButton noMarginRight"
+                            startIcon={<CheckRoundedIcon />}
+                            onClick={(e) => openSaveConfigPopup(e)}
+                        >
+                            Confirmar
+                        </Button>
+                </span></Tooltip>
                 </Box>
             </Box>
 
@@ -501,6 +642,7 @@ const ConfigManager = (props) => {
                 height: 'auto',
                 width: 'auto',
                 margin: 'auto',
+                marginBottom: '1rem',
                 /*overflow: 'scroll'*/
             }}>
                 <Box sx={{
@@ -511,10 +653,11 @@ const ConfigManager = (props) => {
                                   options={langOptions}
                                   checked={lang}
                                   onChangeCallback={(checked) => setLangList(checked)}
-                                  required
                                   showOrder
                                   helperText="Para melhores resultados, selecione por ordem de relevância"
-                                  errorText="Deve selecionar pelo menos uma língua"/>
+                                  required={configName === "default"}
+                                  errorText="Deve selecionar pelo menos uma língua"
+                    />
                 </Box>
 
                 <Box sx={{
@@ -537,33 +680,38 @@ const ConfigManager = (props) => {
                     />
 
                     <FormControl
-                        required
-                        error={!validEngine}
+                        required={configName === "default"}
+                        error={!validEngine || (configName === "default" && engine === "")}
                         className="simpleDropdown borderTop"
                     >
                         <FormLabel id="label-ocr-engine-select">Motor de OCR</FormLabel>
                         <RadioGroup
                             aria-labelledby="label-ocr-engine-select"
                             value={engine}
-                            onChange={(e) => changeEngine(e.target.value)}>
+                            onClick={(e) => changeEngine(e.target.value)}
+                        >
                             {
                                 engineOptions.map((option) =>
-                                    <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
+                                    <FormControlLabel
+                                        value={option.value}
+                                        control={<Radio disableRipple />}
+                                        label={option.description}
+                                    />
                                 )
                             }
                         </RadioGroup>
                     </FormControl>
 
                     <FormControl
-                        required
-                        error={!validEngineMode}
+                        required={configName === "default"}
+                        error={!validEngineMode || (configName === "default" && engineMode === -1)}
                         className="simpleDropdown borderTop"
                     >
                         <FormLabel id="label-engine-type-select">Modo do motor</FormLabel>
                         <RadioGroup
                             aria-labelledby="label-engine-type-select"
                             value={engineMode}
-                            onChange={(e) => changeEngineMode(e.target.value)}>
+                            onClick={(e) => changeEngineMode(e.target.value)}>
                             {
                                 engineModeOptions.map((option) =>
                                     <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
@@ -573,15 +721,15 @@ const ConfigManager = (props) => {
                     </FormControl>
 
                     <FormControl
-                        required
-                        error={!validSegmentMode}
+                        required={configName === "default"}
+                        error={!validSegmentMode || (configName === "default" && segmentMode === -1)}
                         className="simpleDropdown borderTop"
                     >
                         <FormLabel id="label-segmentation-select">Segmentação</FormLabel>
                         <RadioGroup
                             aria-labelledby="label-segmentation-select"
                             value={segmentMode}
-                            onChange={(e) => changeSegmentationMode(e.target.value)}>
+                            onClick={(e) => changeSegmentationMode(e.target.value)}>
                             {
                                 segmentModeOptions.map((option) =>
                                     <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
@@ -591,15 +739,15 @@ const ConfigManager = (props) => {
                     </FormControl>
 
                     <FormControl
-                        required
-                        error={!validThresholdMethod}
+                        required={configName === "default"}
+                        error={!validThresholdMethod || (configName === "default" && thresholdMethod === -1)}
                         className="simpleDropdown borderTop"
                     >
                         <FormLabel id="label-thresholding-select">Thresholding</FormLabel>
                         <RadioGroup
                             aria-labelledby="label-thresholding-select"
                             value={thresholdMethod}
-                            onChange={(e) => changeThresholdingMethod(e.target.value)}>
+                            onClick={(e) => changeThresholdingMethod(e.target.value)}>
                             {
                                 thresholdMethodOptions.map((option) =>
                                     <FormControlLabel value={option.value} control={<Radio disableRipple />} label={option.description}/>
@@ -629,8 +777,9 @@ const ConfigManager = (props) => {
                                   options={outputOptions}
                                   checked={outputs}
                                   onChangeCallback={(checked) => setOutputList(checked)}
-                                  required
-                                  errorText="Deve selecionar pelo menos um formato de resultado"/>
+                                  required={configName === "default"}
+                                  errorText="Deve selecionar pelo menos um formato de resultado"
+                    />
                 </Box>
             </Box>
 

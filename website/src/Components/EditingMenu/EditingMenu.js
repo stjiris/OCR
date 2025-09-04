@@ -814,7 +814,7 @@ class EditingMenu extends React.Component {
                             <Typography
                                 variant="h5"
                                 component="h2"
-                                sx={{ marginLeft: "1rem", textAlign: "center" }}
+                                className="toolbarTitle"
                             >
                                 Editar os resultados
                             </Typography>
