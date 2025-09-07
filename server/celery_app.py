@@ -60,17 +60,17 @@ celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKE
 load_invisible_font()
 
 
-@celery.task(name="auto_segment")
+@celery.task(name="auto_segment", priority=0)
 def task_auto_segment(path):
     return parse_images(path)
 
 
-@celery.task(name="export_file")
+@celery.task(name="export_file", priority=2)
 def task_export(path, filetype, delimiter=False, force_recreate=False, simple=False):
     return export_file(path, filetype, delimiter, force_recreate, simple)
 
 
-@celery.task(name="make_changes")
+@celery.task(name="make_changes", priority=2)
 def task_make_changes(path, data):
     data_file = path + "/_data.json"
     update_json_file(
@@ -212,7 +212,7 @@ def task_make_changes(path, data):
     return {"status": "success"}
 
 
-@celery.task(name="count_doc_pages")
+@celery.task(name="count_doc_pages", priority=0)
 def task_count_doc_pages(path: str, extension: str):
     """
     Updates the metadata of the document at the given path with its page count.
@@ -231,7 +231,7 @@ def task_count_doc_pages(path: str, extension: str):
     )
 
 
-@celery.task(name="ocr_from_api")
+@celery.task(name="ocr_from_api", priority=9)
 def task_perform_direct_ocr(
     path: str, config: dict | None, delete_on_finish: bool = False
 ):
@@ -875,7 +875,7 @@ def task_page_ocr(
         return {"status": "error"}
 
 
-@celery.task(name="export_results")
+@celery.task(name="export_results", priority=2)
 def task_export_results(path: str, output_types: list[str]):
     data_file = f"{path}/_data.json"
     data = get_data(data_file)
@@ -1078,7 +1078,7 @@ def task_export_results(path: str, output_types: list[str]):
         return {"status": "error"}
 
 
-@celery.task(name="async_delete_file")
+@celery.task(name="async_delete_file", priority=0)
 def task_delete_file(path: str):
     log.debug(f"Deleting {path}")
     os.remove(path)
@@ -1101,7 +1101,7 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     log.info(f"Created periodic task {entry}")
 
 
-@celery.task(name="set_max_private_space_age")
+@celery.task(name="set_max_private_space_age", priority=0)
 def task_set_max_private_space_age(new_max_age: int | str):
     try:
         os.environ["MAX_PRIVATE_SPACE_AGE"] = str(int(new_max_age))
@@ -1110,7 +1110,7 @@ def task_set_max_private_space_age(new_max_age: int | str):
         return {"status": "error"}
 
 
-@celery.task(name="cleanup_private_spaces")
+@celery.task(name="cleanup_private_spaces", priority=0)
 def task_delete_old_private_spaces():
     max_private_space_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "5"))  # days
     log.info(f"Deleting private spaces older than {max_private_space_age} days")
