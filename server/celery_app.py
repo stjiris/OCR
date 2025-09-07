@@ -299,6 +299,10 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                 )  # using PNG to keep RGBA
             shutil.rmtree(temp_folder_name)
 
+            task_count_doc_pages(path=path, extension=extension)
+            if callback is not None:
+                callback.apply_async()
+
         elif extension in ("tif", "tiff"):
             img = Image.open(f"{path}/{basename}.{extension}", formats=["tiff"])
             n_frames = img.n_frames
@@ -323,18 +327,22 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                         compression=compression,
                     )
 
+            task_count_doc_pages(path=path, extension=extension)
+            if callback is not None:
+                callback.apply_async()
+
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
 
+            task_count_doc_pages(path=path, extension=extension)
+            if callback is not None:
+                callback.apply_async()
+
         else:
             raise FileNotFoundError("No file with a valid extension was found")
-
-        task_count_doc_pages(path=path, extension=extension)
-        if callback is not None:
-            callback.apply_async()
 
     except Exception as e:
         data = get_data(data_folder)
