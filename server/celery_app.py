@@ -57,6 +57,14 @@ celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKE
 
 # celery.conf.beat_max_loop_interval = 30  # in seconds; default 5 seconds or 5 minutes depending on task schedule
 
+celery.conf.task_default_priority = (
+    10  # 0 is highest, 10 is lowest; use lowest by default
+)
+celery.conf.worker_prefetch_multiplier = 1  # prefetch only 1 task per process/thread
+celery.conf.worker_disable_prefetch = True  # may not work before celery 5.6
+celery.conf.task_acks_late = True  # ack tasks only after completion; required for disabling prefetch but should be False if there are multiple workers
+# next version of celery (5.6) may allow disabling prefetch while still using early ack
+
 load_invisible_font()
 
 
