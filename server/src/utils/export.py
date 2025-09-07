@@ -320,7 +320,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
                 {
                     "status": {
                         "stage": "exporting",
-                        "message": f"A gerar PDF {'com índice ' if simple else ''}{i + 1}/{len(images)}",
+                        "message": f"A gerar PDF {'com índice ' if not simple else ''}{i + 1}/{len(images)}",
                     }
                 },
             )
