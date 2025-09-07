@@ -278,7 +278,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             pdf_prep_callback = task_count_doc_pages.si(
                 path=path, extension=extension
-            ).set(link=callback)
+            ).set(link=callback, ignore_result=True)
             chord(
                 task_extract_pdf_page.si(path, basename, i) for i in range(num_pages)
             )(pdf_prep_callback)
@@ -309,7 +309,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
-                callback.apply_async()
+                callback.apply_async(ignore_result=True)
 
         elif extension in ("tif", "tiff"):
             img = Image.open(f"{path}/{basename}.{extension}", formats=["tiff"])
@@ -337,7 +337,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
-                callback.apply_async()
+                callback.apply_async(ignore_result=True)
 
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
@@ -347,7 +347,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
-                callback.apply_async()
+                callback.apply_async(ignore_result=True)
 
         else:
             raise FileNotFoundError("No file with a valid extension was found")
@@ -540,7 +540,7 @@ def task_file_ocr(
             )
             for image in images
         )
-        tasks.apply_async()
+        tasks.apply_async(ignore_result=True)
 
         return {"status": "success"}
 
@@ -863,9 +863,13 @@ def task_page_ocr(
                 callback = task_delete_file.si(
                     path=f"{path}/{get_file_basename(path)}.{data['extension']}"
                 )
-                task_export_results.apply_async((path, output_types), link=callback)
+                task_export_results.apply_async(
+                    (path, output_types), link=callback, ignore_result=True
+                )
             else:
-                task_export_results.delay(path, output_types)
+                task_export_results.apply_async(
+                    (path, output_types), ignore_result=True
+                )
 
         return {"status": "success"}
 
