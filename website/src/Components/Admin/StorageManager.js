@@ -674,7 +674,7 @@ const StorageManager = (props) => {
                                 views={['hours', 'minutes']}
                                 ampm={false}
                                 value={weekTime}
-                                onAccept={(value, ctx) => setWeekTime(value)}
+                                onChange={(value, ctx) => setWeekTime(value)}
                                 className="simpleInput hourInput"
                                 slotProps={{ textField: { size: "small", error: scheduleType === "weekly" && weekTime === null } }}
                             />
