@@ -44,7 +44,7 @@ services:
       C_FORCE_ROOT: true
       PYTHONUNBUFFERED: true
       PYTHONDONTWRITEBYTECODE : true
-    command: celery -A celery_app.celery worker --beat --scheduler redbeat.RedBeatScheduler --autoscale=16,8 --max-tasks-per-child=1 --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair -E --hostname=worker1@%h -P prefork
+    command: celery -A celery_app.celery worker --beat --scheduler redbeat.RedBeatScheduler --autoscale=16,8 --max-tasks-per-child=1 --loglevel=info --without-gossip --without-mingle -Ofair -E --hostname=worker1@%h -P prefork
     healthcheck:
         test: celery inspect ping -d worker1@$$HOSTNAME
         interval: 10s
