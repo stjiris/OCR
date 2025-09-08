@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from "axios";
 import { v4 as uuidv4 } from 'uuid';
 
 import Box from '@mui/material/Box';
@@ -413,18 +414,24 @@ class LayoutMenu extends React.Component {
 		this.setState({ segmentLoading: true });
 		this.successNot.current.openNotif("A gerar layouts automaticamente... Por favor aguarde.");
 
-        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-        const is_private = this.props._private ? '_private=true&' : '';
-		fetch(API_URL + '/generate-automatic-layouts?' + is_private + 'path=' + path, {
-			method: 'GET'
-		}).then(response => { return response.json() })
-			.then(data => {
-				var contents = data["layouts"].sort((a, b) =>
+        const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+		axios.get(API_URL + '/generate-automatic-layouts?', {
+            params: {
+                _private: this.props._private,
+                path: (this.props._private ? this.props.spaceId + '/' + path : path),
+            },
+        })
+            .then(({ data }) => {
+				const contents = data["layouts"].sort((a, b) =>
 					(a["page_number"] > b["page_number"]) ? 1 : -1
 				)
 
 				this.setState({ contents: contents, segmentLoading: false });
-			});
+			})
+            .catch(err => {
+                this.successNot.current.openNotif("Ocorreu um erro na segmentação");
+                this.setState({ segmentLoading: false });
+            });
 	}
 
 	cleanAllBoxes() {

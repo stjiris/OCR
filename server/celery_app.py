@@ -57,20 +57,31 @@ celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKE
 
 # celery.conf.beat_max_loop_interval = 30  # in seconds; default 5 seconds or 5 minutes depending on task schedule
 
+# ensure redis lock never expires (no other workers checking beat scheudle)
+celery.conf.redbeat_lock_timeout = 0
+
+# 0 is highest, 10 is lowest; use lowest by default
+celery.conf.task_default_priority = 10
+
+celery.conf.worker_prefetch_multiplier = 1  # prefetch only 1 task per process/thread
+celery.conf.worker_disable_prefetch = True  # may not work before celery 5.6
+celery.conf.task_acks_late = True  # ack tasks only after completion; required for disabling prefetch but should be False if there are multiple workers
+# next version of celery (5.6) may allow disabling prefetch while still using early ack
+
 load_invisible_font()
 
 
-@celery.task(name="auto_segment")
+@celery.task(name="auto_segment", priority=0)
 def task_auto_segment(path):
     return parse_images(path)
 
 
-@celery.task(name="export_file")
+@celery.task(name="export_file", priority=2)
 def task_export(path, filetype, delimiter=False, force_recreate=False, simple=False):
     return export_file(path, filetype, delimiter, force_recreate, simple)
 
 
-@celery.task(name="make_changes")
+@celery.task(name="make_changes", priority=2)
 def task_make_changes(path, data):
     data_file = path + "/_data.json"
     update_json_file(
@@ -212,7 +223,7 @@ def task_make_changes(path, data):
     return {"status": "success"}
 
 
-@celery.task(name="count_doc_pages")
+@celery.task(name="count_doc_pages", priority=0)
 def task_count_doc_pages(path: str, extension: str):
     """
     Updates the metadata of the document at the given path with its page count.
@@ -231,7 +242,7 @@ def task_count_doc_pages(path: str, extension: str):
     )
 
 
-@celery.task(name="ocr_from_api")
+@celery.task(name="ocr_from_api", priority=9)
 def task_perform_direct_ocr(
     path: str, config: dict | None, delete_on_finish: bool = False
 ):
@@ -270,7 +281,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             pdf_prep_callback = task_count_doc_pages.si(
                 path=path, extension=extension
-            ).set(link=callback)
+            ).set(link=callback, ignore_result=True)
             chord(
                 task_extract_pdf_page.si(path, basename, i) for i in range(num_pages)
             )(pdf_prep_callback)
@@ -301,7 +312,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
-                callback.apply_async()
+                callback.apply_async(ignore_result=True)
 
         elif extension in ("tif", "tiff"):
             img = Image.open(f"{path}/{basename}.{extension}", formats=["tiff"])
@@ -329,7 +340,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
-                callback.apply_async()
+                callback.apply_async(ignore_result=True)
 
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
             original_path = f"{path}/{basename}.{extension}"
@@ -339,7 +350,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
-                callback.apply_async()
+                callback.apply_async(ignore_result=True)
 
         else:
             raise FileNotFoundError("No file with a valid extension was found")
@@ -532,7 +543,7 @@ def task_file_ocr(
             )
             for image in images
         )
-        tasks.apply_async()
+        tasks.apply_async(ignore_result=True)
 
         return {"status": "success"}
 
@@ -855,9 +866,13 @@ def task_page_ocr(
                 callback = task_delete_file.si(
                     path=f"{path}/{get_file_basename(path)}.{data['extension']}"
                 )
-                task_export_results.apply_async((path, output_types), link=callback)
+                task_export_results.apply_async(
+                    (path, output_types), link=callback, ignore_result=True
+                )
             else:
-                task_export_results.delay(path, output_types)
+                task_export_results.apply_async(
+                    (path, output_types), ignore_result=True
+                )
 
         return {"status": "success"}
 
@@ -875,7 +890,7 @@ def task_page_ocr(
         return {"status": "error"}
 
 
-@celery.task(name="export_results")
+@celery.task(name="export_results", priority=2)
 def task_export_results(path: str, output_types: list[str]):
     data_file = f"{path}/_data.json"
     data = get_data(data_file)
@@ -1078,7 +1093,7 @@ def task_export_results(path: str, output_types: list[str]):
         return {"status": "error"}
 
 
-@celery.task(name="async_delete_file")
+@celery.task(name="async_delete_file", priority=0)
 def task_delete_file(path: str):
     log.debug(f"Deleting {path}")
     os.remove(path)
@@ -1101,7 +1116,7 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     log.info(f"Created periodic task {entry}")
 
 
-@celery.task(name="set_max_private_space_age")
+@celery.task(name="set_max_private_space_age", priority=0)
 def task_set_max_private_space_age(new_max_age: int | str):
     try:
         os.environ["MAX_PRIVATE_SPACE_AGE"] = str(int(new_max_age))
@@ -1110,7 +1125,7 @@ def task_set_max_private_space_age(new_max_age: int | str):
         return {"status": "error"}
 
 
-@celery.task(name="cleanup_private_spaces")
+@celery.task(name="cleanup_private_spaces", priority=0)
 def task_delete_old_private_spaces():
     max_private_space_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "5"))  # days
     log.info(f"Deleting private spaces older than {max_private_space_age} days")

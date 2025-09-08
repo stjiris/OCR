@@ -413,8 +413,7 @@ def request_entities():
 
     update_json_file(f"{path}/_data.json", data)
 
-    celery.send_task("request_ner", kwargs={"data_folder": path})
-    # Thread(target=request_ner, args=(path,)).start()
+    celery.send_task("request_ner", kwargs={"data_folder": path}, ignore_result=True)
     return {
         "success": True,
         "filesystem": get_filesystem(filesystem_path, private_space, is_private),
@@ -664,7 +663,7 @@ def join_chunks(target_path, filename, total_count, temp_file_path):
         for i in range(total_count):
             with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
-    celery.send_task("prepare_file", kwargs={"path": target_path})
+    celery.send_task("prepare_file", kwargs={"path": target_path}, ignore_result=True)
     shutil.rmtree(temp_file_path)
 
 
@@ -704,7 +703,9 @@ def upload_file():
     if total_count == 1:
         file.save(file_path)
 
-        celery.send_task("prepare_file", kwargs={"path": target_path})
+        celery.send_task(
+            "prepare_file", kwargs={"path": target_path}, ignore_result=True
+        )
 
         return {"success": True, "finished": True}
 
@@ -902,7 +903,9 @@ def request_ocr():
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        celery.send_task("file_ocr", kwargs={"path": f, "config": config})
+        celery.send_task(
+            "file_ocr", kwargs={"path": f, "config": config}, ignore_result=True
+        )
 
     return {
         "success": True,
@@ -1045,9 +1048,9 @@ def submit_text():
             json.dump(text, f, indent=2, ensure_ascii=False)
 
     if remake_files:
-        celery.send_task("make_changes", kwargs={"path": path, "data": data})
-        # Thread(target=make_changes, args=(data_folder, data)).start()
-        # make_changes(data_folder, data)
+        celery.send_task(
+            "make_changes", kwargs={"path": path, "data": data}, ignore_result=True
+        )
 
     return {"success": True}
 
@@ -1241,6 +1244,7 @@ def api_perform_ocr():
     celery.send_task(
         "ocr_from_api",
         kwargs={"path": doc_path, "config": config, "delete_on_finish": True},
+        ignore_result=True,
     )
     return {
         "success": True,
@@ -1435,7 +1439,7 @@ def schedule_private_space_cleanup():
 @auth_required("token", "session")
 @roles_required("Admin")
 def perform_private_space_cleanup():
-    celery.send_task("cleanup_private_spaces")
+    celery.send_task("cleanup_private_spaces", ignore_result=True)
     return {
         "success": True,
         "message": "O sistema irá apagar os espaços privados mais antigos.",

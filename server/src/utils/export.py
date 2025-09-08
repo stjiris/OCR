@@ -239,6 +239,8 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         return target
 
     else:
+        generate_index = get_csv or not simple
+
         data = get_data(data_file)
         original_extension = data["extension"]
 
@@ -304,14 +306,22 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
             pdf.setPageSize((w, h))
             pdf.drawImage(f"{path}/{image}", 0, 0, width=w, height=h)
 
-            new_words = add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
+            new_words = add_text_layer(
+                pdf,
+                hocr_path,
+                h,
+                dpi_original,
+                dpi_compressed,
+                get_index_words=generate_index,
+            )
 
-            for word in new_words:
-                if word not in words:
-                    words[word] = {"count": new_words[word], "pages": str(i + 1)}
-                else:
-                    words[word]["count"] += new_words[word]
-                    words[word]["pages"] += f", {i + 1}"
+            if generate_index:
+                for word in new_words:
+                    if word not in words:
+                        words[word] = {"count": new_words[word], "pages": str(i + 1)}
+                    else:
+                        words[word]["count"] += new_words[word]
+                        words[word]["pages"] += f", {i + 1}"
 
             pdf.showPage()
 
@@ -325,13 +335,14 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
                 },
             )
 
-        # Sort the `words` dict by key
-        words = [
-            item
-            for item in sorted(
-                words.items(), key=lambda item: item[0].lower() + item[0]
-            )
-        ]
+        if generate_index:
+            # Sort the `words` dict by key
+            words = [
+                item
+                for item in sorted(
+                    words.items(), key=lambda item: item[0].lower() + item[0]
+                )
+            ]
 
         if get_csv:
             update_json_file(
@@ -478,10 +489,14 @@ def find_index_words(hocr_path):
     return index_words
 
 
-def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
+def add_text_layer(
+    pdf, hocr_path, height, dpi_original, dpi_compressed, get_index_words=False
+):
     """Draw an invisible text layer for OCR data"""
-
-    index_words = find_index_words(hocr_path)
+    if get_index_words:
+        index_words = find_index_words(hocr_path)
+    else:
+        index_words = None
 
     with open(hocr_path, encoding="utf-8") as f:
         hocrfile = json.load(f)
