@@ -42,8 +42,7 @@ from src.utils.file import save_file_layouts
 from src.utils.file import size_to_units
 from src.utils.file import TIMEZONE
 from src.utils.file import update_json_file
-
-# from src.utils.image import parse_images
+from src.utils.image import parse_images
 
 OCR_ENGINES = (
     "pytesseract",
@@ -76,8 +75,9 @@ load_invisible_font()
 
 
 @celery.task(name="auto_segment", priority=0)
-def task_auto_segment(path):
-    # return parse_images(path)
+def task_auto_segment(path, use_hdbscan=False):
+    if use_hdbscan:
+        return parse_images(path)
     pages_path = f"{path}/_pages"
     if not os.path.exists(pages_path):
         log.error(f"Error in parsing images at {path}: missing /_pages")

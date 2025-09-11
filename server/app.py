@@ -1171,8 +1171,13 @@ def generate_automatic_layouts():
     path, is_private = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
+    use_hdbscan = False
+    if "use_hdbscan" in request.values:
+        use_hdbscan = request.values["use_hdbscan"] in ("true", "True")
     try:
-        celery.send_task("auto_segment", kwargs={"path": path}).get()
+        celery.send_task(
+            "auto_segment", kwargs={"path": path, "use_hdbscan": use_hdbscan}
+        ).get()
         layouts = get_file_layouts(path, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
