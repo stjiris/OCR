@@ -65,6 +65,8 @@ class LayoutBox extends React.Component {
         }
         this.viewRef = props.viewRef;
         this.imageRef = props.imageRef;
+
+        this.processDrag = this.processDrag.bind(this);
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -122,29 +124,36 @@ class LayoutBox extends React.Component {
         }
     }
 
+    beginDrag(corner) {
+        this.props.setDraggingCorner(this, corner);
+    }
+
     processDrag(e, corner) {
-        var shiftX = this.viewRef.current.offsetLeft;
-        var shiftY = this.viewRef.current.offsetTop;
+        const shiftX = this.viewRef.current.offsetLeft;
+        const shiftY = this.viewRef.current.offsetTop;
 
-        var mouseX = e.clientX - shiftX + this.viewRef.current.scrollLeft;
-        var mouseY = e.clientY - shiftY + this.viewRef.current.scrollTop + window.scrollY;
+        let mouseX = e.clientX - shiftX + this.viewRef.current.scrollLeft;
+        let mouseY = e.clientY - shiftY + this.viewRef.current.scrollTop + window.scrollY;
 
-        if (
-            mouseX <= 0 || mouseY <= 0
-        ) return;
+        if (mouseX <= 0 || mouseY <= 0) return;
 
-        var coords = this.screenToImageCoordinates(mouseX, mouseY);
+        const coords = this.screenToImageCoordinates(mouseX, mouseY);
         mouseX = coords.x;
         mouseY = coords.y;
 
-        if (corner === 0) {
-            this.setState({ top: mouseY, left: mouseX })
-        } else if (corner === 1) {
-            this.setState({ top: mouseY, right: mouseX })
-        } else if (corner === 2) {
-            this.setState({ bottom: mouseY, left: mouseX })
-        } else if (corner === 3) {
-            this.setState({ bottom: mouseY, right: mouseX })
+        switch (corner) {
+            case 0:
+                this.setState({ top: mouseY, left: mouseX });
+                break;
+            case 1:
+                this.setState({ top: mouseY, right: mouseX });
+                break;
+            case 2:
+                this.setState({ bottom: mouseY, left: mouseX });
+                break;
+            case 3:
+                this.setState({ bottom: mouseY, right: mouseX });
+                break;
         }
     }
 
@@ -158,10 +167,10 @@ class LayoutBox extends React.Component {
      */
 
     render() {
-        var initialCoords = this.imageToScreenCoordinates(this.state.left, this.state.top);
-        var finalCoords = this.imageToScreenCoordinates(this.state.right, this.state.bottom);
+        const initialCoords = this.imageToScreenCoordinates(this.state.left, this.state.top);
+        const finalCoords = this.imageToScreenCoordinates(this.state.right, this.state.bottom);
 
-        var mainColor = this.props.checked ? `${this.state.mainColor}` : `${this.state.mainColor}80`
+        const mainColor = this.props.checked ? `${this.state.mainColor}` : `${this.state.mainColor}80`
 
         return (
             <Box
@@ -210,7 +219,7 @@ class LayoutBox extends React.Component {
                             cursor: "move",
                             zIndex: 100
                         }}
-                        onDrag={(e) => this.processDrag(e, 0)}
+                        onDragStart={(e) => this.beginDrag(0)}
                         onDragEnd={() => this.props.updateMenu()}
 
                     />
@@ -222,7 +231,7 @@ class LayoutBox extends React.Component {
                             cursor: "move",
                             zIndex: 100
                         }}
-                        onDrag={(e) => this.processDrag(e, 1)}
+                        onDragStart={(e) => this.beginDrag(1)}
                         onDragEnd={() => this.props.updateMenu()}
                     />
 
@@ -233,7 +242,7 @@ class LayoutBox extends React.Component {
                             cursor: "move",
                             zIndex: 100
                         }}
-                        onDrag={(e) => this.processDrag(e, 2)}
+                        onDragStart={(e) => this.beginDrag(2)}
                         onDragEnd={() => this.props.updateMenu()}
                     />
 
@@ -244,7 +253,7 @@ class LayoutBox extends React.Component {
                             cursor: "move",
                             zIndex: 100
                         }}
-                        onDrag={(e) => this.processDrag(e, 3)}
+                        onDragStart={(e) => this.beginDrag(3)}
                         onDragEnd={() => this.props.updateMenu()}
                     />
                 </Box>
@@ -262,6 +271,9 @@ class LayoutImage extends React.Component {
             minImageZoom: 20,
             maxImageZoom: 600,
 
+            dragging: false,  // whether the image is being dragged (drawing new box)
+            draggingCorner: null,  // stores info about box corner being dragged
+
             boxes: [],  // LayoutBox components
             groups: [],  // info for groups with the refs of their LayoutBox components
         }
@@ -271,6 +283,7 @@ class LayoutImage extends React.Component {
         this.previewRef = React.createRef();
 
         this.updateMenu = this.updateMenu.bind(this);
+        this.setDraggingCorner = this.setDraggingCorner.bind(this);
         this.recreateBoxes = this.recreateBoxes.bind(this);
     }
 
@@ -334,6 +347,7 @@ class LayoutImage extends React.Component {
             id={box.id}
             checked={box.checked || checked || false}
             updateMenu={this.updateMenu}
+            setDraggingCorner={this.setDraggingCorner}
         />
     }
 
@@ -438,13 +452,37 @@ class LayoutImage extends React.Component {
         return {x: imgX, y: imgY};
     }
 
-    dragStart(e) {
+    setDraggingCorner(box, cornerNumber) {
+        this.setState({ draggingCorner: [box, cornerNumber] });
+    }
+
+    handleContainerDragOver(e) {
+        if (!this.state.draggingCorner && !this.state.dragging) return;
+
+        if (this.state.dragging) {
+            this.handleImageDragging(e)
+        } else if (this.state.draggingCorner) {
+            const box = this.state.draggingCorner[0];
+            const cornerNumber = this.state.draggingCorner[1];
+            box.processDrag(e, cornerNumber);
+        }
+    }
+
+    handleContainerDragEnd(e) {
+        if (!this.state.draggingCorner) return;
+
+        this.setState({ draggingCorner: null });
+    }
+
+    handleImageDragStart(e) {
         e.stopPropagation();
+        e.dataTransfer.setDragImage(transparentPixel, 0, 0);
+        e.dataTransfer.effectAllowed = "move";
 
         if (this.props.segmentLoading) return;
 
-        var x = e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX;
-        var y = e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY;
+        const x = e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX;
+        const y = e.clientY - this.viewRef.current.offsetTop + this.viewRef.current.scrollTop + window.scrollY;
 
         this.previewRef.current.toggleVisibility();
         this.previewRef.current.setInitialCoordinates(y, x);
@@ -457,7 +495,7 @@ class LayoutImage extends React.Component {
         )
     }
 
-    duringDrag(e) {
+    handleImageDragging(e) {
         if (!this.state.dragging) return;
 
         const x = e.clientX - this.viewRef.current.offsetLeft + this.viewRef.current.scrollLeft + window.scrollX;
@@ -470,7 +508,7 @@ class LayoutImage extends React.Component {
         this.props.updateBoxes(this.getPageBoxes());
     }
 
-    dragEnd(e) {
+    handleImageDragEnd(e) {
         if (!this.state.dragging) return;
 
         const initialCoords = this.screenToImageCoordinates(this.state.initialCoords.x, this.state.initialCoords.y);
@@ -505,7 +543,10 @@ class LayoutImage extends React.Component {
     render() {
         return (
             <Box ref={this.viewRef}
-                className="pageImageContainer">
+                className="pageImageContainer"
+                onDragOver={(e) => this.handleContainerDragOver(e)}
+                onDragEnd={(e) => this.handleContainerDragEnd(e)}
+            >
                 <img
                     ref={this.imageRef}
                     src={this.props.imageURL}
@@ -517,11 +558,9 @@ class LayoutImage extends React.Component {
                     }}
 
                     onDragStart={(e) => {
-                        e.dataTransfer.setDragImage(transparentPixel, 0, 0);
-                        this.dragStart(e);
+                        this.handleImageDragStart(e);
                     }}
-                    onDragOver={(e) => this.duringDrag(e)}
-                    onDragEnd={(e) => this.dragEnd(e)}
+                    onDragEnd={(e) => this.handleImageDragEnd(e)}
                     onLoad={() => this.loadBoxes()}
                 />
                 {/*
@@ -575,7 +614,8 @@ LayoutBox.defaultProps = {
     checked: false,
 
     // functions:
-    updateMenu: null
+    updateMenu: null,
+    setDraggingCorner: null,
 }
 
 LayoutImage.defaultProps = {
@@ -588,7 +628,7 @@ LayoutImage.defaultProps = {
 
     // functions:
     updateBoxes: null,
-    newGroup: null
+    newGroup: null,
 }
 
 export default LayoutImage;
