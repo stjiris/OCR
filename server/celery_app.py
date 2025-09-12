@@ -1,6 +1,5 @@
 import json
 import logging as log
-import math
 import os
 import shutil
 import tempfile
@@ -24,7 +23,7 @@ from src.engines import ocr_tesserocr
 from src.utils.export import export_csv
 from src.utils.export import export_file
 from src.utils.export import export_from_existing
-from src.utils.export import load_invisible_font
+from src.utils.export import load_fonts
 from src.utils.file import ALLOWED_EXTENSIONS
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
@@ -68,7 +67,8 @@ celery.conf.worker_disable_prefetch = True  # may not work before celery 5.6
 celery.conf.task_acks_late = True  # ack tasks only after completion; required for disabling prefetch but should be False if there are multiple workers
 # next version of celery (5.6) may allow disabling prefetch while still using early ack
 
-load_invisible_font()
+# Preload fonts to avoid lazy loading
+load_fonts()
 
 
 @celery.task(name="auto_segment", priority=0)

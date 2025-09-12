@@ -15,6 +15,7 @@ import pypdfium2 as pdfium
 from PIL import Image
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.pdfmetrics import getFont
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from src.utils.file import get_current_time
@@ -508,13 +509,13 @@ def add_text_layer(
                 box = word["box"]
                 b = word["b"]
 
-                font_width = pdf.stringWidth(rawtext, "invisible", 8)
+                font_width = pdf.stringWidth(rawtext, "Times-Roman", 8)
                 if font_width <= 0:
                     continue
 
                 text = pdf.beginText()
                 text.setTextRenderMode(3)  # double invisible
-                text.setFont("invisible", 8)
+                text.setFont("Times-Roman", 8)
                 x_offset = box[0] * dpi_compressed / dpi_original  # Adjust X offset
                 y_offset = height - b * dpi_compressed / dpi_original  # Adjust Y offset
                 text.setTextOrigin(x_offset, y_offset)
@@ -525,6 +526,15 @@ def add_text_layer(
                 pdf.drawText(text)
 
     return index_words
+
+
+def load_fonts():
+    """
+    Ensure used fonts are registered, to avoid lazy loading during OCR
+    """
+    # Add more fonts here as needed
+    getFont("Times-Roman")
+    # load_invisible_font()  # Invisible font not writing text properly in PDF results
 
 
 # Glyphless variation of vedaal's invisible font retrieved from
