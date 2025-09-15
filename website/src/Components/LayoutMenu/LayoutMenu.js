@@ -65,7 +65,8 @@ class LayoutMenu extends React.Component {
 		this.image = React.createRef();
 		this.confirmLeave = React.createRef();
 
-		this.successNot = React.createRef();
+		this.successNotifRef = React.createRef();
+		this.errorNotifRef = React.createRef();
 
         this.updateBoxes = this.updateBoxes.bind(this);
         this.newGroup = this.newGroup.bind(this);
@@ -399,7 +400,7 @@ class LayoutMenu extends React.Component {
 				if (data["success"]) {
                     this.setState({ uncommittedChanges: false });
 
-					this.successNot.current.openNotif("Layout guardado com sucesso.");
+					this.successNotifRef.current.openNotif("Layout guardado com sucesso.");
 
 					if (closeWindow) {
 						this.leave();
@@ -412,7 +413,7 @@ class LayoutMenu extends React.Component {
 
 	GenerateLayoutAutomatically() {
 		this.setState({ segmentLoading: true });
-		this.successNot.current.openNotif("A gerar layouts automaticamente... Por favor aguarde.");
+		this.successNotifRef.current.openNotif("A gerar layouts automaticamente... Por favor aguarde.");
 
         const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
 		axios.get(API_URL + '/generate-automatic-layouts?', {
@@ -429,7 +430,7 @@ class LayoutMenu extends React.Component {
 				this.setState({ contents: contents, segmentLoading: false });
 			})
             .catch(err => {
-                this.successNot.current.openNotif("Ocorreu um erro na segmentação");
+                this.errorNotifRef.current.openNotif("Ocorreu um erro na segmentação");
                 this.setState({ segmentLoading: false });
             });
 	}
@@ -758,7 +759,8 @@ class LayoutMenu extends React.Component {
 
 		return (
 			<>
-				<Notification message={""} severity={"success"} ref={this.successNot} />
+				<Notification message={""} severity={"success"} ref={this.successNotifRef} />
+                <Notification message={""} severity={"error"} ref={this.errorNotifRef}/>
 				<ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
                 <Box className="toolbar">
                     <Box className="noMarginRight" sx={{display: "flex"}}>
