@@ -280,7 +280,7 @@ class DocumentRow extends React.Component {
                             >
                             {hasLayoutBoxes ? <BorderAllIcon /> : <BorderClearIcon />}
                         </IconButton>
-                        &nbsp;{hasLayoutBoxes ? "Alterar Layout" : "Criar Layout"}
+                        &nbsp;{hasLayoutBoxes ? "Alterar Segmentação" : "Definir Segmentação"}
                     </MenuItem>
 
                     <MenuItem

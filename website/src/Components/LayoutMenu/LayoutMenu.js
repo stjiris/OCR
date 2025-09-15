@@ -400,20 +400,20 @@ class LayoutMenu extends React.Component {
 				if (data["success"]) {
                     this.setState({ uncommittedChanges: false });
 
-					this.successNotifRef.current.openNotif("Layout guardado com sucesso.");
+					this.successNotifRef.current.openNotif("Segmentação guardada com sucesso.");
 
 					if (closeWindow) {
 						this.leave();
 					}
 				} else {
-					alert("Erro inesperado ao guardar o layout.")
+                    this.errorNotifRef.current.openNotif("Erro inesperado ao guardar a segmentação.");
 				}
 			});
 	}
 
 	GenerateLayoutAutomatically() {
 		this.setState({ segmentLoading: true });
-		this.successNotifRef.current.openNotif("A gerar layouts automaticamente... Por favor aguarde.");
+		this.successNotifRef.current.openNotif("A segmentar automaticamente... Por favor aguarde.");
 
         const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
 		axios.get(API_URL + '/generate-automatic-layouts?', {
@@ -774,7 +774,7 @@ class LayoutMenu extends React.Component {
                             component="h2"
                             className="toolbarTitle"
                         >
-                            Editar o layout
+                            Segmentar o documento
                         </Typography>
                     </Box>
 

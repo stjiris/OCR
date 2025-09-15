@@ -816,7 +816,7 @@ class EditingMenu extends React.Component {
                                 component="h2"
                                 className="toolbarTitle"
                             >
-                                Editar os resultados
+                                Editar os resultados do documento
                             </Typography>
                         </Box>
 

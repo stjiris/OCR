@@ -303,7 +303,7 @@ class OcrMenu extends React.Component {
                         component="h2"
                         className="toolbarTitle"
                     >
-                        Configurar OCR {this.props.isFolder ? 'da pasta' : 'do ficheiro'} <b>{this.props.filename}</b>
+                        Configurar OCR {this.props.isFolder ? 'da pasta' : 'do documento'}
                     </Typography>
                 </Box>
 
