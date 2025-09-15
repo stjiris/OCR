@@ -15,6 +15,7 @@ from src.utils.parse_hocr import parse_hocr
 from tesserocr import OEM
 from tesserocr import PSM
 from tesserocr import PyTessBaseAPI
+from tesserocr import RIL
 
 api = PyTessBaseAPI(init=False)
 
@@ -212,6 +213,35 @@ def get_structure(
     lines = parse_hocr(hocr, segment_box=None)
 
     return lines, raw_results_paths
+
+
+def auto_get_boxes(page):
+    api.Init()
+
+    if isinstance(page, str):
+        page = Image.open(page)  # get file descriptor
+    api.SetImage(page)
+
+    # boxes = api.GetComponentImages(RIL.TEXTLINE, True)
+    boxes = api.GetComponentImages(
+        RIL.BLOCK, text_only=True, raw_image=True, raw_padding=10
+    )
+    # logging.debug(f"Found {len(boxes)} textline image components.")
+    # logging.debug(f"Boxes:\n{boxes}")
+    """
+    for i, (im, box, _, _) in enumerate(boxes):
+        # im is a PIL image object
+        # box is a dict with x, y, w and h keys
+        box_coords = (box['x'], box['y'], box['w'], box['h'])
+        logging.warning(f"OCRing box {box_coords}")
+        api.SetRectangle(*box_coords)
+        #FIXME debug
+        thresh_img = api.GetThresholdedImage()
+        thresh_img.save(f"/tmp/{generate_random_uuid()}", format=thresh_img.format)
+        #FIXME end debug
+    """
+    api.End()
+    return [(box["x"], box["y"], box["w"], box["h"]) for (_, box, _, _) in boxes]
 
 
 def verify_params(config):
