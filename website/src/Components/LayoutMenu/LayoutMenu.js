@@ -839,7 +839,7 @@ class LayoutMenu extends React.Component {
 					<Box sx={{
 						display: 'flex',
 						flexDirection: 'column',
-                        width: '70%'
+                        width: '67%'
 					}}>
 						<Box sx={{display: "flex", flexDirection: "row"}}>
 							{
@@ -906,7 +906,7 @@ class LayoutMenu extends React.Component {
 						</Box>
 					</Box>
 
-					<Box sx={{ display: "flex", flexDirection: "column", width: "30%", ml: "1rem" }}>
+					<Box sx={{ display: "flex", flexDirection: "column", width: "33%", ml: "1rem" }}>
 						<Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-evenly", alignItems: "center" }}>
 							<Button
 								disabled={copyDisabled}

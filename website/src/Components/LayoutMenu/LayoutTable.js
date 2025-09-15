@@ -78,7 +78,7 @@ const LayoutTable = ({
             collisionDetection={closestCenter}
             modifiers={[restrictToVerticalAxis]}
         >
-            <TableContainer sx={{width: "100%", maxHeight: '80vh', border: '1px solid #aaa'}}>
+            <TableContainer sx={{width: "100%", maxHeight: '69vh', border: '1px solid #aaa'}}>
                 <Table stickyHeader>
                     <TableHead>
                         <TableRow className='layoutHeaderRow'>

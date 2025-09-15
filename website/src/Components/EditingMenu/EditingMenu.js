@@ -1059,7 +1059,7 @@ class EditingMenu extends React.Component {
                                         //width: this.state.wordsMode ? `${3 * window.innerWidth / 5 - 16*4 - 280}px` : `${3 * window.innerWidth / 5 - 16*4}px`,
                                         //height: `${this.state.baseImageHeight}px`,
                                         width: "calc(100% - 20px)",
-                                        height: "80vh",
+                                        height: "69vh",
                                         overflowY: 'scroll',
                                         overflowX: 'wrap',
                                         border: '1px solid grey',

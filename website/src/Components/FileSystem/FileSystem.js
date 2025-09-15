@@ -850,7 +850,7 @@ class FileExplorer extends React.Component {
 
     generateTable() {
         return (
-            <TableContainer sx={{width: "100%", maxHeight: '71vh', border: '1px solid #aaa'}} component={Paper}>
+            <TableContainer sx={{width: "100%", maxHeight: '70vh', border: '1px solid #aaa'}} component={Paper}>
                 <Table
                     stickyHeader
                     aria-label="filesystem table"

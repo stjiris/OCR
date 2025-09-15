@@ -127,7 +127,7 @@ span.toolbarTitle, .MuiTypography-root.toolbarTitle {
 .pageImageContainer {
     display: flex;
     position: relative;
-    height: 80vh;
+    height: 69vh;
     width: 100%;
     overflow: scroll;
     border: 1px solid grey;
