@@ -15,18 +15,20 @@ import pypdfium2 as pdfium
 from PIL import Image
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.pdfmetrics import getFont
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_file_basename
+from src.utils.file import get_file_size
 from src.utils.file import get_page_count
-from src.utils.file import get_size
 from src.utils.file import json_to_text
+from src.utils.file import size_to_units
 from src.utils.file import update_json_file
 
 FILES_PATH = os.environ.get("FILES_PATH", "_files")
-PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_sessions")
+PRIVATE_PATH = os.environ.get("PRIVATE_PATH", "_files/_private_spaces")
 
 OUT_DEFAULT_DPI = 150
 
@@ -85,7 +87,7 @@ def export_from_existing(path: str, raw_results: dict | list, output_types: list
                 creation_date = get_current_time()
                 data_update[extension] = {
                     "complete": True,
-                    "size": get_size(file_path, path_complete=True),
+                    "size": size_to_units(get_file_size(file_path, path_complete=True)),
                     "creation": creation_date,
                 }
                 if extension == "pdf":
@@ -102,7 +104,7 @@ def export_from_existing(path: str, raw_results: dict | list, output_types: list
                 creation_date = get_current_time()
                 data_update[ext] = {
                     "complete": True,
-                    "size": get_size(file_path, path_complete=True),
+                    "size": size_to_units(get_file_size(file_path, path_complete=True)),
                     "creation": creation_date,
                 }
                 if ext == "pdf":
@@ -224,6 +226,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
     """
     Export the file as a .pdf file
     """
+    data_file = f"{path}/_data.json"
     filename = f"{path}/_export/_pdf_indexed.pdf"
     simple_filename = f"{path}/_export/_pdf.pdf"
     filename_csv = f"{path}/_export/_index.csv"
@@ -237,7 +240,9 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         return target
 
     else:
-        data = get_data(f"{path}/_data.json")
+        generate_index = get_csv or not simple
+
+        data = get_data(data_file)
         original_extension = data["extension"]
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
@@ -302,29 +307,66 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
             pdf.setPageSize((w, h))
             pdf.drawImage(f"{path}/{image}", 0, 0, width=w, height=h)
 
-            new_words = add_text_layer(pdf, hocr_path, h, dpi_original, dpi_compressed)
+            new_words = add_text_layer(
+                pdf,
+                hocr_path,
+                h,
+                dpi_original,
+                dpi_compressed,
+                get_index_words=generate_index,
+            )
 
-            for word in new_words:
-                if word not in words:
-                    words[word] = {"count": new_words[word], "pages": str(i + 1)}
-                else:
-                    words[word]["count"] += new_words[word]
-                    words[word]["pages"] += f", {i + 1}"
+            if generate_index:
+                for word in new_words:
+                    if word not in words:
+                        words[word] = {"count": new_words[word], "pages": str(i + 1)}
+                    else:
+                        words[word]["count"] += new_words[word]
+                        words[word]["pages"] += f", {i + 1}"
 
             pdf.showPage()
 
-        # Sort the `words` dict by key
-        words = [
-            item
-            for item in sorted(
-                words.items(), key=lambda item: item[0].lower() + item[0]
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": f"A gerar PDF {'com índice ' if not simple else ''}{i + 1}/{len(images)}",
+                    }
+                },
             )
-        ]
+
+        if generate_index:
+            # Sort the `words` dict by key
+            words = [
+                item
+                for item in sorted(
+                    words.items(), key=lambda item: item[0].lower() + item[0]
+                )
+            ]
 
         if get_csv:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar CSV",
+                    }
+                },
+            )
             export_csv_from_words(filename_csv, words)
 
         if not simple:
+            update_json_file(
+                data_file,
+                {
+                    "status": {
+                        "stage": "exporting",
+                        "message": "A gerar índice",
+                    }
+                },
+            )
             rows = 100
             cols = 2
             title_size = 38
@@ -448,10 +490,14 @@ def find_index_words(hocr_path):
     return index_words
 
 
-def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
+def add_text_layer(
+    pdf, hocr_path, height, dpi_original, dpi_compressed, get_index_words=False
+):
     """Draw an invisible text layer for OCR data"""
-
-    index_words = find_index_words(hocr_path)
+    if get_index_words:
+        index_words = find_index_words(hocr_path)
+    else:
+        index_words = None
 
     with open(hocr_path, encoding="utf-8") as f:
         hocrfile = json.load(f)
@@ -463,13 +509,13 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
                 box = word["box"]
                 b = word["b"]
 
-                font_width = pdf.stringWidth(rawtext, "invisible", 8)
+                font_width = pdf.stringWidth(rawtext, "Times-Roman", 8)
                 if font_width <= 0:
                     continue
 
                 text = pdf.beginText()
                 text.setTextRenderMode(3)  # double invisible
-                text.setFont("invisible", 8)
+                text.setFont("Times-Roman", 8)
                 x_offset = box[0] * dpi_compressed / dpi_original  # Adjust X offset
                 y_offset = height - b * dpi_compressed / dpi_original  # Adjust Y offset
                 text.setTextOrigin(x_offset, y_offset)
@@ -480,6 +526,15 @@ def add_text_layer(pdf, hocr_path, height, dpi_original, dpi_compressed):
                 pdf.drawText(text)
 
     return index_words
+
+
+def load_fonts():
+    """
+    Ensure used fonts are registered, to avoid lazy loading during OCR
+    """
+    # Add more fonts here as needed
+    getFont("Times-Roman")
+    # load_invisible_font()  # Invisible font not writing text properly in PDF results
 
 
 # Glyphless variation of vedaal's invisible font retrieved from
@@ -523,10 +578,6 @@ def get_md5_checksum(path):
     with open(path, "rb") as f:
         data = f.read()
         return hashlib.md5(data).hexdigest()
-
-
-def get_file_size(path):
-    return os.path.getsize(path)
 
 
 def generate_file(base_path, path, id, seq, mimetype):

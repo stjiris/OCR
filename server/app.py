@@ -62,9 +62,9 @@ from src.utils.file import save_file_layouts
 from src.utils.file import TEMP_PATH
 from src.utils.file import update_json_file
 from src.utils.system import get_free_space
-from src.utils.system import get_private_sessions
+from src.utils.system import get_private_spaces
 from src.utils.system import get_size_api_files
-from src.utils.system import get_size_private_sessions
+from src.utils.system import get_size_private_spaces
 from src.utils.text import compare_dicts_words
 from werkzeug.utils import safe_join
 
@@ -161,9 +161,9 @@ def format_path(request_data):
     )
     if is_private:
         stripped_path = request_data["path"].strip("/")
-        private_session = stripped_path.split("/")[0]
-        if private_session == "":  # path for private session must start with session ID
-            return bad_request("Path in private session must start with session ID")
+        private_space = stripped_path.split("/")[0]
+        if private_space == "":  # path for private space must start with space ID
+            return bad_request("Path in private space must start with space ID")
         return safe_join(PRIVATE_PATH, stripped_path), True
     else:
         return safe_join(FILES_PATH, request_data["path"].strip("/")), False
@@ -173,14 +173,14 @@ def format_filesystem_path(request_data):
     is_private = "_private" in request_data and (
         request_data["_private"] == "true" or request_data["_private"] is True
     )
-    private_session = None
+    private_space = None
     filesystem_path = FILES_PATH
     if is_private:
         stripped_path = request_data["path"].strip("/")
-        private_session = stripped_path.split("/")[0]
-        if private_session == "":  # path for private session must start with session ID
-            return bad_request("Path in private session must start with session ID")
-        filesystem_path = safe_join(PRIVATE_PATH, private_session)
+        private_space = stripped_path.split("/")[0]
+        if private_space == "":  # path for private space must start with space ID
+            return bad_request("Path in private space must start with space ID")
+        filesystem_path = safe_join(PRIVATE_PATH, private_space)
         if filesystem_path is None:
             abort(HTTPStatus.NOT_FOUND)
         path = safe_join(PRIVATE_PATH, stripped_path)
@@ -189,7 +189,7 @@ def format_filesystem_path(request_data):
 
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
-    return path, filesystem_path, private_session, is_private
+    return path, filesystem_path, private_space, is_private
 
 
 # Endpoint requires a non-empty 'path' argument
@@ -280,14 +280,14 @@ def get_file_system():
         # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
             filesystem = get_filesystem(FILES_PATH)
-            filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
+            filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "5")
             return filesystem
 
-        _, filesystem_path, private_session, is_private = format_filesystem_path(
+        _, filesystem_path, private_space, is_private = format_filesystem_path(
             request.values
         )
-        filesystem = get_filesystem(filesystem_path, private_session, is_private)
-        filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SESSION_AGE", "5")
+        filesystem = get_filesystem(filesystem_path, private_space, is_private)
+        filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "5")
         return filesystem
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
@@ -300,12 +300,10 @@ def get_info():
         if "path" not in request.values or request.values["path"] == "":
             return get_filesystem(FILES_PATH)
 
-        _, filesystem_path, private_session, is_private = format_filesystem_path(
+        _, filesystem_path, private_space, is_private = format_filesystem_path(
             request.values
         )
-        return {
-            "info": get_structure_info(filesystem_path, private_session, is_private)
-        }
+        return {"info": get_structure_info(filesystem_path, private_space, is_private)}
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
@@ -314,7 +312,7 @@ def get_info():
 def create_folder():
     data = request.json
     if (
-        "path" not in data  # empty path is valid: new top-level public session folder
+        "path" not in data  # empty path is valid: new top-level public space folder
         or "folder" not in data
         or data["folder"] == ""
     ):
@@ -326,8 +324,11 @@ def create_folder():
 
     folder = data["folder"]
 
-    if folder.startswith("_"):
-        return {"success": False, "error": "O nome da pasta não pode começar com _"}
+    if folder.startswith("_") or "/" in folder or "\\" in folder:
+        return {
+            "success": False,
+            "error": "O nome da pasta não pode começar com '_' nem conter '/' ou '\\'",
+        }
 
     new_folder_path = safe_join(path, folder)
     if os.path.exists(new_folder_path):
@@ -355,7 +356,7 @@ def create_folder():
 
 @app.route("/get-text-content", methods=["GET"])
 @requires_arg_path
-def get_file():
+def get_text_content():
     path, is_private = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
@@ -396,10 +397,11 @@ def get_entities():
     return send_file(f"{path}/_export/_entities.json")
 
 
+# TODO: currently not used
 @app.route("/request_entities", methods=["GET"])
 @requires_arg_path
 def request_entities():
-    path, filesystem_path, private_session, is_private = format_filesystem_path(
+    path, filesystem_path, private_space, is_private = format_filesystem_path(
         request.values
     )
     data = get_data(path + "/_data.json")
@@ -411,15 +413,14 @@ def request_entities():
 
     update_json_file(f"{path}/_data.json", data)
 
-    celery.send_task("request_ner", kwargs={"data_folder": path})
-    # Thread(target=request_ner, args=(path,)).start()
+    celery.send_task("request_ner", kwargs={"data_folder": path}, ignore_result=True)
     return {
         "success": True,
-        "filesystem": get_filesystem(filesystem_path, private_session, is_private),
+        "filesystem": get_filesystem(filesystem_path, private_space, is_private),
     }
 
 
-# TODO: check if used
+# TODO: currently not used
 @app.route("/get_zip", methods=["GET"])
 @requires_arg_path
 def get_zip():
@@ -515,10 +516,10 @@ def get_original():
 @app.route("/delete-path", methods=["POST"])
 @requires_json_path
 def delete_path():
-    path, filesystem_path, private_session, _ = format_filesystem_path(request.json)
+    path, filesystem_path, private_space, _ = format_filesystem_path(request.json)
     try:
         # avoid deleting roots
-        # filesystem_path is either FILES_PATH or PRIVATE_PATH/private_session -> another endpoint deletes priv. sessions
+        # filesystem_path is either FILES_PATH or PRIVATE_PATH/private_space -> another endpoint deletes priv. spaces
         if (
             os.path.samefile(FILES_PATH, path)
             or os.path.samefile(PRIVATE_PATH, path)
@@ -549,6 +550,7 @@ def set_upload_stuck():
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
     data["upload_stuck"] = True
+    data["status"]["stage"] = "error"
     update_json_file(f"{path}/_data.json", data)
 
     return {
@@ -616,7 +618,7 @@ def prepare_upload():
     if "name" not in data or data["name"] == "":
         return bad_request("Missing parameter 'name'")
 
-    path, filesystem_path, private_session, is_private = format_filesystem_path(data)
+    path, filesystem_path, private_space, is_private = format_filesystem_path(data)
     filename = data["name"]
 
     if is_filename_reserved(path, filename):
@@ -641,6 +643,11 @@ def prepare_upload():
                 "type": "file",
                 "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
                 "stored": 0.00,
+                "creation": get_current_time(),
+                "status": {
+                    "stage": "uploading",
+                    "message": "A enviar",
+                },
             },
             f,
             indent=2,
@@ -656,7 +663,7 @@ def join_chunks(target_path, filename, total_count, temp_file_path):
         for i in range(total_count):
             with open(f"{temp_file_path}/{i + 1}", "rb") as chunk:
                 f.write(chunk.read())
-    celery.send_task("prepare_file", kwargs={"path": target_path})
+    celery.send_task("prepare_file", kwargs={"path": target_path}, ignore_result=True)
     shutil.rmtree(temp_file_path)
 
 
@@ -696,7 +703,9 @@ def upload_file():
     if total_count == 1:
         file.save(file_path)
 
-        celery.send_task("prepare_file", kwargs={"path": target_path})
+        celery.send_task(
+            "prepare_file", kwargs={"path": target_path}, ignore_result=True
+        )
 
         return {"success": True, "finished": True}
 
@@ -854,14 +863,12 @@ def request_ocr():
             if os.path.splitext(f.name)[1] == ".json"
         ]
 
-        if data["indexed"]:
+        if data.get("indexed", False):
             for page in pages:
                 page_id = generate_uuid(page.path)
-                log.debug(f"Removing {page.path}: ID={page_id}")
                 try:
                     es.delete_document(page_id)
                 except NotFoundError:
-                    log.debug(f"Failed to find {page.path}: ID={page_id}")
                     continue
 
         # Delete previous results
@@ -875,6 +882,10 @@ def request_ocr():
         data.update(
             {
                 "ocr": {"progress": 0},
+                "status": {
+                    "stage": "ocr",
+                    "message": "A começar...",
+                },
                 "pdf": {"complete": False},
                 "pdf_indexed": {"complete": False},
                 "txt": {"complete": False},
@@ -892,7 +903,9 @@ def request_ocr():
         if os.path.exists(f"{f}/_images"):
             shutil.rmtree(f"{f}/_images")
 
-        celery.send_task("file_ocr", kwargs={"path": f, "config": config})
+        celery.send_task(
+            "file_ocr", kwargs={"path": f, "config": config}, ignore_result=True
+        )
 
     return {
         "success": True,
@@ -912,7 +925,7 @@ def index_doc():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    if PRIVATE_PATH in path:  # avoid indexing private sessions
+    if PRIVATE_PATH in path:  # avoid indexing private spaces
         abort(HTTPStatus.NOT_FOUND)
 
     data_path = path + "/_data.json"
@@ -1009,9 +1022,9 @@ def submit_text():
     if is_private:
         path = safe_join(PRIVATE_PATH, data_folder)
         data_path = path + "/_data.json"
-        private_session = data_folder_list[0]
-        if private_session == "":  # path for private session must start with session ID
-            return bad_request("Path to private session must start with session ID")
+        private_space = data_folder_list[0]
+        if private_space == "":  # path for private space must start with space ID
+            return bad_request("Path to private space must start with space ID")
     else:
         path = safe_join(FILES_PATH, data_folder)
         data_path = path + "/_data.json"
@@ -1035,9 +1048,9 @@ def submit_text():
             json.dump(text, f, indent=2, ensure_ascii=False)
 
     if remake_files:
-        celery.send_task("make_changes", kwargs={"path": path, "data": data})
-        # Thread(target=make_changes, args=(data_folder, data)).start()
-        # make_changes(data_folder, data)
+        celery.send_task(
+            "make_changes", kwargs={"path": path, "data": data}, ignore_result=True
+        )
 
     return {"success": True}
 
@@ -1082,11 +1095,11 @@ def search():
 
 
 #####################################
-# PRIVATE SESSIONS
+# PRIVATE SPACES
 #####################################
-@app.route("/create-private-session", methods=["GET"])
-def create_private_session():
-    session_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+@app.route("/create-private-space", methods=["GET"])
+def create_private_space():
+    space_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
     if not os.path.isdir(PRIVATE_PATH):
         os.mkdir(PRIVATE_PATH)
@@ -1101,9 +1114,9 @@ def create_private_session():
                 ensure_ascii=False,
             )
 
-    os.mkdir(f"{PRIVATE_PATH}/{session_id}")
+    os.mkdir(f"{PRIVATE_PATH}/{space_id}")
 
-    with open(f"{PRIVATE_PATH}/{session_id}/_data.json", "w", encoding="utf-8") as f:
+    with open(f"{PRIVATE_PATH}/{space_id}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "folder",
@@ -1114,7 +1127,7 @@ def create_private_session():
             ensure_ascii=False,
         )
 
-    return {"success": True, "session_id": session_id}
+    return {"success": True, "space_id": space_id}
 
 
 #####################################
@@ -1158,8 +1171,13 @@ def generate_automatic_layouts():
     path, is_private = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
+    use_hdbscan = False
+    if "use_hdbscan" in request.values:
+        use_hdbscan = request.values["use_hdbscan"] in ("true", "True")
     try:
-        celery.send_task("auto_segment", kwargs={"path": path}).get()
+        celery.send_task(
+            "auto_segment", kwargs={"path": path, "use_hdbscan": use_hdbscan}
+        ).get()
         layouts = get_file_layouts(path, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
@@ -1207,6 +1225,10 @@ def api_perform_ocr():
                 "creation": get_current_time(),
                 "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
                 "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
+                "status": {
+                    "stage": "uploading",
+                    "message": "A enviar",
+                },
                 "ocr": {"progress": 0},
                 "pdf": {"complete": False},
                 "pdf_indexed": {"complete": False},
@@ -1227,6 +1249,7 @@ def api_perform_ocr():
     celery.send_task(
         "ocr_from_api",
         kwargs={"path": doc_path, "config": config, "delete_on_finish": True},
+        ignore_result=True,
     )
     return {
         "success": True,
@@ -1285,7 +1308,7 @@ def api_delete_results():
 @roles_required("Admin")
 def check_authorized():
     if current_user.is_authenticated:
-        return {"status": "Logged in"}
+        return "Logged in"
     else:
         abort(HTTPStatus.FORBIDDEN)
 
@@ -1325,7 +1348,7 @@ def get_system_info():
         "free_space": free_space,
         "free_space_percentage": free_space_percentage,
         # "logs": get_logs(),
-        "private_sessions": get_private_sessions(),
+        "private_spaces": get_private_spaces(),
     }
 
 
@@ -1339,36 +1362,34 @@ def get_storage_info():
     return {
         "free_space": free_space,
         "free_space_percentage": free_space_percentage,
-        "private_sessions": get_size_private_sessions(),
+        "private_spaces": get_size_private_spaces(),
         "api_files": get_size_api_files(),
         "last_cleanup": last_cleanup,
-        "max_age": os.environ.get("MAX_PRIVATE_SESSION_AGE", "5"),
+        "max_age": os.environ.get("MAX_PRIVATE_SPACE_AGE", "5"),
     }
 
 
 @app.route("/admin/cancel-cleanup", methods=["POST"])
 def cancel_cleanup():
     """
-    For now, use to quickly cancel all scheduling of private session cleanups.
+    For now, use to quickly cancel all scheduling of private space cleanups.
     Schedule can be recreated by restarting worker or flower.
 
     TODO: allow recreating schedule through another endpoint,
     or make calls to /admin/schedule-cleanup re-create the schedule if it doesn't exist.
     """
-    entry = RedBeatSchedulerEntry.from_key(
-        "redbeat:cleanup_private_sessions", app=celery
-    )
+    entry = RedBeatSchedulerEntry.from_key("redbeat:cleanup_private_spaces", app=celery)
     entry.delete()
     return {
         "success": True,
-        "message": "Limpeza regular de sessões privadas cancelada.",
+        "message": "Limpeza regular de espaços privados cancelada.",
     }
 
 
 @app.route("/admin/schedule-cleanup", methods=["POST"])
 @auth_required("token", "session")
 @roles_required("Admin")
-def schedule_private_session_cleanup():
+def schedule_private_space_cleanup():
     data = request.json
     if "type" not in data:
         return bad_request("Missing parameter 'type'")
@@ -1410,25 +1431,23 @@ def schedule_private_session_cleanup():
     else:
         return bad_request("Unrecognized schedule type")
 
-    entry = RedBeatSchedulerEntry.from_key(
-        "redbeat:cleanup_private_sessions", app=celery
-    )
+    entry = RedBeatSchedulerEntry.from_key("redbeat:cleanup_private_spaces", app=celery)
     entry.schedule = new_schedule
     entry = entry.save()
     return {
         "success": True,
-        "message": f"Novo agendamento da limpeza de sessões privadas: {entry}",
+        "message": f"Novo agendamento da limpeza de espaços privados: {entry}",
     }
 
 
-@app.route("/admin/cleanup-sessions", methods=["POST"])
+@app.route("/admin/cleanup-private-spaces", methods=["POST"])
 @auth_required("token", "session")
 @roles_required("Admin")
-def perform_private_session_cleanup():
-    celery.send_task("cleanup_private_sessions")
+def perform_private_space_cleanup():
+    celery.send_task("cleanup_private_spaces", ignore_result=True)
     return {
         "success": True,
-        "message": "O sistema irá apagar as sessões privadas mais antigas.",
+        "message": "O sistema irá apagar os espaços privados mais antigos.",
     }
 
 
@@ -1446,10 +1465,10 @@ def get_scheduled_tasks():
     return f"{entries}"
 
 
-@app.route("/admin/set-max-private-session-age", methods=["POST"])
+@app.route("/admin/set-max-private-space-age", methods=["POST"])
 @auth_required("token", "session")
 @roles_required("Admin")
-def set_max_private_session_age():
+def set_max_private_space_age():
     data = request.json
     if "new_max_age" not in data:
         return bad_request("Missing parameter 'new_max_age'")
@@ -1463,13 +1482,13 @@ def set_max_private_session_age():
             }
 
         result = celery.send_task(
-            "set_max_private_session_age", kwargs={"new_max_age": new_max_age}
+            "set_max_private_space_age", kwargs={"new_max_age": new_max_age}
         ).get()
         if result["status"] == "success":
-            os.environ["MAX_PRIVATE_SESSION_AGE"] = str(int(new_max_age))
+            os.environ["MAX_PRIVATE_SPACE_AGE"] = str(int(new_max_age))
             return {
                 "success": True,
-                "message": f"New max private session age: {new_max_age} days",
+                "message": f"New max private space age: {new_max_age} days",
             }
     except ValueError:
         return {
@@ -1478,29 +1497,29 @@ def set_max_private_session_age():
         }
 
 
-@app.route("/admin/delete-private-session", methods=["POST"])
+@app.route("/admin/delete-private-space", methods=["POST"])
 @auth_required("token", "session")
 @roles_required("Admin")
-def delete_private_session():
+def delete_private_space():
     data = request.json
-    if "session_id" not in data:
-        return bad_request("Missing parameter 'session_id'")
-    session_id = data["session_id"]
+    if "space_id" not in data:
+        return bad_request("Missing parameter 'space_id'")
+    space_id = data["space_id"]
 
-    session_path = safe_join(PRIVATE_PATH, session_id)
-    if session_path is None:
+    space_path = safe_join(PRIVATE_PATH, space_id)
+    if space_path is None:
         abort(HTTPStatus.NOT_FOUND)
 
-    shutil.rmtree(session_path)
+    shutil.rmtree(space_path)
 
     return {
         "success": True,
         "message": "Apagado com sucesso",
-        "private_sessions": get_size_private_sessions(),
+        "private_spaces": get_size_private_spaces(),
     }
 
 
-@app.route("/admin/save-config", methods=["PUT"])
+@app.route("/admin/save-config", methods=["POST"])
 @auth_required("token", "session")
 @roles_required("Admin")
 def save_ocr_config():
@@ -1522,49 +1541,57 @@ def save_ocr_config():
     if config_path is None:
         return bad_request(f"Invalid config name: {config_name}")
 
-    # TODO: check validity of config
-    if not os.path.exists(config_path):
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(config, f, ensure_ascii=False, indent=2)
-        return {"success": True, "message": "Configuração guardada."}
+    if "edit" in data:
+        if data["edit"] and not os.path.exists(config_path):
+            return {
+                "success": False,
+                "message": f"A configuração '{config_name}' não existe.",
+            }
+        elif not data["edit"] and os.path.exists(config_path):
+            return {
+                "success": False,
+                "message": f"A configuração '{config_name}' já existe.",
+            }
+
+    if "edit" in data and data["edit"]:
+        message = "Configuração atualizada."
     else:
-        return {
-            "success": False,
-            "message": f"A configuração '{config_name}' já existe.",
-        }
+        message = "Configuração guardada."
+
+    # TODO: check validity of config
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+    return {"success": True, "message": message}
 
 
-@app.route("/admin/edit-config", methods=["PUT"])
+@app.route("/admin/delete-config", methods=["POST"])
 @auth_required("token", "session")
 @roles_required("Admin")
-def edit_ocr_config():
+def delete_ocr_config():
     data = request.json
     if "config_name" not in data or data["config_name"] == "":
         return bad_request("Missing parameter 'config_name'")
-    if (
-        "config" not in data
-        or not isinstance(data["config"], dict)
-        or not data["config"]
-    ):  # not empty dict
-        return bad_request(
-            "Missing parameter 'config'. Must be a non-empty dictionary."
-        )
     config_name = data["config_name"]
-    config = data["config"]
+
+    if config_name == "default":
+        return {
+            "success": False,
+            "message": "A configuração predefinida não pode ser apagada.",
+        }
 
     config_path = safe_join(CONFIG_FILES_LOCATION, f"{config_name}.json")
     if config_path is None:
-        abort(HTTPStatus.NOT_FOUND)
+        return bad_request(f"Invalid config name: {config_name}")
 
-    # TODO: check validity of config
-    if os.path.exists(config_path):
-        update_json_file(config_path, config)
-        return {"success": True, "message": "Configuração atualizada."}
-    else:
+    if not os.path.exists(config_path):
         return {
             "success": False,
             "message": f"A configuração '{config_name}' não existe.",
         }
+
+    os.remove(config_path)
+    return {"success": True, "message": "Configuração apagada."}
 
 
 @app.route("/admin/flower/", defaults={"fullpath": ""}, methods=["GET", "POST"])

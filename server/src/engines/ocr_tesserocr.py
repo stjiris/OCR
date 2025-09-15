@@ -15,6 +15,7 @@ from src.utils.parse_hocr import parse_hocr
 from tesserocr import OEM
 from tesserocr import PSM
 from tesserocr import PyTessBaseAPI
+from tesserocr import RIL
 
 api = PyTessBaseAPI(init=False)
 
@@ -116,7 +117,9 @@ def get_structure(
                 }
                 api.SetRectangle(**coords)
                 hocr = etree.fromstring(api.GetHOCRText(0), html.XHTMLParser())
-                results.append(parse_hocr(hocr, box))
+                # TesserOCR result coordinates are relative to original page edges, not segment edges.
+                # No need to reposition the results according to segment coordinates.
+                results.append(parse_hocr(hocr, segment_box=None))
             api.End()
             return results, raw_results_paths  # raw results expected to be empty
         else:
@@ -205,9 +208,40 @@ def get_structure(
 
     api.End()
 
-    lines = parse_hocr(hocr, segment_box)
+    # TesserOCR result coordinates are relative to original page edges, not segment edges.
+    # No need to reposition the results according to segment coordinates.
+    lines = parse_hocr(hocr, segment_box=None)
 
     return lines, raw_results_paths
+
+
+def auto_get_boxes(page):
+    api.Init()
+
+    if isinstance(page, str):
+        page = Image.open(page)  # get file descriptor
+    api.SetImage(page)
+
+    # boxes = api.GetComponentImages(RIL.TEXTLINE, True)
+    boxes = api.GetComponentImages(
+        RIL.BLOCK, text_only=True, raw_image=True, raw_padding=10
+    )
+    # logging.debug(f"Found {len(boxes)} textline image components.")
+    # logging.debug(f"Boxes:\n{boxes}")
+    """
+    for i, (im, box, _, _) in enumerate(boxes):
+        # im is a PIL image object
+        # box is a dict with x, y, w and h keys
+        box_coords = (box['x'], box['y'], box['w'], box['h'])
+        logging.warning(f"OCRing box {box_coords}")
+        api.SetRectangle(*box_coords)
+        #FIXME debug
+        thresh_img = api.GetThresholdedImage()
+        thresh_img.save(f"/tmp/{generate_random_uuid()}", format=thresh_img.format)
+        #FIXME end debug
+    """
+    api.End()
+    return [(box["x"], box["y"], box["w"], box["h"]) for (_, box, _, _) in boxes]
 
 
 def verify_params(config):
@@ -248,3 +282,10 @@ def build_ocr_config(config: dict) -> tuple[str, dict]:
     lang = "+".join(config["lang"])
     config["lang"] = lang
     return lang, config
+
+
+def estimate_ocr_time(config: dict, n_pages: int):
+    if n_pages < 20:
+        return "<1min"
+    else:
+        return f"{math.ceil(0.0176 * n_pages + 0.2632)}min"

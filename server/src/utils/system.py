@@ -40,35 +40,35 @@ def get_logs(starting_point: int = 0, number_of_logs: int = 50, endpoints: list 
     return logs
 
 
-def get_private_sessions():
-    # Get the private sessions
-    private_sessions = [
-        session.name for session in os.scandir(PRIVATE_PATH) if session.is_dir()
+def get_private_spaces():
+    # Get the private spaces
+    private_spaces = [
+        space.name for space in os.scandir(PRIVATE_PATH) if space.is_dir()
     ]
-    return private_sessions
+    return private_spaces
 
 
-def get_size_private_sessions():
-    # Get the private sessions
-    private_sessions = {}
-    for session in os.scandir(PRIVATE_PATH):
-        if session.is_dir():
+def get_size_private_spaces():
+    # Get the private spaces
+    private_spaces = {}
+    for space in os.scandir(PRIVATE_PATH):
+        if space.is_dir():
             size = 0
-            for dirpath, dirnames, filenames in os.walk(session.path):
+            for dirpath, dirnames, filenames in os.walk(space.path):
                 for f in filenames:
                     path = os.path.join(dirpath, f)
                     if not os.path.islink(path):
                         size += os.path.getsize(path)
-            private_sessions[session.name] = {
+            private_spaces[space.name] = {
                 "size": format_size(size),
-                "creation": get_data(f"{session.path}/_data.json")["creation"],
+                "creation": get_data(f"{space.path}/_data.json")["creation"],
             }
-    return private_sessions
+    return private_spaces
 
 
 def get_size_api_files():
     # Get the stored file results from API operations
-    private_sessions = {}
+    api_files = {}
     for file_folder in os.scandir(API_TEMP_PATH):
         if file_folder.is_dir():
             size = 0
@@ -77,11 +77,11 @@ def get_size_api_files():
                     path = os.path.join(dirpath, f)
                     if not os.path.islink(path):
                         size += os.path.getsize(path)
-            private_sessions[file_folder.name] = {
+            api_files[file_folder.name] = {
                 "size": format_size(size),
                 "creation": get_data(f"{file_folder.path}/_data.json")["creation"],
             }
-    return private_sessions
+    return api_files
 
 
 def get_free_space():
