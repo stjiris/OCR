@@ -1167,7 +1167,7 @@ class EditingMenu extends React.Component {
                                     overflowX: "wrap",
                                     marginLeft: "10px",
                                     width: "25vw",
-                                    height: "80vh",
+                                    height: "69vh",
                                     border: "1px solid grey",
                                     backgroundColor: "#f0f0f0",
                                     padding: "0px 10px"
