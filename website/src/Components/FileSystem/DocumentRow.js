@@ -294,7 +294,7 @@ class DocumentRow extends React.Component {
                     </MenuItem>
 
                     {
-                        this.props._private
+                        true || this.props._private  // FIXME: Remove "true ||" to re-enable indexing
                             ? null
                             : (info?.["indexed"]
                                 ? <MenuItem

@@ -362,7 +362,7 @@ function App() {
                         </Box>
 
                         <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
-                            {buttonsDisabled || Boolean(this.getPrivateSpaceId())
+                            {true || buttonsDisabled || Boolean(this.getPrivateSpaceId())  // FIXME: Remove "true ||" to re-enable indexing
                                 ? null
                                 : <Button
                                     variant="contained"
