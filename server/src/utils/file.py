@@ -375,11 +375,7 @@ def get_folder_info(path, private_space=None):
     if "type" not in data:
         return {}
 
-    if data["type"] == "file" and ("stored" not in data or data["stored"] is True):
-        data["size"] = size_to_units(get_file_size(path))
-        data["total_size"] = size_to_units(get_document_files_size(path))
-
-    elif data["type"] == "folder":
+    if data["type"] == "folder":
         n_files = len([f for f in os.scandir(path) if not f.name.startswith("_")])
         data["contents"] = n_files
 

@@ -8,17 +8,6 @@ import TableRow from '@mui/material/TableRow';
 class StaticFileRow extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            info: props.info,
-        }
-    }
-
-    updateInfo(info) {
-        if (this.props.type) {
-            this.setState({info: info[this.props.type]});
-        } else {
-            this.setState({info: info});
-        }
     }
 
     render() {
@@ -56,14 +45,14 @@ class StaticFileRow extends React.Component {
 
                 <TableCell className="explorerCell staticDateCreatedCell" align='left'>
                     <span>
-                        {this.state.info["creation"]}
+                        {this.props.info["creation"]}
                     </span>
                 </TableCell>
 
                 <TableCell className="explorerCell staticDetailsCell" align='left'>
                     <span>
-                        {this.state.info["pages"]
-                            ? this.state.info["pages"] + " página(s)"
+                        {this.props.info["pages"]
+                            ? this.props.info["pages"] + " página(s)"
                             : "—"
                         }
                     </span>
@@ -71,7 +60,7 @@ class StaticFileRow extends React.Component {
 
                 <TableCell className="explorerCell staticSizeCell" align='right'>
                     <span style={{fontSize: "0.92rem"}}>
-                        {this.state.info["size"]}
+                        {this.props.info["size"]}
                     </span>
                 </TableCell>
             </TableRow>

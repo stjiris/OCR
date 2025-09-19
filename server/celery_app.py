@@ -31,6 +31,7 @@ from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_doc_len
+from src.utils.file import get_document_files_size
 from src.utils.file import get_file_basename
 from src.utils.file import get_file_size
 from src.utils.file import get_ner_file
@@ -308,6 +309,8 @@ def task_count_doc_pages(path: str, extension: str):
         {
             "pages": get_page_count(path, extension),
             "stored": True,
+            "size": size_to_units(get_file_size(path)),
+            "total_size": size_to_units(get_document_files_size(path)),
             "status": {
                 "stage": "waiting",
             },
@@ -1148,6 +1151,8 @@ def task_export_results(path: str, output_types: list[str]):
         data["status"] = {
             "stage": "post-ocr",
         }
+        data["total_size"] = size_to_units(get_document_files_size(path))
+
         update_json_file(data_file, data)
         return {"status": "success"}
 
