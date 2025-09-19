@@ -189,6 +189,7 @@ cannot be styled with props, interferes with functioning of Autocomplete
 
 .MuiTableRow-head.explorerHeaderRow {
     background-color: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .MuiTableRow-root.explorerRow {
