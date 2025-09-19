@@ -640,6 +640,7 @@ def prepare_upload():
     os.mkdir(target + "/_layouts")
     os.mkdir(target + "/_ocr_results")
     os.mkdir(target + "/_pages")
+    os.mkdir(target + "/_thumbnails")
 
     extension = filename.split(".")[-1].lower()
     with open(f"{target}/_data.json", "w", encoding="utf-8") as f:

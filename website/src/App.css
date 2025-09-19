@@ -188,7 +188,9 @@ cannot be styled with props, interferes with functioning of Autocomplete
 */
 
 .MuiTableRow-head.explorerHeaderRow {
+    height: 2rem;
     background-color: #f5f5f5;
+    border-top: 1px solid #e0e0e0;
     border-bottom: 1px solid #e0e0e0;
 }
 
@@ -213,11 +215,13 @@ cannot be styled with props, interferes with functioning of Autocomplete
 }
 
 .MuiTableCell-root.MuiTableCell-head.headerCell {
-    height: 2rem;
+    font-family: 'Noto Sans', 'Arial', sans-serif;
+    height: inherit;
     padding: 16px;
 }
 
 .MuiTableCell-root.explorerCell {
+    height: inherit;
     background-color: inherit;
     border-left: 1px solid #aaa;
     font-size: 1rem;
@@ -238,11 +242,11 @@ cannot be styled with props, interferes with functioning of Autocomplete
 }
 
 .explorerCell.successCell {
-    background-color: #19a942;
+    background-color: inherit;
 }
 
 .explorerCell.waitingCell {
-    background-color: #a6a6a6;
+    background-color: inherit;
 }
 
 .stateCell .stateBox {
@@ -258,9 +262,16 @@ cannot be styled with props, interferes with functioning of Autocomplete
     width: 1%;
 }
 
-.MuiTableCell-root.nameCell {
+.MuiTableCell-root.thumbnailCell {
     border-left: 0;
-    width: 34%;
+    width: 5%;
+    text-align: center;
+}
+
+.MuiTableCell-root.nameCell {
+    border-left: 1px solid #e0e0e0;
+    padding-left: 0;
+    width: 30%;
     text-align: left;
 }
 
@@ -270,55 +281,12 @@ cannot be styled with props, interferes with functioning of Autocomplete
 
 .MuiTableCell-root.staticNameCell {
     border-left: 0;
-    width: 34%;
-    text-align: left;
-    padding-left: 48px;
-}
-
-.MuiTableCell-root.actionsCell {
-    width: 16%;
-    text-align: center;
-    padding: 0;
-}
-
-.MuiTableCell-root.staticActionsCell {
-    display: none;
-    width: 16%;
-    text-align: center;
-}
-
-.actionsCell-inner {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    width: 100%;
-    justify-content: center;
-    align-items: center;
-    float: right;
-}
-
-.MuiTableCell-root.stateCell {
-    width: 13%;
-    text-align: left;
-}
-
-.MuiTableCell-root.dateCreatedCell {
-    width: 13%;
-    text-align: left;
-}
-
-.MuiTableCell-root.staticDateCreatedCell {
-    width: 13%;
+    width: 30%;
     text-align: left;
 }
 
 .MuiTableCell-root.detailsCell {
-    width: 10%;
-    text-align: left;
-}
-
-.MuiTableCell-root.staticDetailsCell {
-    width: 10%;
+    width: 13%;
     text-align: left;
 }
 
@@ -328,10 +296,19 @@ cannot be styled with props, interferes with functioning of Autocomplete
     font-family: "Roboto Mono", monospace;
 }
 
-.MuiTableCell-root.staticSizeCell {
-    width: 8%;
-    text-align: right;
-    font-family: "Roboto Mono", monospace;
+.MuiTableCell-root.dateCreatedCell {
+    width: 12%;
+    text-align: left;
+}
+
+.MuiTableCell-root.dateOCRCell {
+    width: 12%;
+    text-align: left;
+}
+
+.MuiTableCell-root.stateCell {
+    width: 18%;
+    text-align: left;
 }
 
 /*

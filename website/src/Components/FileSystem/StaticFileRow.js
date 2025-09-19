@@ -20,6 +20,8 @@ class StaticFileRow extends React.Component {
             >
                 <TableCell scope="column" className="explorerCell optionsCell" />
 
+                <TableCell scope="column" className="explorerCell thumbnailCell" />
+
                 <TableCell className="explorerCell staticNameCell" align='left'>
                     <Box sx={{
                         display: 'flex',
@@ -41,15 +43,7 @@ class StaticFileRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell stateCell" align='center' />
-
-                <TableCell className="explorerCell staticDateCreatedCell" align='left'>
-                    <span>
-                        {this.props.info["creation"]}
-                    </span>
-                </TableCell>
-
-                <TableCell className="explorerCell staticDetailsCell" align='left'>
+                <TableCell className="explorerCell detailsCell" align='left'>
                     <span>
                         {this.props.info["pages"]
                             ? this.props.info["pages"] + " página(s)"
@@ -58,11 +52,21 @@ class StaticFileRow extends React.Component {
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell staticSizeCell" align='right'>
+                <TableCell className="explorerCell sizeCell" align='right'>
                     <span style={{fontSize: "0.92rem"}}>
                         {this.props.info["size"]}
                     </span>
                 </TableCell>
+
+                <TableCell className="explorerCell dateCreatedCell" align='left'>
+                    <span>
+                        {this.props.info["creation"]}
+                    </span>
+                </TableCell>
+
+                <TableCell className="explorerCell dateOCRCell" align='center' />
+
+                <TableCell className="explorerCell stateCell" align='center' />
             </TableRow>
         );
     }

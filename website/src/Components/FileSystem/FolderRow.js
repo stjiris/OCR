@@ -170,10 +170,12 @@ class FolderRow extends React.Component {
                     </IconButton>
                 </TableCell>
 
+                <TableCell className="explorerCell thumbnailCell" />
+
                 <TableCell
                     className="explorerCell nameCell"
                     onClick={() => this.folderClicked()}
-                    sx={{ cursor: "pointer" }}
+                    sx={{ cursor: "pointer", paddingLeft: "16px !important"}}
                     align="left"
                 >
                     <Box sx={{
@@ -186,8 +188,14 @@ class FolderRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell stateCell" align='center'>
-                    <b>—</b>
+                <TableCell className="explorerCell detailsCell" align='left'>
+                    <span>
+                        {this.state.info["contents"]} ficheiro(s) ou sub-pasta(s)
+                    </span>
+                </TableCell>
+
+                <TableCell className="explorerCell sizeCell" align='center'>
+                    —
                 </TableCell>
 
                 <TableCell className="explorerCell dateCreatedCell" align='left'>
@@ -196,13 +204,9 @@ class FolderRow extends React.Component {
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell detailsCell" align='left'>
-                    <span>
-                        {this.state.info["contents"]} ficheiro(s) ou sub-pasta(s)
-                    </span>
-                </TableCell>
+                <TableCell className="explorerCell dateOCRCell" align='center' />
 
-                <TableCell className="explorerCell sizeCell" align='center'>—</TableCell>
+                <TableCell className="explorerCell stateCell" align='center' />
             </TableRow>
         </>)
     }

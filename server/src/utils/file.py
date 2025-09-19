@@ -500,6 +500,22 @@ def get_page_count(target_path, extension):
     return None
 
 
+def get_word_count(path):
+    n_words = 0
+    ocr_folder = f"{path}/_ocr_results"
+    with os.scandir(ocr_folder) as ocr_results:
+        for entry in ocr_results:
+            if entry.is_file() and entry.name.endswith(".json"):
+                with open(entry.path, encoding="utf-8") as file:
+                    text = file.read()
+                    if text == "":
+                        continue
+                    for paragraph in json.loads(text):
+                        for line in paragraph:
+                            n_words += len(line)
+    return n_words
+
+
 def get_file_basename(filename):
     """
     Get the basename of a file
