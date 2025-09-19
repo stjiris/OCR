@@ -132,29 +132,20 @@ class FolderRow extends React.Component {
                     </MenuItem>
                 </span></Tooltip>
 
-                <Tooltip
-                    placement="right"
-                    title="A pasta está vazia"
-                    disableFocusListener={!buttonsDisabled}
-                    disableHoverListener={!buttonsDisabled}
-                    disableTouchListener={!buttonsDisabled}
-                ><span>
-                    <MenuItem
-                        disabled={buttonsDisabled}
-                        onClick={(e) => this.configureOCR(e, usingCustomConfig)}
+                <MenuItem
+                    onClick={(e) => this.configureOCR(e, usingCustomConfig)}
+                >
+                    <IconButton
+                        className={"actionButton"
+                            // highlight custom configs with different color
+                            + (usingCustomConfig
+                                ? " altColor"
+                                : "")}
                     >
-                        <IconButton
-                            className={"actionButton"
-                                // highlight custom configs with different color
-                                + (usingCustomConfig
-                                    ? " altColor"
-                                    : "")}
-                        >
-                            {usingCustomConfig ? <SettingsSuggestIcon /> : <SettingsIcon />}
-                        </IconButton>
-                        &nbsp;{usingCustomConfig ? "Editar Configuração" : "Configurar OCR"}
-                    </MenuItem>
-                </span></Tooltip>
+                        {usingCustomConfig ? <SettingsSuggestIcon /> : <SettingsIcon />}
+                    </IconButton>
+                    &nbsp;{usingCustomConfig ? "Editar Configuração" : "Configurar OCR"}
+                </MenuItem>
 
                 <MenuItem
                     onClick={(e) => this.delete(e)}
