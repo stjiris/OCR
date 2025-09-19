@@ -233,6 +233,36 @@ function App() {
                         flexDirection: "row",
                         justifyContent: "center",
                     }}>
+                        {
+                            this.getPrivateSpaceId()
+                                ? <Button
+                                    disabled={buttonsDisabled}
+                                    variant="contained"
+                                    startIcon={<LockIcon/>}
+                                    onClick={() => { this.props.navigate("/"); }}
+                                    className="menuButton"
+                                    color="error"
+                                    sx={{marginLeft: "1rem", marginTop: "auto", marginBottom: "auto"}}
+                                >
+                                    Sair do Espaço
+                                </Button>
+                                : <Button
+                                    disabled={buttonsDisabled}
+                                    variant="contained"
+                                    startIcon={<LockIcon/>}
+                                    onClick={() => {
+                                        this.createPrivateSpace().then((spaceId) => {
+                                            //this.setCurrentPath([""]);
+                                            this.setState({currentFolderPathList: [""]});
+                                            this.props.navigate(`/space/${spaceId}`);
+                                        });
+                                    }}
+                                    className="menuButton"
+                                    sx={{marginLeft: "1rem", marginTop: "auto", marginBottom: "auto"}}
+                                >
+                                    Novo Espaço Privado
+                                </Button>
+                        }
                         <Typography
                             id="modal-modal-title"
                             variant="h3"
@@ -249,37 +279,6 @@ function App() {
                                     : "OCR - Reconhecimento Ótico de Caracteres"
                             }
                         </Typography>
-
-                        {
-                            this.getPrivateSpaceId()
-                                ? <Button
-                                    disabled={buttonsDisabled}
-                                    variant="contained"
-                                    startIcon={<LockIcon/>}
-                                    onClick={() => { this.props.navigate("/"); }}
-                                    className="menuButton"
-                                    color="error"
-                                    sx={{marginRight: "1rem", marginTop: "auto", marginBottom: "auto"}}
-                                >
-                                    Sair do Espaço
-                                </Button>
-                                : <Button
-                                    disabled={buttonsDisabled}
-                                    variant="contained"
-                                    startIcon={<LockIcon/>}
-                                    onClick={() => {
-                                        this.createPrivateSpace().then((spaceId) => {
-                                            //this.setCurrentPath([""]);
-                                            this.setState({currentFolderPathList: [""]});
-                                            this.props.navigate(`/space/${spaceId}`);
-                                        });
-                                    }}
-                                    className="menuButton"
-                                    sx={{marginRight: "1rem", marginTop: "auto", marginBottom: "auto"}}
-                                >
-                                    Novo Espaço Privado
-                                </Button>
-                        }
                     </Box>
 
                     <Box sx={{
