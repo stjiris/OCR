@@ -332,7 +332,7 @@ class DocumentRow extends React.Component {
                 <TableRow
                     className={"explorerRow" + (this.state.contextMenu ? " targeted" : "")}
                     onContextMenu={(e) => this.handleContextMenu(e)}
-                    sx={{ cursor: loadingStages.has(status.stage) ? "wait" : "context-menu" }}
+                    sx={{ cursor: loadingStages.has(status.stage) ? "progress" : "context-menu" }}
                 >
                     <TableCell className="explorerCell optionsCell">
                         <IconButton
@@ -349,7 +349,7 @@ class DocumentRow extends React.Component {
                             if (!loadingStages.has(status.stage))
                                 this.setState({expanded: !this.state.expanded})
                         }}
-                        sx={{ cursor: loadingStages.has(status.stage) ? "wait" : "pointer" }}
+                        sx={{ cursor: loadingStages.has(status.stage) ? "progress" : "pointer" }}
                     >
                         <Box sx={{
                             display: 'flex',
