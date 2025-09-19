@@ -376,8 +376,17 @@ def get_folder_info(path, private_space=None):
         return {}
 
     if data["type"] == "folder":
-        n_files = len([f for f in os.scandir(path) if not f.name.startswith("_")])
-        data["contents"] = n_files
+        n_subfolders = 0
+        n_docs = 0
+        for content in os.scandir(path):
+            if content.is_dir() and not content.name.startswith("_"):
+                content_data = get_data(f"{path}/{content.name}/_data.json")
+                if "type" in content_data:
+                    if content_data["type"] == "folder":
+                        n_subfolders += 1
+                    elif content_data["type"] == "file":
+                        n_docs += 1
+        data["contents"] = {"documents": n_docs, "subfolders": n_subfolders}
 
     # sanitize important paths from the info key
     path = (

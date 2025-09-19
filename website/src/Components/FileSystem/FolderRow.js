@@ -99,7 +99,9 @@ class FolderRow extends React.Component {
     }
 
     render() {
-        const buttonsDisabled = this.state.info["contents"] === 0;
+        const contents = this.state.info?.["contents"];
+        const nDocs = Number(contents?.["documents"]);
+        const nSubfolders = Number(contents?.["subfolders"]);
         const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
         return (
         <>
@@ -116,13 +118,13 @@ class FolderRow extends React.Component {
             >
                 <Tooltip
                     placement="right"
-                    title="A pasta está vazia"
-                    disableFocusListener={!buttonsDisabled}
-                    disableHoverListener={!buttonsDisabled}
-                    disableTouchListener={!buttonsDisabled}
+                    title="A pasta não contém documentos"
+                    disableFocusListener={!isNaN(nDocs) && nDocs !== 0}
+                    disableHoverListener={!isNaN(nDocs) && nDocs !== 0}
+                    disableTouchListener={!isNaN(nDocs) && nDocs !== 0}
                 ><span>
                     <MenuItem
-                        disabled={buttonsDisabled}
+                        disabled={isNaN(nDocs) || nDocs === 0}
                         onClick={(e) => this.performOCR(e, usingCustomConfig)}
                     >
                         <IconButton className="actionButton">
@@ -190,7 +192,9 @@ class FolderRow extends React.Component {
 
                 <TableCell className="explorerCell detailsCell" align='left'>
                     <span>
-                        {this.state.info["contents"]} ficheiro(s) ou sub-pasta(s)
+                        {nDocs} documento(s)
+                        {'\n'}
+                        {nSubfolders} sub-pasta(s)
                     </span>
                 </TableCell>
 
