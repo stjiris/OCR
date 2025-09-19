@@ -391,6 +391,19 @@ class OcrMenu extends React.Component {
                                    options={tesseractLangList}
                                    defaultChoice={[tesseractLangList[defaultLangIndex]]}/>
                 */}
+
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    <CheckboxList title={"Formatos de resultado"}
+                                  options={tesseractOutputsList}
+                                  checked={this.state.outputs}
+                                  onChangeCallback={this.setOutputList}
+                                  required
+                                  errorText="Deve selecionar pelo menos um formato de resultado"/>
+                </Box>
+
                 <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -491,18 +504,6 @@ class OcrMenu extends React.Component {
                                size="small"
                                slotProps={{inputLabel: {sx: {top: "0.5rem"}}}}
                     />
-                </Box>
-
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}>
-                    <CheckboxList title={"Formatos de resultado"}
-                                  options={tesseractOutputsList}
-                                  checked={this.state.outputs}
-                                  onChangeCallback={this.setOutputList}
-                                  required
-                                  errorText="Deve selecionar pelo menos um formato de resultado"/>
                 </Box>
 
                 {/*
