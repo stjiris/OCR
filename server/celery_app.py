@@ -974,10 +974,11 @@ def task_page_ocr(
 
         data = get_data(data_file)
         data["ocr"]["progress"] = len(files)
-        data["status"] = {
-            "stage": "ocr",
-            "message": f"({ocr_engine.estimate_ocr_time(config, n_doc_pages - len(files))})",
-        }
+        if data["status"]["stage"] != "error":
+            data["status"] = {
+                "stage": "ocr",
+                "message": f"({ocr_engine.estimate_ocr_time(config, n_doc_pages - len(files))})",
+            }
         update_json_file(data_file, data)
 
         # If last page has been processed, generate results
