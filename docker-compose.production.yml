@@ -1,5 +1,6 @@
 volumes:
-  elasticsearch_data: {}
+  # FIXME: uncomment when searching feature is improved and re-enabled
+  # elasticsearch_data: {}
   files_data: {}
   configs_data: {}
 
@@ -20,9 +21,10 @@ services:
     expose:
       - "5001"  # exposed only to other services
     depends_on:
-      elasticsearch:
-        condition: service_healthy
-        restart: true
+      # FIXME: uncomment when searching feature is improved and re-enabled
+      # elasticsearch:
+      #   condition: service_healthy
+      #   restart: true
       redis:
         condition: service_healthy
         restart: true
@@ -116,26 +118,27 @@ services:
       - internal-network
       - external-network
 
-  elasticsearch:
-    build:
-      context: ./compose/elasticsearch
-      dockerfile: Dockerfile
-    expose:
-      - "9200"  # exposed only to other services
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    environment:
-      xpack.security.enabled: false
-      discovery.type: single-node
-    healthcheck:
-      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:9200
-      interval: 10s
-      timeout: 30s
-      retries: 15
-      start_period: 10s
-    restart: unless-stopped
-    networks:
-      - internal-network
+# FIXME: uncomment when searching feature is improved and re-enabled
+#  elasticsearch:
+#    build:
+#      context: ./compose/elasticsearch
+#      dockerfile: Dockerfile
+#    expose:
+#      - "9200"  # exposed only to other services
+#    volumes:
+#      - elasticsearch_data:/usr/share/elasticsearch/data
+#    environment:
+#      xpack.security.enabled: false
+#      discovery.type: single-node
+#    healthcheck:
+#      test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:9200
+#      interval: 10s
+#      timeout: 30s
+#      retries: 15
+#      start_period: 10s
+#    restart: unless-stopped
+#    networks:
+#      - internal-network
 
 networks:
   internal-network:
