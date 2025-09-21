@@ -388,6 +388,18 @@ def get_folder_info(path, private_space=None):
                         n_docs += 1
         data["contents"] = {"documents": n_docs, "subfolders": n_subfolders}
 
+    folder_size = 0
+    dirs_dict = {}
+    # traverse bottom-up adding subdirectory sizes
+    for root, dirs, files in os.walk(path, topdown=False):
+        # sum directory file sizes
+        size = sum(os.path.getsize(os.path.join(root, name)) for name in files)
+        # sum subdirectory sizes
+        subdir_size = sum(dirs_dict[os.path.join(root, d)] for d in dirs)
+        # store size of current directory and update total size
+        folder_size = dirs_dict[root] = size + subdir_size
+    data["size"] = size_to_units(folder_size)
+
     # sanitize important paths from the info key
     path = (
         path.replace(f"{PRIVATE_PATH}/{private_space}", "")
