@@ -18,13 +18,34 @@
     src: url("fonts/RobotoMono-VariableFont_wght.ttf")
 }
 
+:root{
+    --primary-red: #BA1514;
+    --primary-gold: #C2A340;
+    --secondary-gold: #F4ECCE;
+}
+
+div.header {
+    background-color: var(--secondary-gold);
+    border-bottom: 1px solid #dee2e6;
+}
+
+h1.fancy-font {
+    font-family: 'Cinzel', serif;
+    color: var(--primary-red);
+}
+
+.red-link{
+    color: var(--primary-red) !important;
+}
+
 body {
   font-family: 'Noto Sans', 'Arial', sans-serif;
 }
 
 .toolbar {
-    margin-left: 0.5rem;
-    margin-right: 0.5rem;
+    width: 87vw;
+    margin-left: auto;
+    margin-right: auto;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;

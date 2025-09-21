@@ -15,6 +15,7 @@ import Paper from '@mui/material/Paper';
 import Typography from "@mui/material/Typography";
 
 import CreateNewFolderIcon from "@mui/icons-material/CreateNewFolder";
+import LockIcon from "@mui/icons-material/Lock";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 
 import visuallyHidden from "@mui/utils/visuallyHidden";
@@ -1180,6 +1181,37 @@ class FileExplorer extends React.Component {
                                 Novo Documento
                             </Button>
                         </Box>
+
+                        {this.props.spaceId
+                            ? <Button
+                                variant="contained"
+                                startIcon={<LockIcon/>}
+                                onClick={() => this.props.leavePrivateSpace()}
+                                className="menuButton"
+                                color="error"
+                                sx={{
+                                    marginLeft: "1rem",
+                                    marginTop: "auto",
+                                    marginBottom: "auto",
+                                    marginRight: "0.5rem",
+                                }}
+                            >
+                                Sair do Espaço
+                            </Button>
+                            : <Button
+                                variant="contained"
+                                startIcon={<LockIcon/>}
+                                onClick={() => this.props.createPrivateSpace()}
+                                className="menuButton"
+                                sx={{
+                                    marginLeft: "1rem",
+                                    marginTop: "auto",
+                                    marginBottom: "auto"
+                                }}
+                            >
+                                Espaço Privado
+                            </Button>
+                        }
                     </Box>
 
                     <Box sx={{
@@ -1235,6 +1267,8 @@ FileExplorer.defaultProps = {
     layoutMenu: false,
     editingMenu: false,
     // functions:
+    createPrivateSpace: null,
+    leavePrivateSpace: null,
     setCurrentPath: null,
     returnToParentFolder: null,
     enterOcrMenu: null,
