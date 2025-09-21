@@ -7,6 +7,7 @@ import MenuItem from '@mui/material/MenuItem';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 
+import DoneIcon from '@mui/icons-material/Done';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import BorderAllIcon from '@mui/icons-material/BorderAll';
 import BorderClearIcon from '@mui/icons-material/BorderClear';
@@ -481,6 +482,7 @@ class DocumentRow extends React.Component {
                     : status.stage === "post-ocr"
                     ? <TableCell className="explorerCell stateCell successCell" align='left'>
                         <Box className="stateBox">
+                            <DoneIcon color="primary" />
                         </Box>
                     </TableCell>
 
@@ -498,7 +500,7 @@ class DocumentRow extends React.Component {
                 <StaticFileRow
                     key="original"
                     expanded={this.state.expanded}
-                    name={this.props.name + " (original)"}
+                    name="Doc. original"
                     filename={this.props.name}
                     info={info}
                     fileIcon={<FileIcon extension={info["extension"]} />}

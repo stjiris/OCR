@@ -975,7 +975,7 @@ class FileExplorer extends React.Component {
                             </TableCell>
 
                             <TableCell scope="column" className="headerCell explorerCell stateCell" align="left">
-                                <span><b>Informação</b></span>
+                                <span><b>Estado do Processo</b></span>
                             </TableCell>
                         </TableRow>
                     </TableHead>
