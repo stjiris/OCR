@@ -742,7 +742,11 @@ class FileExplorer extends React.Component {
                     } else if (a.props.info?.["type"] === "file" && b.props.info?.["type"] === "folder") {
                         return 1;  // list folders first
                     } else if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "folder") {
-                        return (a.key).localeCompare(b.key);  // list folders always alphabetically A-Z
+                        let sizeA = a.props.info?.["size"]?.split(" ") ?? _zerobytes;
+                        let sizeB = b.props.info?.["size"]?.split(" ") ?? _zerobytes;
+                        sizeA = Number(sizeA[0]) * (sizeMap[sizeA[1]] || 1);
+                        sizeB = Number(sizeB[0]) * (sizeMap[sizeB[1]] || 1);
+                        return order * (sizeA - sizeB);
                     } else {
                         let sizeA = a.props.info?.["total_size"]?.split(" ") ?? _zerobytes;
                         let sizeB = b.props.info?.["total_size"]?.split(" ") ?? _zerobytes;
