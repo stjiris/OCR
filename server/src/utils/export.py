@@ -37,7 +37,14 @@ OUT_DEFAULT_DPI = 150
 # GENERAL FUNCTIONS
 ####################################################
 def export_file(
-    path, filetype, delimiter=False, force_recreate=False, simple=False, get_csv=False
+    path,
+    filetype,
+    delimiter=False,
+    force_recreate=False,
+    simple=False,
+    keep_temp=False,
+    already_temp=False,
+    get_csv=False,
 ):
     """
     Direct to the correct function based on the filetype
@@ -52,7 +59,12 @@ def export_file(
 
     if simple or get_csv:
         return export_pdf(
-            path, force_recreate=force_recreate, simple=simple, get_csv=get_csv
+            path,
+            force_recreate=force_recreate,
+            simple=simple,
+            keep_temp=keep_temp,
+            already_temp=already_temp,
+            get_csv=get_csv,
         )
 
     func = globals()[f"export_{filetype}"]
@@ -222,7 +234,14 @@ def export_csv_from_words(filename_csv, index_data):
 ####################################################
 # EXPORT PDF FUNCTIONS
 ####################################################
-def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
+def export_pdf(
+    path,
+    force_recreate=False,
+    simple=False,
+    keep_temp=False,
+    already_temp=False,
+    get_csv=False,
+):
     """
     Export the file as a .pdf file
     """
@@ -248,41 +267,47 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         if original_extension == "pdf":
             page_extension = "png"
-            pdf_basename = get_file_basename(path)
+            # Generate temporary images if not already done
+            if not already_temp:
+                pdf_basename = get_file_basename(path)
 
-            pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
-            for i in range(len(pdf)):
-                page = pdf[i]
-                bitmap = page.render(dpi_compressed / 72)
-                pil_image = bitmap.to_pil()
-                pil_image.save(f"{path}/{pdf_basename}_{i}$.{page_extension}")
+                pdf = pdfium.PdfDocument(f"{path}/{pdf_basename}.pdf")
+                for i in range(len(pdf)):
+                    page = pdf[i]
+                    bitmap = page.render(dpi_compressed / 72)
+                    pil_image = bitmap.to_pil()
+                    pil_image.save(f"{path}/{pdf_basename}_{i}$.{page_extension}")
 
-            pdf.close()
+                pdf.close()
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         elif original_extension == "zip":
             page_extension = "png"
-            img_basename = get_file_basename(path)
-            pages_list = [
-                p
-                for p in os.listdir(f"{path}/_pages")
-                if os.path.isfile(os.path.join(f"{path}/_pages", p))
-            ]
-            pages_list.sort(key=lambda s: (s.casefold(), s))
-            for i, page in enumerate(pages_list):
-                os.link(
-                    f"{path}/_pages/{page}",
-                    f"{path}/{img_basename}_{i}$.{page_extension}",
-                )
+            # Generate temporary images if not already done
+            if not already_temp:
+                img_basename = get_file_basename(path)
+                pages_list = [
+                    p
+                    for p in os.listdir(f"{path}/_pages")
+                    if os.path.isfile(os.path.join(f"{path}/_pages", p))
+                ]
+                pages_list.sort(key=lambda s: (s.casefold(), s))
+                for i, page in enumerate(pages_list):
+                    os.link(
+                        f"{path}/_pages/{page}",
+                        f"{path}/{img_basename}_{i}$.{page_extension}",
+                    )
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         else:
             page_extension = original_extension
-            img_basename = get_file_basename(path)
-            os.link(
-                f"{path}/{img_basename}.{original_extension}",
-                f"{path}/{img_basename}_0$.{page_extension}",
-            )
+            # Generate temporary images if not already done
+            if not already_temp:
+                img_basename = get_file_basename(path)
+                os.link(
+                    f"{path}/{img_basename}.{original_extension}",
+                    f"{path}/{img_basename}_0$.{page_extension}",
+                )
 
         words = {}
 
@@ -340,6 +365,11 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
                         }
                     },
                 )
+
+            # Delete already used temp image if not intending to keep for later
+            if not keep_temp:
+                with suppress(OSError):
+                    os.remove(image_path)
 
         if generate_index:
             # Sort the `words` dict by key
@@ -442,7 +472,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
                 pdf.showPage()
 
         pdf.save()
-
+        """
         # Delete compressed images
         for compressed_image in os.listdir(path):
             if compressed_image.endswith(f"$.{page_extension}"):
@@ -450,7 +480,7 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
                     OSError
                 ):  # covers both FileNotFound and the OSError for trying to remove directory
                     os.remove(os.path.join(path, compressed_image))
-
+        """
         return target
 
 

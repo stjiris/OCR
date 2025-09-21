@@ -222,7 +222,13 @@ def task_make_changes(path, data):
         )
         recreate_csv = data["csv"]["complete"]
         os.remove(export_folder + "/_pdf_indexed.pdf")
-        export_file(path, "pdf", force_recreate=True, get_csv=recreate_csv)
+        export_file(
+            path,
+            "pdf",
+            force_recreate=True,
+            keep_temp=data["pdf"]["complete"],
+            get_csv=recreate_csv,
+        )
         data["pdf_indexed"] = {
             "complete": True,
             "size": size_to_units(
@@ -243,7 +249,14 @@ def task_make_changes(path, data):
         )
         recreate_csv = data["csv"]["complete"] and not data["pdf_indexed"]["complete"]
         os.remove(export_folder + "/_pdf.pdf")
-        export_file(path, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
+        export_file(
+            path,
+            "pdf",
+            force_recreate=True,
+            simple=True,
+            already_temp=data["pdf_indexed"]["complete"],
+            get_csv=recreate_csv,
+        )
         data["pdf"] = {
             "complete": True,
             "size": size_to_units(
@@ -1112,7 +1125,13 @@ def task_export_results(path: str, output_types: list[str]):
                     }
                 },
             )
-            export_file(path, "pdf", get_csv=("csv" in output_types))
+            also_output_simple = "pdf" in output_types and not data["pdf"]["complete"]
+            export_file(
+                path,
+                "pdf",
+                keep_temp=also_output_simple,
+                get_csv=("csv" in output_types),
+            )
             creation_time = get_current_time()
             data["pdf_indexed"] = {
                 "complete": True,
@@ -1144,7 +1163,13 @@ def task_export_results(path: str, output_types: list[str]):
                     }
                 },
             )
-            export_file(path, "pdf", simple=True, get_csv=("csv" in output_types))
+            export_file(
+                path,
+                "pdf",
+                simple=True,
+                already_temp=("pdf_indexed" in output_types),
+                get_csv=("csv" in output_types),
+            )
             creation_time = get_current_time()
             data["pdf"] = {
                 "complete": True,
