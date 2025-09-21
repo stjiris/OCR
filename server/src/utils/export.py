@@ -297,15 +297,16 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
             filenames_asterisk, key=lambda x: int(re.search(r"_(\d+)\$", x).group(1))
         )
         for i, image in enumerate(images):
+            image_path = os.path.join(path, image)
             image_basename = get_file_basename(image)
             image_basename = image_basename[:-1]
 
             hocr_path = f"{path}/_ocr_results/{image_basename}.json"
 
-            im = Image.open(f"{path}/{image}")
+            im = Image.open(image_path)
             w, h = im.size
             pdf.setPageSize((w, h))
-            pdf.drawImage(f"{path}/{image}", 0, 0, width=w, height=h)
+            pdf.drawImage(image_path, 0, 0, width=w, height=h)
 
             new_words = add_text_layer(
                 pdf,
@@ -326,15 +327,19 @@ def export_pdf(path, force_recreate=False, simple=False, get_csv=False):
 
             pdf.showPage()
 
-            update_json_file(
-                data_file,
-                {
-                    "status": {
-                        "stage": "exporting",
-                        "message": f"A gerar PDF {'com índice ' if not simple else ''}{i + 1}/{len(images)}",
-                    }
-                },
-            )
+            # Update status on first and last pages, and every 10 pages
+            total_pages = len(images)
+            current_page = i + 1
+            if current_page in (0, total_pages) or current_page % 10 == 0:
+                update_json_file(
+                    data_file,
+                    {
+                        "status": {
+                            "stage": "exporting",
+                            "message": f"A gerar PDF {'com índice ' if not simple else ''}{current_page}/{total_pages}",
+                        }
+                    },
+                )
 
         if generate_index:
             # Sort the `words` dict by key

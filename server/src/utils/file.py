@@ -9,6 +9,7 @@ from os import environ
 
 import pytz
 import requests
+from filelock import FileLock
 
 # from string import punctuation
 
@@ -589,10 +590,18 @@ def json_to_text(json_d):
 ##################################################
 
 
-def get_data(file):
+def get_data(file, lock=None):
+    """
+    Update the JSON data from the file.
+    :param file: file to read from
+    :param lock: file lock if already existing, to avoid recursive locks
+    """
     if not os.path.exists(file):
         raise FileNotFoundError
-    with open(file, encoding="utf-8") as f:
+    if lock is None:
+        lock_path = f"{file}.lock"
+        lock = FileLock(lock_path)
+    with lock, open(file, encoding="utf-8") as f:
         text = f.read()
         if text == "":
             return {}
@@ -607,15 +616,22 @@ def get_doc_len(file) -> int:
         return int(json.loads(text)["pages"])
 
 
-def update_json_file(file, data):
+def update_json_file(file, data, lock=None):
     """
     Update the JSON data contained in the file.
     :param file: file to update
     :param data: new or updated data
+    :param lock: file lock if already existing, to avoid recursive locks
     """
+    if not os.path.exists(file):
+        raise FileNotFoundError
 
     # TODO: ensure atomic operations to handle multiple users making changes to the same files/folders
-    previous_data = get_data(file)
-    with open(file, "w", encoding="utf-8") as f:
-        previous_data.update(data)
-        json.dump(previous_data, f, ensure_ascii=False, indent=2)
+    if lock is None:
+        lock_path = f"{file}.lock"
+        lock = FileLock(lock_path)
+    with lock:
+        previous_data = get_data(file, lock)
+        with open(file, "w", encoding="utf-8") as f:
+            previous_data.update(data)
+            json.dump(previous_data, f, ensure_ascii=False, indent=2)
