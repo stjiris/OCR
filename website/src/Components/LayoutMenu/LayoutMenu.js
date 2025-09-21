@@ -175,37 +175,31 @@ class LayoutMenu extends React.Component {
 		const contents = this.state.contents;
 		contents[this.state.currentPage - 1]["boxes"] = groups;
 
-		// * Code to reflect changes in copy boxes (removed as requested per Prof. Borbinha's instructions)
-		// for (i = 0; i < groups.length; i++) {
-		//     group = groups[i];
-
-		//     if (group["copyId"] !== undefined) {
-
-		//         for (j = 0; j < contents.length; j++) {
-
-		//             var c_boxes = contents[j]["boxes"];
-
-		//             for (var k = 0; k < c_boxes.length; k++) {
-		//                 if (c_boxes[k]["copyId"] === group["copyId"]) {
-		//                     // Make an independent copy of the box
-		//                     var newBox = JSON.parse(JSON.stringify(group));
-		//                     newBox["id"] = c_boxes[k]["id"];
-		//                     c_boxes[k] = newBox;
-
-		//                     contents[j]["boxes"] = c_boxes;
-
-		//                     break;
-		//                 }
-		//             }
-		//         }
-		//     }
-		// }
-
-        /*
-		for (let i = 0; i < contents.length; i++) {
-			contents[i]["boxes"] = this.renameGroups(contents[i]["boxes"], i + 1);
-		}
-         */
+		groups.forEach((currentPageGroup) => {
+            if (currentPageGroup["copyId"] !== undefined) {
+                contents.forEach((page, i) => {
+                    const otherPageBoxes = page["boxes"];
+                    otherPageBoxes.forEach((group, j) => {
+                        if (group["copyId"] !== undefined && group["copyId"] === currentPageGroup["copyId"]) {
+                            const groupSquares = group["squares"];
+                            const currentSquares = currentPageGroup["squares"];
+                            if (groupSquares.length === 1) {
+                                groupSquares[0]["top"] = currentSquares[0]["top"];
+                                groupSquares[0]["left"] = currentSquares[0]["left"];
+                                groupSquares[0]["bottom"] = currentSquares[0]["bottom"];
+                                groupSquares[0]["right"] = currentSquares[0]["right"];
+                            } else for (const k in groupSquares) {
+                                groupSquares[k]["top"] = currentSquares[k]["top"];
+                                groupSquares[k]["left"] = currentSquares[k]["left"];
+                                groupSquares[k]["bottom"] = currentSquares[k]["bottom"];
+                                groupSquares[k]["right"] = currentSquares[k]["right"];
+                            }
+                            group["groupId"] = (i + 1) + "." + (j + 1);
+                        }
+                    });
+                });
+            }
+        });
 
 		this.setState({ contents: contents, uncommittedChanges: true });
     }
