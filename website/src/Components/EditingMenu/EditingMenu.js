@@ -1,5 +1,4 @@
 import React from 'react';
-import UTIF from 'utif';
 
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -25,7 +24,7 @@ import ReturnButton from 'Components/FileSystem/ReturnButton';
 import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
 import Notification from 'Components/Notifications/Notification';
 import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
-import ZoomingTool from 'Components/ZoomingTool/ZoomingTool';
+import EditingImage from 'Components/EditingMenu/EditingImage';
 
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
@@ -103,13 +102,8 @@ class EditingMenu extends React.Component {
             currentPage: 1,
             totalPages: 1,
 
-            imageZoom: 100,
-            minImageZoom: 20,
-            maxImageZoom: 600,
-
             selectedWord: "",
             selectedWordIndex: 0,
-            selectedWordBox: null,
             parentNode: null,
             coordinates: null,
 
@@ -123,6 +117,7 @@ class EditingMenu extends React.Component {
         }
 
         this.imageRef = React.createRef();
+        this.imageContainerRef = React.createRef();
         this.corpusSelect = React.createRef();
         this.textWindow = React.createRef();
 
@@ -134,12 +129,8 @@ class EditingMenu extends React.Component {
         this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
         this.hoverWord = this.hoverWord.bind(this);
-        this.showImageHighlight = this.showImageHighlight.bind(this)
-        this.hideImageHighlight = this.hideImageHighlight.bind(this)
-
-        this.zoomIn = this.zoomIn.bind(this);
-        this.zoomOut = this.zoomOut.bind(this);
-        this.zoomReset = this.zoomReset.bind(this);
+        this.showImageHighlight = this.showImageHighlight.bind(this);
+        this.hideImageHighlight = this.hideImageHighlight.bind(this);
     }
 
     preventExit(event) {
@@ -149,12 +140,6 @@ class EditingMenu extends React.Component {
 
     componentDidMount() {
         this.getContents();
-    }
-
-    componentDidUpdate(prevProps, prevState, snapshot) {
-        if (!prevState.loaded && this.state.loaded) {
-            UTIF.replaceIMG();  // automatically replace TIFF <img> sources
-        }
     }
 
     goBack() {
@@ -228,90 +213,74 @@ class EditingMenu extends React.Component {
      * Used to zoom and change pages (text changes accordingly)
      */
     changePage(diff) {
-
-        this.setState({
-            currentPage: this.state.currentPage + diff,
-            selectedWord: "",
-            selectedWordIndex: 0,
-            selectedWordBox: null,
-            addLineMode: false,
-            removeLineMode: false
+        this.imageContainerRef.current.setWordBox(null, () => {
+            this.setState({
+                currentPage: this.state.currentPage + diff,
+                //currentContents: this.state.contents[this.state.currentPage + diff - 1],
+                selectedWord: "",
+                selectedWordIndex: 0,
+                addLineMode: false,
+                removeLineMode: false
+            });
         });
     }
 
     firstPage() {
-        this.setState({
-            currentPage: 1,
-            selectedWord: "",
-            selectedWordIndex: 0,
-            selectedWordBox: null,
-            addLineMode: false,
-            removeLineMode: false
+        this.imageContainerRef.current.setWordBox(null, () => {
+            this.setState({
+                currentPage: 1,
+                //currentContents: this.state.contents[0],
+                selectedWord: "",
+                selectedWordIndex: 0,
+                addLineMode: false,
+                removeLineMode: false
+            });
         });
     }
 
     lastPage() {
+        this.imageContainerRef.current.setWordBox(null, () => {
             this.setState({
-            currentPage: this.state.totalPages,
-            selectedWord: "",
-            selectedWordIndex: 0,
-            selectedWordBox: null,
-            addLineMode: false,
-            removeLineMode: false
+                currentPage: this.state.totalPages,
+                //currentContents: this.state.contents[this.state.totalPages - 1],
+                selectedWord: "",
+                selectedWordIndex: 0,
+                addLineMode: false,
+                removeLineMode: false
+            });
         });
     }
 
     imageToScreenCoordinates(x, y) {
+        const image = this.imageRef.current;
 
-        var image = this.imageRef.current;
+        const ratioX = image.naturalWidth / image.offsetWidth;
+        const ratioY = image.naturalHeight / image.offsetHeight;
 
-        var ratioX = image.naturalWidth / image.offsetWidth;
-        var ratioY = image.naturalHeight / image.offsetHeight;
+        const domX = x / ratioX;
+        const domY = y / ratioY;
 
-        var domX = x / ratioX;
-        var domY = y / ratioY;
-
-        var screenX = domX + image.offsetLeft;
-        var screenY = domY + image.offsetTop;
+        const screenX = domX + image.offsetLeft;
+        const screenY = domY + image.offsetTop;
 
         return [screenX, screenY];
     }
 
     showImageHighlight(e, box) {
-
-        var topCorner = this.imageToScreenCoordinates(box[0], box[1]);
-        var bottomCorner = this.imageToScreenCoordinates(box[2], box[3]);
-
-        this.setState({
-            selectedWordBox: [
+        const topCorner = this.imageToScreenCoordinates(box[0], box[1]);
+        const bottomCorner = this.imageToScreenCoordinates(box[2], box[3]);
+        this.imageContainerRef.current.setWordBox(
+            [
                 topCorner[1],
                 topCorner[0],
                 bottomCorner[0] - topCorner[0],
                 bottomCorner[1] - topCorner[1]
             ]
-        });
+        );
     }
 
     hideImageHighlight() {
-        this.setState({selectedWordBox: null});
-    }
-
-    zoomIn() {
-        this.zoom(1);
-    }
-
-    zoomOut() {
-        this.zoom(-1);
-    }
-
-    zoomReset() {
-        this.setState({imageZoom: 100});
-    }
-
-    zoom(delta) {
-        let newZoom = Math.max(this.state.imageZoom + (20 * delta), this.state.minImageZoom);
-        newZoom = Math.min(newZoom, this.state.maxImageZoom);
-        this.setState({imageZoom: newZoom});
+        this.imageContainerRef.current.setWordBox(null);
     }
 
     /**
@@ -746,14 +715,16 @@ class EditingMenu extends React.Component {
         this.selectedWord = word;
 
         if (page !== this.state.currentPage) {
-            this.setState({
-                selectedWordIndex: index,
-                currentPage: page,
-                selectedWordBox: null,
-                addLineMode: false,
-                removeLineMode: false
-            }, () => {
-                this.textWindow.current.scrollTop = this.getScrollValue(word, count);
+            this.imageContainerRef.current.setWordBox(null, () => {
+                this.setState({
+                    selectedWordIndex: index,
+                    currentPage: page,
+                    //currentContents: this.state.contents[page - 1],
+                    addLineMode: false,
+                    removeLineMode: false
+                }, () => {
+                    this.textWindow.current.scrollTop = this.getScrollValue(word, count);
+                });
             });
         } else {
             this.setState({selectedWordIndex: index}, () => {
@@ -968,36 +939,12 @@ class EditingMenu extends React.Component {
                             flexDirection: "column",
                             width: "50%"
                         }}>
-                            <Box sx={{display: "flex", flexDirection: "row"}}>
-                                <Box className="pageImageContainer">
-                                    <img
-                                        ref={this.imageRef}
-                                        src={this.state.contents[this.state.currentPage - 1]["page_url"]}
-                                        alt={`Imagem da página ${this.state.currentPage}`}
-                                        className={"pageImage"}
-                                        style={{
-                                            maxWidth: `${this.state.imageZoom}%`,
-                                            maxHeight: `${this.state.imageZoom}%`,
-                                        }}
-                                    />
-
-                                    {
-                                        this.state.selectedWordBox !== null
-                                        ? <Box
-                                            sx={{
-                                                position: 'absolute',
-                                                border: `2px solid #0000ff`,
-                                                backgroundColor: `#0000ff30`,
-                                                top: `${this.state.selectedWordBox[0]}px`,
-                                                left: `${this.state.selectedWordBox[1]}px`,
-                                                width: `${this.state.selectedWordBox[2]}px`,
-                                                height: `${this.state.selectedWordBox[3]}px`,
-                                            }}
-                                        />
-                                        : null
-                                    }
-                                </Box>
-                            </Box>
+                            <EditingImage
+                                ref={this.imageContainerRef}
+                                imageRef={this.imageRef}
+                                imageURL={this.state.current[this.state.currentPage - 1]["page_url"]}
+                                currentPage={this.state.currentPage}
+                            />
 
                             <Box sx={{
                                 display: "flex",
@@ -1006,8 +953,6 @@ class EditingMenu extends React.Component {
                                 alignItems: "center",
                                 mt: "5px"
                             }}>
-                                <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut} zoomResetFunc={this.zoomReset}/>
-
                                 <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
                                     <IconButton
                                         disabled={this.state.currentPage === 1}

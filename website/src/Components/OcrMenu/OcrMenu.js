@@ -371,15 +371,15 @@ class OcrMenu extends React.Component {
 
             {
             this.state.loaded && !this.state.fetchingPreset
-            ? <Box sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'space-evenly',
-                height: 'auto',
-                width: 'auto',
-                margin: 'auto',
-                /*overflow: 'scroll'*/
-            }}>
+            ? <Box
+                  className="menuContent"
+                  sx={{
+                      height: 'auto',  // required for sticky toolbar
+                      display: 'flex',
+                      flexDirection: 'row',
+                      justifyContent: 'space-evenly',
+                  }}
+            >
                 {
                 //<AlgoDropdown ref={this.algoDropdown} menu={this}/>
                 }

@@ -1214,12 +1214,9 @@ class FileExplorer extends React.Component {
                         }
                     </Box>
 
-                    <Box sx={{
-                        width: '87vw',
-                        marginLeft: 'auto',
-                        marginRight: 'auto',
-                        marginBottom: '1.5rem',
-                    }}>
+                    <Box
+                        className="menuContent"
+                    >
                         <Notification message={""} severity={"success"} ref={this.successNot}/>
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>
 

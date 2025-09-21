@@ -12,24 +12,24 @@ class ZoomingTool extends React.Component {
 
     render() {
         return (
-            <Box>
+            <Box className="zooming-tool">
                 <IconButton
-                    sx={{marginRight: "10px", p: 0}}
+                    className="zooming-IconButton"
                     onClick={() => this.props.zoomInFunc()}
                 >
-                    <ZoomInIcon />
+                    <ZoomInIcon className="zoom-icon" />
                 </IconButton>
                 <IconButton
-                    sx={{marginRight: "10px", p: 0}}
+                    className="zooming-IconButton"
                     onClick={() => this.props.zoomResetFunc()}
                 >
-                    <ZoomResetIcon />
+                    <ZoomResetIcon className="zoom-icon" />
                 </IconButton>
                 <IconButton
-                    sx={{marginRight: "10px", p: 0}}
+                    className="zooming-IconButton"
                     onClick={() => this.props.zoomOutFunc()}
                 >
-                    <ZoomOutIcon />
+                    <ZoomOutIcon className="zoom-icon" />
                 </IconButton>
             </Box>
         );

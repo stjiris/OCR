@@ -59,6 +59,14 @@ body {
     border-bottom: 1px solid black;
 }
 
+.menuContent {
+    width: 87vw;
+    height: 69vh;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.5rem;
+}
+
 .MuiBox-root .pathElement {
     margin: 0;
     padding: 0 10px 0 10px;
@@ -145,6 +153,25 @@ span.toolbarTitle, .MuiTypography-root.toolbarTitle {
     text-transform: none;
 }
 
+.zooming-tool {
+    display: flex;
+    flex-direction: column;
+    position: fixed;  /* float over page */
+    margin-left: 0.5rem;
+    margin-top: 0.5rem;
+    z-index: 2;
+}
+
+.zooming-tool .zooming-IconButton {  /* zoom buttons within zooming tool */
+    margin-bottom: 10px;
+    padding: 0;
+}
+
+.zooming-IconButton .zoom-icon {
+    width: 1.7rem;
+    height: 1.7rem;
+}
+
 .pageImageContainer {
     display: flex;
     position: relative;
@@ -156,6 +183,10 @@ span.toolbarTitle, .MuiTypography-root.toolbarTitle {
 
 .pageImageContainer:hover {
     cursor: crosshair;
+}
+
+.pageImageContainer.noPointer:hover {
+    cursor: default;
 }
 
 .pageImageContainer .pageImage {  /* pageImage within a pageImageContainer */

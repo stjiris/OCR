@@ -5,6 +5,8 @@ import Box from '@mui/material/Box';
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
+import ZoomingTool from "Components/ZoomingTool/ZoomingTool";
+
 const transparentPixel = new Image();
 transparentPixel.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=";
 
@@ -285,6 +287,10 @@ class LayoutImage extends React.Component {
         this.updateMenu = this.updateMenu.bind(this);
         this.setDraggingCorner = this.setDraggingCorner.bind(this);
         this.recreateBoxes = this.recreateBoxes.bind(this);
+
+        this.zoomIn = this.zoomIn.bind(this);
+        this.zoomOut = this.zoomOut.bind(this);
+        this.zoomReset = this.zoomReset.bind(this);
     }
 
     componentDidMount() {
@@ -547,6 +553,8 @@ class LayoutImage extends React.Component {
                 onDragOver={(e) => this.handleContainerDragOver(e)}
                 onDragEnd={(e) => this.handleContainerDragEnd(e)}
             >
+                <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut} zoomResetFunc={this.zoomReset}/>
+
                 <img
                     ref={this.imageRef}
                     src={this.props.imageURL}
