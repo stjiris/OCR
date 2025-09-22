@@ -552,7 +552,7 @@ class LayoutMenu extends React.Component {
 
 	makeBoxCopy() {
 		const contents = this.state.contents;
-		const currentPageGroups = contents[this.state.currentPage - 1]["boxes"];
+        const currentPageGroups = [...contents[this.state.currentPage - 1]["boxes"]];
         const groupsToReplicate = [];
 
         currentPageGroups.forEach((currentPageGroup, i) => {
@@ -574,6 +574,8 @@ class LayoutMenu extends React.Component {
                 page["boxes"] = this.renameGroups(pageGroups, j + 1);
             }
         });
+
+        contents[this.state.currentPage - 1]["boxes"] = currentPageGroups;
 
 		this.setState({ contents: contents, uncommittedChanges: true });
 	}
