@@ -502,19 +502,14 @@ class LayoutMenu extends React.Component {
 	}
 
 	renameGroups(groups, page) {
-		for (let i = 0; i < groups.length; i++) {
-            groups[i]["groupId"] = page + "." + (i + 1);
-            const boxes = groups[i]["squares"];
-            for (let j = 0; j < boxes.length; j++) {
-                let id;
-                if (boxes.length === 1) {
-                    id = page + "." + (i + 1);
-                } else {
-                    id = page + "." + (i + 1) + "." + (j + 1);
-                }
-                boxes[j]["id"] = id;
-            }
-		}
+        groups.forEach((group, i) => {
+            group["groupId"] = page + "." + (i + 1);
+            if (group["squares"].length === 1) {
+                group["squares"][0]["id"] = page + "." + (i + 1);
+            } else group["squares"].forEach((box, j) => {
+                box["id"] = page + "." + (i + 1) + "." + (j + 1);
+            });
+        });
 		return groups;
 	}
 
@@ -532,43 +527,59 @@ class LayoutMenu extends React.Component {
     }
 
 	deleteCheckedBoxes() {
-		var contents = this.state.contents;
-		var boxes = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const boxes = contents[this.state.currentPage - 1]["boxes"];
 
-		var keeping = [];
+		const keeping = [];
+        const deletingGroupIds = new Set();
 
-		for (var i = 0; i < boxes.length; i++) {
-			if (!boxes[i]["checked"]) {
-				keeping.push(boxes[i]);
-			}
-		}
+        boxes.forEach((group) => {
+           if (!Boolean(group["checked"])) {
+               keeping.push(group);
+           } else if (group["copyId"]) {
+               deletingGroupIds.add(group["copyId"]);
+           }
+        });
+        contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
 
-		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
+        // remove eventual copies present in other pages
+        contents.forEach((page, i) => {
+            const pageBoxes = page["boxes"];
+            page["boxes"] = pageBoxes.filter((group) => {
+                return !deletingGroupIds.has(group["copyId"]);
+            });
+            if (page["boxes"] !== pageBoxes) {
+                page["boxes"] = this.renameGroups(page["boxes"], i + 1);
+            }
+        });
+
 		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	makeBoxCopy() {
-		var contents = this.state.contents;
-		var groups = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const currentPageGroups = contents[this.state.currentPage - 1]["boxes"];
+        const groupsToReplicate = [];
 
-		for (var i = 0; i < groups.length; i++) {
-			if (groups[i].checked) {
-				let copyId = groups[i]["copyId"] || uuidv4();
-				groups[i]["copyId"] = copyId;
-				groups[i]["checked"] = false;
+        currentPageGroups.forEach((currentPageGroup, i) => {
+            if (currentPageGroup["checked"]) {
+                currentPageGroup["copyId"] = currentPageGroup["copyId"] || uuidv4();
+                currentPageGroup["checked"] = false;
+                groupsToReplicate.push([currentPageGroup, i]);
+            }
+        });
 
-				for (var j = 0; j < contents.length; j++) {
-					var c_groups = contents[j]["boxes"];
-					if (!c_groups.some(e => e["copyId"] === copyId)) {
-						// Create an independent copy of the group
-						var group = JSON.parse(JSON.stringify(groups[i]));
-
-						c_groups.push(group);
-						contents[j]["boxes"] = this.renameGroups(c_groups, j + 1);
-					}
-				}
-			}
-		}
+        contents.forEach((page, j) => {
+            if (j !== this.state.currentPage - 1) {
+                const pageGroups = page["boxes"];
+                groupsToReplicate.forEach((original) => {
+                    const copy = JSON.parse(JSON.stringify(original[0]));
+                    //copy["_uniq_id"] = Date.now().toString(36) + Math.random().toString(36);
+                    pageGroups.splice(original[1], 0, copy);  // add copy in same order placement as original
+                });
+                page["boxes"] = this.renameGroups(pageGroups, j + 1);
+            }
+        });
 
 		this.setState({ contents: contents, uncommittedChanges: true });
 	}
