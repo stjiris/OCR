@@ -731,7 +731,7 @@ class LayoutMenu extends React.Component {
         const loaded = this.state.contents.length !== 0;
         let tableData = [];
 
-		let noCheckBoxActive = false;
+		let noCheckBoxActive = true;
         let groupDisabled = false;
         let separateDisabled = false;
         let copyDisabled = false;
@@ -741,18 +741,42 @@ class LayoutMenu extends React.Component {
         const cleanAllDisabled = !loaded || this.state.segmentLoading;
         const saveDisabled = !loaded || !this.state.uncommittedChanges || this.state.segmentLoading;
 
+        let someBoxIsCopied = false;
+        let someBoxIsImage = false;
+        let someBoxIsNotGroup = false;
+
 		if (loaded) {
             tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
 
-            noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
+            noCheckBoxActive = !tableData.some(e => Boolean(e["checked"]));
+
+            tableData.forEach((group) => {
+                if (Boolean(group["checked"])) {
+                    noCheckBoxActive = false;
+                    if (group["copyId"]) {
+                        someBoxIsCopied = true;
+                    }
+                    if (group["type"] === "image") {
+                        someBoxIsImage = true;
+                    }
+                    if (group["squares"].length === 1) {
+                        someBoxIsNotGroup = true;
+                    }
+                }
+            });
+
             groupDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].map(e => e["checked"]).filter(Boolean).length <= 1
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["type"] !== "text");
+                            || someBoxIsCopied
+                            || someBoxIsImage;
+
 			separateDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["squares"].length === 1 && e["copyId"] === undefined);
-			copyDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["squares"].length !== 1)
+                            || someBoxIsNotGroup;
+
+			copyDisabled = this.state.contents?.length < 2  // cannot replicate boxes to other pages in single-page doc
+                            || noCheckBoxActive
+                            //|| tableData.some(e => e["checked"] && e["squares"].length !== 1)
+                            || someBoxIsCopied;
+
 			// var typeDisabled = noCheckBoxActive || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
 		}
 
@@ -977,54 +1001,103 @@ class LayoutMenu extends React.Component {
 
 					<Box sx={{ display: "flex", flexDirection: "column", width: "33%", ml: "1rem" }}>
 						<Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-evenly", alignItems: "center" }}>
-							<Button
-								disabled={copyDisabled}
-								variant="text"
-								startIcon={<ContentCopyIcon />}
-								onClick={() => this.makeBoxCopy()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Replicar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsCopied
+                                        ? "Um dos segmentos já está replicado"
+                                    : this.state.contents?.length < 2
+                                        ? "O documento tem apenas uma página"
+                                    : "Selecione pelo menos um segmento"
+                                }
+                                disableFocusListener={!copyDisabled}
+                                disableHoverListener={!copyDisabled}
+                                disableTouchListener={!copyDisabled}
+                            ><span>
+                                <Button
+                                    disabled={copyDisabled}
+                                    variant="text"
+                                    startIcon={<ContentCopyIcon />}
+                                    onClick={() => this.makeBoxCopy()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Replicar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={groupDisabled}
-								variant="text"
-								startIcon={<CallMergeIcon />}
-								onClick={() => this.groupCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Agrupar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsCopied
+                                        ? "Um dos segmentos está replicado"
+                                    : someBoxIsImage
+                                        ? "Não é possível agrupar segmentos de imagem"
+                                    : "Selecione pelo menos um segmento"
+                                }
+                                disableFocusListener={!groupDisabled}
+                                disableHoverListener={!groupDisabled}
+                                disableTouchListener={!groupDisabled}
+                            ><span>
+                                <Button
+                                    disabled={groupDisabled}
+                                    variant="text"
+                                    startIcon={<CallMergeIcon />}
+                                    onClick={() => this.groupCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Agrupar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={separateDisabled}
-								variant="text"
-								startIcon={<CallSplitIcon />}
-								onClick={() => this.splitCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Desagrupar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsNotGroup
+                                        ? "Um dos segmentos não pertence a um grupo"
+                                    : "Selecione pelo menos um segmento"
+                                }
+                                disableFocusListener={!separateDisabled}
+                                disableHoverListener={!separateDisabled}
+                                disableTouchListener={!separateDisabled}
+                            ><span>
+                                <Button
+                                    disabled={separateDisabled}
+                                    variant="text"
+                                    startIcon={<CallSplitIcon />}
+                                    onClick={() => this.splitCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Desagrupar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={noCheckBoxActive}
-								color="error"
-								variant="text"
-								startIcon={<DeleteRoundedIcon />}
-								onClick={() => this.deleteCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Apagar
-							</Button>
+
+                            <Tooltip
+                                placement="top"
+                                title="Selecione pelo menos um segmento"
+                                disableFocusListener={!noCheckBoxActive}
+                                disableHoverListener={!noCheckBoxActive}
+                                disableTouchListener={!noCheckBoxActive}
+                            ><span>
+                                <Button
+                                    disabled={noCheckBoxActive}
+                                    color="error"
+                                    variant="text"
+                                    startIcon={<DeleteRoundedIcon />}
+                                    onClick={() => this.deleteCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Apagar
+                                </Button>
+                            </span></Tooltip>
 
 							<Switch
 								checked={this.state.textModeState}
