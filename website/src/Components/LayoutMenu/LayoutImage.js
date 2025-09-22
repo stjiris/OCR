@@ -122,7 +122,6 @@ class LayoutBox extends React.Component {
             right: this.state.right,
             type: this.props.type,
             id: this.props.id,
-            checked: this.props.checked,
         }
     }
 
@@ -357,7 +356,7 @@ class LayoutImage extends React.Component {
             type={type}
             id={box.id}
             isCopied={isCopied}
-            checked={box.checked || checked || false}
+            checked={checked || false}
             updateMenu={this.updateMenu}
             setDraggingCorner={this.setDraggingCorner}
         />
