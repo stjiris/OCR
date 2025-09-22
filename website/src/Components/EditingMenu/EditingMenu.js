@@ -101,7 +101,7 @@ class Word extends React.Component {
             onMouseLeave={(e) => {
                 if (!this.state.editing) {
                     this.setState({hovered: false}, () => {
-                        this.props.removeHighlightWord();
+                        this.props.removeHighlightWord(e, this.props.box);
                     });
                 }
             }}
@@ -173,7 +173,7 @@ class Word extends React.Component {
         {this.props.lineEnd && this.props.editLinesMode
             ? <IconButton
                 sx={{
-                    display: this.state.hovered ? "" : "none",
+                    // End of line button always shown
                     padding: 0.1,
                     margin: 0,
                     backgroundColor: "#ff000088",
@@ -331,7 +331,7 @@ class EditingMenu extends React.Component {
      * Used to zoom and change pages (text changes accordingly)
      */
     changePage(diff) {
-        this.imageContainerRef.current.setWordBox(null, () => {
+        this.imageContainerRef.current.clearWordBox(() => {
             this.setState({
                 currentPage: this.state.currentPage + diff,
                 currentContents: this.state.contents[this.state.currentPage + diff - 1]["content"],
@@ -342,7 +342,7 @@ class EditingMenu extends React.Component {
     }
 
     firstPage() {
-        this.imageContainerRef.current.setWordBox(null, () => {
+        this.imageContainerRef.current.clearWordBox(() => {
             this.setState({
                 currentPage: 1,
                 currentContents: this.state.contents[0]["content"],
@@ -353,7 +353,7 @@ class EditingMenu extends React.Component {
     }
 
     lastPage() {
-        this.imageContainerRef.current.setWordBox(null, () => {
+        this.imageContainerRef.current.clearWordBox(() => {
             this.setState({
                 currentPage: this.state.totalPages,
                 currentContents: this.state.contents[this.state.totalPages - 1]["content"],
@@ -391,8 +391,17 @@ class EditingMenu extends React.Component {
         );
     }
 
-    hideImageHighlight() {
-        this.imageContainerRef.current.setWordBox(null);
+    hideImageHighlight(e, box) {
+        const topCorner = this.imageToScreenCoordinates(box[0], box[1]);
+        const bottomCorner = this.imageToScreenCoordinates(box[2], box[3]);
+        this.imageContainerRef.current.unsetWordBox(
+            [
+                topCorner[1],
+                topCorner[0],
+                bottomCorner[0] - topCorner[0],
+                bottomCorner[1] - topCorner[1]
+            ]
+        );
     }
 
     /**
@@ -834,7 +843,7 @@ class EditingMenu extends React.Component {
         this.selectedWord = word;
 
         if (page !== this.state.currentPage) {
-            this.imageContainerRef.current.setWordBox(null, () => {
+            this.imageContainerRef.current.clearWordBox(() => {
                 this.setState({
                     selectedWordIndex: index,
                     currentPage: page,
