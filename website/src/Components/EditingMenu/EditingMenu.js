@@ -98,7 +98,7 @@ class Word extends React.Component {
                 position: "relative",
                 userSelect: this.props.editLinesMode ? "none" : "text",  // disable selection for editing text while editing lines
             }}
-            onMouseEnter={(e) => {
+            onMouseOver={(e) => {
                 this.setState({hovered: true}, () => {
                     this.props.highlightWord(e, this.props.box);
                 });
@@ -115,7 +115,7 @@ class Word extends React.Component {
             ? <IconButton
                 sx={{
                     display: this.state.hovered ? "" : "none",
-                    padding: 0.1,
+                    padding: "1.2px",
                     margin: 0,
                     marginLeft: 1,
                     backgroundColor: "#0000ff88",
@@ -179,7 +179,7 @@ class Word extends React.Component {
             ? <IconButton
                 sx={{
                     // End of line button always shown
-                    padding: 0.1,
+                    padding: "1.2px",
                     margin: 0,
                     backgroundColor: "#ff000088",
                     "&:hover": {backgroundColor: "#ff0000dd"}
@@ -188,6 +188,7 @@ class Word extends React.Component {
                     this.setState({hovered: false},
                         () => this.props.removeLine(this.props.sectionIndex, this.props.lineIndex));
                 }}
+                onMouseOver={(e) => e.stopPropagation()}
             >
                 <img style={{width: '1rem', color: "white"}} alt="deleteLine" src={RemoveLineIcon} />
             </IconButton>
