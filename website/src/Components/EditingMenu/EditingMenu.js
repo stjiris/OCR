@@ -42,7 +42,12 @@ class Word extends React.Component {
         return this.props.showConfidence !== nextProps.showConfidence
                 || this.state.hovered !== nextState.hovered
                 || this.props.editing !== nextProps.editing
-                || this.props.editLinesMode !== nextProps.editLinesMode;
+                || this.props.editLinesMode !== nextProps.editLinesMode
+                || this.props.text !== nextProps.text
+                || this.props.sectionIndex !== nextProps.sectionIndex
+                || this.props.lineIndex !== nextProps.lineIndex
+                || this.props.wordIndex !== nextProps.wordIndex
+                || this.props.lineEnd !== nextProps.lineEnd;
     }
 
     /*
@@ -179,7 +184,10 @@ class Word extends React.Component {
                     backgroundColor: "#ff000088",
                     "&:hover": {backgroundColor: "#ff0000dd"}
                 }}
-                onClick={() => this.props.removeLine(this.props.sectionIndex, this.props.lineIndex)}
+                onClick={() => {
+                    this.setState({hovered: false},
+                        () => this.props.removeLine(this.props.sectionIndex, this.props.lineIndex));
+                }}
             >
                 <img style={{width: '1rem', color: "white"}} alt="deleteLine" src={RemoveLineIcon} />
             </IconButton>
