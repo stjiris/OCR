@@ -449,6 +449,14 @@ class DocumentRow extends React.Component {
                                 </Box>
                             </TableCell>
                         : null
+
+                    : status.stage === "error"
+                        ? <TableCell className="explorerCell stateCell errorCell" align='left'>
+                            <Box className="stateBox">
+                                <span>{status.message}</span>
+                            </Box>
+                        </TableCell>
+
                     : status.stage === "waiting"
                     ? <TableCell className="explorerCell stateCell waitingCell" align='left'>
                         <Box className="stateBox">
@@ -479,17 +487,17 @@ class DocumentRow extends React.Component {
                         </Box>
                     </TableCell>
 
+                    : info["edited_results"]  // expected stage when this is true is "post-ocr" so much be checked before
+                        ? <TableCell className="explorerCell stateCell infoCell" align='left'>
+                            <Box className="stateBox">
+                                Resultados editados, ficheiros por recriar
+                            </Box>
+                        </TableCell>
+
                     : status.stage === "post-ocr"
                     ? <TableCell className="explorerCell stateCell successCell" align='left'>
                         <Box className="stateBox">
                             <DoneIcon color="primary" />
-                        </Box>
-                    </TableCell>
-
-                    : status.stage === "error"
-                    ? <TableCell className="explorerCell stateCell errorCell" align='left'>
-                        <Box className="stateBox">
-                            <span>{status.message}</span>
                         </Box>
                     </TableCell>
 

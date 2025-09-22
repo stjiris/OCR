@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from 'axios';
 
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -108,6 +109,7 @@ class EditingMenu extends React.Component {
             coordinates: null,
 
             uncommittedChanges: false,
+            mustRecreate: false,
 
             addLineMode: false,
             removeLineMode: false,
@@ -122,6 +124,7 @@ class EditingMenu extends React.Component {
         this.textWindow = React.createRef();
 
         this.successNot = React.createRef();
+        this.errorNotifRef = React.createRef();
         this.confirmLeave = React.createRef();
 
         this.selectedWord = "";
@@ -158,13 +161,15 @@ class EditingMenu extends React.Component {
     }
 
     getContents(page = 1) {
-        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-        const is_private = this.props._private ? '_private=true&' : '';
-        fetch(API_URL + '/get-text-content?' + is_private + 'path=' + path + '&page=' + page, {
-            method: 'GET'
+        const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+        axios.get(API_URL + '/get-text-content', {
+            params: {
+                _private: this.props._private,
+                path: (this.props._private ? this.props.spaceId + '/' + path : path),
+                page: page,
+            }
         })
-        .then(response => {return response.json()})
-        .then(data => {
+        .then(({data}) => {
             const pages = parseInt(data["pages"]);
 
             const contents = data["doc"].sort((a, b) =>
@@ -179,12 +184,16 @@ class EditingMenu extends React.Component {
             });
 
             this.setState({
+                mustRecreate: data["must_recreate"],
                 totalPages: pages,
                 contents: contents,
                 words_list: sortedWords,
                 corpusOptions: newCorpusList,
                 loaded: true
             });
+        })
+        .catch(err => {
+            this.errorNotifRef.current.openWithMessage("Não foi possível obter resultados");
         });
     }
 
@@ -753,7 +762,7 @@ class EditingMenu extends React.Component {
         .then(response => {return response.json()})
         .then(data => {
             if (data.success) {
-                this.setState({uncommittedChanges: false});
+                this.setState({uncommittedChanges: false, mustRecreate: !remakeFiles});
                 window.removeEventListener('beforeunload', this.preventExit);
 
                 this.successNot.current.openNotif("Texto submetido com sucesso");
@@ -773,6 +782,7 @@ class EditingMenu extends React.Component {
         return (
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
+                <Notification message={""} severity={"error"} ref={this.errorNotifRef}/>
                 <ConfirmLeave leaveFunc={this.leave} ref={this.confirmLeave} />
                 {<>
                     <Box className="toolbar">
@@ -913,7 +923,7 @@ class EditingMenu extends React.Component {
                             </Button>
 
                             <Button
-                                disabled={!this.state.loaded || !this.state.uncommittedChanges}
+                                disabled={!this.state.loaded || (!this.state.mustRecreate && !this.state.uncommittedChanges)}
                                 variant="contained"
                                 color="success"
                                 className="menuFunctionButton noMarginRight"

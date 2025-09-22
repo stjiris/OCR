@@ -366,7 +366,12 @@ def get_text_content():
         abort(HTTPStatus.NOT_FOUND)
     totalPages = len(os.listdir(path + "/_ocr_results"))
     doc, words = get_file_parsed(path, is_private)
+    data = get_data(safe_join(path, "_data.json"))
+    edited_without_recreate = (
+        data["edited_results"] if "edited_results" in data else False
+    )
     return {
+        "must_recreate": edited_without_recreate,
         "pages": totalPages,
         "doc": doc,
         "words": words,
@@ -1036,6 +1041,11 @@ def submit_text():
 
     try:
         data = get_data(data_path)
+        if not remake_files:
+            data["edited_results"] = True
+        elif "edited_results" in data:
+            del data["edited_results"]
+        update_json_file(data_path, data)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 

@@ -286,11 +286,12 @@ cannot be styled with props, interferes with functioning of Autocomplete
 }
 
 .explorerCell.errorCell {
-    background-color: #f44336;
+    background-color: var(--primary-red);
+    color: #ffffff;
 }
 
 .explorerCell.infoCell {
-    background-color: #ffed7a;
+    background-color: var(--secondary-gold);
 }
 
 .explorerCell.successCell {

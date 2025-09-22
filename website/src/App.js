@@ -50,7 +50,7 @@ const API_URL = `${window.location.protocol}//${window.location.host}/${process.
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "1.3.1a";
+const VERSION = "1.4.0";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
