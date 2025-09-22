@@ -485,20 +485,14 @@ class LayoutMenu extends React.Component {
 	}
 
 	allCheckboxesAreChecked() {
-		var contents = this.state.contents;
+		const contents = this.state.contents;
 		if (contents.length === 0) return false;
 		if (contents[this.state.currentPage - 1] === undefined) return false;
 
-		var boxes = contents[this.state.currentPage - 1]["boxes"];
+		const boxes = contents[this.state.currentPage - 1]["boxes"];
 		if (boxes.length === 0) return false;
 
-		for (var i = 0; i < boxes.length; i++) {
-			if (!boxes[i]["checked"]) {
-				return false;
-			}
-		}
-
-		return true;
+        return boxes.every((box) => Boolean(box["checked"]));
 	}
 
 	renameGroups(groups, page) {
