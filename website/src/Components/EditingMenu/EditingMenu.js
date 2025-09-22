@@ -928,12 +928,13 @@ class EditingMenu extends React.Component {
                     {
                     this.state.loaded
                     ? <>
-                    <Box sx={{
-                        display: "flex",
-                        flexDirection: "row",
-                        ml: "1rem",
-                        mr: "1rem"
-                    }}>
+                    <Box
+                        className="menuContent"
+                        sx={{
+                            display: "flex",
+                            flexDirection: "row",
+                        }}
+                    >
                         <Box sx={{
                             display: "flex",
                             flexDirection: "column",
@@ -942,7 +943,7 @@ class EditingMenu extends React.Component {
                             <EditingImage
                                 ref={this.imageContainerRef}
                                 imageRef={this.imageRef}
-                                imageURL={this.state.current[this.state.currentPage - 1]["page_url"]}
+                                imageURL={this.state.contents[this.state.currentPage - 1]["page_url"]}
                                 currentPage={this.state.currentPage}
                             />
 
