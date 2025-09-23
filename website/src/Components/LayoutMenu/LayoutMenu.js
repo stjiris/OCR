@@ -10,6 +10,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
+import { NumberField } from '@base-ui-components/react/number-field';
+import Tooltip from "@mui/material/Tooltip";
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
@@ -103,7 +105,7 @@ class LayoutMenu extends React.Component {
                     }
                 }
 
-                this.setState({ contents: contents }, () => {
+                this.setState({ contents: contents, segmentLoading: data["segmenting"] }, () => {
                     this.updateTextMode();
                 });
             });
@@ -141,8 +143,10 @@ class LayoutMenu extends React.Component {
 	}
      */
 
-	changePage(increment) {
-		this.setState({ currentPage: this.state.currentPage + increment }, () => {
+	changePage(newPage) {
+        if (isNaN(newPage) || Number(newPage) < 1 || Number(newPage) > this.state.contents.length) return;
+
+		this.setState({ currentPage: Number(newPage) }, () => {
 			this.updateTextMode();
 		});
 	}
@@ -380,50 +384,61 @@ class LayoutMenu extends React.Component {
 	}
 
 	saveLayout(closeWindow = false) {
-        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-		fetch(API_URL + '/save-layouts', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
+        const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+		axios.post(API_URL + '/save-layouts',
+            {
                 _private: this.props._private,
-				path: path,
-				layouts: this.state.contents
-			})
-		}).then(response => { return response.json() })
-			.then(data => {
+                path: (this.props._private ? this.props.spaceId + '/' + path : path),
+                layouts: this.state.contents
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+			.then(({ data }) => {
 				if (data["success"]) {
                     this.setState({ uncommittedChanges: false });
 
-					this.successNotifRef.current.openNotif("Segmentação guardada com sucesso.");
+					this.successNotifRef.current.openNotif("Segmentação guardada com sucesso");
 
 					if (closeWindow) {
 						this.leave();
 					}
+				} else if (data["segmenting"]) {
+                    this.errorNotifRef.current.openNotif("Segmentação automática em curso");
 				} else {
-                    this.errorNotifRef.current.openNotif("Erro inesperado ao guardar a segmentação.");
+                    this.errorNotifRef.current.openNotif("Problema inesperado ao guardar a segmentação");
 				}
-			});
+			})
+            .catch(err => {
+                this.errorNotifRef.current.openNotif("Ocorreu um erro ao guardar a segmentação");
+                this.setState({ segmentLoading: false });
+            });
 	}
 
 	GenerateLayoutAutomatically() {
 		this.setState({ segmentLoading: true });
-		this.successNotifRef.current.openNotif("A segmentar automaticamente... Por favor aguarde.");
+		this.successNotifRef.current.openNotif("A segmentar automaticamente... Por favor aguarde");
 
         const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-		axios.get(API_URL + '/generate-automatic-layouts?', {
+		axios.get(API_URL + '/generate-automatic-layouts', {
             params: {
                 _private: this.props._private,
                 path: (this.props._private ? this.props.spaceId + '/' + path : path),
             },
         })
             .then(({ data }) => {
-				const contents = data["layouts"].sort((a, b) =>
-					(a["page_number"] > b["page_number"]) ? 1 : -1
-				)
-
-				this.setState({ contents: contents, segmentLoading: false });
+                if (data["layouts"] !== undefined) {
+                    const contents = data["layouts"].sort((a, b) =>
+                        (a["page_number"] > b["page_number"]) ? 1 : -1
+                    );
+                    this.setState({ contents: contents, segmentLoading: data["segmenting"] });
+                } else if (data["segmenting"]) {
+                    this.successNotifRef.current.openNotif("A segmentação irá demorar mais do que esperado");
+                } else {
+                    this.errorNotifRef.current.openNotif("Problema inesperado ao pedir a segmentação");
+                }
 			})
             .catch(err => {
                 this.errorNotifRef.current.openNotif("Ocorreu um erro na segmentação");
@@ -432,6 +447,7 @@ class LayoutMenu extends React.Component {
 	}
 
 	cleanAllBoxes() {
+        if (this.state.segmentLoading) return;
 		const contents = [...this.state.contents];
 		for (let i in contents) {
 			contents[i]["boxes"] = [];
@@ -726,6 +742,11 @@ class LayoutMenu extends React.Component {
         let separateDisabled = false;
         let copyDisabled = false;
 
+        const cannotAutoSegmentFile = cannotAutoSegment.has(this.props.filename.split('.').pop())
+        const autoSegmentDisabled = !loaded || this.state.segmentLoading || cannotAutoSegmentFile;
+        const cleanAllDisabled = !loaded || this.state.segmentLoading;
+        const saveDisabled = !loaded || !this.state.uncommittedChanges || this.state.segmentLoading;
+
 		if (loaded) {
             tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
 
@@ -763,8 +784,19 @@ class LayoutMenu extends React.Component {
                     </Box>
 
 					<Box>
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!cleanAllDisabled}
+                            disableHoverListener={!cleanAllDisabled}
+                            disableTouchListener={!cleanAllDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded}
+                            disabled={cleanAllDisabled}
 							variant="contained"
                             className="menuFunctionButton"
 							onClick={() => this.cleanAllBoxes()}
@@ -772,11 +804,23 @@ class LayoutMenu extends React.Component {
 						>
 							Limpar Tudo
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : cannotAutoSegmentFile
+                                    ? "Não é possível segmentar automaticamente este formato de ficheiro"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!autoSegmentDisabled}
+                            disableHoverListener={!autoSegmentDisabled}
+                            disableTouchListener={!autoSegmentDisabled}
+                        ><span>
 						<Button
-							disabled={!loaded || this.state.segmentLoading
-                                || cannotAutoSegment.has(this.props.filename.split('.').pop())}
-                            title={cannotAutoSegment.has(this.props.filename.split('.').pop())
-                                    ? "Não é possível segmentar automaticamente este formato de ficheiro." : ""}
+							disabled={autoSegmentDisabled}
 							variant="contained"
                             className="menuFunctionButton"
                             style={{pointerEvents: "auto"}  /* ensures disabled button can show title */}
@@ -789,8 +833,23 @@ class LayoutMenu extends React.Component {
 									: null
 							}
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : !this.state.uncommittedChanges
+                                    ? "Não há alterações"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!saveDisabled}
+                            disableHoverListener={!saveDisabled}
+                            disableTouchListener={!saveDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded}
+                            disabled={saveDisabled}
 							variant="contained"
                             className="menuFunctionButton"
 							color="success"
@@ -799,8 +858,23 @@ class LayoutMenu extends React.Component {
 						>
 							Guardar
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : !this.state.uncommittedChanges
+                                    ? "Não há alterações"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!saveDisabled}
+                            disableHoverListener={!saveDisabled}
+                            disableTouchListener={!saveDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded}
+                            disabled={saveDisabled}
 							variant="contained"
 							color="success"
                             className="menuFunctionButton noMarginRight"
@@ -809,6 +883,7 @@ class LayoutMenu extends React.Component {
 						>
 							Terminar
 						</Button>
+                        </span></Tooltip>
 					</Box>
 				</Box>
 
@@ -849,7 +924,7 @@ class LayoutMenu extends React.Component {
                             alignItems: 'center',
                             mt: '5px'
 						}}>
-                            <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
+                            <Box sx={{display: "flex", marginLeft: "auto", marginRight: "auto"}}>
                                 <IconButton
                                     disabled={this.state.currentPage === 1}
                                     sx={{marginRight: "10px", p: 0}}
@@ -861,19 +936,36 @@ class LayoutMenu extends React.Component {
                                 <IconButton
                                     disabled={this.state.currentPage === 1}
                                     sx={{marginRight: "10px", p: 0}}
-                                    onClick={() => this.changePage(-1)}
+                                    onClick={() => this.changePage(this.state.currentPage - 1)}
                                 >
                                     <KeyboardArrowLeftIcon />
                                 </IconButton>
 
-                                <span style={{margin: "0px 10px"}}>
-                                    Página {this.state.currentPage} / {this.state.contents.length}
+                                <span style={{display: "flex"}}>
+                                    Página
+                                    &nbsp;
+                                    {this.state.contents.length === 1
+                                        ? this.state.currentPage
+
+                                        : <NumberField.Root
+                                            value={this.state.currentPage}
+                                            onValueChange={(value) => this.changePage((value))}
+                                            step={1}
+                                            smallStep={1}
+                                            min={1}
+                                            max={this.state.contents.length}
+                                            className="pageNumberInput"
+                                        >
+                                            <NumberField.Input className="pageNumberInput"/>
+                                        </NumberField.Root>
+                                    }
+                                    &nbsp;/ {this.state.contents.length}
                                 </span>
 
                                 <IconButton
                                     disabled={this.state.currentPage === this.state.contents.length}
                                     sx={{marginLeft: "10px", p: 0}}
-                                    onClick={() => this.changePage(1)}
+                                    onClick={() => this.changePage(this.state.currentPage + 1)}
                                 >
                                     <KeyboardArrowRightIcon />
                                 </IconButton>

@@ -12,9 +12,11 @@ import flask_wtf
 import redbeat
 import requests
 from celery import Celery
+from celery.exceptions import TimeoutError
 from celery.schedules import crontab
 from celery.schedules import schedule
 from dotenv import load_dotenv
+from filelock import FileLock
 from flask import abort
 from flask import Flask
 from flask import g
@@ -1159,10 +1161,10 @@ def get_layouts():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
-        layouts = get_file_layouts(path, is_private)
+        layouts, segmenting = get_file_layouts(path, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
-    return {"layouts": layouts}
+    return {"layouts": layouts, "segmenting": segmenting}
 
 
 @app.route("/save-layouts", methods=["POST"])
@@ -1175,6 +1177,15 @@ def save_layouts():
     path, _ = format_path(data)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
+
+    doc_data_path = f"{path}/_data.json"
+    lock_path = f"{doc_data_path}.lock"
+    lock = FileLock(lock_path)
+    with lock:
+        doc_data = get_data(f"{path}/_data.json", lock=lock)
+        if "segmenting" in doc_data and doc_data["segmenting"]:
+            return {"segmenting": True}
+
     layouts = data["layouts"]
     try:
         save_file_layouts(path, layouts)
@@ -1190,17 +1201,28 @@ def generate_automatic_layouts():
     path, is_private = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
+
     use_hdbscan = False
     if "use_hdbscan" in request.values:
         use_hdbscan = request.values["use_hdbscan"] in ("true", "True")
+
+    data_path = f"{path}/_data.json"
+    lock_path = f"{data_path}.lock"
+    lock = FileLock(lock_path)
+    with lock:
+        data = get_data(f"{path}/_data.json", lock=lock)
+        if "segmenting" in data and data["segmenting"]:
+            return {"segmenting": True}
     try:
         celery.send_task(
             "auto_segment", kwargs={"path": path, "use_hdbscan": use_hdbscan}
-        ).get()
-        layouts = get_file_layouts(path, is_private)
+        ).get(timeout=60)
+        layouts, segmenting = get_file_layouts(path, is_private)
+        return {"layouts": layouts, "segmenting": segmenting}
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
-    return {"layouts": layouts}
+    except TimeoutError:
+        return {"segmenting": True}
 
 
 #####################################

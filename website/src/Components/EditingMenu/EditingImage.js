@@ -35,9 +35,33 @@ export default class EditingImage extends React.Component {
         UTIF.replaceIMG();  // automatically replace TIFF <img> sources
     }
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevProps.imageURL !== this.props.imageURL) {
+            UTIF.replaceIMG();  // automatically replace TIFF <img> sources
+        }
+    }
+
     setWordBox(wordBox, callback) {
-        console.log("Received: ", wordBox);
         this.setState({selectedWordBox: wordBox}, callback);
+    }
+
+    unsetWordBox(wordBox, callback) {
+        // Avoid race conditions by only unsetting word box if received parameter is equal to previous box
+        // If new coordinates have been given before call to unsetWordBox(), new value is not cleared by mistake
+        this.setState(prevState => {
+            const previousWordBox = prevState.selectedWordBox;
+            if (Array.isArray(previousWordBox) && Array.isArray(wordBox)
+                && previousWordBox.length === wordBox.length
+                && previousWordBox.every((value, i) => value === wordBox[i])) {
+                return {
+                    selectedWordBox: null
+                }
+            }
+        }, callback);
+    }
+
+    clearWordBox(callback) {
+        this.setState({selectedWordBox: null}, callback);
     }
 
     zoomIn() {

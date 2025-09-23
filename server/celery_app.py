@@ -17,6 +17,7 @@ from celery import group
 from celery.canvas import Signature
 from celery.schedules import crontab
 from dotenv import load_dotenv
+from filelock import FileLock
 from PIL import Image
 from PIL import ImageDraw
 from redbeat import RedBeatSchedulerEntry
@@ -78,6 +79,16 @@ load_fonts()
 
 @celery.task(name="auto_segment", priority=0)
 def task_auto_segment(path, use_hdbscan=False):
+    data_path = f"{path}/_data.json"
+    lock_path = f"{data_path}.lock"
+    lock = FileLock(lock_path)
+    with lock:
+        data = get_data(data_path, lock=lock)
+        if "segmenting" in data and data["segmenting"]:
+            return {"segmenting": True}
+        else:
+            update_json_file(data_path, {"segmenting": True}, lock=lock)
+
     if use_hdbscan:
         return parse_images(path)
     pages_path = f"{path}/_pages"
@@ -147,7 +158,11 @@ def task_auto_segment(path, use_hdbscan=False):
                 b["id"] = f"{page + 1}.{i + 1}"
 
         sorted_all_layouts.append({"boxes": sorted_layout})
+
     save_file_layouts(path, sorted_all_layouts)
+    with lock:
+        update_json_file(data_path, {"segmenting": False}, lock=lock)
+
     return {"status": "success"}
 
 
@@ -222,7 +237,13 @@ def task_make_changes(path, data):
         )
         recreate_csv = data["csv"]["complete"]
         os.remove(export_folder + "/_pdf_indexed.pdf")
-        export_file(path, "pdf", force_recreate=True, get_csv=recreate_csv)
+        export_file(
+            path,
+            "pdf",
+            force_recreate=True,
+            keep_temp=data["pdf"]["complete"],
+            get_csv=recreate_csv,
+        )
         data["pdf_indexed"] = {
             "complete": True,
             "size": size_to_units(
@@ -243,7 +264,14 @@ def task_make_changes(path, data):
         )
         recreate_csv = data["csv"]["complete"] and not data["pdf_indexed"]["complete"]
         os.remove(export_folder + "/_pdf.pdf")
-        export_file(path, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
+        export_file(
+            path,
+            "pdf",
+            force_recreate=True,
+            simple=True,
+            already_temp=data["pdf_indexed"]["complete"],
+            get_csv=recreate_csv,
+        )
         data["pdf"] = {
             "complete": True,
             "size": size_to_units(
@@ -1112,7 +1140,13 @@ def task_export_results(path: str, output_types: list[str]):
                     }
                 },
             )
-            export_file(path, "pdf", get_csv=("csv" in output_types))
+            keep_temp_images = "pdf" in output_types and not data["pdf"]["complete"]
+            export_file(
+                path,
+                "pdf",
+                keep_temp=keep_temp_images,
+                get_csv=("csv" in output_types),
+            )
             creation_time = get_current_time()
             data["pdf_indexed"] = {
                 "complete": True,
@@ -1144,7 +1178,13 @@ def task_export_results(path: str, output_types: list[str]):
                     }
                 },
             )
-            export_file(path, "pdf", simple=True, get_csv=("csv" in output_types))
+            export_file(
+                path,
+                "pdf",
+                simple=True,
+                already_temp=("pdf_indexed" in output_types),
+                get_csv=("csv" in output_types),
+            )
             creation_time = get_current_time()
             data["pdf"] = {
                 "complete": True,

@@ -9,12 +9,13 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import CircularProgress from '@mui/material/CircularProgress';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
+import { NumberField } from '@base-ui-components/react/number-field';
 
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import SpellcheckIcon from '@mui/icons-material/Spellcheck';
+//import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
 
@@ -22,14 +23,36 @@ import AddLineIcon from 'static/addLine.svg';
 import RemoveLineIcon from 'static/removeLine.svg';
 
 import ReturnButton from 'Components/FileSystem/ReturnButton';
-import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
+//import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
 import Notification from 'Components/Notifications/Notification';
 import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
 import EditingImage from 'Components/EditingMenu/EditingImage';
 
+const anyWhitespaceRegex = /\s+/;
+
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
 class Word extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            hovered: null,
+            editing: false,
+        }
+    }
+
+    shouldComponentUpdate(nextProps, nextState, nextContext) {
+        return this.props.showConfidence !== nextProps.showConfidence
+                || this.state.hovered !== nextState.hovered
+                || this.props.editing !== nextProps.editing
+                || this.props.editLinesMode !== nextProps.editLinesMode
+                || this.props.text !== nextProps.text
+                || this.props.sectionIndex !== nextProps.sectionIndex
+                || this.props.lineIndex !== nextProps.lineIndex
+                || this.props.wordIndex !== nextProps.wordIndex
+                || this.props.lineEnd !== nextProps.lineEnd;
+    }
+
     /*
     cleanWord(word) {
         const punctuation = "!\"#$%&'()*+, -./:;<=>?@[\\]^_`{|}~«»—";
@@ -64,30 +87,118 @@ class Word extends React.Component {
         }
     }
 
+    updateInputSize(text) {
+        const textField = document.getElementById("textfield");
+        textField.style.width = (text.length + 1) + 'ch';
+    }
+
     render() {
         //const cleanedWord = this.cleanWord(this.props.text.toLowerCase());
-        return <p
+        return (
+        <span
             id={this.props.id}
-            className={`${this.props.text}`}
             style={{
-                margin: "0px 2px",
                 display: "inline-block",
-                fontSize: "14px",
-                color: this.props.showConfidence ? this.confidenceColor() : "#000000ff",
-                // backgroundColor: (false) ? "#ffd700" : "transparent",
-                backgroundColor: "transparent",
-                borderRadius: "5px",
+                position: "relative",
+                // disable selection when editing line endings; use text selection when TextareaAutosize box is open; use "all" when selecting words to edit
+                userSelect: this.props.editLinesMode ? "none" : (this.props.editing ? "text" : "all"),
             }}
-            onMouseEnter={(e) => {
-                this.props.hoverWord(this.props.id);
-                this.props.highlightWord(e, this.props.box);
+            onMouseOver={(e) => {
+                this.setState({hovered: true}, () => {
+                    this.props.highlightWord(e, this.props.box);
+                });
             }}
             onMouseLeave={(e) => {
-                this.props.removeHighlightWord();
+                if (!this.props.editing) {
+                    this.setState({hovered: false}, () => {
+                        this.props.removeHighlightWord(e, this.props.box);
+                    });
+                }
             }}
         >
-            {this.props.text}
-        </p>
+        {this.props.wordIndex !== 0 && this.props.editLinesMode
+            ? <IconButton
+                sx={{
+                    display: this.state.hovered ? "" : "none",
+                    padding: "1.2px",
+                    margin: 0,
+                    marginLeft: 1,
+                    backgroundColor: "#0000ff88",
+                    "&:hover": {backgroundColor: "#0000ffdd"}
+                }}
+                onClick={() => this.props.addLine(this.props.sectionIndex, this.props.lineIndex, this.props.wordIndex)}
+            >
+                <img style={{width: '1rem', color: "white"}} alt="addLine" src={AddLineIcon} />
+            </IconButton>
+            : null
+        }
+        {this.props.editing
+            ? <TextareaAutosize
+                id="textfield"
+                variant='outlined'
+                defaultValue={this.props.text}
+                size="small"
+                style={{
+                    margin: "0px 2px",
+                    fontFamily: "inherit",
+                    fontSize: "14px",
+                    padding: "0px 5px",
+                    width: (this.props.text.length + 1) +  'ch',
+                    maxWidth: '100%',
+                    overflowWrap: "break-word",
+                    resize: "none"
+                }}
+                autoFocus={true}
+                onChange={(e) => {
+                    this.updateInputSize(e.target.value);
+                }}
+                onBlur={(e) => {
+                    this.props.updateText(e.target.value, this.props.sectionIndex, this.props.lineIndex, this.props.wordIndex);
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        this.props.updateText(e.target.value, this.props.sectionIndex, this.props.lineIndex, this.props.wordIndex);
+                    }
+                }}
+            />
+
+            : <span
+                className={`${this.props.text}`}
+                style={{
+                    margin: "0px 2px",
+                    display: "inline-block",
+                    fontSize: "14px",
+                    color: this.props.showConfidence ? this.confidenceColor() : "#000000ff",
+                    // backgroundColor: (false) ? "#ffd700" : "transparent",
+                    backgroundColor: "transparent",
+                    borderRadius: "5px",
+                }}
+            >
+                {this.props.text}
+            </span>
+        }
+
+        {this.props.lineEnd && this.props.editLinesMode
+            ? <IconButton
+                sx={{
+                    // End of line button always shown
+                    padding: "1.2px",
+                    margin: 0,
+                    backgroundColor: "#ff000088",
+                    "&:hover": {backgroundColor: "#ff0000dd"}
+                }}
+                onClick={() => {
+                    this.setState({hovered: false},
+                        () => this.props.removeLine(this.props.sectionIndex, this.props.lineIndex));
+                }}
+                onMouseOver={(e) => e.stopPropagation()}
+            >
+                <img style={{width: '1rem', color: "white"}} alt="deleteLine" src={RemoveLineIcon} />
+            </IconButton>
+            : null
+        }
+    </span>);
     }
 }
 
@@ -97,8 +208,12 @@ class EditingMenu extends React.Component {
         this.state = {
             loaded: false,
             contents: [],
+            currentContents: [],
+            textComponents: [],
+            /*
             words_list: [],
             corpusOptions: [],
+            */
 
             currentPage: 1,
             totalPages: 1,
@@ -111,8 +226,7 @@ class EditingMenu extends React.Component {
             uncommittedChanges: false,
             mustRecreate: false,
 
-            addLineMode: false,
-            removeLineMode: false,
+            editLinesMode: false,
             showConfidence: false,
 
             corpusChoice: [{"name": "Português", "code": "Português"}]
@@ -120,7 +234,7 @@ class EditingMenu extends React.Component {
 
         this.imageRef = React.createRef();
         this.imageContainerRef = React.createRef();
-        this.corpusSelect = React.createRef();
+        //this.corpusSelect = React.createRef();
         this.textWindow = React.createRef();
 
         this.successNot = React.createRef();
@@ -134,6 +248,9 @@ class EditingMenu extends React.Component {
         this.hoverWord = this.hoverWord.bind(this);
         this.showImageHighlight = this.showImageHighlight.bind(this);
         this.hideImageHighlight = this.hideImageHighlight.bind(this);
+        this.updateText = this.updateText.bind(this);
+        this.addLine = this.addLine.bind(this);
+        this.removeLine = this.removeLine.bind(this);
     }
 
     preventExit(event) {
@@ -143,6 +260,16 @@ class EditingMenu extends React.Component {
 
     componentDidMount() {
         this.getContents();
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevState.currentContents !== this.state.currentContents
+            || prevState.showConfidence !== this.state.showConfidence
+            || prevState.editLinesMode !== this.state.editLinesMode) {
+            this.setState({
+                textComponents: this.produceTextComponents(),
+            });
+        }
     }
 
     goBack() {
@@ -172,23 +299,23 @@ class EditingMenu extends React.Component {
         .then(({data}) => {
             const pages = parseInt(data["pages"]);
 
-            const contents = data["doc"].sort((a, b) =>
-                (a["page_number"] > b["page_number"]) ? 1 : -1
-            )
-
+            /*
             const sortedWords = this.orderWords(data["words"]);
-
             const newCorpusList = [];
             data["corpus"].forEach((item) => {
                 newCorpusList.push({"name": item, "code": item});
             });
+            */
 
             this.setState({
                 mustRecreate: data["must_recreate"],
                 totalPages: pages,
-                contents: contents,
+                contents: data["doc"],
+                currentContents: data["doc"][page-1]["content"],
+                /*
                 words_list: sortedWords,
                 corpusOptions: newCorpusList,
+                */
                 loaded: true
             });
         })
@@ -197,6 +324,7 @@ class EditingMenu extends React.Component {
         });
     }
 
+    /*
     orderWords(words) {
         var items = Object.keys(words).map(function(key) {
             return [key, words[key]];
@@ -216,46 +344,43 @@ class EditingMenu extends React.Component {
 
         return sortedWords;
     }
+    */
 
     /**
      * IMAGE FUNCTIONS
      * Used to zoom and change pages (text changes accordingly)
      */
-    changePage(diff) {
-        this.imageContainerRef.current.setWordBox(null, () => {
+    changePage(newPage) {
+        if (isNaN(newPage) || Number(newPage) < 1 || Number(newPage) > this.state.contents.length) return;
+
+        this.imageContainerRef.current.clearWordBox(() => {
             this.setState({
-                currentPage: this.state.currentPage + diff,
-                //currentContents: this.state.contents[this.state.currentPage + diff - 1],
-                selectedWord: "",
+                currentPage: newPage,
+                currentContents: this.state.contents[newPage - 1]["content"],
                 selectedWordIndex: 0,
-                addLineMode: false,
-                removeLineMode: false
+                editLinesMode: false,
             });
         });
     }
 
     firstPage() {
-        this.imageContainerRef.current.setWordBox(null, () => {
+        this.imageContainerRef.current.clearWordBox(() => {
             this.setState({
                 currentPage: 1,
-                //currentContents: this.state.contents[0],
-                selectedWord: "",
+                currentContents: this.state.contents[0]["content"],
                 selectedWordIndex: 0,
-                addLineMode: false,
-                removeLineMode: false
+                editLinesMode: false,
             });
         });
     }
 
     lastPage() {
-        this.imageContainerRef.current.setWordBox(null, () => {
+        this.imageContainerRef.current.clearWordBox(() => {
             this.setState({
                 currentPage: this.state.totalPages,
-                //currentContents: this.state.contents[this.state.totalPages - 1],
-                selectedWord: "",
+                currentContents: this.state.contents[this.state.totalPages - 1]["content"],
                 selectedWordIndex: 0,
-                addLineMode: false,
-                removeLineMode: false
+                editLinesMode: false,
             });
         });
     }
@@ -288,17 +413,25 @@ class EditingMenu extends React.Component {
         );
     }
 
-    hideImageHighlight() {
-        this.imageContainerRef.current.setWordBox(null);
+    hideImageHighlight(e, box) {
+        const topCorner = this.imageToScreenCoordinates(box[0], box[1]);
+        const bottomCorner = this.imageToScreenCoordinates(box[2], box[3]);
+        this.imageContainerRef.current.unsetWordBox(
+            [
+                topCorner[1],
+                topCorner[0],
+                bottomCorner[0] - topCorner[0],
+                bottomCorner[1] - topCorner[1]
+            ]
+        );
     }
 
     /**
      * SYNTAX FUNCTIONS
      * Used to check the syntax of the text
      */
-
+    /*
     requestSyntax() {
-
         this.setState({ loadingSintax: true });
         fetch(API_URL + '/check-sintax', {
             method: 'POST',
@@ -320,23 +453,23 @@ class EditingMenu extends React.Component {
     }
 
     updateSyntax(words) {
-
         var words_list = this.state.words_list;
         Object.entries(words).forEach(([key, value]) => {
             words_list[key]["syntax"] = value;
         });
-
         this.setState({words_list: words_list});
     }
+    */
 
     /**
      * TEXT CORRECTION
      * Used to handle the text selection and correction
      */
+    /*
     generatePossibleWordCombinations(words, combination, startIndex = 0) {
-        /**
-         * Generate all possible combinations of words
-         */
+        //
+        // Generate all possible combinations of words
+        //
 
         var word = words.splice(0, 1)[0];
         var totalCombinations = [];
@@ -375,12 +508,9 @@ class EditingMenu extends React.Component {
     }
 
     findBestCombination(combinations, lengths) {
-        /**
-         * Find the combination that minimizes the difference between the previous text and the new text
-         */
-
-
-
+        //
+        // Find the combination that minimizes the difference between the previous text and the new text
+        //
         // Infinite
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity?retiredLocale=pt-PT
         var score = Math.pow(10, 1000);
@@ -424,31 +554,30 @@ class EditingMenu extends React.Component {
 
         return bestCombination;
     }
+    */
 
-    editWord(newText, sectionIndex, lineIndex, wordIndex) {
-        const newContents = this.state.contents.slice(0);
-        const line = newContents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
-        line[wordIndex]["text"] = newText;
-        this.setState({contents: newContents, uncommittedChanges: true}, () => this.updateText(sectionIndex, lineIndex, wordIndex));
-    }
+    updateText(newText, sectionIndex, lineIndex, wordIndex) {
+        //const wordsList = this.state.words_list;
 
-    updateText(sectionIndex, lineIndex, wordIndex) {
-        const wordsList = this.state.words_list;
-
-        const contents = this.state.contents;
-        const lineData = contents[this.state.currentPage - 1]["content"][sectionIndex][lineIndex];
+        const newContents = this.state.currentContents.slice(0);
+        const lineData = newContents[sectionIndex][lineIndex];
         const wordData = lineData[wordIndex];
 
-        const initial_text = wordData["initial_text"];
-        const text = wordData["text"];
-        const words = text.split(" ");
+        const initialText = wordData["initial_text"].trim();
+        const initialBox = wordData["box"];
+        const newTextTrimmed = newText.trim();
 
-        const coordinates = wordData["coordinates"];
-        const combination = this.splitWordsByLines(words, coordinates);
+        let words;
+        let changed = false;
+        if (newTextTrimmed !== initialText) {
+            words = newTextTrimmed.split(anyWhitespaceRegex);
+            changed = true;
+        } else {
+            words = initialText.split(anyWhitespaceRegex);
+        }
 
-        const newWords = [];
-
-        initial_text.split(" ").forEach((item) => {
+        /*
+        initialText.split(anyWhitespaceRegex).forEach((item) => {
             //item = this.cleanWord(item.toLowerCase());  // this cleanup removes ability to edit text with special signs
 
             if (item === "") return;
@@ -464,61 +593,57 @@ class EditingMenu extends React.Component {
                 pages.splice(pages.indexOf(this.state.currentPage - 1), 1);
             }
         })
+        */
 
-        for (let i = 0; i < combination.length; i++) {
-            const box = coordinates[i].slice(0, 4);
-            const widthPerChar = (box[2] - box[0]) / (combination[i].reduce((a, b) => a + b.length, 0) + combination[i].length - 1);
-            let charsPassed = 0;
+        const newWords = [];
+        const widthPerChar = (initialBox[2] - initialBox[0]) / initialText.length;
+        let leftCoord = initialBox[0];
+        words.forEach((word) => {
+            newWords.push({
+                "b": wordData["b"],  // b -> key used in server for text Y offset
+                "box": [leftCoord, initialBox[1], leftCoord + (word.length * widthPerChar), initialBox[3]],
+                "text": word,
+                //"clean_text": cleanedWord,
+            });
+            leftCoord += (word.length * widthPerChar) + widthPerChar;  // assume one space between words
+        });
 
-            for (let j = 0; j < combination[i].length; j++) {
-                const word = combination[i][j];
-                //const cleanedWord = this.cleanWord(word.toLowerCase());
-                newWords.push({
-                    "b": wordData["b"],  // b -> key used in server for text Y offset
-                    "box": [box[0] + charsPassed * widthPerChar, box[1], box[0] + (charsPassed + word.length) * widthPerChar, box[3]],
-                    "text": word,
-                    //"clean_text": cleanedWord,
-                });
-                charsPassed += word.length + 1;
+        /*
+        words.forEach((word, j) => {
+            //const cleanedWord = this.cleanWord(word.toLowerCase())
 
-                if (word === "") continue;
+            if (word === "") return;
 
-                // Update the words list
-                if (word in wordsList) {
-                    const pages = wordsList[word]["pages"];
-                    pages.push(this.state.currentPage - 1);
+            // Update the words list
+            if (word in wordsList) {
+                const pages = wordsList[word]["pages"];
+                pages.push(this.state.currentPage - 1);
 
-                    // Sort the list
-                    pages.sort((a, b) => a - b);
+                // Sort the list
+                pages.sort((a, b) => a - b);
 
-                    wordsList[word]["pages"] = pages;
-                } else {
-                    wordsList[word] = {"pages": [this.state.currentPage - 1], "syntax": true};
-                }
-
+                wordsList[word]["pages"] = pages;
+            } else {
+                wordsList[word] = {"pages": [this.state.currentPage - 1], "syntax": true};
             }
-        }
+        });
+        */
 
         lineData.splice(wordIndex, 1, ...newWords);
 
         window.addEventListener('beforeunload', this.preventExit);
-        if (this.state.selectedWord !== "" && !(this.state.selectedWord in wordsList)) {
-            this.setState({contents: contents, words_list: this.orderWords(wordsList), selectedWord: "", selectedWordIndex: 0});
-        }
-        else if (this.state.selectedWord !== "" && this.state.selectedWordIndex === this.state.words_list[this.state.selectedWord]["pages"].length) {
-            this.setState({contents: contents, words_list: this.orderWords(wordsList), selectedWordIndex: 0}, this.goToNextOccurrence);
-        } else {
-            this.setState({contents: contents, words_list: this.orderWords(wordsList)});
-        }
-    }
-
-    updateInputSize(text) {
-        const textField = document.getElementById("textfield");
-        textField.style.width = text.length+'ch';
+        this.setState({
+            contents: this.state.contents,
+            currentContents: newContents,
+            //words_list: this.orderWords(wordsList),
+            uncommittedChanges: changed,
+        });
     }
 
     hoverWord(wordId) {
-        this.setState({hoveredId: wordId});
+        if (this.state.editLinesMode) { // causes heavy re-render, avoid when not using this mode
+            this.setState({hoveredId: wordId});
+        }
     }
 
     getSelectedText() {
@@ -528,8 +653,8 @@ class EditingMenu extends React.Component {
 
             const selection = window.getSelection();
 
-            const firstSpan = selection.anchorNode.parentNode;
-            const lastSpan = selection.focusNode.parentNode;
+            const firstSpan = selection.anchorNode;
+            const lastSpan = selection.focusNode;
             const parentNode = firstSpan.parentNode;
 
             const firstSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, firstSpan);
@@ -543,52 +668,31 @@ class EditingMenu extends React.Component {
             const firstSpanInfo = firstSpan.id.split(" ").map((item) => parseInt(item));
             const lastSpanInfo = lastSpan.id.split(" ").map((item) => parseInt(item));
 
-            const newContents = this.state.contents.slice(0);
-            const line = newContents[this.state.currentPage - 1]["content"][firstSpanInfo[4]][firstSpanInfo[5]];
+            const newContents = this.state.currentContents.slice(0);
+            const line = newContents[firstSpanInfo[4]][firstSpanInfo[5]];
 
             const elements = line.slice(firstSpanInfo[6], lastSpanInfo[6] + 1);
-            const words = [];
-            const coordinates = [];
-            const bs = [];  // array for y offsets of the baselines, to average for the selected text
-            let totalChars = 0;
-
-            let initialCoords = null;
-            let rowCoords = null;
-
-            for (let i = 0; i < elements.length; i++) {
-                words.push(elements[i]["text"]);
-                bs.push(elements[i]["b"]);
-
-                const box = elements[i]["box"];
-
-                if (rowCoords === null || (initialCoords !== null && box[0] < initialCoords[0])) {
-                    if (rowCoords !== null) {
-                        rowCoords.push(totalChars);
-                        coordinates.push(rowCoords);
-                    }
-
-                    totalChars = 0;
-                    initialCoords = [box[0], box[1], box[2], box[3]];
-                    rowCoords = [box[0], box[1], box[2], box[3]];
-                }
-
-                totalChars += elements[i]["text"].length;
-
-                rowCoords[2] = box[2];
-                rowCoords[3] = box[3];
-            }
-
-            rowCoords.push(totalChars);
-            coordinates.push(rowCoords);
+            const words = elements.map((element) => element["text"]);
+            const boxCoords = [elements[0]["box"][0], elements[0]["box"][1], elements[elements.length - 1]["box"][2], elements[0]["box"][3]]
+            //const bs = [];  // array for y offsets of the baselines, to average for the selected text
+            const bs = elements.map((element) => element["b"]);
+            //for (let i = 0; i < elements.length; i++) {
+            //    words.push(elements[i]["text"]);
+            //    bs.push(elements[i]["b"]);
+            //}
 
             const text = words.join(" ");
             const avg_b = bs.reduce((b1, b2) => b1 + b2, 0) / elements.length;
-            const textField = {"input": true, "text": text, "initial_text": text, "coordinates": coordinates, "b": avg_b};
+            const textField = {"input": true, "text": text, "box": boxCoords, "initial_text": text, "b": avg_b};
 
             document.getSelection().removeAllRanges();
 
             line.splice(firstSpanInfo[6], elements.length, textField);
-            this.setState({contents: newContents}, () => this.updateInputSize(text));
+            this.state.contents[this.state.currentPage - 1]["content"] = newContents;
+            this.setState({
+                contents: this.state.contents,
+                currentContents: newContents,
+            });
         }
     }
 
@@ -597,54 +701,57 @@ class EditingMenu extends React.Component {
      * Add and remove new lines (\n)
      */
     addLine(sectionIndex, lineIndex, wordIndex) {
+        const currentContentCopy = this.state.currentContents.slice(0);
+        const section = currentContentCopy[sectionIndex];
+        const line = section[lineIndex];
 
-        var contents = this.state.contents;
-        var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
-        var line = section[lineIndex];
-
-        var secondPart = line.splice(wordIndex);
-        var firstPart = line;
+        const secondPart = line.splice(wordIndex);
+        const firstPart = line;
 
         section.splice(lineIndex, 1, firstPart, secondPart);
-        contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
+        currentContentCopy[sectionIndex] = section;
+        this.state.contents[this.state.currentPage - 1]["content"] = currentContentCopy;
 
-        this.setState({contents: contents, uncommittedChanges: true});
+        this.setState({
+            contents: this.state.contents,
+            currentContents: currentContentCopy,
+            uncommittedChanges: true,
+        });
     }
 
     removeLine(sectionIndex, lineIndex) {
 
-        var contents = this.state.contents;
-        var section = [...contents[this.state.currentPage - 1]["content"][sectionIndex]];
-
-        var firstLine, secondLine, newLine;
+        const currentContentCopy = this.state.currentContents.slice(0);
+        let section = currentContentCopy[sectionIndex];
 
         if (section.length -1 === lineIndex) {
             // Join sections
-            var firstSection = section;
-            var secondSection = contents[this.state.currentPage - 1]["content"][sectionIndex + 1];
+            const firstSection = section;
+            const secondSection = currentContentCopy[sectionIndex + 1];
 
             section = [...firstSection, ...secondSection];
-            firstLine = section[lineIndex];
-            secondLine = section[lineIndex + 1];
-
-            newLine = [...firstLine, ...secondLine];
+            const newLine = [...section[lineIndex], ...section[lineIndex + 1]];
 
             section.splice(lineIndex, 2, newLine);
-            contents[this.state.currentPage - 1]["content"].splice(sectionIndex, 2, section);
+            currentContentCopy.splice(sectionIndex, 2, section);
 
-            this.setState({contents: contents, uncommittedChanges: true});
+            this.state.contents[this.state.currentPage - 1]["content"] = currentContentCopy;
+            this.setState({
+                currentContents: currentContentCopy,
+                uncommittedChanges: true,
+            });
 
         } else {
             // Just join lines
-            firstLine = section[lineIndex];
-            secondLine = section[lineIndex + 1];
-
-            newLine = [...firstLine, ...secondLine];
+            const newLine = [...section[lineIndex], ...section[lineIndex + 1]];
 
             section.splice(lineIndex, 2, newLine);
 
-            contents[this.state.currentPage - 1]["content"][sectionIndex] = section;
-            this.setState({contents: contents, uncommittedChanges: true});
+            this.state.contents[this.state.currentPage - 1]["content"] = currentContentCopy;
+            this.setState({
+                currentContents: currentContentCopy,
+                uncommittedChanges: true,
+            });
         }
     }
 
@@ -673,7 +780,6 @@ class EditingMenu extends React.Component {
 
         return word.toLowerCase();
     }
-     */
 
     cleanWordSelection() {
         var words = document.getElementsByClassName(this.selectedWord);
@@ -724,13 +830,12 @@ class EditingMenu extends React.Component {
         this.selectedWord = word;
 
         if (page !== this.state.currentPage) {
-            this.imageContainerRef.current.setWordBox(null, () => {
+            this.imageContainerRef.current.clearWordBox(() => {
                 this.setState({
                     selectedWordIndex: index,
                     currentPage: page,
-                    //currentContents: this.state.contents[page - 1],
-                    addLineMode: false,
-                    removeLineMode: false
+                    currentContents: this.state.contents[page - 1]["content"],
+                    editLinesMode: false,
                 }, () => {
                     this.textWindow.current.scrollTop = this.getScrollValue(word, count);
                 });
@@ -741,6 +846,7 @@ class EditingMenu extends React.Component {
             });
         }
     }
+    */
 
     /**
      * SAVE FINAL CHANGES
@@ -777,8 +883,60 @@ class EditingMenu extends React.Component {
         });
     }
 
+    produceTextComponents() {
+        return this.state.currentContents.map((section, sectionIndex) => {
+            return <Box key={sectionIndex} className="editingSection">
+                {
+                    section.map((line, lineIndex) => {
+                        return <Box key={lineIndex} className="editingLine">
+                            {
+                                line.map((word, wordIndex) => {
+                                    if (word["text"] === "") return null;
+
+                                    const id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
+
+                                    return (
+                                        <Word
+                                            key={wordIndex}
+                                            id={id}
+                                            text={word["text"]}
+                                            box={word["box"]}
+                                            confidence={word["confidence"]}
+                                            showConfidence={this.state.showConfidence}
+                                            sectionIndex={sectionIndex}
+                                            lineIndex={lineIndex}
+                                            wordIndex={wordIndex}
+                                            lineEnd={
+                                                wordIndex == line.length - 1
+                                                && (lineIndex != section.length - 1
+                                                    || sectionIndex != this.state.currentContents.length - 1)
+                                            }
+                                            editing={word["input"]}
+                                            editLinesMode={this.state.editLinesMode}
+                                            //cleanText={word["clean_text"]}
+                                            hoverWord={this.hoverWord}
+                                            highlightWord={this.showImageHighlight}
+                                            removeHighlightWord={this.hideImageHighlight}
+                                            updateText={this.updateText}
+                                            addLine={this.addLine}
+                                            removeLine={this.removeLine}
+                                        />
+                                    );
+                                })
+                            }
+                        </Box>
+                    })
+                }
+            </Box>;
+        })
+    }
+
     render() {
-        const incorrectSyntax = Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"]);
+        /*
+        const incorrectSyntax = (this.state.wordsMode
+                                ? Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"])
+                                : "");
+        */
         return (
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -803,13 +961,13 @@ class EditingMenu extends React.Component {
 
                         <Box>
                             {
-                            this.state.addLineMode
+                            this.state.editLinesMode
                                 ? <Button
                                     disabled={!this.state.loaded}
                                     color="error"
                                     variant="contained"
                                     className="menuFunctionButton"
-                                    onClick={() => {this.setState({addLineMode: false, hoveredId: null})}}
+                                    onClick={() => {this.setState({editLinesMode: false, hoveredId: null})}}
                                     startIcon={<CloseRoundedIcon />}
                                 >
                                     Terminar
@@ -819,38 +977,14 @@ class EditingMenu extends React.Component {
                                     disabled={!this.state.loaded}
                                     variant="contained"
                                     className="menuFunctionButton"
-                                    onClick={() => {this.setState({addLineMode: true, removeLineMode: false})}}
+                                    onClick={() => {this.setState({editLinesMode: true})}}
                                     startIcon={<img style={{width: '1.2rem'}} alt="newLine" src={AddLineIcon} />}
                                 >
-                                    Adicionar Linhas
+                                    Adicionar/Remover Linhas
                                 </Button>
                             }
 
-                            {
-                            this.state.removeLineMode
-                                ? <Button
-                                    disabled={!this.state.loaded}
-                                    color="error"
-                                    variant="contained"
-                                    className="menuFunctionButton"
-                                    onClick={() => {this.setState({removeLineMode: false})}}
-                                    startIcon={<CloseRoundedIcon />}
-                                >
-                                    Terminar
-                                </Button>
-
-                                : <Button
-                                    disabled={!this.state.loaded}
-                                    variant="contained"
-                                    className="menuFunctionButton"
-                                    onClick={() => {this.setState({removeLineMode: true, addLineMode: false})}}
-                                    startIcon={<img style={{width: '1.2rem'}} alt="deleteLine" src={RemoveLineIcon} />}
-                                >
-                                    Remover Linhas
-                                </Button>
-                            }
-
-                            {
+                            {/*
                             this.state.wordsMode
                                 ? <Button
                                     disabled={!this.state.loaded}
@@ -885,7 +1019,7 @@ class EditingMenu extends React.Component {
                                             : null
                                     }
                                 </Button>
-                            }
+                            */}
 
                             {
                                 this.state.showConfidence
@@ -964,7 +1098,7 @@ class EditingMenu extends React.Component {
                                 alignItems: "center",
                                 mt: "5px"
                             }}>
-                                <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
+                                <Box sx={{display: "flex", marginLeft: "auto", marginRight: "auto"}}>
                                     <IconButton
                                         disabled={this.state.currentPage === 1}
                                         sx={{marginRight: "10px", p: 0}}
@@ -976,19 +1110,36 @@ class EditingMenu extends React.Component {
                                     <IconButton
                                         disabled={this.state.currentPage === 1}
                                         sx={{marginRight: "10px", p: 0}}
-                                        onClick={() => this.changePage(-1)}
+                                        onClick={() => this.changePage(this.state.currentPage - 1)}
                                     >
                                         <KeyboardArrowLeftIcon />
                                     </IconButton>
 
-                                    <span style={{margin: "0px 10px"}}>
-                                        Página {this.state.currentPage} / {this.state.totalPages}
+                                    <span style={{display: "flex"}}>
+                                        Página
+                                        &nbsp;
+                                        {this.state.totalPages === 1
+                                            ? this.state.currentPage
+
+                                            : <NumberField.Root
+                                                value={this.state.currentPage}
+                                                onValueChange={(value) => this.changePage((value))}
+                                                step={1}
+                                                smallStep={1}
+                                                min={1}
+                                                max={this.state.totalPages}
+                                                className="pageNumberInput"
+                                            >
+                                                <NumberField.Input className="pageNumberInput"/>
+                                            </NumberField.Root>
+                                        }
+                                        &nbsp;/ {this.state.contents.length}
                                     </span>
 
                                     <IconButton
                                         disabled={this.state.currentPage === this.state.totalPages}
                                         sx={{marginLeft: "10px", p: 0}}
-                                        onClick={() => this.changePage(1)}
+                                        onClick={() => this.changePage(this.state.currentPage + 1)}
                                     >
                                         <KeyboardArrowRightIcon />
                                     </IconButton>
@@ -1026,97 +1177,11 @@ class EditingMenu extends React.Component {
                                     onMouseUp={() => this.getSelectedText()}
                                 >
                                     {
-                                        this.state.contents[this.state.currentPage - 1]["content"].map((section, sectionIndex) => {
-                                            return <Box key={`section${sectionIndex}`} className="editingSection">
-                                                {
-                                                    section.map((line, lineIndex) => {
-                                                        return <Box key={`line${lineIndex} section${sectionIndex}`} className="editingLine">
-                                                            {
-                                                                line.map((word, wordIndex) => {
-                                                                    if ("input" in word) {
-                                                                        return <TextareaAutosize
-                                                                            id={"textfield"}
-                                                                            key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
-                                                                            variant='outlined'
-                                                                            defaultValue={word["text"]}
-                                                                            size="small"
-                                                                            style={{
-                                                                                margin: "0px 2px",
-                                                                                fontFamily: "inherit",
-                                                                                fontSize: "14px",
-                                                                                padding: "0px 5px",
-                                                                                width: word["text"].length+'ch',
-                                                                                maxWidth: '100%',
-                                                                                overflowWrap: "break-word",
-                                                                                resize: "none"
-                                                                            }}
-                                                                            autoFocus={true}
-                                                                            onChange={(e) => {
-                                                                                this.updateInputSize(e.target.value);
-                                                                            }}
-                                                                            onBlur={(e) => {this.editWord(e.target.value, sectionIndex, lineIndex, wordIndex);}}
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === "Enter") {
-                                                                                    e.preventDefault();
-                                                                                    this.editWord(e.target.value, sectionIndex, lineIndex, wordIndex);
-                                                                                }
-                                                                            }}
-                                                                        />
-                                                                    }
-
-                                                                    if (word["text"] === "") return null;
-
-                                                                    const id = `${word["box"][0]} ${word["box"][1]} ${word["box"][2]} ${word["box"][3]} ${sectionIndex} ${lineIndex} ${wordIndex}`;
-                                                                    const ref = React.createRef();
-
-                                                                    return <>
-                                                                        {
-                                                                            this.state.addLineMode && wordIndex !== 0 && this.state.hoveredId === id
-                                                                            ? <IconButton
-                                                                                sx={{p: 0.1, m: 0, backgroundColor: "#0000ff88", ml: 1, "&:hover": {backgroundColor: "#0000ffdd"}}}
-                                                                                onClick={() => this.addLine(sectionIndex, lineIndex, wordIndex)}
-                                                                            >
-                                                                                <img style={{width: '1rem', color: "white"}} alt="addLine" src={AddLineIcon} />
-                                                                            </IconButton>
-                                                                            : null
-                                                                        }
-
-                                                                        <Word
-                                                                            ref = {ref}
-                                                                            key={`word${wordIndex} line${lineIndex} section${sectionIndex} ${word["text"]}`}
-                                                                            text={word["text"]}
-                                                                            id={id}
-                                                                            box={word["box"]}
-                                                                            confidence={word["confidence"]}
-                                                                            showConfidence={this.state.showConfidence}
-                                                                            //cleanText={word["clean_text"]}
-                                                                            hoverWord={this.hoverWord}
-                                                                            highlightWord={this.showImageHighlight}
-                                                                            removeHighlightWord={this.hideImageHighlight}
-                                                                        />
-
-                                                                        {
-                                                                            this.state.removeLineMode && wordIndex === line.length - 1 && (lineIndex !== section.length - 1 || sectionIndex !== this.state.contents[this.state.currentPage - 1]["content"].length - 1)
-                                                                            ? <IconButton
-                                                                                sx={{p: 0.1, m: 0, ml: 1, backgroundColor: "#ff000088", "&:hover": {backgroundColor: "#ff0000dd"}}}
-                                                                                onClick={() => this.removeLine(sectionIndex, lineIndex)}
-                                                                            >
-                                                                                <img style={{width: '1rem', color: "white"}} alt="deleteLine" src={RemoveLineIcon} />
-                                                                            </IconButton>
-                                                                            : null
-                                                                        }
-                                                                    </>
-
-                                                                })
-                                                            }
-                                                        </Box>
-                                                    })
-                                                }
-                                            </Box>;
-                                        })
+                                        this.state.textComponents
                                     }
                                 </Box>
 
+                                {/*
                                 <Box sx={{
                                     display: this.state.wordsMode ? "block" : "none",
                                     overflowY: "scroll",
@@ -1226,6 +1291,7 @@ class EditingMenu extends React.Component {
                                         })
                                     }
                                 </Box>
+                                */}
                             </Box>
                         </Box>
                     </Box>
@@ -1253,13 +1319,21 @@ Word.defaultProps = {
     id: null,
     text: null,
     box: null,
-    showConfidence: false,
     confidence: null,
-    overlay: null,
+    showConfidence: false,
+    sectionIndex: null,
+    lineIndex: null,
+    wordIndex: null,
+    lineEnd: false,
+    editing: false,
+    editLinesMode: false,
     // functions:
     hoverWord: null,
     highlightWord: null,
-    removeHighlightWord: null
+    removeHighlightWord: null,
+    updateText: null,
+    addLine: null,
+    removeLine: null,
 }
 
 EditingMenu.defaultProps = {
