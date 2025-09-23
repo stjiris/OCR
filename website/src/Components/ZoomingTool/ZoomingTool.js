@@ -1,5 +1,6 @@
 import React from 'react';
 import Box from "@mui/material/Box";
+import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import ZoomResetIcon from "@mui/icons-material/Autorenew";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
@@ -12,25 +13,49 @@ class ZoomingTool extends React.Component {
 
     render() {
         return (
-            <Box>
+            <Box
+                className="zooming-tool"
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseMove={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+            >
+
+                <Tooltip
+                    placement="right"
+                    title="Aumentar Zoom"
+                ><span>
                 <IconButton
-                    sx={{marginRight: "10px", p: 0}}
+                    className="zooming-IconButton"
                     onClick={() => this.props.zoomInFunc()}
                 >
-                    <ZoomInIcon />
+                    <ZoomInIcon className="zoom-icon" />
                 </IconButton>
+                </span></Tooltip>
+
+                <Tooltip
+                    placement="right"
+                    title="Repor Zoom Inicial"
+                ><span>
                 <IconButton
-                    sx={{marginRight: "10px", p: 0}}
+                    className="zooming-IconButton"
                     onClick={() => this.props.zoomResetFunc()}
                 >
-                    <ZoomResetIcon />
+                    <ZoomResetIcon className="zoom-icon" />
                 </IconButton>
+                </span></Tooltip>
+
+
+                <Tooltip
+                    placement="right"
+                    title="Reduzir Zoom"
+                ><span>
                 <IconButton
-                    sx={{marginRight: "10px", p: 0}}
+                    className="zooming-IconButton"
                     onClick={() => this.props.zoomOutFunc()}
                 >
-                    <ZoomOutIcon />
+                    <ZoomOutIcon className="zoom-icon" />
                 </IconButton>
+                </span></Tooltip>
             </Box>
         );
     }

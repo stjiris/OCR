@@ -108,6 +108,12 @@ http {
             location ~* /_pages/.+\.(jpg|jpeg|jfif|pjpeg|pjp|png|tif|tiff|bmp|gif|webp|pnm|jp2)$ {
                 try_files $uri =404;
             }
+
+            # Serve also thumbnails
+            location ~* /_thumbnails/.+\.thumbnail$ {
+                try_files $uri =404;
+            }
+
             return 404;
         }
 
@@ -118,6 +124,12 @@ http {
             location ~* /_pages/.+\.(jpg|jpeg|jfif|pjpeg|pjp|png|tif|tiff|bmp|gif|webp|pnm|jp2)$ {
                 try_files $uri =404;
             }
+
+            # Serve also thumbnails
+            location ~* /_thumbnails/.+\.thumbnail$ {
+                try_files $uri =404;
+            }
+
             return 404;
         }
     }

@@ -31,11 +31,13 @@ from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_doc_len
+from src.utils.file import get_document_files_size
 from src.utils.file import get_file_basename
 from src.utils.file import get_file_size
 from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
+from src.utils.file import get_word_count
 from src.utils.file import PRIVATE_PATH
 from src.utils.file import save_file_layouts
 from src.utils.file import size_to_units
@@ -308,6 +310,8 @@ def task_count_doc_pages(path: str, extension: str):
         {
             "pages": get_page_count(path, extension),
             "stored": True,
+            "size": size_to_units(get_file_size(path)),
+            "total_size": size_to_units(get_document_files_size(path)),
             "status": {
                 "stage": "waiting",
             },
@@ -381,6 +385,20 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                 im.save(
                     f"{path}/_pages/{basename}_{i}.png", format="PNG"
                 )  # using PNG to keep RGBA
+
+                # Generate document thumbnails with first page
+                if i == 0:
+                    img_rgb = im.convert("RGB")
+                    thumb_128 = img_rgb.copy()
+                    thumb_128.thumbnail((128, 128))
+                    thumb_128.save(
+                        f"{path}/_thumbnails/{basename}.zip_128.thumbnail", "JPEG"
+                    )
+                    img_rgb.thumbnail((600, 600))
+                    img_rgb.save(
+                        f"{path}/_thumbnails/{basename}.zip_600.thumbnail", "JPEG"
+                    )
+
             shutil.rmtree(temp_folder_name)
 
             task_count_doc_pages(path=path, extension=extension)
@@ -395,12 +413,35 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                 link_path = f"{path}/_pages/{basename}_0.{extension}"
                 if not os.path.exists(link_path):
                     os.link(original_path, link_path)
+
+                # Generate document thumbnails
+                img_rgb = img.convert("RGB")
+                thumb_128 = img_rgb.copy()
+                thumb_128.thumbnail((128, 128))
+                thumb_128.save(
+                    f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+                )
+                img_rgb.thumbnail((600, 600))
+                img_rgb.save(
+                    f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
+                )
             else:
                 compression = img._compression
                 img.save(
                     f"{path}/_pages/{basename}_0.{extension}",
                     save_all=False,
                     compression=compression,
+                )
+                # Generate document thumbnails with first page
+                img_rgb = img.convert("RGB")
+                thumb_128 = img_rgb.copy()
+                thumb_128.thumbnail((128, 128))
+                thumb_128.save(
+                    f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+                )
+                img_rgb.thumbnail((600, 600))
+                img_rgb.save(
+                    f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
                 )
 
                 for i in range(1, n_frames):
@@ -420,6 +461,19 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
+
+            # Generate document thumbnails
+            img = Image.open(original_path)
+            img_rgb = img.convert("RGB")
+            thumb_128 = img_rgb.copy()
+            thumb_128.thumbnail((128, 128))
+            thumb_128.save(
+                f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+            )
+            img_rgb.thumbnail((600, 600))
+            img_rgb.save(
+                f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
+            )
 
             task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
@@ -676,6 +730,14 @@ def task_extract_pdf_page(path, basename, i):
             os.remove(output_path)  # Remove truncated file
             raise
 
+        # Generate document thumbnails with first page
+        if i == 0:
+            thumb_128 = pil_image.copy()
+            thumb_128.thumbnail((128, 128))
+            thumb_128.save(f"{path}/_thumbnails/{basename}.pdf_128.thumbnail", "JPEG")
+            pil_image.thumbnail((600, 600))
+            pil_image.save(f"{path}/_thumbnails/{basename}.pdf_600.thumbnail", "JPEG")
+
         log.debug(f"Extracted page {i} from {basename}.pdf")
 
     except Exception as e:
@@ -912,10 +974,11 @@ def task_page_ocr(
 
         data = get_data(data_file)
         data["ocr"]["progress"] = len(files)
-        data["status"] = {
-            "stage": "ocr",
-            "message": f"({ocr_engine.estimate_ocr_time(config, n_doc_pages - len(files))})",
-        }
+        if data["status"]["stage"] != "error":
+            data["status"] = {
+                "stage": "ocr",
+                "message": f"({ocr_engine.estimate_ocr_time(config, n_doc_pages - len(files))})",
+            }
         update_json_file(data_file, data)
 
         # If last page has been processed, generate results
@@ -1148,6 +1211,9 @@ def task_export_results(path: str, output_types: list[str]):
         data["status"] = {
             "stage": "post-ocr",
         }
+        data["total_size"] = size_to_units(get_document_files_size(path))
+        data["words"] = get_word_count(path)
+
         update_json_file(data_file, data)
         return {"status": "success"}
 

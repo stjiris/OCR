@@ -23,7 +23,6 @@ import LastPageIcon from "@mui/icons-material/LastPage";
 import ReturnButton from 'Components/FileSystem/ReturnButton';
 import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
 import Notification from 'Components/Notifications/Notification';
-import ZoomingTool from 'Components/ZoomingTool/ZoomingTool';
 import LayoutImage from './LayoutImage';
 import LayoutTable from './LayoutTable';
 
@@ -79,9 +78,6 @@ class LayoutMenu extends React.Component {
 
         this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
-        this.zoomIn = this.zoomIn.bind(this);
-        this.zoomOut = this.zoomOut.bind(this);
-        this.zoomReset = this.zoomReset.bind(this);
 	}
 
 	preventExit(event) {
@@ -721,18 +717,6 @@ class LayoutMenu extends React.Component {
 		this.setState({ textModeState: mode });
 	}
 
-    zoomIn() {
-        this.image.current.zoomIn();
-    }
-
-    zoomOut() {
-        this.image.current.zoomOut();
-    }
-
-    zoomReset() {
-        this.image.current.zoomReset();
-    }
-
 	render() {
         const loaded = this.state.contents.length !== 0;
         let tableData = [];
@@ -830,12 +814,13 @@ class LayoutMenu extends React.Component {
 
                 {
                 loaded
-                ? <Box sx={{
-					display: "flex",
-					flexDirection: "row",
-                    ml: "1rem",
-                    mr: "1rem"
-				}}>
+                ? <Box
+                      className="menuContent"
+                      sx={{
+					     display: "flex",
+					     flexDirection: "row",
+                      }}
+                >
 					<Box sx={{
 						display: 'flex',
 						flexDirection: 'column',
@@ -864,8 +849,6 @@ class LayoutMenu extends React.Component {
                             alignItems: 'center',
                             mt: '5px'
 						}}>
-                            <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut} zoomResetFunc={this.zoomReset}/>
-
                             <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
                                 <IconButton
                                     disabled={this.state.currentPage === 1}
@@ -970,7 +953,7 @@ class LayoutMenu extends React.Component {
 								}}
 								size='small'
 							/>
-							<span>Ignorar/Extrair OCR</span>
+							<span>Ignorar/Extrair</span>
 						</Box>
 
                         <LayoutTable data={tableData}

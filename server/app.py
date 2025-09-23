@@ -15,7 +15,6 @@ from celery import Celery
 from celery.schedules import crontab
 from celery.schedules import schedule
 from dotenv import load_dotenv
-from elasticsearch import NotFoundError
 from flask import abort
 from flask import Flask
 from flask import g
@@ -36,12 +35,6 @@ from flask_security.models import fsqla_v3 as fsqla
 from flask_sqlalchemy import SQLAlchemy
 from redbeat import RedBeatSchedulerEntry
 from redbeat.schedulers import RedBeatConfig
-from src.elastic_search import create_document
-from src.elastic_search import ElasticSearchClient
-from src.elastic_search import ES_INDEX
-from src.elastic_search import ES_URL
-from src.elastic_search import mapping
-from src.elastic_search import settings
 from src.utils.file import ALLOWED_EXTENSIONS
 from src.utils.file import API_TEMP_PATH
 from src.utils.file import delete_structure
@@ -67,6 +60,15 @@ from src.utils.system import get_size_api_files
 from src.utils.system import get_size_private_spaces
 from src.utils.text import compare_dicts_words
 from werkzeug.utils import safe_join
+
+# FIXME: uncomment when searching feature is improved and re-enabled
+# from elasticsearch import NotFoundError
+# from src.elastic_search import create_document
+# from src.elastic_search import ElasticSearchClient
+# from src.elastic_search import ES_INDEX
+# from src.elastic_search import ES_URL
+# from src.elastic_search import mapping
+# from src.elastic_search import settings
 
 # from src.utils.system import get_logs
 
@@ -122,7 +124,9 @@ security = Security(app, user_datastore)
 celery = Celery("celery_app", backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
 
 # Setup connection to ElasticSearch
-es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+# FIXME: uncomment when searching feature is improved and re-enabled
+# es = ElasticSearchClient(ES_URL, ES_INDEX, mapping, settings)
+
 # logging.basicConfig(filename="record.log", level=logging.DEBUG, format=f'%(asctime)s %(levelname)s : %(message)s')
 
 log = app.logger
@@ -362,7 +366,12 @@ def get_text_content():
         abort(HTTPStatus.NOT_FOUND)
     totalPages = len(os.listdir(path + "/_ocr_results"))
     doc, words = get_file_parsed(path, is_private)
+    data = get_data(safe_join(path, "_data.json"))
+    edited_without_recreate = (
+        data["edited_results"] if "edited_results" in data else False
+    )
     return {
+        "must_recreate": edited_without_recreate,
         "pages": totalPages,
         "doc": doc,
         "words": words,
@@ -527,7 +536,8 @@ def delete_path():
         ):
             abort(HTTPStatus.NOT_FOUND)
 
-        delete_structure(es, path)
+        # FIXME: uncomment when searching feature is improved and re-enabled
+        # delete_structure(es, path)
         shutil.rmtree(path)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
@@ -635,6 +645,7 @@ def prepare_upload():
     os.mkdir(target + "/_layouts")
     os.mkdir(target + "/_ocr_results")
     os.mkdir(target + "/_pages")
+    os.mkdir(target + "/_thumbnails")
 
     extension = filename.split(".")[-1].lower()
     with open(f"{target}/_data.json", "w", encoding="utf-8") as f:
@@ -857,6 +868,9 @@ def request_ocr():
 
         # Remove indexed pages, which will become outdated
         results_path = f"{f}/_ocr_results"
+
+        # FIXME: uncomment when searching feature is improved and re-enabled
+        """
         pages = [
             f
             for f in os.scandir(results_path)
@@ -870,6 +884,7 @@ def request_ocr():
                     es.delete_document(page_id)
                 except NotFoundError:
                     continue
+        """
 
         # Delete previous results
         if os.path.exists(results_path):
@@ -913,13 +928,11 @@ def request_ocr():
     }
 
 
+# FIXME: uncomment when searching feature is improved and re-enabled
+"""
 @app.route("/index-doc", methods=["POST"])
 @requires_json_path
 def index_doc():
-    """
-    Index a document in Elasticsearch
-    @param path: path to the document
-    """
     data = request.json
     path, _ = format_path(data)
     if path is None:
@@ -971,10 +984,6 @@ def index_doc():
 @app.route("/remove-index-doc", methods=["POST"])
 @requires_json_path
 def remove_index_doc():
-    """
-    Remove a document in Elasticsearch
-    @param path: path to the document
-    """
     data = request.json
     path, _ = format_path(data)
     if path is None:
@@ -1003,6 +1012,7 @@ def remove_index_doc():
             "success": False,
             "message": "O documento não foi encontrado no index.",
         }
+"""
 
 
 @app.route("/submit-text", methods=["POST"])
@@ -1031,6 +1041,11 @@ def submit_text():
 
     try:
         data = get_data(data_path)
+        if not remake_files:
+            data["edited_results"] = True
+        elif "edited_results" in data:
+            del data["edited_results"]
+        update_json_file(data_path, data)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
@@ -1070,6 +1085,9 @@ def check_sintax():
 #####################################
 # ELASTICSEARCH
 #####################################
+
+# FIXME: uncomment when searching feature is improved and re-enabled
+"""
 @app.route("/get-docs-list", methods=["GET"])
 def get_docs_list():
     return es.get_all_docs_names()
@@ -1092,6 +1110,7 @@ def search():
         return jsonify(es.get_docs(docs))
     else:
         return jsonify(es.search(query, docs))
+"""
 
 
 #####################################
