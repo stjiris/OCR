@@ -35,6 +35,12 @@ export default class EditingImage extends React.Component {
         UTIF.replaceIMG();  // automatically replace TIFF <img> sources
     }
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevProps.imageURL !== this.props.imageURL) {
+            UTIF.replaceIMG();  // automatically replace TIFF <img> sources
+        }
+    }
+
     setWordBox(wordBox, callback) {
         this.setState({selectedWordBox: wordBox}, callback);
     }
