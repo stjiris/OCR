@@ -10,6 +10,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
+import Tooltip from "@mui/material/Tooltip";
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
@@ -738,6 +739,11 @@ class LayoutMenu extends React.Component {
         let separateDisabled = false;
         let copyDisabled = false;
 
+        const cannotAutoSegmentFile = cannotAutoSegment.has(this.props.filename.split('.').pop())
+        const autoSegmentDisabled = !loaded || this.state.segmentLoading || cannotAutoSegmentFile;
+        const cleanAllDisabled = !loaded || this.state.segmentLoading;
+        const saveDisabled = !loaded || !this.state.uncommittedChanges || this.state.segmentLoading;
+
 		if (loaded) {
             tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
 
@@ -775,8 +781,19 @@ class LayoutMenu extends React.Component {
                     </Box>
 
 					<Box>
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!cleanAllDisabled}
+                            disableHoverListener={!cleanAllDisabled}
+                            disableTouchListener={!cleanAllDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded || this.state.segmentLoading}
+                            disabled={cleanAllDisabled}
 							variant="contained"
                             className="menuFunctionButton"
 							onClick={() => this.cleanAllBoxes()}
@@ -784,11 +801,23 @@ class LayoutMenu extends React.Component {
 						>
 							Limpar Tudo
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : cannotAutoSegmentFile
+                                    ? "Não é possível segmentar automaticamente este formato de ficheiro"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!autoSegmentDisabled}
+                            disableHoverListener={!autoSegmentDisabled}
+                            disableTouchListener={!autoSegmentDisabled}
+                        ><span>
 						<Button
-							disabled={!loaded || this.state.segmentLoading
-                                || cannotAutoSegment.has(this.props.filename.split('.').pop())}
-                            title={cannotAutoSegment.has(this.props.filename.split('.').pop())
-                                    ? "Não é possível segmentar automaticamente este formato de ficheiro." : ""}
+							disabled={autoSegmentDisabled}
 							variant="contained"
                             className="menuFunctionButton"
                             style={{pointerEvents: "auto"}  /* ensures disabled button can show title */}
@@ -801,8 +830,23 @@ class LayoutMenu extends React.Component {
 									: null
 							}
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : !this.state.uncommittedChanges
+                                    ? "Não há alterações"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!saveDisabled}
+                            disableHoverListener={!saveDisabled}
+                            disableTouchListener={!saveDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded || !this.state.uncommittedChanges}
+                            disabled={saveDisabled}
 							variant="contained"
                             className="menuFunctionButton"
 							color="success"
@@ -811,8 +855,23 @@ class LayoutMenu extends React.Component {
 						>
 							Guardar
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : !this.state.uncommittedChanges
+                                    ? "Não há alterações"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!saveDisabled}
+                            disableHoverListener={!saveDisabled}
+                            disableTouchListener={!saveDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded || !this.state.uncommittedChanges}
+                            disabled={saveDisabled}
 							variant="contained"
 							color="success"
                             className="menuFunctionButton noMarginRight"
@@ -821,6 +880,7 @@ class LayoutMenu extends React.Component {
 						>
 							Terminar
 						</Button>
+                        </span></Tooltip>
 					</Box>
 				</Box>
 
