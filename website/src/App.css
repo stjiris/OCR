@@ -197,6 +197,14 @@ span.toolbarTitle, .MuiTypography-root.toolbarTitle {
     user-select: none;
 }
 
+.pageNumberInput {
+    width: 2rem;
+    height: 1rem;
+    font-size: 1rem;
+    text-align: center;
+    margin-right: 10px;
+}
+
 .editingSection {
     display: flex;
     flex-direction: column;

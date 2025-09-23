@@ -9,6 +9,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import CircularProgress from '@mui/material/CircularProgress';
 import TextareaAutosize from '@mui/material/TextareaAutosize';
+import { NumberField } from '@base-ui-components/react/number-field';
 
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -349,11 +350,13 @@ class EditingMenu extends React.Component {
      * IMAGE FUNCTIONS
      * Used to zoom and change pages (text changes accordingly)
      */
-    changePage(diff) {
+    changePage(newPage) {
+        if (isNaN(newPage) || Number(newPage) < 1 || Number(newPage) > this.state.contents.length) return;
+
         this.imageContainerRef.current.clearWordBox(() => {
             this.setState({
-                currentPage: this.state.currentPage + diff,
-                currentContents: this.state.contents[this.state.currentPage + diff - 1]["content"],
+                currentPage: newPage,
+                currentContents: this.state.contents[newPage - 1]["content"],
                 selectedWordIndex: 0,
                 editLinesMode: false,
             });
@@ -1095,7 +1098,7 @@ class EditingMenu extends React.Component {
                                 alignItems: "center",
                                 mt: "5px"
                             }}>
-                                <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
+                                <Box sx={{display: "flex", marginLeft: "auto", marginRight: "auto"}}>
                                     <IconButton
                                         disabled={this.state.currentPage === 1}
                                         sx={{marginRight: "10px", p: 0}}
@@ -1107,19 +1110,36 @@ class EditingMenu extends React.Component {
                                     <IconButton
                                         disabled={this.state.currentPage === 1}
                                         sx={{marginRight: "10px", p: 0}}
-                                        onClick={() => this.changePage(-1)}
+                                        onClick={() => this.changePage(this.state.currentPage - 1)}
                                     >
                                         <KeyboardArrowLeftIcon />
                                     </IconButton>
 
-                                    <span style={{margin: "0px 10px"}}>
-                                        Página {this.state.currentPage} / {this.state.totalPages}
+                                    <span style={{display: "flex"}}>
+                                        Página
+                                        &nbsp;
+                                        {this.state.totalPages === 1
+                                            ? this.state.currentPage
+
+                                            : <NumberField.Root
+                                                value={this.state.currentPage}
+                                                onValueChange={(value) => this.changePage((value))}
+                                                step={1}
+                                                smallStep={1}
+                                                min={1}
+                                                max={this.state.totalPages}
+                                                className="pageNumberInput"
+                                            >
+                                                <NumberField.Input className="pageNumberInput"/>
+                                            </NumberField.Root>
+                                        }
+                                        &nbsp;/ {this.state.contents.length}
                                     </span>
 
                                     <IconButton
                                         disabled={this.state.currentPage === this.state.totalPages}
                                         sx={{marginLeft: "10px", p: 0}}
-                                        onClick={() => this.changePage(1)}
+                                        onClick={() => this.changePage(this.state.currentPage + 1)}
                                     >
                                         <KeyboardArrowRightIcon />
                                     </IconButton>

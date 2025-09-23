@@ -10,6 +10,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
+import { NumberField } from '@base-ui-components/react/number-field';
 import Tooltip from "@mui/material/Tooltip";
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -142,8 +143,10 @@ class LayoutMenu extends React.Component {
 	}
      */
 
-	changePage(increment) {
-		this.setState({ currentPage: this.state.currentPage + increment }, () => {
+	changePage(newPage) {
+        if (isNaN(newPage) || Number(newPage) < 1 || Number(newPage) > this.state.contents.length) return;
+
+		this.setState({ currentPage: Number(newPage) }, () => {
 			this.updateTextMode();
 		});
 	}
@@ -921,7 +924,7 @@ class LayoutMenu extends React.Component {
                             alignItems: 'center',
                             mt: '5px'
 						}}>
-                            <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
+                            <Box sx={{display: "flex", marginLeft: "auto", marginRight: "auto"}}>
                                 <IconButton
                                     disabled={this.state.currentPage === 1}
                                     sx={{marginRight: "10px", p: 0}}
@@ -933,19 +936,36 @@ class LayoutMenu extends React.Component {
                                 <IconButton
                                     disabled={this.state.currentPage === 1}
                                     sx={{marginRight: "10px", p: 0}}
-                                    onClick={() => this.changePage(-1)}
+                                    onClick={() => this.changePage(this.state.currentPage - 1)}
                                 >
                                     <KeyboardArrowLeftIcon />
                                 </IconButton>
 
-                                <span style={{margin: "0px 10px"}}>
-                                    Página {this.state.currentPage} / {this.state.contents.length}
+                                <span style={{display: "flex"}}>
+                                    Página
+                                    &nbsp;
+                                    {this.state.contents.length === 1
+                                        ? this.state.currentPage
+
+                                        : <NumberField.Root
+                                            value={this.state.currentPage}
+                                            onValueChange={(value) => this.changePage((value))}
+                                            step={1}
+                                            smallStep={1}
+                                            min={1}
+                                            max={this.state.contents.length}
+                                            className="pageNumberInput"
+                                        >
+                                            <NumberField.Input className="pageNumberInput"/>
+                                        </NumberField.Root>
+                                    }
+                                    &nbsp;/ {this.state.contents.length}
                                 </span>
 
                                 <IconButton
                                     disabled={this.state.currentPage === this.state.contents.length}
                                     sx={{marginLeft: "10px", p: 0}}
-                                    onClick={() => this.changePage(1)}
+                                    onClick={() => this.changePage(this.state.currentPage + 1)}
                                 >
                                     <KeyboardArrowRightIcon />
                                 </IconButton>
