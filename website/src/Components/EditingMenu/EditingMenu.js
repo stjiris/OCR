@@ -14,7 +14,7 @@ import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import SpellcheckIcon from '@mui/icons-material/Spellcheck';
+//import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
 
@@ -22,7 +22,7 @@ import AddLineIcon from 'static/addLine.svg';
 import RemoveLineIcon from 'static/removeLine.svg';
 
 import ReturnButton from 'Components/FileSystem/ReturnButton';
-import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
+//import CorpusDropdown from 'Components/Dropdown/CorpusDropdown';
 import Notification from 'Components/Notifications/Notification';
 import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
 import EditingImage from 'Components/EditingMenu/EditingImage';
@@ -209,8 +209,10 @@ class EditingMenu extends React.Component {
             contents: [],
             currentContents: [],
             textComponents: [],
+            /*
             words_list: [],
             corpusOptions: [],
+            */
 
             currentPage: 1,
             totalPages: 1,
@@ -231,7 +233,7 @@ class EditingMenu extends React.Component {
 
         this.imageRef = React.createRef();
         this.imageContainerRef = React.createRef();
-        this.corpusSelect = React.createRef();
+        //this.corpusSelect = React.createRef();
         this.textWindow = React.createRef();
 
         this.successNot = React.createRef();
@@ -296,20 +298,23 @@ class EditingMenu extends React.Component {
         .then(({data}) => {
             const pages = parseInt(data["pages"]);
 
+            /*
             const sortedWords = this.orderWords(data["words"]);
-
             const newCorpusList = [];
             data["corpus"].forEach((item) => {
                 newCorpusList.push({"name": item, "code": item});
             });
+            */
 
             this.setState({
                 mustRecreate: data["must_recreate"],
                 totalPages: pages,
                 contents: data["doc"],
                 currentContents: data["doc"][page-1]["content"],
+                /*
                 words_list: sortedWords,
                 corpusOptions: newCorpusList,
+                */
                 loaded: true
             });
         })
@@ -318,6 +323,7 @@ class EditingMenu extends React.Component {
         });
     }
 
+    /*
     orderWords(words) {
         var items = Object.keys(words).map(function(key) {
             return [key, words[key]];
@@ -337,6 +343,7 @@ class EditingMenu extends React.Component {
 
         return sortedWords;
     }
+    */
 
     /**
      * IMAGE FUNCTIONS
@@ -420,9 +427,8 @@ class EditingMenu extends React.Component {
      * SYNTAX FUNCTIONS
      * Used to check the syntax of the text
      */
-
+    /*
     requestSyntax() {
-
         this.setState({ loadingSintax: true });
         fetch(API_URL + '/check-sintax', {
             method: 'POST',
@@ -444,23 +450,23 @@ class EditingMenu extends React.Component {
     }
 
     updateSyntax(words) {
-
         var words_list = this.state.words_list;
         Object.entries(words).forEach(([key, value]) => {
             words_list[key]["syntax"] = value;
         });
-
         this.setState({words_list: words_list});
     }
+    */
 
     /**
      * TEXT CORRECTION
      * Used to handle the text selection and correction
      */
+    /*
     generatePossibleWordCombinations(words, combination, startIndex = 0) {
-        /**
-         * Generate all possible combinations of words
-         */
+        //
+        // Generate all possible combinations of words
+        //
 
         var word = words.splice(0, 1)[0];
         var totalCombinations = [];
@@ -499,12 +505,9 @@ class EditingMenu extends React.Component {
     }
 
     findBestCombination(combinations, lengths) {
-        /**
-         * Find the combination that minimizes the difference between the previous text and the new text
-         */
-
-
-
+        //
+        // Find the combination that minimizes the difference between the previous text and the new text
+        //
         // Infinite
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity?retiredLocale=pt-PT
         var score = Math.pow(10, 1000);
@@ -548,9 +551,10 @@ class EditingMenu extends React.Component {
 
         return bestCombination;
     }
+    */
 
     updateText(newText, sectionIndex, lineIndex, wordIndex) {
-        const wordsList = this.state.words_list;
+        //const wordsList = this.state.words_list;
 
         const newContents = this.state.currentContents.slice(0);
         const lineData = newContents[sectionIndex][lineIndex];
@@ -569,6 +573,7 @@ class EditingMenu extends React.Component {
             words = initialText.split(anyWhitespaceRegex);
         }
 
+        /*
         initialText.split(anyWhitespaceRegex).forEach((item) => {
             //item = this.cleanWord(item.toLowerCase());  // this cleanup removes ability to edit text with special signs
 
@@ -585,11 +590,12 @@ class EditingMenu extends React.Component {
                 pages.splice(pages.indexOf(this.state.currentPage - 1), 1);
             }
         })
+        */
 
         const newWords = [];
         const widthPerChar = (initialBox[2] - initialBox[0]) / initialText.length;
         let leftCoord = initialBox[0];
-        words.forEach((word, i) => {
+        words.forEach((word) => {
             newWords.push({
                 "b": wordData["b"],  // b -> key used in server for text Y offset
                 "box": [leftCoord, initialBox[1], leftCoord + (word.length * widthPerChar), initialBox[3]],
@@ -599,6 +605,7 @@ class EditingMenu extends React.Component {
             leftCoord += (word.length * widthPerChar) + widthPerChar;  // assume one space between words
         });
 
+        /*
         words.forEach((word, j) => {
             //const cleanedWord = this.cleanWord(word.toLowerCase())
 
@@ -617,6 +624,7 @@ class EditingMenu extends React.Component {
                 wordsList[word] = {"pages": [this.state.currentPage - 1], "syntax": true};
             }
         });
+        */
 
         lineData.splice(wordIndex, 1, ...newWords);
 
@@ -624,7 +632,7 @@ class EditingMenu extends React.Component {
         this.setState({
             contents: this.state.contents,
             currentContents: newContents,
-            words_list: this.orderWords(wordsList),
+            //words_list: this.orderWords(wordsList),
             uncommittedChanges: changed,
         });
     }
@@ -769,7 +777,6 @@ class EditingMenu extends React.Component {
 
         return word.toLowerCase();
     }
-     */
 
     cleanWordSelection() {
         var words = document.getElementsByClassName(this.selectedWord);
@@ -836,6 +843,7 @@ class EditingMenu extends React.Component {
             });
         }
     }
+    */
 
     /**
      * SAVE FINAL CHANGES
@@ -921,9 +929,11 @@ class EditingMenu extends React.Component {
     }
 
     render() {
+        /*
         const incorrectSyntax = (this.state.wordsMode
                                 ? Object.keys(this.state.words_list).filter((item) => !this.state.words_list[item]["syntax"])
                                 : "");
+        */
         return (
             <Box>
                 <Notification message={""} severity={"success"} ref={this.successNot}/>
@@ -971,7 +981,7 @@ class EditingMenu extends React.Component {
                                 </Button>
                             }
 
-                            {
+                            {/*
                             this.state.wordsMode
                                 ? <Button
                                     disabled={!this.state.loaded}
@@ -1006,7 +1016,7 @@ class EditingMenu extends React.Component {
                                             : null
                                     }
                                 </Button>
-                            }
+                            */}
 
                             {
                                 this.state.showConfidence
@@ -1151,6 +1161,7 @@ class EditingMenu extends React.Component {
                                     }
                                 </Box>
 
+                                {/*
                                 <Box sx={{
                                     display: this.state.wordsMode ? "block" : "none",
                                     overflowY: "scroll",
@@ -1260,6 +1271,7 @@ class EditingMenu extends React.Component {
                                         })
                                     }
                                 </Box>
+                                */}
                             </Box>
                         </Box>
                     </Box>
