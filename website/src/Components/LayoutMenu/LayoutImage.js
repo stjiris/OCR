@@ -122,7 +122,6 @@ class LayoutBox extends React.Component {
             right: this.state.right,
             type: this.props.type,
             id: this.props.id,
-            checked: this.props.checked,
         }
     }
 
@@ -202,18 +201,20 @@ class LayoutBox extends React.Component {
                             top: `${(finalCoords.y - initialCoords.y)/2 - 8}px`
                         }}
                     >
-                        <span><b>{
+                        <span>
+                            <b>{
                             (this.props.type === "text"
                                 ? "T"
                                 : (this.props.type === "image"
                                 ? "I"
                                 : "R")) + this.props.id
-                        }</b></span>
-                        {
-                            this.state.copyId
-                            ? <ContentCopyIcon sx={{fontSize: 15, ml: "10px"}}/>
-                            : null
-                        }
+                            }</b>
+
+                            {this.props.isCopied
+                             ? <ContentCopyIcon sx={{fontSize: 15, ml: "5px"}}/>
+                             : null
+                            }
+                        </span>
                     </Box>
 
                     <Box draggable
@@ -340,7 +341,7 @@ class LayoutImage extends React.Component {
     }
     */
 
-    createLayoutBox(ref, box, type, checked = false) {
+    createLayoutBox(ref, box, type, checked = false, isCopied=false) {
         return <LayoutBox
             ref={ref}
             key={box.id + box.top + box.left + box.bottom + box.right}  // hack to force re-render on prop changes that don't trigger state changes
@@ -354,7 +355,8 @@ class LayoutImage extends React.Component {
             right={box.right}
             type={type}
             id={box.id}
-            checked={box.checked || checked || false}
+            isCopied={isCopied}
+            checked={checked || false}
             updateMenu={this.updateMenu}
             setDraggingCorner={this.setDraggingCorner}
         />
@@ -375,7 +377,7 @@ class LayoutImage extends React.Component {
 
             groupInfo.squares.forEach((box) => {
                 const ref = React.createRef();
-                boxes.push(this.createLayoutBox(ref, box, groupInfo.type, groupInfo.checked));
+                boxes.push(this.createLayoutBox(ref, box, groupInfo.type, groupInfo.checked, Boolean(groupInfo.copyId)));
                 groupInfo.squareRefs.push(ref);
             });
 
@@ -623,6 +625,7 @@ LayoutBox.defaultProps = {
     right: null,
 
     id: null,
+    isCopied: false,
     type: "text",
     checked: false,
 

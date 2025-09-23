@@ -57,7 +57,10 @@ export const DraggableTableRow = ({ group, index, textModeState, changeChecked, 
                                             display: 'flex',
                                             color: '#fff',
                                             margin: '0.25rem',
+                                            paddingLeft: '6px',
+                                            paddingRight: '6px',
                                             alignItems: 'center',
+                                            fontWeight: '700',
                                         }}
                                     >
                                         {
@@ -70,7 +73,7 @@ export const DraggableTableRow = ({ group, index, textModeState, changeChecked, 
                                         {
                                             group.copyId
                                                 ? <ContentCopyIcon
-                                                    sx={{fontSize: 15, ml: "10px"}}/>
+                                                    sx={{fontSize: 15, ml: "5px"}}/>
                                                 : null
                                         }
                                     </Box>
@@ -91,13 +94,13 @@ export const DraggableTableRow = ({ group, index, textModeState, changeChecked, 
                 </TableCell>,
                 <TableCell align='center' className='layoutCell'>
                     {
-                        textModeState || group.squares.length > 1
+                        textModeState
                             ? <span>Texto</span>
                             : <span>Remover</span>
                     }
                     <Switch
                         size="small"
-                        disabled={group.squares.length > 1}  // disable type change for grouped boxes; can only group text
+                        disabled={group.squares.length > 1}  // disable type change for grouped boxes; cannot group images
                         checked={group.type === "image"}
                         onChange={() => switchType(index)}
                         sx={{

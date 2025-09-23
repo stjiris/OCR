@@ -175,37 +175,31 @@ class LayoutMenu extends React.Component {
 		const contents = this.state.contents;
 		contents[this.state.currentPage - 1]["boxes"] = groups;
 
-		// * Code to reflect changes in copy boxes (removed as requested per Prof. Borbinha's instructions)
-		// for (i = 0; i < groups.length; i++) {
-		//     group = groups[i];
-
-		//     if (group["copyId"] !== undefined) {
-
-		//         for (j = 0; j < contents.length; j++) {
-
-		//             var c_boxes = contents[j]["boxes"];
-
-		//             for (var k = 0; k < c_boxes.length; k++) {
-		//                 if (c_boxes[k]["copyId"] === group["copyId"]) {
-		//                     // Make an independent copy of the box
-		//                     var newBox = JSON.parse(JSON.stringify(group));
-		//                     newBox["id"] = c_boxes[k]["id"];
-		//                     c_boxes[k] = newBox;
-
-		//                     contents[j]["boxes"] = c_boxes;
-
-		//                     break;
-		//                 }
-		//             }
-		//         }
-		//     }
-		// }
-
-        /*
-		for (let i = 0; i < contents.length; i++) {
-			contents[i]["boxes"] = this.renameGroups(contents[i]["boxes"], i + 1);
-		}
-         */
+		groups.forEach((currentPageGroup) => {
+            if (currentPageGroup["copyId"] !== undefined) {
+                contents.forEach((page, i) => {
+                    const otherPageBoxes = page["boxes"];
+                    otherPageBoxes.forEach((group, j) => {
+                        if (group["copyId"] !== undefined && group["copyId"] === currentPageGroup["copyId"]) {
+                            const groupSquares = group["squares"];
+                            const currentSquares = currentPageGroup["squares"];
+                            if (groupSquares.length === 1) {
+                                groupSquares[0]["top"] = currentSquares[0]["top"];
+                                groupSquares[0]["left"] = currentSquares[0]["left"];
+                                groupSquares[0]["bottom"] = currentSquares[0]["bottom"];
+                                groupSquares[0]["right"] = currentSquares[0]["right"];
+                            } else for (const k in groupSquares) {
+                                groupSquares[k]["top"] = currentSquares[k]["top"];
+                                groupSquares[k]["left"] = currentSquares[k]["left"];
+                                groupSquares[k]["bottom"] = currentSquares[k]["bottom"];
+                                groupSquares[k]["right"] = currentSquares[k]["right"];
+                            }
+                            group["groupId"] = (i + 1) + "." + (j + 1);
+                        }
+                    });
+                });
+            }
+        });
 
 		this.setState({ contents: contents, uncommittedChanges: true });
     }
@@ -491,36 +485,25 @@ class LayoutMenu extends React.Component {
 	}
 
 	allCheckboxesAreChecked() {
-		var contents = this.state.contents;
+		const contents = this.state.contents;
 		if (contents.length === 0) return false;
 		if (contents[this.state.currentPage - 1] === undefined) return false;
 
-		var boxes = contents[this.state.currentPage - 1]["boxes"];
+		const boxes = contents[this.state.currentPage - 1]["boxes"];
 		if (boxes.length === 0) return false;
 
-		for (var i = 0; i < boxes.length; i++) {
-			if (!boxes[i]["checked"]) {
-				return false;
-			}
-		}
-
-		return true;
+        return boxes.every((box) => Boolean(box["checked"]));
 	}
 
 	renameGroups(groups, page) {
-		for (let i = 0; i < groups.length; i++) {
-            groups[i]["groupId"] = page + "." + (i + 1);
-            const boxes = groups[i]["squares"];
-            for (let j = 0; j < boxes.length; j++) {
-                let id;
-                if (boxes.length === 1) {
-                    id = page + "." + (i + 1);
-                } else {
-                    id = page + "." + (i + 1) + "." + (j + 1);
-                }
-                boxes[j]["id"] = id;
-            }
-		}
+        groups.forEach((group, i) => {
+            group["groupId"] = page + "." + (i + 1);
+            if (group["squares"].length === 1) {
+                group["squares"][0]["id"] = page + "." + (i + 1);
+            } else group["squares"].forEach((box, j) => {
+                box["id"] = page + "." + (i + 1) + "." + (j + 1);
+            });
+        });
 		return groups;
 	}
 
@@ -538,43 +521,61 @@ class LayoutMenu extends React.Component {
     }
 
 	deleteCheckedBoxes() {
-		var contents = this.state.contents;
-		var boxes = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const boxes = contents[this.state.currentPage - 1]["boxes"];
 
-		var keeping = [];
+		const keeping = [];
+        const deletingGroupIds = new Set();
 
-		for (var i = 0; i < boxes.length; i++) {
-			if (!boxes[i]["checked"]) {
-				keeping.push(boxes[i]);
-			}
-		}
+        boxes.forEach((group) => {
+           if (!Boolean(group["checked"])) {
+               keeping.push(group);
+           } else if (group["copyId"]) {
+               deletingGroupIds.add(group["copyId"]);
+           }
+        });
+        contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
 
-		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
+        // remove eventual copies present in other pages
+        contents.forEach((page, i) => {
+            const pageBoxes = page["boxes"];
+            page["boxes"] = pageBoxes.filter((group) => {
+                return !deletingGroupIds.has(group["copyId"]);
+            });
+            if (page["boxes"] !== pageBoxes) {
+                page["boxes"] = this.renameGroups(page["boxes"], i + 1);
+            }
+        });
+
 		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	makeBoxCopy() {
-		var contents = this.state.contents;
-		var groups = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+        const currentPageGroups = [...contents[this.state.currentPage - 1]["boxes"]];
+        const groupsToReplicate = [];
 
-		for (var i = 0; i < groups.length; i++) {
-			if (groups[i].checked) {
-				let copyId = groups[i]["copyId"] || uuidv4();
-				groups[i]["copyId"] = copyId;
-				groups[i]["checked"] = false;
+        currentPageGroups.forEach((currentPageGroup, i) => {
+            if (currentPageGroup["checked"]) {
+                currentPageGroup["copyId"] = currentPageGroup["copyId"] || uuidv4();
+                currentPageGroup["checked"] = false;
+                groupsToReplicate.push([currentPageGroup, i]);
+            }
+        });
 
-				for (var j = 0; j < contents.length; j++) {
-					var c_groups = contents[j]["boxes"];
-					if (!c_groups.some(e => e["copyId"] === copyId)) {
-						// Create an independent copy of the group
-						var group = JSON.parse(JSON.stringify(groups[i]));
+        contents.forEach((page, j) => {
+            if (j !== this.state.currentPage - 1) {
+                const pageGroups = page["boxes"];
+                groupsToReplicate.forEach((original) => {
+                    const copy = JSON.parse(JSON.stringify(original[0]));
+                    //copy["_uniq_id"] = Date.now().toString(36) + Math.random().toString(36);
+                    pageGroups.splice(original[1], 0, copy);  // add copy in same order placement as original
+                });
+                page["boxes"] = this.renameGroups(pageGroups, j + 1);
+            }
+        });
 
-						c_groups.push(group);
-						contents[j]["boxes"] = this.renameGroups(c_groups, j + 1);
-					}
-				}
-			}
-		}
+        contents[this.state.currentPage - 1]["boxes"] = currentPageGroups;
 
 		this.setState({ contents: contents, uncommittedChanges: true });
 	}
@@ -737,7 +738,7 @@ class LayoutMenu extends React.Component {
         const loaded = this.state.contents.length !== 0;
         let tableData = [];
 
-		let noCheckBoxActive = false;
+		let noCheckBoxActive = true;
         let groupDisabled = false;
         let separateDisabled = false;
         let copyDisabled = false;
@@ -747,18 +748,42 @@ class LayoutMenu extends React.Component {
         const cleanAllDisabled = !loaded || this.state.segmentLoading;
         const saveDisabled = !loaded || !this.state.uncommittedChanges || this.state.segmentLoading;
 
+        let someBoxIsCopied = false;
+        let someBoxIsImage = false;
+        let someBoxIsNotGroup = false;
+
 		if (loaded) {
             tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
 
-            noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
+            noCheckBoxActive = !tableData.some(e => Boolean(e["checked"]));
+
+            tableData.forEach((group) => {
+                if (Boolean(group["checked"])) {
+                    noCheckBoxActive = false;
+                    if (group["copyId"]) {
+                        someBoxIsCopied = true;
+                    }
+                    if (group["type"] === "image") {
+                        someBoxIsImage = true;
+                    }
+                    if (group["squares"].length === 1) {
+                        someBoxIsNotGroup = true;
+                    }
+                }
+            });
+
             groupDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].map(e => e["checked"]).filter(Boolean).length <= 1
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["type"] !== "text");
+                            || someBoxIsCopied
+                            || someBoxIsImage;
+
 			separateDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["squares"].length === 1 && e["copyId"] === undefined);
-			copyDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["squares"].length !== 1)
+                            || someBoxIsNotGroup;
+
+			copyDisabled = this.state.contents?.length < 2  // cannot replicate boxes to other pages in single-page doc
+                            || noCheckBoxActive
+                            //|| tableData.some(e => e["checked"] && e["squares"].length !== 1)
+                            || someBoxIsCopied;
+
 			// var typeDisabled = noCheckBoxActive || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
 		}
 
@@ -983,54 +1008,103 @@ class LayoutMenu extends React.Component {
 
 					<Box sx={{ display: "flex", flexDirection: "column", width: "33%", ml: "1rem" }}>
 						<Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-evenly", alignItems: "center" }}>
-							<Button
-								disabled={copyDisabled}
-								variant="text"
-								startIcon={<ContentCopyIcon />}
-								onClick={() => this.makeBoxCopy()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Replicar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsCopied
+                                        ? "Um dos segmentos já está replicado"
+                                    : this.state.contents?.length < 2
+                                        ? "O documento tem apenas uma página"
+                                    : "Selecione pelo menos um segmento"
+                                }
+                                disableFocusListener={!copyDisabled}
+                                disableHoverListener={!copyDisabled}
+                                disableTouchListener={!copyDisabled}
+                            ><span>
+                                <Button
+                                    disabled={copyDisabled}
+                                    variant="text"
+                                    startIcon={<ContentCopyIcon />}
+                                    onClick={() => this.makeBoxCopy()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Replicar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={groupDisabled}
-								variant="text"
-								startIcon={<CallMergeIcon />}
-								onClick={() => this.groupCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Agrupar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsCopied
+                                        ? "Um dos segmentos está replicado"
+                                    : someBoxIsImage
+                                        ? "Não é possível agrupar segmentos de imagem"
+                                    : "Selecione pelo menos um segmento"
+                                }
+                                disableFocusListener={!groupDisabled}
+                                disableHoverListener={!groupDisabled}
+                                disableTouchListener={!groupDisabled}
+                            ><span>
+                                <Button
+                                    disabled={groupDisabled}
+                                    variant="text"
+                                    startIcon={<CallMergeIcon />}
+                                    onClick={() => this.groupCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Agrupar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={separateDisabled}
-								variant="text"
-								startIcon={<CallSplitIcon />}
-								onClick={() => this.splitCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Desagrupar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsNotGroup
+                                        ? "Um dos segmentos não pertence a um grupo"
+                                    : "Selecione pelo menos um segmento"
+                                }
+                                disableFocusListener={!separateDisabled}
+                                disableHoverListener={!separateDisabled}
+                                disableTouchListener={!separateDisabled}
+                            ><span>
+                                <Button
+                                    disabled={separateDisabled}
+                                    variant="text"
+                                    startIcon={<CallSplitIcon />}
+                                    onClick={() => this.splitCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Desagrupar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={noCheckBoxActive}
-								color="error"
-								variant="text"
-								startIcon={<DeleteRoundedIcon />}
-								onClick={() => this.deleteCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Apagar
-							</Button>
+
+                            <Tooltip
+                                placement="top"
+                                title="Selecione pelo menos um segmento"
+                                disableFocusListener={!noCheckBoxActive}
+                                disableHoverListener={!noCheckBoxActive}
+                                disableTouchListener={!noCheckBoxActive}
+                            ><span>
+                                <Button
+                                    disabled={noCheckBoxActive}
+                                    color="error"
+                                    variant="text"
+                                    startIcon={<DeleteRoundedIcon />}
+                                    onClick={() => this.deleteCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Apagar
+                                </Button>
+                            </span></Tooltip>
 
 							<Switch
 								checked={this.state.textModeState}

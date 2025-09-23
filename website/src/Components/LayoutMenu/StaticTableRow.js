@@ -37,7 +37,10 @@ export const StaticTableRow = ({ group, textModeState }) => {
                                         display: 'flex',
                                         color: '#fff',
                                         margin: '0.25rem',
+                                        paddingLeft: '6px',
+                                        paddingRight: '6px',
                                         alignItems: 'center',
+                                        fontWeight: '700',
                                     }}
                                 >
                                     {
@@ -50,7 +53,7 @@ export const StaticTableRow = ({ group, textModeState }) => {
                                     {
                                         group.copyId
                                             ? <ContentCopyIcon
-                                                sx={{fontSize: 15, ml: "10px"}}/>
+                                                sx={{fontSize: 15, ml: "5px"}}/>
                                             : null
                                     }
                                 </Box>
