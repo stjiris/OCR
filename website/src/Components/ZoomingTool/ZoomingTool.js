@@ -1,5 +1,6 @@
 import React from 'react';
 import Box from "@mui/material/Box";
+import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import ZoomResetIcon from "@mui/icons-material/Autorenew";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
@@ -18,24 +19,43 @@ class ZoomingTool extends React.Component {
                 onMouseMove={(e) => e.stopPropagation()}
                 onMouseUp={(e) => e.stopPropagation()}
             >
+
+                <Tooltip
+                    placement="right"
+                    title="Aumentar Zoom"
+                ><span>
                 <IconButton
                     className="zooming-IconButton"
                     onClick={() => this.props.zoomInFunc()}
                 >
                     <ZoomInIcon className="zoom-icon" />
                 </IconButton>
+                </span></Tooltip>
+
+                <Tooltip
+                    placement="right"
+                    title="Repor Zoom Inicial"
+                ><span>
                 <IconButton
                     className="zooming-IconButton"
                     onClick={() => this.props.zoomResetFunc()}
                 >
                     <ZoomResetIcon className="zoom-icon" />
                 </IconButton>
+                </span></Tooltip>
+
+
+                <Tooltip
+                    placement="right"
+                    title="Reduzir Zoom"
+                ><span>
                 <IconButton
                     className="zooming-IconButton"
                     onClick={() => this.props.zoomOutFunc()}
                 >
                     <ZoomOutIcon className="zoom-icon" />
                 </IconButton>
+                </span></Tooltip>
             </Box>
         );
     }
