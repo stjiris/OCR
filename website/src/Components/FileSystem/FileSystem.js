@@ -926,7 +926,6 @@ class FileExplorer extends React.Component {
                                     sx={{
                                         display: "flex",
                                         flexWrap: "wrap",
-                                        width: "fit-content",
                                     }}
                                 >
                                     <span><b>Tamanho</b></span>
@@ -938,7 +937,7 @@ class FileExplorer extends React.Component {
                                 </TableSortLabel>
                             </TableCell>
 
-                            <TableCell scope="column" className="headerCell explorerCell dateCreatedCell" align="left">
+                            <TableCell scope="column" className="headerCell explorerCell dateCreatedCell" align="right">
                                 <TableSortLabel
                                     active={this.state.orderBy === "dateCreated"}
                                     direction={this.state.orderBy === "dateCreated" ? this.state.order : 'asc'}
@@ -946,31 +945,10 @@ class FileExplorer extends React.Component {
                                     sx={{
                                         display: "flex",
                                         flexWrap: "wrap",
-                                        width: "fit-content",
                                     }}
                                 >
                                     <b>Data de criação</b>
                                     {this.state.orderBy === "dateCreated" ? (
-                                        <Box component="span" sx={visuallyHidden}>
-                                            {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
-                                        </Box>
-                                    ) : null}
-                                </TableSortLabel>
-                            </TableCell>
-
-                            <TableCell scope="column" className="headerCell explorerCell dateOCRCell" align="left">
-                                <TableSortLabel
-                                    active={this.state.orderBy === "dateOCR"}
-                                    direction={this.state.orderBy === "dateOCR" ? this.state.order : 'asc'}
-                                    onClick={() => this.handleRequestSort("dateOCR")}
-                                    sx={{
-                                        display: "flex",
-                                        flexWrap: "wrap",
-                                        width: "fit-content",
-                                    }}
-                                >
-                                    <b>Data de OCR</b>
-                                    {this.state.orderBy === "dateOCR" ? (
                                         <Box component="span" sx={visuallyHidden}>
                                             {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
                                         </Box>

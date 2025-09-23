@@ -204,14 +204,10 @@ class FolderRow extends React.Component {
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell dateCreatedCell" align='left'>
+                <TableCell className="explorerCell dateCreatedCell" align='right'>
                     <span>
                         {this.state.info["creation"]}
                     </span>
-                </TableCell>
-
-                <TableCell className="explorerCell dateOCRCell" align='center'>
-                    —
                 </TableCell>
 
                 <TableCell className="explorerCell stateCell" align='center'>

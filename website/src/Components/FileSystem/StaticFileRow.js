@@ -58,13 +58,11 @@ class StaticFileRow extends React.Component {
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell dateCreatedCell" align='left'>
+                <TableCell className="explorerCell dateCreatedCell" align='right'>
                     <span>
                         {this.props.info["creation"]}
                     </span>
                 </TableCell>
-
-                <TableCell className="explorerCell dateOCRCell" align='center' />
 
                 <TableCell className="explorerCell stateCell" align='center' />
             </TableRow>

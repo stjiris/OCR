@@ -352,7 +352,7 @@ cannot be styled with props, interferes with functioning of Autocomplete
 
 .MuiTableCell-root.dateCreatedCell {
     width: 12%;
-    text-align: left;
+    text-align: right;
 }
 
 .MuiTableCell-root.dateOCRCell {

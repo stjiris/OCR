@@ -416,12 +416,12 @@ class DocumentRow extends React.Component {
                         </span>
                     </TableCell>
 
-                    <TableCell className="explorerCell dateCreatedCell" align='left'>
-                        <span>{info["creation"]}</span>
-                    </TableCell>
-
-                    <TableCell scope="column" className="explorerCell dateOCRCell" align="left">
-                        <span>{info["ocr"]?.["creation"]}</span>
+                    <TableCell className="explorerCell dateCreatedCell" align='right'>
+                        <p style={{margin: 0}}>{info["creation"]}</p>
+                        {info["ocr"]?.["creation"]
+                            ? <p style={{margin: 0}}>OCR: {info["ocr"]["creation"]}</p>
+                            : null
+                        }
                     </TableCell>
 
                     { info?.["stored"] === undefined || info["stored"] !== true
