@@ -93,10 +93,12 @@ class Word extends React.Component {
         //const cleanedWord = this.cleanWord(this.props.text.toLowerCase());
         return (
         <span
+            id={this.props.id}
             style={{
                 display: "inline-block",
                 position: "relative",
-                userSelect: this.props.editLinesMode ? "none" : "text",  // disable selection for editing text while editing lines
+                // disable selection when editing line endings; use text selection when TextareaAutosize box is open; use "all" when selecting words to edit
+                userSelect: this.props.editLinesMode ? "none" : (this.props.editing ? "text" : "all"),
             }}
             onMouseOver={(e) => {
                 this.setState({hovered: true}, () => {
@@ -104,7 +106,7 @@ class Word extends React.Component {
                 });
             }}
             onMouseLeave={(e) => {
-                if (!this.state.editing) {
+                if (!this.props.editing) {
                     this.setState({hovered: false}, () => {
                         this.props.removeHighlightWord(e, this.props.box);
                     });
@@ -159,7 +161,6 @@ class Word extends React.Component {
             />
 
             : <span
-                id={this.props.id}
                 className={`${this.props.text}`}
                 style={{
                     margin: "0px 2px",
@@ -649,8 +650,8 @@ class EditingMenu extends React.Component {
 
             const selection = window.getSelection();
 
-            const firstSpan = selection.anchorNode.parentNode;
-            const lastSpan = selection.focusNode.parentNode;
+            const firstSpan = selection.anchorNode;
+            const lastSpan = selection.focusNode;
             const parentNode = firstSpan.parentNode;
 
             const firstSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, firstSpan);
