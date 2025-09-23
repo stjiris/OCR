@@ -127,10 +127,12 @@ class LayoutBox extends React.Component {
     }
 
     beginDrag(corner) {
+        if (this.props.segmentLoading) return;
         this.props.setDraggingCorner(this, corner);
     }
 
     processDrag(e, corner) {
+        if (this.props.segmentLoading) return;
         const shiftX = this.viewRef.current.offsetLeft;
         const shiftY = this.viewRef.current.offsetTop;
 
@@ -223,7 +225,6 @@ class LayoutBox extends React.Component {
                         }}
                         onDragStart={(e) => this.beginDrag(0)}
                         onDragEnd={() => this.props.updateMenu()}
-
                     />
 
                     <Box draggable
@@ -305,7 +306,8 @@ class LayoutImage extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (prevProps.boxesCoords !== this.props.boxesCoords) {
+        if (prevProps.boxesCoords !== this.props.boxesCoords
+            || prevProps.segmentLoading !== this.props.segmentLoading) {
             this.loadBoxes();
         }
     }
@@ -345,6 +347,7 @@ class LayoutImage extends React.Component {
             index={box.id}
             viewRef={this.viewRef}
             imageRef={this.imageRef}
+            segmentLoading={this.props.segmentLoading}
             top={box.top}
             left={box.left}
             bottom={box.bottom}
@@ -511,6 +514,7 @@ class LayoutImage extends React.Component {
     }
 
     updateMenu() {
+        if (this.props.segmentLoading) return;
         this.props.updateBoxes(this.getPageBoxes());
     }
 
@@ -611,6 +615,7 @@ LayoutPreview.defaultProps = {
 LayoutBox.defaultProps = {
     view: null,
     imageRef: null,
+    segmentLoading: false,
 
     top: null,
     left: null,

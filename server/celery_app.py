@@ -17,6 +17,7 @@ from celery import group
 from celery.canvas import Signature
 from celery.schedules import crontab
 from dotenv import load_dotenv
+from filelock import FileLock
 from PIL import Image
 from PIL import ImageDraw
 from redbeat import RedBeatSchedulerEntry
@@ -78,6 +79,16 @@ load_fonts()
 
 @celery.task(name="auto_segment", priority=0)
 def task_auto_segment(path, use_hdbscan=False):
+    data_path = f"{path}/_data.json"
+    lock_path = f"{data_path}.lock"
+    lock = FileLock(lock_path)
+    with lock:
+        data = get_data(data_path, lock=lock)
+        if "segmenting" in data and data["segmenting"]:
+            return {"segmenting": True}
+        else:
+            update_json_file(data_path, {"segmenting": True}, lock=lock)
+
     if use_hdbscan:
         return parse_images(path)
     pages_path = f"{path}/_pages"
@@ -147,7 +158,11 @@ def task_auto_segment(path, use_hdbscan=False):
                 b["id"] = f"{page + 1}.{i + 1}"
 
         sorted_all_layouts.append({"boxes": sorted_layout})
+
     save_file_layouts(path, sorted_all_layouts)
+    with lock:
+        update_json_file(data_path, {"segmenting": False}, lock=lock)
+
     return {"status": "success"}
 
 

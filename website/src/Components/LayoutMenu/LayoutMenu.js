@@ -103,7 +103,7 @@ class LayoutMenu extends React.Component {
                     }
                 }
 
-                this.setState({ contents: contents }, () => {
+                this.setState({ contents: contents, segmentLoading: data["segmenting"] }, () => {
                     this.updateTextMode();
                 });
             });
@@ -380,50 +380,61 @@ class LayoutMenu extends React.Component {
 	}
 
 	saveLayout(closeWindow = false) {
-        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-		fetch(API_URL + '/save-layouts', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
+        const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+		axios.post(API_URL + '/save-layouts',
+            {
                 _private: this.props._private,
-				path: path,
-				layouts: this.state.contents
-			})
-		}).then(response => { return response.json() })
-			.then(data => {
+                path: (this.props._private ? this.props.spaceId + '/' + path : path),
+                layouts: this.state.contents
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+			.then(({ data }) => {
 				if (data["success"]) {
                     this.setState({ uncommittedChanges: false });
 
-					this.successNotifRef.current.openNotif("Segmentação guardada com sucesso.");
+					this.successNotifRef.current.openNotif("Segmentação guardada com sucesso");
 
 					if (closeWindow) {
 						this.leave();
 					}
+				} else if (data["segmenting"]) {
+                    this.errorNotifRef.current.openNotif("Segmentação automática em curso");
 				} else {
-                    this.errorNotifRef.current.openNotif("Erro inesperado ao guardar a segmentação.");
+                    this.errorNotifRef.current.openNotif("Problema inesperado ao guardar a segmentação");
 				}
-			});
+			})
+            .catch(err => {
+                this.errorNotifRef.current.openNotif("Ocorreu um erro ao guardar a segmentação");
+                this.setState({ segmentLoading: false });
+            });
 	}
 
 	GenerateLayoutAutomatically() {
 		this.setState({ segmentLoading: true });
-		this.successNotifRef.current.openNotif("A segmentar automaticamente... Por favor aguarde.");
+		this.successNotifRef.current.openNotif("A segmentar automaticamente... Por favor aguarde");
 
         const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-		axios.get(API_URL + '/generate-automatic-layouts?', {
+		axios.get(API_URL + '/generate-automatic-layouts', {
             params: {
                 _private: this.props._private,
                 path: (this.props._private ? this.props.spaceId + '/' + path : path),
             },
         })
             .then(({ data }) => {
-				const contents = data["layouts"].sort((a, b) =>
-					(a["page_number"] > b["page_number"]) ? 1 : -1
-				)
-
-				this.setState({ contents: contents, segmentLoading: false });
+                if (data["layouts"] !== undefined) {
+                    const contents = data["layouts"].sort((a, b) =>
+                        (a["page_number"] > b["page_number"]) ? 1 : -1
+                    );
+                    this.setState({ contents: contents, segmentLoading: data["segmenting"] });
+                } else if (data["segmenting"]) {
+                    this.successNotifRef.current.openNotif("A segmentação irá demorar mais do que esperado");
+                } else {
+                    this.errorNotifRef.current.openNotif("Problema inesperado ao pedir a segmentação");
+                }
 			})
             .catch(err => {
                 this.errorNotifRef.current.openNotif("Ocorreu um erro na segmentação");
@@ -432,6 +443,7 @@ class LayoutMenu extends React.Component {
 	}
 
 	cleanAllBoxes() {
+        if (this.state.segmentLoading) return;
 		const contents = [...this.state.contents];
 		for (let i in contents) {
 			contents[i]["boxes"] = [];
@@ -764,7 +776,7 @@ class LayoutMenu extends React.Component {
 
 					<Box>
 						<Button
-                            disabled={!loaded}
+                            disabled={!loaded || this.state.segmentLoading}
 							variant="contained"
                             className="menuFunctionButton"
 							onClick={() => this.cleanAllBoxes()}
@@ -790,7 +802,7 @@ class LayoutMenu extends React.Component {
 							}
 						</Button>
 						<Button
-                            disabled={!loaded}
+                            disabled={!loaded || !this.state.uncommittedChanges}
 							variant="contained"
                             className="menuFunctionButton"
 							color="success"
@@ -800,7 +812,7 @@ class LayoutMenu extends React.Component {
 							Guardar
 						</Button>
 						<Button
-                            disabled={!loaded}
+                            disabled={!loaded || !this.state.uncommittedChanges}
 							variant="contained"
 							color="success"
                             className="menuFunctionButton noMarginRight"

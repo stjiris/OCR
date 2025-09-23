@@ -197,7 +197,7 @@ def get_file_layouts(path, is_private):
                 {"boxes": [], "page_url": page_url, "page_number": page, "done": False}
             )
 
-    return layouts
+    return layouts, data["segmenting"] if "segmenting" in data else False
 
 
 def save_file_layouts(path, layouts):
