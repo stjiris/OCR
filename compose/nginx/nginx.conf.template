@@ -52,6 +52,26 @@ http {
             send_timeout          1800;
         }
 
+        # Set a higher max body size for the segmentation submission route
+        location /api/save-layouts {
+            proxy_pass            http://server:5001/save-layouts;
+            proxy_read_timeout    1800;
+            proxy_connect_timeout 1800;
+            proxy_send_timeout    1800;
+            send_timeout          1800;
+            client_max_body_size  $MAX_DOC_SEGMENTATION_SIZE;
+        }
+
+        # Set a higher max body size for the edited text result submission route
+        location /api/submit-text {
+            proxy_pass            http://server:5001/submit-text;
+            proxy_read_timeout    1800;
+            proxy_connect_timeout 1800;
+            proxy_send_timeout    1800;
+            send_timeout          1800;
+            client_max_body_size  $MAX_EDITED_RESULTS_SIZE;
+        }
+
         # Set a higher max body size for the upload route
         location /api/upload-file {
             proxy_pass            http://server:5001/upload-file;
@@ -59,7 +79,7 @@ http {
             proxy_connect_timeout 1800;
             proxy_send_timeout    1800;
             send_timeout          1800;
-            client_max_body_size  $CLIENT_MAX_BODY_SIZE;
+            client_max_body_size  $MAX_FILE_CHUNK_SIZE;
         }
 
         # Set a higher max body size for the API upload-and-OCR route
@@ -69,7 +89,7 @@ http {
             proxy_connect_timeout 1800;
             proxy_send_timeout    1800;
             send_timeout          1800;
-            client_max_body_size  $CLIENT_MAX_BODY_SIZE;
+            client_max_body_size  $MAX_API_FILE_SIZE;
         }
 
         # Rate-limit the login route
