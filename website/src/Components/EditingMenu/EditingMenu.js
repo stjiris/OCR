@@ -27,6 +27,8 @@ import Notification from 'Components/Notifications/Notification';
 import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
 import EditingImage from 'Components/EditingMenu/EditingImage';
 
+const anyWhitespaceRegex = /\s+/;
+
 const API_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_API_URL}`;
 
 class Word extends React.Component {
@@ -548,36 +550,26 @@ class EditingMenu extends React.Component {
     }
 
     updateText(newText, sectionIndex, lineIndex, wordIndex) {
-        if (newText.trim() === this.state.currentContents[sectionIndex][lineIndex][wordIndex]["text"].trim()) {
-            const newContents = this.state.currentContents.slice(0);
-            const wordData = newContents[sectionIndex][lineIndex][wordIndex]
-            delete wordData["input"];
-            delete wordData["coordinates"];
-            delete wordData["initial_text"];
-            this.setState({
-                contents: this.state.contents,
-                currentContents: newContents,
-            });
-            return;  // Avoid registering uncommitted change when text does not change
-        }
-
         const wordsList = this.state.words_list;
 
         const newContents = this.state.currentContents.slice(0);
         const lineData = newContents[sectionIndex][lineIndex];
         const wordData = lineData[wordIndex];
 
-        const initial_text = wordData["initial_text"];
-        const words = newText.trim().split(" ");
+        const initialText = wordData["initial_text"].trim();
+        const initialBox = wordData["box"];
+        const newTextTrimmed = newText.trim();
 
-        const coordinates = wordData["coordinates"];
-        const combination = this.splitWordsByLines(words, coordinates);
+        let words;
+        let changed = false;
+        if (newTextTrimmed !== initialText) {
+            words = newTextTrimmed.split(anyWhitespaceRegex);
+            changed = true;
+        } else {
+            words = initialText.split(anyWhitespaceRegex);
+        }
 
-        delete wordData["coordinates"];
-
-        const newWords = [];
-
-        initial_text.split(" ").forEach((item) => {
+        initialText.split(anyWhitespaceRegex).forEach((item) => {
             //item = this.cleanWord(item.toLowerCase());  // this cleanup removes ability to edit text with special signs
 
             if (item === "") return;
@@ -594,36 +586,36 @@ class EditingMenu extends React.Component {
             }
         })
 
-        combination.forEach((comb, i) => {
-            const box = coordinates[i].slice(0, 4);
-            const widthPerChar = (box[2] - box[0]) / (comb.reduce((a, b) => a + b.length, 0) + comb.length - 1);
-            let charsPassed = 0;
-
-            comb.forEach((word, j) => {
-                //const cleanedWord = this.cleanWord(word.toLowerCase());
-                newWords.push({
-                    "b": wordData["b"],  // b -> key used in server for text Y offset
-                    "box": [box[0] + charsPassed * widthPerChar, box[1], box[0] + (charsPassed + word.length) * widthPerChar, box[3]],
-                    "text": word,
-                    //"clean_text": cleanedWord,
-                });
-                charsPassed += word.length + 1;
-
-                if (word === "") return;
-
-                // Update the words list
-                if (word in wordsList) {
-                    const pages = wordsList[word]["pages"];
-                    pages.push(this.state.currentPage - 1);
-
-                    // Sort the list
-                    pages.sort((a, b) => a - b);
-
-                    wordsList[word]["pages"] = pages;
-                } else {
-                    wordsList[word] = {"pages": [this.state.currentPage - 1], "syntax": true};
-                }
+        const newWords = [];
+        const widthPerChar = (initialBox[2] - initialBox[0]) / initialText.length;
+        let leftCoord = initialBox[0];
+        words.forEach((word, i) => {
+            newWords.push({
+                "b": wordData["b"],  // b -> key used in server for text Y offset
+                "box": [leftCoord, initialBox[1], leftCoord + (word.length * widthPerChar), initialBox[3]],
+                "text": word,
+                //"clean_text": cleanedWord,
             });
+            leftCoord += (word.length * widthPerChar) + widthPerChar;  // assume one space between words
+        });
+
+        words.forEach((word, j) => {
+            //const cleanedWord = this.cleanWord(word.toLowerCase())
+
+            if (word === "") return;
+
+            // Update the words list
+            if (word in wordsList) {
+                const pages = wordsList[word]["pages"];
+                pages.push(this.state.currentPage - 1);
+
+                // Sort the list
+                pages.sort((a, b) => a - b);
+
+                wordsList[word]["pages"] = pages;
+            } else {
+                wordsList[word] = {"pages": [this.state.currentPage - 1], "syntax": true};
+            }
         });
 
         lineData.splice(wordIndex, 1, ...newWords);
@@ -633,7 +625,7 @@ class EditingMenu extends React.Component {
             contents: this.state.contents,
             currentContents: newContents,
             words_list: this.orderWords(wordsList),
-            uncommittedChanges: true,
+            uncommittedChanges: changed,
         });
     }
 
@@ -669,43 +661,18 @@ class EditingMenu extends React.Component {
             const line = newContents[firstSpanInfo[4]][firstSpanInfo[5]];
 
             const elements = line.slice(firstSpanInfo[6], lastSpanInfo[6] + 1);
-            const words = [];
-            const coordinates = [];
-            const bs = [];  // array for y offsets of the baselines, to average for the selected text
-            let totalChars = 0;
-
-            let initialCoords = null;
-            let rowCoords = null;
-
-            for (let i = 0; i < elements.length; i++) {
-                words.push(elements[i]["text"]);
-                bs.push(elements[i]["b"]);
-
-                const box = elements[i]["box"];
-
-                if (rowCoords === null || (initialCoords !== null && box[0] < initialCoords[0])) {
-                    if (rowCoords !== null) {
-                        rowCoords.push(totalChars);
-                        coordinates.push(rowCoords);
-                    }
-
-                    totalChars = 0;
-                    initialCoords = [box[0], box[1], box[2], box[3]];
-                    rowCoords = [box[0], box[1], box[2], box[3]];
-                }
-
-                totalChars += elements[i]["text"].length;
-
-                rowCoords[2] = box[2];
-                rowCoords[3] = box[3];
-            }
-
-            rowCoords.push(totalChars);
-            coordinates.push(rowCoords);
+            const words = elements.map((element) => element["text"]);
+            const boxCoords = [elements[0]["box"][0], elements[0]["box"][1], elements[elements.length - 1]["box"][2], elements[0]["box"][3]]
+            //const bs = [];  // array for y offsets of the baselines, to average for the selected text
+            const bs = elements.map((element) => element["b"]);
+            //for (let i = 0; i < elements.length; i++) {
+            //    words.push(elements[i]["text"]);
+            //    bs.push(elements[i]["b"]);
+            //}
 
             const text = words.join(" ");
             const avg_b = bs.reduce((b1, b2) => b1 + b2, 0) / elements.length;
-            const textField = {"input": true, "text": text, "box": coordinates[0], "initial_text": text, "coordinates": coordinates, "b": avg_b};
+            const textField = {"input": true, "text": text, "box": boxCoords, "initial_text": text, "b": avg_b};
 
             document.getSelection().removeAllRanges();
 
