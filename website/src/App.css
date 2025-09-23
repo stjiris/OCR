@@ -162,6 +162,10 @@ span.toolbarTitle, .MuiTypography-root.toolbarTitle {
     z-index: 2;
 }
 
+.zooming-tool:hover {
+    cursor: default;
+}
+
 .zooming-tool .zooming-IconButton {  /* zoom buttons within zooming tool */
     margin-bottom: 10px;
     padding: 0;
@@ -185,15 +189,12 @@ span.toolbarTitle, .MuiTypography-root.toolbarTitle {
     cursor: crosshair;
 }
 
-.pageImageContainer.noPointer:hover {
-    cursor: default;
-}
-
 .pageImageContainer .pageImage {  /* pageImage within a pageImageContainer */
     display: block;
     margin: auto;
     border: 1px solid black;
     object-fit: contain;
+    user-select: none;
 }
 
 .editingSection {

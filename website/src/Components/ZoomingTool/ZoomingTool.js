@@ -12,7 +12,12 @@ class ZoomingTool extends React.Component {
 
     render() {
         return (
-            <Box className="zooming-tool">
+            <Box
+                className="zooming-tool"
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseMove={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+            >
                 <IconButton
                     className="zooming-IconButton"
                     onClick={() => this.props.zoomInFunc()}
