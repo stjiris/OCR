@@ -1140,11 +1140,11 @@ def task_export_results(path: str, output_types: list[str]):
                     }
                 },
             )
-            also_output_simple = "pdf" in output_types and not data["pdf"]["complete"]
+            keep_temp_images = "pdf" in output_types and not data["pdf"]["complete"]
             export_file(
                 path,
                 "pdf",
-                keep_temp=also_output_simple,
+                keep_temp=keep_temp_images,
                 get_csv=("csv" in output_types),
             )
             creation_time = get_current_time()

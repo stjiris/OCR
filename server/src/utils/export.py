@@ -57,7 +57,8 @@ def export_file(
     :param get_csv: for a PDF, whether a CSV should be generated additionally
     """
 
-    if simple or get_csv:
+    if simple or get_csv or keep_temp or already_temp:
+        # currently, keeping temp is only used for PDF
         return export_pdf(
             path,
             force_recreate=force_recreate,
@@ -304,10 +305,14 @@ def export_pdf(
             # Generate temporary images if not already done
             if not already_temp:
                 img_basename = get_file_basename(path)
-                os.link(
-                    f"{path}/{img_basename}.{original_extension}",
-                    f"{path}/{img_basename}_0$.{page_extension}",
-                )
+                pages_path = f"{path}/_pages"
+                pages_list = [p.path for p in os.scandir(pages_path) if p.is_file()]
+                pages_list.sort(key=lambda s: (s.casefold(), s))
+                for i, page in enumerate(pages_list):
+                    os.link(
+                        page,
+                        f"{path}/{img_basename}_{i}$.{page_extension}",
+                    )
 
         words = {}
 
