@@ -405,7 +405,7 @@ const StorageManager = (props) => {
                 justifyContent: 'space-evenly',
                 height: 'auto',
                 minHeight: '77vh',
-                width: 'auto',
+                width: '87vw',
                 margin: 'auto',
                 /*overflow: 'scroll'*/
             }}>
