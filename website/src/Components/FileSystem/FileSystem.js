@@ -963,7 +963,7 @@ class FileExplorer extends React.Component {
                     </TableHead>
                     <TableBody>
                         {this.state.components.length === 0
-                            ? <TableCell scope="column" colSpan={8} className="explorerCell optionsCell">
+                            ? <TableCell scope="column" colSpan={7} className="explorerCell optionsCell">
                                 <Typography variant="body1" sx={{marginTop: "1rem", marginBottom: "1rem", marginLeft: "1rem"}}>
                                     A pasta está vazia. Adicione um documento ou sub-pasta.
                                 </Typography>
