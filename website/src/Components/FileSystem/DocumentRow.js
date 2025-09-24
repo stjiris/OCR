@@ -32,7 +32,7 @@ import StaticFileRow from './StaticFileRow';
 
 const loadingStages = new Set(["uploading", "preparing"]);
 
-const BASE_URL = `${window.location.protocol}//${window.location.host}/`;
+const BASE_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_BASENAME}`;
 
 class DocumentRow extends React.Component {
     constructor(props) {
