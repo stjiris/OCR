@@ -325,7 +325,7 @@ class FileExplorer extends React.Component {
         this.ocrPopup.current.openMenu(path, filename, ocrTargetIsFolder, alreadyOcr, customConfig);
     }
 
-    sendChunk(i, chunk, fileName, _totalCount, _fileID) {
+    sendChunk(i, chunk, fileName, _totalCount, _fileID, uniquePreventExit) {
         let path = this.props.current_folder;
         if (this.props._private) { path = this.props.spaceId + '/' + path }
 
@@ -338,11 +338,10 @@ class FileExplorer extends React.Component {
         formData.append('counter', i+1);
         formData.append('totalCount', _totalCount);
 
-        fetch(API_URL + '/upload-file', {
-            method: 'POST',
-            body: formData
-        }).then(response => {return response.json()})
-        .then(data => {
+        axios.post(API_URL + '/upload-file',
+            formData
+        )
+        .then(({ data }) => {
             if (data['success']) {
                 // Update upload status every UPLOAD_UPDATE_SECONDS seconds
                 if (!this.uploadingCheckInterval) {
@@ -370,6 +369,10 @@ class FileExplorer extends React.Component {
                             });
                     }, 1000 * UPLOAD_UPDATE_SECONDS, fileName);
                 }
+
+                if (i + 1 === _totalCount) {
+                    window.removeEventListener('beforeunload', uniquePreventExit);
+                }
             } else {
                 this.storageMenu.current.openWithMessage(data.error);
             }
@@ -378,6 +381,14 @@ class FileExplorer extends React.Component {
             // TODO: give feedback to user on communication error
             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
         });
+    }
+
+    /**
+     * Used to prevent page exit while uploading a document
+     */
+    preventExit(event) {
+        event.preventDefault();
+        event.returnValue = '';
     }
 
     /**
@@ -413,19 +424,21 @@ class FileExplorer extends React.Component {
 
                 const _fileID = uuidv4() + "." + fileName.split('.').pop();
 
-                fetch(API_URL + '/prepare-upload', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
+                axios.post(API_URL + '/prepare-upload',
+                    {
                         _private: this.props._private,
                         path: path,
                         name: fileName,
-                    })
-                }).then(response => {return response.json()})
-                .then(data => {
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                })
+                .then(({ data }) => {
                     if (data['success']) {
+                        const uniquePreventExit = (e) => { this.preventExit(e) };
+                        window.addEventListener('beforeunload', uniquePreventExit);
                         fileName = data["filename"];  // update filename if server changed it due to name collisions
 
                         //// Update list of files on screen after upload of first chunk
@@ -438,7 +451,7 @@ class FileExplorer extends React.Component {
                             let chunk = fileBlob.slice(startChunk, endChunk, fileType);
                             startChunk = endChunk;
                             endChunk = endChunk + chunkSize;
-                            this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
+                            this.sendChunk(i, chunk, fileName, _totalCount, _fileID, uniquePreventExit);
                         }
                     } else {
                         this.storageMenu.current.openWithMessage(data.error);

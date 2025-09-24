@@ -659,7 +659,7 @@ def prepare_upload():
                 "creation": get_current_time(),
                 "status": {
                     "stage": "uploading",
-                    "message": "A enviar",
+                    "message": "A enviar, por favor aguarde...",
                 },
             },
             f,
