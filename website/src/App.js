@@ -219,6 +219,9 @@ function App() {
 
         changeFolderFromPath(folder_name) {
             let current_list = this.state.currentFolderPathList;
+            if (current_list.length === 1) return;
+
+            current_list.pop();
 
             // Remove the last element of the path until we find folder_name or until root
             while (current_list.length > 1 && current_list[current_list.length - 1] !== folder_name) {
@@ -314,6 +317,9 @@ function App() {
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
+                        width: '87vw',
+                        marginLeft: 'auto',
+                        marginRight: 'auto',
                         justifyContent: 'space-between',
                         zIndex: '5',
                         // border: '1px solid #000000',

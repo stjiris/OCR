@@ -84,6 +84,7 @@ body {
 .MuiBox-root .pathButton {
     text-transform: none;
     text-decoration: underline;
+    min-width: 0;
 }
 
 .MuiBox-root .pathButton:disabled {  /* overrides transparency from Mui-disabled */
