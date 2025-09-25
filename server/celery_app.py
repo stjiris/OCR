@@ -28,6 +28,7 @@ from src.utils.export import export_file
 from src.utils.export import export_from_existing
 from src.utils.export import load_fonts
 from src.utils.file import ALLOWED_EXTENSIONS
+from src.utils.file import API_TEMP_PATH
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -331,15 +332,25 @@ def task_count_doc_pages(path: str, extension: str):
     """
     Updates the metadata of the document at the given path with its page count.
     :param path: the document's path
-    :param extension: the document's extension
+    :param extension: the document's original extension
     """
+    if path.startswith(API_TEMP_PATH):
+        from_api = True
+    else:
+        from_api = False
+    original_path = (
+        f"{path}/{get_file_basename(path)}.{extension}" if from_api else path
+    )
+
     update_json_file(
         f"{path}/_data.json",
         {
             "pages": get_page_count(path, extension),
             "stored": True,
-            "size": size_to_units(get_file_size(path)),
-            "total_size": size_to_units(get_document_files_size(path)),
+            "size": size_to_units(get_file_size(original_path, path_complete=from_api)),
+            "total_size": size_to_units(
+                get_document_files_size(path, extension=extension, from_api=from_api)
+            ),
             "status": {
                 "stage": "waiting",
             },
@@ -1247,11 +1258,20 @@ def task_export_results(path: str, output_types: list[str]):
             else:
                 data["ner"] = {"complete": False, "error": True}
 
+        if path.startswith(API_TEMP_PATH):
+            extension = data["extension"]
+            from_api = True
+        else:
+            extension = None
+            from_api = False
+
         data["ocr"]["progress"] = "completed"
         data["status"] = {
             "stage": "post-ocr",
         }
-        data["total_size"] = size_to_units(get_document_files_size(path))
+        data["total_size"] = size_to_units(
+            get_document_files_size(path, extension=extension, from_api=from_api)
+        )
         data["words"] = get_word_count(path)
 
         update_json_file(data_file, data)

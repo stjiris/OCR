@@ -1256,10 +1256,10 @@ def api_perform_ocr():
 
     doc_id = generate_random_uuid()[:9]
     doc_path = f"{API_TEMP_PATH}/{doc_id}"
-    file_path = f"{doc_path}/{doc_id}.pdf"
+    extension = file.filename.split(".")[-1].lower()
+    file_path = f"{doc_path}/{doc_id}.{extension}"
     os.mkdir(doc_path)
     with open(f"{doc_path}/_data.json", "w", encoding="utf-8") as f:
-        extension = file.filename.split(".")[-1].lower()
         json.dump(
             {
                 "type": "file",

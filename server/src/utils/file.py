@@ -317,14 +317,19 @@ def get_ocr_size(path):
         return f"{size / 1024 ** 3:.2f} GB"
 
 
-def get_document_files_size(path):
+def get_document_files_size(path, extension=None, from_api: bool = False):
     """
     Get the total size of files related to a document,
     which are the original copy of the file and result files inside /_export.
     :param path: path to the document folder
+    :param extension: extension in the original file, used in the case of documents from the API
+    :param from_api: whether the method is being called for a file from the API
     :return: total size in bytes
     """
-    size = get_file_size(path)  # original file's size
+    original_path = (
+        f"{path}/{get_file_basename(path)}.{extension}" if from_api else path
+    )
+    size = get_file_size(original_path, path_complete=from_api)  # original file's size
     for dirpath, folders, filenames in os.walk(f"{path}/_export"):
         for f in filenames:
             subpath = os.path.join(dirpath, f)
@@ -356,8 +361,8 @@ def get_file_size(path, path_complete=False):
     if not, seeks the file contained within the target folder which shares its name
     :return: file size in bytes
     """
-    name = path.split("/")[-1]
     if not path_complete:
+        name = path.split("/")[-1]
         path = f"{path}/{name}"
     return os.path.getsize(path)
 
