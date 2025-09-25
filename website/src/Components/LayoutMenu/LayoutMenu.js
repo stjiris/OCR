@@ -739,6 +739,7 @@ class LayoutMenu extends React.Component {
         let tableData = [];
 
 		let noCheckBoxActive = true;
+        let atLeastTwoChecked = false;
         let groupDisabled = false;
         let separateDisabled = false;
         let copyDisabled = false;
@@ -755,11 +756,14 @@ class LayoutMenu extends React.Component {
 		if (loaded) {
             tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
 
-            noCheckBoxActive = !tableData.some(e => Boolean(e["checked"]));
-
             tableData.forEach((group) => {
                 if (Boolean(group["checked"])) {
-                    noCheckBoxActive = false;
+                    if (noCheckBoxActive) {
+                        noCheckBoxActive = false;
+                    } else {
+                        atLeastTwoChecked = true;
+                    }
+
                     if (group["copyId"]) {
                         someBoxIsCopied = true;
                     }
@@ -772,7 +776,7 @@ class LayoutMenu extends React.Component {
                 }
             });
 
-            groupDisabled = noCheckBoxActive
+            groupDisabled = !atLeastTwoChecked
                             || someBoxIsCopied
                             || someBoxIsImage;
 
@@ -1041,7 +1045,7 @@ class LayoutMenu extends React.Component {
                                         ? "Um dos segmentos está replicado"
                                     : someBoxIsImage
                                         ? "Não é possível agrupar segmentos de imagem"
-                                    : "Selecione pelo menos um segmento"
+                                    : "Selecione pelo menos dois segmentos"
                                 }
                                 disableFocusListener={!groupDisabled}
                                 disableHoverListener={!groupDisabled}
