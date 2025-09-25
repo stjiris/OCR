@@ -286,14 +286,14 @@ def get_file_system():
         # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
             filesystem = get_filesystem(FILES_PATH)
-            filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "5")
+            filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "1")
             return filesystem
 
         _, filesystem_path, private_space, is_private = format_filesystem_path(
             request.values
         )
         filesystem = get_filesystem(filesystem_path, private_space, is_private)
-        filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "5")
+        filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "1")
         return filesystem
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
@@ -1406,7 +1406,7 @@ def get_storage_info():
         "private_spaces": get_size_private_spaces(),
         "api_files": get_size_api_files(),
         "last_cleanup": last_cleanup,
-        "max_age": os.environ.get("MAX_PRIVATE_SPACE_AGE", "5"),
+        "max_age": os.environ.get("MAX_PRIVATE_SPACE_AGE", "1"),
     }
 
 
