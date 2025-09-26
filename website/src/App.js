@@ -299,7 +299,7 @@ function App() {
                             {/* TODO: update help document */}
                             <Button
                                 variant="text"
-                                onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vTjGei4_szYIrD8G7x2UmNKlbOsW_JZmVj0E2J4933-hXjkU9iuKGr0J8Aj6qpF25HlCb9y3vMadC23/pub", '_blank')}
+                                onClick={() => window.open("https://servico-ocr.gitbook.io/manual-ocr", '_blank')}
                                 startIcon={<HelpIcon/>}
                                 className="red-link"
                                 sx={{
