@@ -29,6 +29,7 @@ from src.utils.export import export_from_existing
 from src.utils.export import load_fonts
 from src.utils.file import ALLOWED_EXTENSIONS
 from src.utils.file import API_TEMP_PATH
+from src.utils.file import dump_json_file
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -338,7 +339,10 @@ def task_make_changes(path, data):
     data["status"] = {
         "stage": "post-ocr",
     }
-    update_json_file(data_file, data)
+    if "edited_results" in data:
+        del data["edited_results"]
+    # dump to ensure removal of "edited_results" is applied
+    dump_json_file(data_file, data)
     return {"status": "success"}
 
 
