@@ -29,6 +29,7 @@ from src.utils.export import export_from_existing
 from src.utils.export import load_fonts
 from src.utils.file import ALLOWED_EXTENSIONS
 from src.utils.file import API_TEMP_PATH
+from src.utils.file import dump_json_file
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
@@ -185,10 +186,19 @@ def task_make_changes(path, data):
         },
     )
 
+    # Recreate formats already created, as well as any added to the config later
+    recreate_types = {
+        type_name
+        for type_name, value in data.items()
+        if isinstance(value, dict) and "complete" in value and value["complete"]
+    }
+    if "config" in data and "outputs" in data["config"]:
+        recreate_types.update(data["config"]["outputs"])
+
     export_folder = path + "/_export"
     created_time = get_current_time()
 
-    if data["txt"]["complete"]:
+    if "txt" in recreate_types:
         update_json_file(
             data_file,
             {
@@ -207,7 +217,7 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["txt_delimited"]["complete"]:
+    if "txt_delimited" in recreate_types:
         update_json_file(
             data_file,
             {
@@ -226,7 +236,7 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["pdf_indexed"]["complete"]:
+    if "pdf_indexed" in recreate_types:
         update_json_file(
             data_file,
             {
@@ -236,7 +246,7 @@ def task_make_changes(path, data):
                 }
             },
         )
-        recreate_csv = data["csv"]["complete"]
+        recreate_csv = "csv" in recreate_types
         os.remove(export_folder + "/_pdf_indexed.pdf")
         export_file(
             path,
@@ -253,7 +263,7 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["pdf"]["complete"]:
+    if "pdf" in recreate_types:
         update_json_file(
             data_file,
             {
@@ -263,7 +273,7 @@ def task_make_changes(path, data):
                 }
             },
         )
-        recreate_csv = data["csv"]["complete"] and not data["pdf_indexed"]["complete"]
+        recreate_csv = "csv" in recreate_types and "pdf_indexed" not in recreate_types
         os.remove(export_folder + "/_pdf.pdf")
         export_file(
             path,
@@ -281,8 +291,10 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["csv"]["complete"] and not (
-        data["pdf_indexed"]["complete"] or data["pdf"]["complete"]
+    if (
+        "csv" in recreate_types
+        and "pdf_indexed" not in recreate_types
+        and "pdf" not in recreate_types
     ):
         update_json_file(
             data_file,
@@ -295,7 +307,7 @@ def task_make_changes(path, data):
         )
         export_csv(path, force_recreate=True)
 
-    if data["csv"]["complete"]:
+    if "csv" in recreate_types:
         data["csv"] = {
             "complete": True,
             "size": size_to_units(
@@ -304,7 +316,7 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["ner"]["complete"]:
+    if "ner" in recreate_types:
         try:
             update_json_file(
                 data_file,
@@ -315,6 +327,10 @@ def task_make_changes(path, data):
                     }
                 },
             )
+            # NER is retrieved from .txt results
+            if "txt" not in recreate_types:
+                export_file(path, "txt", force_recreate=True)
+
             task_request_ner(path)
         except Exception as e:
             log.error(f"Error fetching NER for {path}: {e}")
@@ -323,7 +339,10 @@ def task_make_changes(path, data):
     data["status"] = {
         "stage": "post-ocr",
     }
-    update_json_file(data_file, data)
+    if "edited_results" in data:
+        del data["edited_results"]
+    # dump to ensure removal of "edited_results" is applied
+    dump_json_file(data_file, data)
     return {"status": "success"}
 
 

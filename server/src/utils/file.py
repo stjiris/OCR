@@ -640,3 +640,21 @@ def update_json_file(file, data, lock=None):
         with open(file, "w", encoding="utf-8") as f:
             previous_data.update(data)
             json.dump(previous_data, f, ensure_ascii=False, indent=2)
+
+
+def dump_json_file(file, data, lock=None):
+    """
+    Dump the JSON data into the file.
+    :param file: file to update
+    :param data: new or updated data
+    :param lock: file lock if already existing, to avoid recursive locks
+    """
+    if not os.path.exists(file):
+        raise FileNotFoundError
+
+    # TODO: ensure atomic operations to handle multiple users making changes to the same files/folders
+    if lock is None:
+        lock_path = f"{file}.lock"
+        lock = FileLock(lock_path)
+    with lock, open(file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
