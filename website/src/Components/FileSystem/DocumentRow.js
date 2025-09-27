@@ -519,7 +519,7 @@ class DocumentRow extends React.Component {
                     ? <StaticFileRow
                         key="pdf_indexed"
                         expanded={this.state.expanded}
-                        name={"PDF com texto e índice"}
+                        name={"PDF com texto e índice de palavras"}
                         filename={this.props.name}
                         type="pdf_indexed"
                         info={info["pdf_indexed"]}
@@ -567,7 +567,7 @@ class DocumentRow extends React.Component {
                     ? <StaticFileRow
                         key="csv"
                         expanded={this.state.expanded}
-                        name={"Índice de palavras"}
+                        name={"Índice de palavras em formato CSV"}
                         filename={this.props.name}
                         type="csv"
                         info={info["csv"]}
