@@ -558,6 +558,7 @@ class EditingMenu extends React.Component {
     */
 
     updateText(newText, sectionIndex, lineIndex, wordIndex) {
+        window.addEventListener('beforeunload', this.preventExit);
         //const wordsList = this.state.words_list;
 
         const newContents = this.state.currentContents.slice(0);
@@ -632,7 +633,6 @@ class EditingMenu extends React.Component {
 
         lineData.splice(wordIndex, 1, ...newWords);
 
-        window.addEventListener('beforeunload', this.preventExit);
         this.setState({
             contents: this.state.contents,
             currentContents: newContents,
@@ -856,19 +856,17 @@ class EditingMenu extends React.Component {
      */
     saveChanges(remakeFiles = false) {
 
-        fetch(API_URL + '/submit-text', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+        axios.post(API_URL + '/submit-text', {
+                text: this.state.contents,
+                remakeFiles: remakeFiles,
+                _private: this.props._private,
             },
-            body: JSON.stringify({
-                "text": this.state.contents,
-                "remakeFiles": remakeFiles,
-                "_private": this.props._private
-            })
-        })
-        .then(response => {return response.json()})
-        .then(data => {
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }
+        ).then(({ data }) => {
             if (data.success) {
                 this.setState({uncommittedChanges: false, mustRecreate: !remakeFiles});
                 window.removeEventListener('beforeunload', this.preventExit);
@@ -879,9 +877,11 @@ class EditingMenu extends React.Component {
                     this.leave();
                 }
             } else {
-                // this.errorNot.current.setMessage(data.error);
-                // this.errorNot.current.open();
+                this.errorNotifRef.current.openWithMessage(data.error);
             }
+        })
+        .catch(err => {
+            this.errorNotifRef.current.openWithMessage("Não foi possível submeter os resultados");
         });
     }
 
