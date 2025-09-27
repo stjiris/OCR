@@ -161,7 +161,7 @@ class FileExplorer extends React.Component {
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         if (prevProps._private !== this.props._private) {  // moved to private space
-            this.fetchFileSystem();
+            this.fetchFileSystem(true);
         } else if (prevProps.current_folder !== this.props.current_folder  // moved to different folder
             || this.state.files !== prevState.files) {                 // created/deleted document or folder
             this.displayFileSystem();
@@ -199,7 +199,7 @@ class FileExplorer extends React.Component {
         }
     }
 
-    fetchFileSystem() {
+    fetchFileSystem(enteredPrivate = false) {
         axios.get(API_URL + '/files', {
             params: {
                     _private: this.props._private,
@@ -218,11 +218,16 @@ class FileExplorer extends React.Component {
                 this.checkStuckUploads(info);  // check for stuck uploads on initial filesystem fetch
                 const files = response.data["files"];
                 const maxAge = response.data["maxAge"];
-                this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
+                this.setState({files: files, info: info, maxAge: maxAge, fetched: true},
+                    () => {
+                        if (this.props._private && enteredPrivate && this.privateSpaceMenu.current) {
+                            this.privateSpaceMenu.current.toggleOpen();
+                        }
+                });
             })
             .catch(err => {
                 this.storageMenu.current.openWithMessage(err.message);
-            });
+            })
     }
 
     /**
@@ -1215,22 +1220,30 @@ class FileExplorer extends React.Component {
                         <Notification message={""} severity={"success"} ref={this.successNot}/>
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                        <FolderMenu ref={this.folderMenu}
-                                    _private={this.props._private}
-                                    submitCallback={this.fetchFiles}/>
-                        <OcrPopup ref={this.ocrPopup}
-                                  _private={this.props._private}
-                                  submitCallback={this.fetchInfo}
-                                  showStorageForm={this.showStorageForm}/>
-                        <DeletePopup ref={this.deletePopup}
-                                     _private={this.props._private}
-                                     submitCallback={this.fetchFiles}/>
+                        <FolderMenu
+                            ref={this.folderMenu}
+                            _private={this.props._private}
+                            submitCallback={this.fetchFiles}
+                        />
+                        <OcrPopup
+                            ref={this.ocrPopup}
+                            _private={this.props._private}
+                            submitCallback={this.fetchInfo}
+                            showStorageForm={this.showStorageForm}
+                        />
+                        <DeletePopup
+                            ref={this.deletePopup}
+                            _private={this.props._private}
+                            submitCallback={this.fetchFiles}
+                        />
                         {
                             this.props._private && this.state.fetched
-                            ? <PrivateSpaceMenu ref={this.privateSpaceMenu}
-                                                  maxAge={this.state.maxAge}
-                                                  rowRefsLength={this.rowRefs.length}
-                                                  createFile={this.createFile}/>
+                            ? <PrivateSpaceMenu
+                                    ref={this.privateSpaceMenu}
+                                    maxAge={this.state.maxAge}
+                                    rowRefsLength={this.rowRefs.length}
+                                    createFile={this.createFile}
+                            />
                             : null
                         }
 
