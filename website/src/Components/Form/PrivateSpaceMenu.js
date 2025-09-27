@@ -8,6 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import NoteAddIcon from "@mui/icons-material/NoteAdd";
 
 const style = {
     position: 'absolute',
@@ -95,6 +96,7 @@ class PrivateSpaceMenu extends React.Component {
                                 variant="contained"
                                 sx={{border: '1px solid black'}}
                                 onClick={() => this.uploadFile()}
+                                startIcon={<NoteAddIcon/>}
                             >
                                 Adicionar documento
                             </Button>
