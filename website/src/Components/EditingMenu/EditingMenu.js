@@ -153,6 +153,7 @@ class Word extends React.Component {
                     this.updateInputSize(e.target.value);
                 }}
                 onBlur={(e) => {
+                    console.log("blur");
                     this.props.updateText(e.target.value, this.props.sectionIndex, this.props.lineIndex, this.props.wordIndex);
                 }}
                 onKeyDown={(e) => {
@@ -636,7 +637,8 @@ class EditingMenu extends React.Component {
             contents: this.state.contents,
             currentContents: newContents,
             //words_list: this.orderWords(wordsList),
-            uncommittedChanges: changed,
+            // if no uncommitted changes yet, this is first edit of word, only register changes if they happened; else, keep true
+            uncommittedChanges: !this.state.uncommittedChanges ? changed : true,
         });
     }
 
@@ -1050,7 +1052,11 @@ class EditingMenu extends React.Component {
                                 color="success"
                                 variant="contained"
                                 className="menuFunctionButton"
-                                onClick={() => this.saveChanges()}
+                                onClick={() => {
+                                    console.log("Click");
+                                    this.saveChanges()
+                                }
+                                }
                                 startIcon={<SaveIcon />
                                 }>
                                 Guardar

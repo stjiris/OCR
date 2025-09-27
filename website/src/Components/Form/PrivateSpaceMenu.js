@@ -65,7 +65,7 @@ class PrivateSpaceMenu extends React.Component {
                         </Typography>
                         <Typography variant="body1" component="p" sx={{mt: '1rem', mb: '1rem'}}>
                             Para poder aceder a este espaço novamente no futuro, certifique-se que guarda o link do espaço privado num lugar seguro.
-                            Os espaços privados são removidos ao fim de {this.props.maxAge} dias.
+                            Os espaços privados são removidos ao fim de <b>{this.props.maxAge}</b> dia(s).
                         </Typography>
                         <Button
                             disabled={this.state.buttonDisabled}
