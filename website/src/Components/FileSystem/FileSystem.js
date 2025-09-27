@@ -808,8 +808,8 @@ class FileExplorer extends React.Component {
                         key={this.props.current_folder + "/" + item}
                         name={item}
                         thumbnails={{
-                            small: `${this.props.current_folder}/${item}/_thumbnails/${item}_128.thumbnail`,
-                            large: `${this.props.current_folder}/${item}/_thumbnails/${item}_600.thumbnail`,
+                            small: `${this.props._private ? `${this.props.spaceId}/` : ''}` + `${this.props.current_folder}/${item}/_thumbnails/${item}_128.thumbnail`,
+                            large: `${this.props._private ? `${this.props.spaceId}/` : ''}` + `${this.props.current_folder}/${item}/_thumbnails/${item}_600.thumbnail`,
                         }}
                         _private={this.props._private}
                         info={this.getInfo(item)}
