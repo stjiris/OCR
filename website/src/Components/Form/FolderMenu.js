@@ -61,6 +61,10 @@ class FolderMenu extends React.Component {
     }
 
     createFolder() {
+        if (this.state.textFieldValue.length === 0) {
+            this.errorNot.current.openNotif("Deve atribuir um nome à pasta");
+            return;
+        }
         this.setState({ buttonDisabled: true });
         fetch(API_URL + '/create-folder', {
             method: 'POST',
@@ -97,9 +101,10 @@ class FolderMenu extends React.Component {
                             Crie uma nova pasta
                         </Typography>
                         <TextField
+                            required
                             ref={this.textField}
                             label="Nome da pasta"
-                            error={folderNameRegex.test(this.state.textFieldValue)}
+                            error={this.state.textFieldValue.length === 0 || folderNameRegex.test(this.state.textFieldValue)}
                             helperText="O nome não pode começar por '_' nem conter '/' ou '\'"
                             onChange={this.textFieldUpdate}
                             onKeyUp={e => { if (e.key === 'Enter') { this.createFolder() }}}
@@ -107,7 +112,7 @@ class FolderMenu extends React.Component {
                             sx={{width: '100%', mt: '0.5rem'}}
                         />
                         <Button
-                            disabled={this.state.buttonDisabled || folderNameRegex.test(this.state.textFieldValue)}
+                            disabled={this.state.buttonDisabled || this.state.textFieldValue.length === 0 || folderNameRegex.test(this.state.textFieldValue)}
                             variant="contained"
                             sx={{border: '1px solid black', mt: '0.5rem', mr: '1rem'}}
                             onClick={() => this.createFolder()}
