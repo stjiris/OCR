@@ -928,7 +928,7 @@ class LayoutMenu extends React.Component {
 					<Box sx={{
 						display: 'flex',
 						flexDirection: 'column',
-                        width: '67%'
+                        width: '63%'
 					}}>
 						<Box sx={{display: "flex", flexDirection: "row"}}>
 							{
@@ -1010,7 +1010,7 @@ class LayoutMenu extends React.Component {
 						</Box>
 					</Box>
 
-					<Box sx={{ display: "flex", flexDirection: "column", width: "33%", ml: "1rem" }}>
+					<Box sx={{ display: "flex", flexDirection: "column", width: "37%", ml: "0.5rem" }}>
 						<Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-evenly", alignItems: "center" }}>
                             <Tooltip
                                 placement="top"
