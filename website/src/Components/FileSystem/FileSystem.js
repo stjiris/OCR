@@ -83,9 +83,7 @@ class FileExplorer extends React.Component {
         this.folderMenu = React.createRef();
         this.ocrPopup = React.createRef();
         this.deletePopup = React.createRef();
-        if (props._private) {
-            this.privateSpaceMenu = React.createRef();
-        }
+        this.privateSpaceMenu = React.createRef();
         this.storageMenu = React.createRef();
 
         this.successNot = React.createRef();
