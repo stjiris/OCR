@@ -115,6 +115,7 @@ class Word extends React.Component {
                     });
                 }
             }}
+            onDragStart={(e) => e.preventDefault()}
         >
         {this.props.wordIndex !== 0 && this.props.editLinesMode
             ? <IconButton
@@ -656,7 +657,9 @@ class EditingMenu extends React.Component {
             const selection = window.getSelection();
 
             const firstSpan = selection.anchorNode;
+            const firstSpanId = firstSpan.id || firstSpan.parentNode.offsetParent.id;
             const lastSpan = selection.focusNode;
+            const lastSpanId = lastSpan.id || lastSpan.parentNode.offsetParent.id;
             const parentNode = firstSpan.parentNode;
 
             const firstSpanIndex = Array.prototype.indexOf.call(parentNode.childNodes, firstSpan);
@@ -667,8 +670,8 @@ class EditingMenu extends React.Component {
             range.setEnd(parentNode, lastSpanIndex + 1);
             // Selection end here
 
-            const firstSpanInfo = firstSpan.id.split(" ").map((item) => parseInt(item));
-            const lastSpanInfo = lastSpan.id.split(" ").map((item) => parseInt(item));
+            const firstSpanInfo = firstSpanId.split(" ").map((item) => parseInt(item));
+            const lastSpanInfo = lastSpanId.split(" ").map((item) => parseInt(item));
 
             const newContents = this.state.currentContents.slice(0);
             const line = newContents[firstSpanInfo[4]][firstSpanInfo[5]];
