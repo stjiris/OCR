@@ -61,7 +61,7 @@ const StorageManager = (props) => {
     const [refreshing, setRefreshing] = useState(true);
     const [lastUpdate, setLastUpdate] = useState(null);
 
-    const [scheduleType, setScheduleType] = useState("monthly");
+    const [scheduleType, setScheduleType] = useState("interval");
 
     const [everyHours, setEveryHours] = useState('');
 
@@ -608,54 +608,6 @@ const StorageManager = (props) => {
                             </Box>
                         </Box>
 
-
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                        }}>
-                            <FormControlLabel
-                                label="Mensalmente"
-                                checked={scheduleType === "monthly"}
-                                control={<Radio size="small"/>}
-                                onChange={() => handleScheduleTypeChange("monthly")}
-                            />
-
-                            <Box sx={{
-                                display: 'flex',
-                                flexDirection: 'row',
-                            }}>
-                                <TimePicker
-                                    disabled={scheduleType !== "monthly"}
-                                    required={scheduleType === "monthly"}
-                                    label="Hora"
-                                    views={['hours', 'minutes']}
-                                    ampm={false}
-                                    value={monthTime}
-                                    onChange={(value, ctx) => setMonthTime(value)}
-                                    className="simpleInput hourInput"
-                                    slotProps={{ textField: { size: "small", error: scheduleType === "monthly" && monthTime === null } }}
-                                />
-
-                                <TextField
-                                    disabled={scheduleType !== "monthly"}
-                                    required={scheduleType === "monthly"}
-                                    error={scheduleType === "monthly" && !(dayRegex.test(monthDay))}
-                                    value={monthDay}
-                                    onChange={(e) => handleMonthDayChange(e.target.value)}
-                                    label="Dia"
-                                    size="small"
-                                    variant="outlined"
-                                    className="simpleInput"
-                                    sx={{
-                                        width: '4rem',
-                                        marginLeft: '0.3rem',
-                                        marginRight: '0.3rem',
-                                        textAlign: "center",
-                                    }}
-                                />
-                            </Box>
-                        </Box>
-
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -737,6 +689,53 @@ const StorageManager = (props) => {
                                 onChangeCallback={handleWeekDaysChange}
                                 errorText="Deve selecionar pelo menos um dia"
                             />
+                        </Box>
+
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }}>
+                            <FormControlLabel
+                                label="Mensalmente"
+                                checked={scheduleType === "monthly"}
+                                control={<Radio size="small"/>}
+                                onChange={() => handleScheduleTypeChange("monthly")}
+                            />
+
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                            }}>
+                                <TimePicker
+                                    disabled={scheduleType !== "monthly"}
+                                    required={scheduleType === "monthly"}
+                                    label="Hora"
+                                    views={['hours', 'minutes']}
+                                    ampm={false}
+                                    value={monthTime}
+                                    onChange={(value, ctx) => setMonthTime(value)}
+                                    className="simpleInput hourInput"
+                                    slotProps={{ textField: { size: "small", error: scheduleType === "monthly" && monthTime === null } }}
+                                />
+
+                                <TextField
+                                    disabled={scheduleType !== "monthly"}
+                                    required={scheduleType === "monthly"}
+                                    error={scheduleType === "monthly" && !(dayRegex.test(monthDay))}
+                                    value={monthDay}
+                                    onChange={(e) => handleMonthDayChange(e.target.value)}
+                                    label="Dia"
+                                    size="small"
+                                    variant="outlined"
+                                    className="simpleInput"
+                                    sx={{
+                                        width: '4rem',
+                                        marginLeft: '0.3rem',
+                                        marginRight: '0.3rem',
+                                        textAlign: "center",
+                                    }}
+                                />
+                            </Box>
                         </Box>
                     </Box>
                 </Box>
