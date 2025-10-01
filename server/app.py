@@ -12,9 +12,11 @@ import flask_wtf
 import redbeat
 import requests
 from celery import Celery
+from celery.exceptions import TimeoutError
 from celery.schedules import crontab
 from celery.schedules import schedule
 from dotenv import load_dotenv
+from filelock import FileLock
 from flask import abort
 from flask import Flask
 from flask import g
@@ -284,14 +286,14 @@ def get_file_system():
         # TODO: alter frontend to use info of "current folder", and reply with info of requested folder
         if "path" not in request.values or request.values["path"] == "":
             filesystem = get_filesystem(FILES_PATH)
-            filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "5")
+            filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "1")
             return filesystem
 
         _, filesystem_path, private_space, is_private = format_filesystem_path(
             request.values
         )
         filesystem = get_filesystem(filesystem_path, private_space, is_private)
-        filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "5")
+        filesystem["maxAge"] = os.environ.get("MAX_PRIVATE_SPACE_AGE", "1")
         return filesystem
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
@@ -366,7 +368,12 @@ def get_text_content():
         abort(HTTPStatus.NOT_FOUND)
     totalPages = len(os.listdir(path + "/_ocr_results"))
     doc, words = get_file_parsed(path, is_private)
+    data = get_data(safe_join(path, "_data.json"))
+    edited_without_recreate = (
+        data["edited_results"] if "edited_results" in data else False
+    )
     return {
+        "must_recreate": edited_without_recreate,
         "pages": totalPages,
         "doc": doc,
         "words": words,
@@ -640,6 +647,7 @@ def prepare_upload():
     os.mkdir(target + "/_layouts")
     os.mkdir(target + "/_ocr_results")
     os.mkdir(target + "/_pages")
+    os.mkdir(target + "/_thumbnails")
 
     extension = filename.split(".")[-1].lower()
     with open(f"{target}/_data.json", "w", encoding="utf-8") as f:
@@ -651,7 +659,7 @@ def prepare_upload():
                 "creation": get_current_time(),
                 "status": {
                     "stage": "uploading",
-                    "message": "A enviar",
+                    "message": "A enviar, por favor aguarde...",
                 },
             },
             f,
@@ -1035,6 +1043,11 @@ def submit_text():
 
     try:
         data = get_data(data_path)
+        if not remake_files:
+            data["edited_results"] = True
+        elif "edited_results" in data:
+            del data["edited_results"]
+        update_json_file(data_path, data)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
 
@@ -1148,10 +1161,10 @@ def get_layouts():
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
     try:
-        layouts = get_file_layouts(path, is_private)
+        layouts, segmenting = get_file_layouts(path, is_private)
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
-    return {"layouts": layouts}
+    return {"layouts": layouts, "segmenting": segmenting}
 
 
 @app.route("/save-layouts", methods=["POST"])
@@ -1164,6 +1177,15 @@ def save_layouts():
     path, _ = format_path(data)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
+
+    doc_data_path = f"{path}/_data.json"
+    lock_path = f"{doc_data_path}.lock"
+    lock = FileLock(lock_path)
+    with lock:
+        doc_data = get_data(f"{path}/_data.json", lock=lock)
+        if "segmenting" in doc_data and doc_data["segmenting"]:
+            return {"segmenting": True}
+
     layouts = data["layouts"]
     try:
         save_file_layouts(path, layouts)
@@ -1179,17 +1201,28 @@ def generate_automatic_layouts():
     path, is_private = format_path(request.values)
     if path is None:
         abort(HTTPStatus.NOT_FOUND)
+
     use_hdbscan = False
     if "use_hdbscan" in request.values:
         use_hdbscan = request.values["use_hdbscan"] in ("true", "True")
+
+    data_path = f"{path}/_data.json"
+    lock_path = f"{data_path}.lock"
+    lock = FileLock(lock_path)
+    with lock:
+        data = get_data(f"{path}/_data.json", lock=lock)
+        if "segmenting" in data and data["segmenting"]:
+            return {"segmenting": True}
     try:
         celery.send_task(
             "auto_segment", kwargs={"path": path, "use_hdbscan": use_hdbscan}
-        ).get()
-        layouts = get_file_layouts(path, is_private)
+        ).get(timeout=60)
+        layouts, segmenting = get_file_layouts(path, is_private)
+        return {"layouts": layouts, "segmenting": segmenting}
     except FileNotFoundError:
         abort(HTTPStatus.NOT_FOUND)
-    return {"layouts": layouts}
+    except TimeoutError:
+        return {"segmenting": True}
 
 
 #####################################
@@ -1223,10 +1256,10 @@ def api_perform_ocr():
 
     doc_id = generate_random_uuid()[:9]
     doc_path = f"{API_TEMP_PATH}/{doc_id}"
-    file_path = f"{doc_path}/{doc_id}.pdf"
+    extension = file.filename.split(".")[-1].lower()
+    file_path = f"{doc_path}/{doc_id}.{extension}"
     os.mkdir(doc_path)
     with open(f"{doc_path}/_data.json", "w", encoding="utf-8") as f:
-        extension = file.filename.split(".")[-1].lower()
         json.dump(
             {
                 "type": "file",
@@ -1373,7 +1406,7 @@ def get_storage_info():
         "private_spaces": get_size_private_spaces(),
         "api_files": get_size_api_files(),
         "last_cleanup": last_cleanup,
-        "max_age": os.environ.get("MAX_PRIVATE_SPACE_AGE", "5"),
+        "max_age": os.environ.get("MAX_PRIVATE_SPACE_AGE", "1"),
     }
 
 

@@ -58,16 +58,19 @@ class ConfirmLeave extends React.Component {
                             Tem a certeza que quer sair?
                         </Typography>
 
-                        <p style={{color: 'red'}}><b>Se sair sem gravar, irá perder qualquer alteração que tenha feito!</b></p>
+                        <p style={{color: 'var(--primary-red)'}}><b>Se sair sem gravar, irá perder qualquer alteração que tenha feito!</b></p>
 
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'row'
                         }}>
                             <Button
-                                color="error"
                                 variant="contained"
-                                sx={{border: '1px solid black', mt: '0.5rem'}}
+                                sx={{
+                                    border: '1px solid black',
+                                    mt: '0.5rem',
+                                    backgroundColor: 'var(--primary-red)',
+                                }}
                                 onClick={() => this.confirm()}
                             >
                                 Sim, tenho a certeza

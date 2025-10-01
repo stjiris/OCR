@@ -8,17 +8,6 @@ import TableRow from '@mui/material/TableRow';
 class StaticFileRow extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            info: props.info,
-        }
-    }
-
-    updateInfo(info) {
-        if (this.props.type) {
-            this.setState({info: info[this.props.type]});
-        } else {
-            this.setState({info: info});
-        }
     }
 
     render() {
@@ -30,6 +19,8 @@ class StaticFileRow extends React.Component {
                 }}
             >
                 <TableCell scope="column" className="explorerCell optionsCell" />
+
+                <TableCell scope="column" className="explorerCell thumbnailCell" />
 
                 <TableCell className="explorerCell staticNameCell" align='left'>
                     <Box sx={{
@@ -52,28 +43,28 @@ class StaticFileRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell stateCell" align='center' />
-
-                <TableCell className="explorerCell staticDateCreatedCell" align='left'>
+                <TableCell className="explorerCell detailsCell" align='left'>
                     <span>
-                        {this.state.info["creation"]}
-                    </span>
-                </TableCell>
-
-                <TableCell className="explorerCell staticDetailsCell" align='left'>
-                    <span>
-                        {this.state.info["pages"]
-                            ? this.state.info["pages"] + " página(s)"
+                        {this.props.info["pages"]
+                            ? this.props.info["pages"] + " página(s)"
                             : "—"
                         }
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell staticSizeCell" align='right'>
+                <TableCell className="explorerCell sizeCell" align='right'>
                     <span style={{fontSize: "0.92rem"}}>
-                        {this.state.info["size"]}
+                        {this.props.info["size"]}
                     </span>
                 </TableCell>
+
+                <TableCell className="explorerCell dateCreatedCell" align='right'>
+                    <span>
+                        {this.props.info["creation"]}
+                    </span>
+                </TableCell>
+
+                <TableCell className="explorerCell stateCell" align='center' />
             </TableRow>
         );
     }

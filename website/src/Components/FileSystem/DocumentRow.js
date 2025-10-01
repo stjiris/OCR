@@ -7,6 +7,7 @@ import MenuItem from '@mui/material/MenuItem';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 
+import DoneIcon from '@mui/icons-material/Done';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import BorderAllIcon from '@mui/icons-material/BorderAll';
 import BorderClearIcon from '@mui/icons-material/BorderClear';
@@ -30,6 +31,8 @@ import ZipIcon from 'Components/CustomIcons/ZipIcon';
 import StaticFileRow from './StaticFileRow';
 
 const loadingStages = new Set(["uploading", "preparing"]);
+
+const BASE_URL = `${window.location.protocol}//${window.location.host}/${process.env.REACT_APP_BASENAME}`;
 
 class DocumentRow extends React.Component {
     constructor(props) {
@@ -240,7 +243,13 @@ class DocumentRow extends React.Component {
                             ? { top: this.state.contextMenu.mouseY, left: this.state.contextMenu.mouseX }
                             : undefined
                     }
+                    sx={{overflow: "visible"}}
+                    slotProps={{
+                        list: {sx: {display: "flex", flexDirection: "row"}}
+                    }}
                 >
+
+                <Box sx={{display: "flex", flexDirection: "column"}}>
                     <MenuItem
                         disabled={buttonsDisabled && (status.stage !== "error" || uploadIsStuck)}
                         onClick={(e) => this.performOCR(e, usingCustomConfig)}
@@ -327,12 +336,21 @@ class DocumentRow extends React.Component {
                         </IconButton>
                         &nbsp;Apagar
                     </MenuItem>
+                    </Box>
+
+                    <Box sx={{width: "14rem", paddingRight: "10px"}}>
+                        <img
+                            src={`${BASE_URL}/${this.props._private ? 'private' : 'images'}/${this.props.thumbnails.large}`}
+                            alt=""
+                            style={{width: "inherit", border: "1px solid black"}}
+                        />
+                    </Box>
                 </Menu>
 
                 <TableRow
                     className={"explorerRow" + (this.state.contextMenu ? " targeted" : "")}
                     onContextMenu={(e) => this.handleContextMenu(e)}
-                    sx={{ cursor: loadingStages.has(status.stage) ? "wait" : "context-menu" }}
+                    sx={{ cursor: loadingStages.has(status.stage) ? "progress" : "context-menu" }}
                 >
                     <TableCell className="explorerCell optionsCell">
                         <IconButton
@@ -344,12 +362,29 @@ class DocumentRow extends React.Component {
                     </TableCell>
 
                     <TableCell
+                        className="explorerCell thumbnailCell"
+                        align="left"
+                        sx={{ cursor: loadingStages.has(status.stage) ? "progress" : "pointer" }}
+                    >
+                        {loadingStages.has(status.stage)
+                            ? <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem'/>
+                            : <img
+                                src={`${BASE_URL}/${this.props._private ? 'private' : 'images'}/${this.props.thumbnails.small}`}
+                                alt=""
+                                onClick={(e) => this.handleOptionsClick(e)}
+                                style={{border: "1px solid black", maxWidth: "100%", maxHeight: "100%"}}
+                            />
+                        }
+                    </TableCell>
+
+                    <TableCell
                         className="explorerCell nameCell"
+                        align="left"
                         onClick={() => {
                             if (!loadingStages.has(status.stage))
                                 this.setState({expanded: !this.state.expanded})
                         }}
-                        sx={{ cursor: loadingStages.has(status.stage) ? "wait" : "pointer" }}
+                        sx={{ cursor: loadingStages.has(status.stage) ? "progress" : "pointer" }}
                     >
                         <Box sx={{
                             display: 'flex',
@@ -364,106 +399,116 @@ class DocumentRow extends React.Component {
                             >
                                 {this.state.expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                             </IconButton>
-                            <FileIcon extension={info["extension"]}/>
                             <span>{this.props.name}</span>
                         </Box>
                     </TableCell>
 
-                    {
-                        info?.["stored"] === undefined || info["stored"] !== true
-                        ? <>
-                            {
-                                uploadIsStuck
-                                    ? <TableCell colSpan={4} className="explorerCell stateCell errorCell" align='left'>
-                                        <Box className="stateBox">
-                                            <span>Erro ao carregar documento</span>
-                                        </Box>
-                                    </TableCell>
+                    <TableCell className="explorerCell detailsCell" align='left'>
+                        <span>
+                            {info["pages"] ? (info["pages"] + " página(s)") : null}
+                            {info["words"] ? ("\n" + info["words"] + " palavras") : null}
+                        </span>
+                    </TableCell>
 
-                                    : status.stage === "uploading"
-                                        ? <TableCell colSpan={4} className="explorerCell stateCell infoCell" align='left'>
-                                            <Box className="stateBox">
-                                                <span>{status.message}</span>
-                                                <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
-                                                <span>{info["stored"]}%</span>
-                                            </Box>
-                                        </TableCell>
+                    <TableCell className="explorerCell sizeCell" align='right'>
+                        <span style={{fontSize: "0.92rem"}}>
+                            {info["total_size"]}
+                        </span>
+                    </TableCell>
 
-                                    : status.stage === "preparing"
-                                        ? <TableCell colSpan={4} className="explorerCell stateCell infoCell" align='left'>
-                                            <Box className="stateBox">
-                                                <span>{status.message}</span>
-                                                <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
-                                            </Box>
-                                        </TableCell>
-                                    : null
-                            }
-                        </>
-                        : <>
-                            {
-                                status.stage === "waiting"
-                                    ? <TableCell className="explorerCell stateCell waitingCell" align='left'>
-                                        <Box className="stateBox">
-                                            <span>Aguarda...</span>
-                                        </Box>
-                                    </TableCell>
+                    <TableCell className="explorerCell dateCreatedCell" align='right'>
+                        <p style={{margin: 0}}>{info["creation"]}</p>
+                        {info["ocr"]?.["creation"]
+                            ? <p style={{margin: 0}}>OCR: {info["ocr"]["creation"]}</p>
+                            : null
+                        }
+                    </TableCell>
 
-                                : status.stage === "ocr"
-                                    ? <TableCell className="explorerCell stateCell infoCell" align='left'>
-                                        <Box className="stateBox">
-                                            <span>OCR</span>
-                                            <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
-                                            <span>{info["ocr"]["progress"]}/{info["pages"]}</span>
-                                            &nbsp;
-                                            &nbsp;
-                                            <span>
-                                                { /* message is expected to be time estimate */
-                                                    status.message
-                                                }
-                                            </span>
-                                        </Box>
-                                    </TableCell>
+                    { info?.["stored"] === undefined || info["stored"] !== true
+                    ? uploadIsStuck
+                        ? <TableCell className="explorerCell stateCell errorCell" align='left'>
+                            <Box className="stateBox">
+                                <span>Erro ao carregar documento</span>
+                            </Box>
+                        </TableCell>
 
-                                : status.stage === "exporting"
-                                    ? <TableCell className="explorerCell stateCell infoCell" align='left'>
-                                        <Box className="stateBox">
-                                            <span>{status.message}</span>
-                                            <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
-                                        </Box>
-                                    </TableCell>
-
-                                : status.stage === "post-ocr"
-                                    ? <TableCell className="explorerCell stateCell successCell" align='left'>
-                                        <Box className="stateBox">
-                                            <span>OCR concluído</span>
-                                        </Box>
-                                    </TableCell>
-
-                                : status.stage === "error"
-                                    ? <TableCell className="explorerCell stateCell errorCell" align='left'>
-                                        <Box className="stateBox">
-                                            <span>{status.message}</span>
-                                        </Box>
-                                    </TableCell>
-
-                                : null
-                            }
-
-                            <TableCell className="explorerCell dateCreatedCell" align='left'><span>{info["creation"]}</span></TableCell>
-                            <TableCell className="explorerCell detailsCell" align='left'><span>{info["pages"]} página(s)</span></TableCell>
-                            <TableCell className="explorerCell sizeCell" align='left'>
-                                <span style={{fontSize: "0.92rem"}}>
-                                    {info["total_size"]}
-                                </span>
+                        : status.stage === "uploading"
+                            ? <TableCell className="explorerCell stateCell infoCell" align='left'>
+                                <Box className="stateBox">
+                                    <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem'/>
+                                    <span>{status.message}</span>
+                                </Box>
                             </TableCell>
-                        </>
+
+                        : status.stage === "preparing"
+                            ? <TableCell className="explorerCell stateCell infoCell" align='left'>
+                                <Box className="stateBox">
+                                    <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem'/>
+                                    <span>{status.message}</span>
+                                </Box>
+                            </TableCell>
+                        : null
+
+                    : status.stage === "error"
+                        ? <TableCell className="explorerCell stateCell errorCell" align='left'>
+                            <Box className="stateBox">
+                                <span>{status.message}</span>
+                            </Box>
+                        </TableCell>
+
+                    : status.stage === "waiting"
+                    ? <TableCell className="explorerCell stateCell waitingCell" align='left'>
+                        <Box className="stateBox">
+                        </Box>
+                    </TableCell>
+
+                    : status.stage === "ocr"
+                    ? <TableCell className="explorerCell stateCell infoCell" align='left'>
+                        <Box className="stateBox">
+                            <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
+                            <span>OCR</span>
+                            &nbsp;
+                            <span>{info["ocr"]["progress"]}/{info["pages"]}</span>
+                            &nbsp;
+                            &nbsp;
+                            <span>
+                            { /* message is expected to be time estimate */
+                                status.message
+                            }
+                            </span>
+                        </Box>
+                    </TableCell>
+
+                    : status.stage === "exporting"
+                    ? <TableCell className="explorerCell stateCell infoCell" align='left'>
+                        <Box className="stateBox">
+                            <CircularProgress sx={{ml: '1rem', mr: '1rem', flexShrink: "0"}} size='1rem' />
+                            <span>{status.message}</span>
+                        </Box>
+                    </TableCell>
+
+                    : info["edited_results"]  // expected stage when this is true is "post-ocr" so much be checked before
+                        ? <TableCell className="explorerCell stateCell infoCell" align='left'>
+                            <Box className="stateBox">
+                                Resultados editados, ficheiros por recriar
+                            </Box>
+                        </TableCell>
+
+                    : status.stage === "post-ocr"
+                    ? <TableCell className="explorerCell stateCell successCell" align='left'>
+                        <Box className="stateBox">
+                            <DoneIcon color="primary" />
+                        </Box>
+                    </TableCell>
+
+                    : null
                     }
                 </TableRow>
 
                 <StaticFileRow
                     key="original"
                     expanded={this.state.expanded}
-                    name={this.props.name + " (original)"}
+                    name="Doc. original"
                     filename={this.props.name}
                     info={info}
                     fileIcon={<FileIcon extension={info["extension"]} />}
@@ -474,7 +519,7 @@ class DocumentRow extends React.Component {
                     ? <StaticFileRow
                         key="pdf_indexed"
                         expanded={this.state.expanded}
-                        name={"PDF com texto e índice"}
+                        name={"PDF com texto e índice de palavras"}
                         filename={this.props.name}
                         type="pdf_indexed"
                         info={info["pdf_indexed"]}
@@ -522,7 +567,7 @@ class DocumentRow extends React.Component {
                     ? <StaticFileRow
                         key="csv"
                         expanded={this.state.expanded}
-                        name={"Índice de palavras"}
+                        name={"Índice de palavras em formato CSV"}
                         filename={this.props.name}
                         type="csv"
                         info={info["csv"]}
@@ -587,6 +632,7 @@ DocumentRow.defaultProps = {
     _private: false,
     info: null,
     name: null,
+    thumbnails: null,
     // functions:
     enterDocument: null,
     getOriginalFile: null,

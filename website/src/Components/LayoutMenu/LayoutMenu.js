@@ -10,6 +10,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import Switch from '@mui/material/Switch';
 import CircularProgress from '@mui/material/CircularProgress';
+import { NumberField } from '@base-ui-components/react/number-field';
+import Tooltip from "@mui/material/Tooltip";
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
@@ -23,7 +25,6 @@ import LastPageIcon from "@mui/icons-material/LastPage";
 import ReturnButton from 'Components/FileSystem/ReturnButton';
 import ConfirmLeave from 'Components/Notifications/ConfirmLeave';
 import Notification from 'Components/Notifications/Notification';
-import ZoomingTool from 'Components/ZoomingTool/ZoomingTool';
 import LayoutImage from './LayoutImage';
 import LayoutTable from './LayoutTable';
 
@@ -79,9 +80,6 @@ class LayoutMenu extends React.Component {
 
         this.goBack = this.goBack.bind(this);
         this.leave = this.leave.bind(this);
-        this.zoomIn = this.zoomIn.bind(this);
-        this.zoomOut = this.zoomOut.bind(this);
-        this.zoomReset = this.zoomReset.bind(this);
 	}
 
 	preventExit(event) {
@@ -107,7 +105,7 @@ class LayoutMenu extends React.Component {
                     }
                 }
 
-                this.setState({ contents: contents }, () => {
+                this.setState({ contents: contents, segmentLoading: data["segmenting"] }, () => {
                     this.updateTextMode();
                 });
             });
@@ -145,8 +143,10 @@ class LayoutMenu extends React.Component {
 	}
      */
 
-	changePage(increment) {
-		this.setState({ currentPage: this.state.currentPage + increment }, () => {
+	changePage(newPage) {
+        if (isNaN(newPage) || Number(newPage) < 1 || Number(newPage) > this.state.contents.length) return;
+
+		this.setState({ currentPage: Number(newPage) }, () => {
 			this.updateTextMode();
 		});
 	}
@@ -175,37 +175,31 @@ class LayoutMenu extends React.Component {
 		const contents = this.state.contents;
 		contents[this.state.currentPage - 1]["boxes"] = groups;
 
-		// * Code to reflect changes in copy boxes (removed as requested per Prof. Borbinha's instructions)
-		// for (i = 0; i < groups.length; i++) {
-		//     group = groups[i];
-
-		//     if (group["copyId"] !== undefined) {
-
-		//         for (j = 0; j < contents.length; j++) {
-
-		//             var c_boxes = contents[j]["boxes"];
-
-		//             for (var k = 0; k < c_boxes.length; k++) {
-		//                 if (c_boxes[k]["copyId"] === group["copyId"]) {
-		//                     // Make an independent copy of the box
-		//                     var newBox = JSON.parse(JSON.stringify(group));
-		//                     newBox["id"] = c_boxes[k]["id"];
-		//                     c_boxes[k] = newBox;
-
-		//                     contents[j]["boxes"] = c_boxes;
-
-		//                     break;
-		//                 }
-		//             }
-		//         }
-		//     }
-		// }
-
-        /*
-		for (let i = 0; i < contents.length; i++) {
-			contents[i]["boxes"] = this.renameGroups(contents[i]["boxes"], i + 1);
-		}
-         */
+		groups.forEach((currentPageGroup) => {
+            if (currentPageGroup["copyId"] !== undefined) {
+                contents.forEach((page, i) => {
+                    const otherPageBoxes = page["boxes"];
+                    otherPageBoxes.forEach((group, j) => {
+                        if (group["copyId"] !== undefined && group["copyId"] === currentPageGroup["copyId"]) {
+                            const groupSquares = group["squares"];
+                            const currentSquares = currentPageGroup["squares"];
+                            if (groupSquares.length === 1) {
+                                groupSquares[0]["top"] = currentSquares[0]["top"];
+                                groupSquares[0]["left"] = currentSquares[0]["left"];
+                                groupSquares[0]["bottom"] = currentSquares[0]["bottom"];
+                                groupSquares[0]["right"] = currentSquares[0]["right"];
+                            } else for (const k in groupSquares) {
+                                groupSquares[k]["top"] = currentSquares[k]["top"];
+                                groupSquares[k]["left"] = currentSquares[k]["left"];
+                                groupSquares[k]["bottom"] = currentSquares[k]["bottom"];
+                                groupSquares[k]["right"] = currentSquares[k]["right"];
+                            }
+                            group["groupId"] = (i + 1) + "." + (j + 1);
+                        }
+                    });
+                });
+            }
+        });
 
 		this.setState({ contents: contents, uncommittedChanges: true });
     }
@@ -384,50 +378,61 @@ class LayoutMenu extends React.Component {
 	}
 
 	saveLayout(closeWindow = false) {
-        const path = (this.props.spaceId + '/' + this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-		fetch(API_URL + '/save-layouts', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
+        const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
+		axios.post(API_URL + '/save-layouts',
+            {
                 _private: this.props._private,
-				path: path,
-				layouts: this.state.contents
-			})
-		}).then(response => { return response.json() })
-			.then(data => {
+                path: (this.props._private ? this.props.spaceId + '/' + path : path),
+                layouts: this.state.contents
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+			.then(({ data }) => {
 				if (data["success"]) {
                     this.setState({ uncommittedChanges: false });
 
-					this.successNotifRef.current.openNotif("Segmentação guardada com sucesso.");
+					this.successNotifRef.current.openNotif("Segmentação guardada com sucesso");
 
 					if (closeWindow) {
 						this.leave();
 					}
+				} else if (data["segmenting"]) {
+                    this.errorNotifRef.current.openNotif("Segmentação automática em curso");
 				} else {
-                    this.errorNotifRef.current.openNotif("Erro inesperado ao guardar a segmentação.");
+                    this.errorNotifRef.current.openNotif("Problema inesperado ao guardar a segmentação");
 				}
-			});
+			})
+            .catch(err => {
+                this.errorNotifRef.current.openNotif("Ocorreu um erro ao guardar a segmentação");
+                this.setState({ segmentLoading: false });
+            });
 	}
 
 	GenerateLayoutAutomatically() {
 		this.setState({ segmentLoading: true });
-		this.successNotifRef.current.openNotif("A segmentar automaticamente... Por favor aguarde.");
+		this.successNotifRef.current.openNotif("A segmentar automaticamente... Por favor aguarde");
 
         const path = (this.props.current_folder + '/' + this.props.filename).replace(/^\//, '');
-		axios.get(API_URL + '/generate-automatic-layouts?', {
+		axios.get(API_URL + '/generate-automatic-layouts', {
             params: {
                 _private: this.props._private,
                 path: (this.props._private ? this.props.spaceId + '/' + path : path),
             },
         })
             .then(({ data }) => {
-				const contents = data["layouts"].sort((a, b) =>
-					(a["page_number"] > b["page_number"]) ? 1 : -1
-				)
-
-				this.setState({ contents: contents, segmentLoading: false });
+                if (data["layouts"] !== undefined) {
+                    const contents = data["layouts"].sort((a, b) =>
+                        (a["page_number"] > b["page_number"]) ? 1 : -1
+                    );
+                    this.setState({ contents: contents, segmentLoading: data["segmenting"] });
+                } else if (data["segmenting"]) {
+                    this.successNotifRef.current.openNotif("A segmentação irá demorar mais do que esperado");
+                } else {
+                    this.errorNotifRef.current.openNotif("Problema inesperado ao pedir a segmentação");
+                }
 			})
             .catch(err => {
                 this.errorNotifRef.current.openNotif("Ocorreu um erro na segmentação");
@@ -436,6 +441,7 @@ class LayoutMenu extends React.Component {
 	}
 
 	cleanAllBoxes() {
+        if (this.state.segmentLoading) return;
 		const contents = [...this.state.contents];
 		for (let i in contents) {
 			contents[i]["boxes"] = [];
@@ -479,36 +485,25 @@ class LayoutMenu extends React.Component {
 	}
 
 	allCheckboxesAreChecked() {
-		var contents = this.state.contents;
+		const contents = this.state.contents;
 		if (contents.length === 0) return false;
 		if (contents[this.state.currentPage - 1] === undefined) return false;
 
-		var boxes = contents[this.state.currentPage - 1]["boxes"];
+		const boxes = contents[this.state.currentPage - 1]["boxes"];
 		if (boxes.length === 0) return false;
 
-		for (var i = 0; i < boxes.length; i++) {
-			if (!boxes[i]["checked"]) {
-				return false;
-			}
-		}
-
-		return true;
+        return boxes.every((box) => Boolean(box["checked"]));
 	}
 
 	renameGroups(groups, page) {
-		for (let i = 0; i < groups.length; i++) {
-            groups[i]["groupId"] = page + "." + (i + 1);
-            const boxes = groups[i]["squares"];
-            for (let j = 0; j < boxes.length; j++) {
-                let id;
-                if (boxes.length === 1) {
-                    id = page + "." + (i + 1);
-                } else {
-                    id = page + "." + (i + 1) + "." + (j + 1);
-                }
-                boxes[j]["id"] = id;
-            }
-		}
+        groups.forEach((group, i) => {
+            group["groupId"] = page + "." + (i + 1);
+            if (group["squares"].length === 1) {
+                group["squares"][0]["id"] = page + "." + (i + 1);
+            } else group["squares"].forEach((box, j) => {
+                box["id"] = page + "." + (i + 1) + "." + (j + 1);
+            });
+        });
 		return groups;
 	}
 
@@ -526,43 +521,61 @@ class LayoutMenu extends React.Component {
     }
 
 	deleteCheckedBoxes() {
-		var contents = this.state.contents;
-		var boxes = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+		const boxes = contents[this.state.currentPage - 1]["boxes"];
 
-		var keeping = [];
+		const keeping = [];
+        const deletingGroupIds = new Set();
 
-		for (var i = 0; i < boxes.length; i++) {
-			if (!boxes[i]["checked"]) {
-				keeping.push(boxes[i]);
-			}
-		}
+        boxes.forEach((group) => {
+           if (!Boolean(group["checked"])) {
+               keeping.push(group);
+           } else if (group["copyId"]) {
+               deletingGroupIds.add(group["copyId"]);
+           }
+        });
+        contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
 
-		contents[this.state.currentPage - 1]["boxes"] = this.renameGroups(keeping, this.state.currentPage);
+        // remove eventual copies present in other pages
+        contents.forEach((page, i) => {
+            const pageBoxes = page["boxes"];
+            page["boxes"] = pageBoxes.filter((group) => {
+                return !deletingGroupIds.has(group["copyId"]);
+            });
+            if (page["boxes"] !== pageBoxes) {
+                page["boxes"] = this.renameGroups(page["boxes"], i + 1);
+            }
+        });
+
 		this.setState({ contents: contents, uncommittedChanges: true });
 	}
 
 	makeBoxCopy() {
-		var contents = this.state.contents;
-		var groups = contents[this.state.currentPage - 1]["boxes"];
+		const contents = this.state.contents;
+        const currentPageGroups = [...contents[this.state.currentPage - 1]["boxes"]];
+        const groupsToReplicate = [];
 
-		for (var i = 0; i < groups.length; i++) {
-			if (groups[i].checked) {
-				let copyId = groups[i]["copyId"] || uuidv4();
-				groups[i]["copyId"] = copyId;
-				groups[i]["checked"] = false;
+        currentPageGroups.forEach((currentPageGroup, i) => {
+            if (currentPageGroup["checked"]) {
+                currentPageGroup["copyId"] = currentPageGroup["copyId"] || uuidv4();
+                currentPageGroup["checked"] = false;
+                groupsToReplicate.push([currentPageGroup, i]);
+            }
+        });
 
-				for (var j = 0; j < contents.length; j++) {
-					var c_groups = contents[j]["boxes"];
-					if (!c_groups.some(e => e["copyId"] === copyId)) {
-						// Create an independent copy of the group
-						var group = JSON.parse(JSON.stringify(groups[i]));
+        contents.forEach((page, j) => {
+            if (j !== this.state.currentPage - 1) {
+                const pageGroups = page["boxes"];
+                groupsToReplicate.forEach((original) => {
+                    const copy = JSON.parse(JSON.stringify(original[0]));
+                    //copy["_uniq_id"] = Date.now().toString(36) + Math.random().toString(36);
+                    pageGroups.splice(original[1], 0, copy);  // add copy in same order placement as original
+                });
+                page["boxes"] = this.renameGroups(pageGroups, j + 1);
+            }
+        });
 
-						c_groups.push(group);
-						contents[j]["boxes"] = this.renameGroups(c_groups, j + 1);
-					}
-				}
-			}
-		}
+        contents[this.state.currentPage - 1]["boxes"] = currentPageGroups;
 
 		this.setState({ contents: contents, uncommittedChanges: true });
 	}
@@ -721,39 +734,60 @@ class LayoutMenu extends React.Component {
 		this.setState({ textModeState: mode });
 	}
 
-    zoomIn() {
-        this.image.current.zoomIn();
-    }
-
-    zoomOut() {
-        this.image.current.zoomOut();
-    }
-
-    zoomReset() {
-        this.image.current.zoomReset();
-    }
-
 	render() {
         const loaded = this.state.contents.length !== 0;
         let tableData = [];
 
-		let noCheckBoxActive = false;
+		let noCheckBoxActive = true;
+        let atLeastTwoChecked = false;
         let groupDisabled = false;
         let separateDisabled = false;
         let copyDisabled = false;
 
+        const cannotAutoSegmentFile = cannotAutoSegment.has(this.props.filename.split('.').pop())
+        const autoSegmentDisabled = !loaded || this.state.segmentLoading || cannotAutoSegmentFile;
+        const cleanAllDisabled = !loaded || this.state.segmentLoading;
+        const saveDisabled = !loaded || !this.state.uncommittedChanges || this.state.segmentLoading;
+
+        let someBoxIsCopied = false;
+        let someBoxIsImage = false;
+        let someBoxIsNotGroup = false;
+
 		if (loaded) {
             tableData = this.state.contents[this.state.currentPage - 1]["boxes"];
 
-            noCheckBoxActive = !this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"]);
-            groupDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].map(e => e["checked"]).filter(Boolean).length <= 1
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["type"] !== "text");
+            tableData.forEach((group) => {
+                if (Boolean(group["checked"])) {
+                    if (noCheckBoxActive) {
+                        noCheckBoxActive = false;
+                    } else {
+                        atLeastTwoChecked = true;
+                    }
+
+                    if (group["copyId"]) {
+                        someBoxIsCopied = true;
+                    }
+                    if (group["type"] === "image") {
+                        someBoxIsImage = true;
+                    }
+                    if (group["squares"].length === 1) {
+                        someBoxIsNotGroup = true;
+                    }
+                }
+            });
+
+            groupDisabled = !atLeastTwoChecked
+                            || someBoxIsCopied
+                            || someBoxIsImage;
+
 			separateDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["squares"].length === 1 && e["copyId"] === undefined);
-			copyDisabled = noCheckBoxActive
-                            || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["squares"].length !== 1)
+                            || someBoxIsNotGroup;
+
+			copyDisabled = this.state.contents?.length < 2  // cannot replicate boxes to other pages in single-page doc
+                            || noCheckBoxActive
+                            //|| tableData.some(e => e["checked"] && e["squares"].length !== 1)
+                            || someBoxIsCopied;
+
 			// var typeDisabled = noCheckBoxActive || this.state.contents[this.state.currentPage - 1]["boxes"].some(e => e["checked"] && e["copyId"] !== undefined)
 		}
 
@@ -779,8 +813,19 @@ class LayoutMenu extends React.Component {
                     </Box>
 
 					<Box>
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!cleanAllDisabled}
+                            disableHoverListener={!cleanAllDisabled}
+                            disableTouchListener={!cleanAllDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded}
+                            disabled={cleanAllDisabled}
 							variant="contained"
                             className="menuFunctionButton"
 							onClick={() => this.cleanAllBoxes()}
@@ -788,11 +833,23 @@ class LayoutMenu extends React.Component {
 						>
 							Limpar Tudo
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : cannotAutoSegmentFile
+                                    ? "Não é possível segmentar automaticamente este formato de ficheiro"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!autoSegmentDisabled}
+                            disableHoverListener={!autoSegmentDisabled}
+                            disableTouchListener={!autoSegmentDisabled}
+                        ><span>
 						<Button
-							disabled={!loaded || this.state.segmentLoading
-                                || cannotAutoSegment.has(this.props.filename.split('.').pop())}
-                            title={cannotAutoSegment.has(this.props.filename.split('.').pop())
-                                    ? "Não é possível segmentar automaticamente este formato de ficheiro." : ""}
+							disabled={autoSegmentDisabled}
 							variant="contained"
                             className="menuFunctionButton"
                             style={{pointerEvents: "auto"}  /* ensures disabled button can show title */}
@@ -805,8 +862,23 @@ class LayoutMenu extends React.Component {
 									: null
 							}
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : !this.state.uncommittedChanges
+                                    ? "Não há alterações"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!saveDisabled}
+                            disableHoverListener={!saveDisabled}
+                            disableTouchListener={!saveDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded}
+                            disabled={saveDisabled}
 							variant="contained"
                             className="menuFunctionButton"
 							color="success"
@@ -815,8 +887,23 @@ class LayoutMenu extends React.Component {
 						>
 							Guardar
 						</Button>
+                        </span></Tooltip>
+
+                        <Tooltip
+                            placement="top"
+                            title={
+                                this.state.segmentLoading
+                                    ? "O documento está a ser segmentado pelo servidor"
+                                : !this.state.uncommittedChanges
+                                    ? "Não há alterações"
+                                : "A obter informação do servidor"
+                            }
+                            disableFocusListener={!saveDisabled}
+                            disableHoverListener={!saveDisabled}
+                            disableTouchListener={!saveDisabled}
+                        ><span>
 						<Button
-                            disabled={!loaded}
+                            disabled={saveDisabled}
 							variant="contained"
 							color="success"
                             className="menuFunctionButton noMarginRight"
@@ -825,21 +912,23 @@ class LayoutMenu extends React.Component {
 						>
 							Terminar
 						</Button>
+                        </span></Tooltip>
 					</Box>
 				</Box>
 
                 {
                 loaded
-                ? <Box sx={{
-					display: "flex",
-					flexDirection: "row",
-                    ml: "1rem",
-                    mr: "1rem"
-				}}>
+                ? <Box
+                      className="menuContent"
+                      sx={{
+					     display: "flex",
+					     flexDirection: "row",
+                      }}
+                >
 					<Box sx={{
 						display: 'flex',
 						flexDirection: 'column',
-                        width: '67%'
+                        width: '63%'
 					}}>
 						<Box sx={{display: "flex", flexDirection: "row"}}>
 							{
@@ -864,9 +953,7 @@ class LayoutMenu extends React.Component {
                             alignItems: 'center',
                             mt: '5px'
 						}}>
-                            <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut} zoomResetFunc={this.zoomReset}/>
-
-                            <Box sx={{marginLeft: "auto", marginRight: "auto"}}>
+                            <Box sx={{display: "flex", marginLeft: "auto", marginRight: "auto"}}>
                                 <IconButton
                                     disabled={this.state.currentPage === 1}
                                     sx={{marginRight: "10px", p: 0}}
@@ -878,19 +965,36 @@ class LayoutMenu extends React.Component {
                                 <IconButton
                                     disabled={this.state.currentPage === 1}
                                     sx={{marginRight: "10px", p: 0}}
-                                    onClick={() => this.changePage(-1)}
+                                    onClick={() => this.changePage(this.state.currentPage - 1)}
                                 >
                                     <KeyboardArrowLeftIcon />
                                 </IconButton>
 
-                                <span style={{margin: "0px 10px"}}>
-                                    Página {this.state.currentPage} / {this.state.contents.length}
+                                <span style={{display: "flex"}}>
+                                    Página
+                                    &nbsp;
+                                    {this.state.contents.length === 1
+                                        ? this.state.currentPage
+
+                                        : <NumberField.Root
+                                            value={this.state.currentPage}
+                                            onValueChange={(value) => this.changePage((value))}
+                                            step={1}
+                                            smallStep={1}
+                                            min={1}
+                                            max={this.state.contents.length}
+                                            className="pageNumberInput"
+                                        >
+                                            <NumberField.Input className="pageNumberInput"/>
+                                        </NumberField.Root>
+                                    }
+                                    &nbsp;/ {this.state.contents.length}
                                 </span>
 
                                 <IconButton
                                     disabled={this.state.currentPage === this.state.contents.length}
                                     sx={{marginLeft: "10px", p: 0}}
-                                    onClick={() => this.changePage(1)}
+                                    onClick={() => this.changePage(this.state.currentPage + 1)}
                                 >
                                     <KeyboardArrowRightIcon />
                                 </IconButton>
@@ -906,56 +1010,105 @@ class LayoutMenu extends React.Component {
 						</Box>
 					</Box>
 
-					<Box sx={{ display: "flex", flexDirection: "column", width: "33%", ml: "1rem" }}>
+					<Box sx={{ display: "flex", flexDirection: "column", width: "37%", ml: "0.5rem" }}>
 						<Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-evenly", alignItems: "center" }}>
-							<Button
-								disabled={copyDisabled}
-								variant="text"
-								startIcon={<ContentCopyIcon />}
-								onClick={() => this.makeBoxCopy()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Replicar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsCopied
+                                        ? "Um dos segmentos já está replicado"
+                                    : this.state.contents?.length < 2
+                                        ? "O documento tem apenas uma página"
+                                    : "Selecione pelo menos um segmento"
+                                }
+                                disableFocusListener={!copyDisabled}
+                                disableHoverListener={!copyDisabled}
+                                disableTouchListener={!copyDisabled}
+                            ><span>
+                                <Button
+                                    disabled={copyDisabled}
+                                    variant="text"
+                                    startIcon={<ContentCopyIcon />}
+                                    onClick={() => this.makeBoxCopy()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Replicar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={groupDisabled}
-								variant="text"
-								startIcon={<CallMergeIcon />}
-								onClick={() => this.groupCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Agrupar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsCopied
+                                        ? "Um dos segmentos está replicado"
+                                    : someBoxIsImage
+                                        ? "Não é possível agrupar segmentos de imagem"
+                                    : "Selecione pelo menos dois segmentos"
+                                }
+                                disableFocusListener={!groupDisabled}
+                                disableHoverListener={!groupDisabled}
+                                disableTouchListener={!groupDisabled}
+                            ><span>
+                                <Button
+                                    disabled={groupDisabled}
+                                    variant="text"
+                                    startIcon={<CallMergeIcon />}
+                                    onClick={() => this.groupCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Agrupar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={separateDisabled}
-								variant="text"
-								startIcon={<CallSplitIcon />}
-								onClick={() => this.splitCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Desagrupar
-							</Button>
+                            <Tooltip
+                                placement="top"
+                                title={
+                                    someBoxIsNotGroup
+                                        ? "Um dos segmentos não pertence a um grupo"
+                                    : "Selecione pelo menos um segmento"
+                                }
+                                disableFocusListener={!separateDisabled}
+                                disableHoverListener={!separateDisabled}
+                                disableTouchListener={!separateDisabled}
+                            ><span>
+                                <Button
+                                    disabled={separateDisabled}
+                                    variant="text"
+                                    startIcon={<CallSplitIcon />}
+                                    onClick={() => this.splitCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Desagrupar
+                                </Button>
+                            </span></Tooltip>
 
-							<Button
-								disabled={noCheckBoxActive}
-								color="error"
-								variant="text"
-								startIcon={<DeleteRoundedIcon />}
-								onClick={() => this.deleteCheckedBoxes()}
-								sx={{
-									textTransform: 'none',
-								}}
-							>
-								Apagar
-							</Button>
+
+                            <Tooltip
+                                placement="top"
+                                title="Selecione pelo menos um segmento"
+                                disableFocusListener={!noCheckBoxActive}
+                                disableHoverListener={!noCheckBoxActive}
+                                disableTouchListener={!noCheckBoxActive}
+                            ><span>
+                                <Button
+                                    disabled={noCheckBoxActive}
+                                    color="error"
+                                    variant="text"
+                                    startIcon={<DeleteRoundedIcon />}
+                                    onClick={() => this.deleteCheckedBoxes()}
+                                    sx={{
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Apagar
+                                </Button>
+                            </span></Tooltip>
 
 							<Switch
 								checked={this.state.textModeState}
@@ -970,7 +1123,7 @@ class LayoutMenu extends React.Component {
 								}}
 								size='small'
 							/>
-							<span>Ignorar/Extrair OCR</span>
+							<span>Ignorar/Extrair</span>
 						</Box>
 
                         <LayoutTable data={tableData}

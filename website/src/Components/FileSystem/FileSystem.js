@@ -15,6 +15,7 @@ import Paper from '@mui/material/Paper';
 import Typography from "@mui/material/Typography";
 
 import CreateNewFolderIcon from "@mui/icons-material/CreateNewFolder";
+import LockIcon from "@mui/icons-material/Lock";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 
 import visuallyHidden from "@mui/utils/visuallyHidden";
@@ -82,9 +83,7 @@ class FileExplorer extends React.Component {
         this.folderMenu = React.createRef();
         this.ocrPopup = React.createRef();
         this.deletePopup = React.createRef();
-        if (props._private) {
-            this.privateSpaceMenu = React.createRef();
-        }
+        this.privateSpaceMenu = React.createRef();
         this.storageMenu = React.createRef();
 
         this.successNot = React.createRef();
@@ -160,10 +159,9 @@ class FileExplorer extends React.Component {
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         if (prevProps._private !== this.props._private) {  // moved to private space
-            this.fetchFileSystem();
+            this.fetchFileSystem(true);
         } else if (prevProps.current_folder !== this.props.current_folder  // moved to different folder
-            || this.state.files !== prevState.files                 // created/deleted document or folder
-            || prevProps.current_file_name !== this.props.current_file_name) {    // exited menu or entered/exited document "folder"
+            || this.state.files !== prevState.files) {                 // created/deleted document or folder
             this.displayFileSystem();
         } else if (this.state.info !== prevState.info) {  // fetched updated info
             this.updateInfo();
@@ -199,7 +197,7 @@ class FileExplorer extends React.Component {
         }
     }
 
-    fetchFileSystem() {
+    fetchFileSystem(enteredPrivate = false) {
         axios.get(API_URL + '/files', {
             params: {
                     _private: this.props._private,
@@ -218,11 +216,16 @@ class FileExplorer extends React.Component {
                 this.checkStuckUploads(info);  // check for stuck uploads on initial filesystem fetch
                 const files = response.data["files"];
                 const maxAge = response.data["maxAge"];
-                this.setState({files: files, info: info, maxAge: maxAge, fetched: true});
+                this.setState({files: files, info: info, maxAge: maxAge, fetched: true},
+                    () => {
+                        if (this.props._private && enteredPrivate && this.privateSpaceMenu.current) {
+                            this.privateSpaceMenu.current.toggleOpen();
+                        }
+                });
             })
             .catch(err => {
                 this.storageMenu.current.openWithMessage(err.message);
-            });
+            })
     }
 
     /**
@@ -288,22 +291,12 @@ class FileExplorer extends React.Component {
      */
     updateInfo() {
         if (this.props.ocrMenu || this.props.layoutMenu || this.props.editingMenu) return;
-        if (this.props.current_file_name) {
-            // update rows for document's files (original and outputs)
-            this.rowRefs.forEach(ref => {
-                const filename = ref.current.props.filename;
-                const rowInfo = this.getInfo(filename);
-                // TODO: give appropriate info to each of the document's files (original, results, etc.)
-                ref.current.updateInfo(rowInfo);
-            });
-        } else {
-            // update info of rows for current folder's contents
-            this.rowRefs.forEach(ref => {
-                const filename = ref.current.props.name;
-                const rowInfo = this.getInfo(filename);
-                ref.current.updateInfo(rowInfo);
-            });
-        }
+        // update info of rows for current folder's contents
+        this.rowRefs.forEach(ref => {
+            const filename = ref.current.props.name;
+            const rowInfo = this.getInfo(filename);
+            ref.current.updateInfo(rowInfo);
+        });
     }
 
     componentWillUnmount() {
@@ -335,7 +328,7 @@ class FileExplorer extends React.Component {
         this.ocrPopup.current.openMenu(path, filename, ocrTargetIsFolder, alreadyOcr, customConfig);
     }
 
-    sendChunk(i, chunk, fileName, _totalCount, _fileID) {
+    sendChunk(i, chunk, fileName, _totalCount, _fileID, uniquePreventExit) {
         let path = this.props.current_folder;
         if (this.props._private) { path = this.props.spaceId + '/' + path }
 
@@ -348,11 +341,10 @@ class FileExplorer extends React.Component {
         formData.append('counter', i+1);
         formData.append('totalCount', _totalCount);
 
-        fetch(API_URL + '/upload-file', {
-            method: 'POST',
-            body: formData
-        }).then(response => {return response.json()})
-        .then(data => {
+        axios.post(API_URL + '/upload-file',
+            formData
+        )
+        .then(({ data }) => {
             if (data['success']) {
                 // Update upload status every UPLOAD_UPDATE_SECONDS seconds
                 if (!this.uploadingCheckInterval) {
@@ -380,6 +372,10 @@ class FileExplorer extends React.Component {
                             });
                     }, 1000 * UPLOAD_UPDATE_SECONDS, fileName);
                 }
+
+                if (i + 1 === _totalCount) {
+                    window.removeEventListener('beforeunload', uniquePreventExit);
+                }
             } else {
                 this.storageMenu.current.openWithMessage(data.error);
             }
@@ -388,6 +384,14 @@ class FileExplorer extends React.Component {
             // TODO: give feedback to user on communication error
             this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
         });
+    }
+
+    /**
+     * Used to prevent page exit while uploading a document
+     */
+    preventExit(event) {
+        event.preventDefault();
+        event.returnValue = '';
     }
 
     /**
@@ -423,19 +427,21 @@ class FileExplorer extends React.Component {
 
                 const _fileID = uuidv4() + "." + fileName.split('.').pop();
 
-                fetch(API_URL + '/prepare-upload', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
+                axios.post(API_URL + '/prepare-upload',
+                    {
                         _private: this.props._private,
                         path: path,
                         name: fileName,
-                    })
-                }).then(response => {return response.json()})
-                .then(data => {
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                })
+                .then(({ data }) => {
                     if (data['success']) {
+                        const uniquePreventExit = (e) => { this.preventExit(e) };
+                        window.addEventListener('beforeunload', uniquePreventExit);
                         fileName = data["filename"];  // update filename if server changed it due to name collisions
 
                         //// Update list of files on screen after upload of first chunk
@@ -448,7 +454,7 @@ class FileExplorer extends React.Component {
                             let chunk = fileBlob.slice(startChunk, endChunk, fileType);
                             startChunk = endChunk;
                             endChunk = endChunk + chunkSize;
-                            this.sendChunk(i, chunk, fileName, _totalCount, _fileID);
+                            this.sendChunk(i, chunk, fileName, _totalCount, _fileID, uniquePreventExit);
                         }
                     } else {
                         this.storageMenu.current.openWithMessage(data.error);
@@ -704,8 +710,6 @@ class FileExplorer extends React.Component {
     }
 
     getSortedRows() {
-        if (this.props.current_file_name) return this.state.components;
-
         const order = this.state.order === "asc" ? 1 : -1;
         switch (this.state.orderBy) {
             case "name":
@@ -754,13 +758,31 @@ class FileExplorer extends React.Component {
                     } else if (a.props.info?.["type"] === "file" && b.props.info?.["type"] === "folder") {
                         return 1;  // list folders first
                     } else if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "folder") {
-                        return (a.key).localeCompare(b.key);  // list folders always alphabetically A-Z
+                        let sizeA = a.props.info?.["size"]?.split(" ") ?? _zerobytes;
+                        let sizeB = b.props.info?.["size"]?.split(" ") ?? _zerobytes;
+                        sizeA = Number(sizeA[0]) * (sizeMap[sizeA[1]] || 1);
+                        sizeB = Number(sizeB[0]) * (sizeMap[sizeB[1]] || 1);
+                        return order * (sizeA - sizeB);
                     } else {
                         let sizeA = a.props.info?.["total_size"]?.split(" ") ?? _zerobytes;
                         let sizeB = b.props.info?.["total_size"]?.split(" ") ?? _zerobytes;
                         sizeA = Number(sizeA[0]) * (sizeMap[sizeA[1]] || 1);
                         sizeB = Number(sizeB[0]) * (sizeMap[sizeB[1]] || 1);
                         return order * (sizeA - sizeB);
+                    }
+                });
+
+            case "dateOCR":
+                return this.state.components.toSorted((a, b) => {
+                    if (a.props.info?.["type"] === "folder" && b.props.info?.["type"] === "file") {
+                        return -1;  // list folders first
+                    } else if (a.props.info?.["type"] === "file" && b.props.info?.["type"] === "folder") {
+                        return 1;  // list folders first
+                    } else {
+                        // Format to parse must be ensured to be the same as server-side date format
+                        const dateA = dayjs(a.props.info?.["ocr"]?.["creation"], "DD/MM/YYYY HH:mm:ss");
+                        const dateB = dayjs(b.props.info?.["ocr"]?.["creation"], "DD/MM/YYYY HH:mm:ss");
+                        return dateA.isAfter(dateB) ? order : (-order);
                     }
                 });
 
@@ -788,6 +810,10 @@ class FileExplorer extends React.Component {
                         ref={ref}
                         key={this.props.current_folder + "/" + item}
                         name={item}
+                        thumbnails={{
+                            small: `${this.props._private ? `${this.props.spaceId}/` : ''}` + `${this.props.current_folder}/${item}/_thumbnails/${item}_128.thumbnail`,
+                            large: `${this.props._private ? `${this.props.spaceId}/` : ''}` + `${this.props.current_folder}/${item}/_thumbnails/${item}_600.thumbnail`,
+                        }}
                         _private={this.props._private}
                         info={this.getInfo(item)}
                         enterDocument={this.enterFolder}
@@ -860,81 +886,27 @@ class FileExplorer extends React.Component {
                         <TableRow className="explorerHeaderRow">
                             <TableCell scope="column" className="explorerCell optionsCell" />
 
+                            <TableCell scope="column" className="explorerCell thumbnailCell" sx={{border: "0 !important"}} />
+
                             <TableCell
                                 key="name"
                                 scope="column"
+                                align="left"
                                 sortDirection={this.state.orderBy === "name" ? this.state.order : false}
-                                className={"headerCell explorerCell " + (this.props.current_file_name ? "staticNameCell" : "nameCell")}
+                                className="headerCell explorerCell nameCell"
                             >
-                                <Box sx={{display: "flex"}}>
-                                    <TableSortLabel
-                                        active={!this.props.current_file_name && this.state.orderBy === "name"}
-                                        direction={this.state.orderBy === "name" ? this.state.order : 'asc'}
-                                        onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("name")}}
-                                        sx={{
-                                            display: "flex",
-                                            flexWrap: "wrap",
-                                            width: "fit-content",
-                                        }}
-                                    >
-                                        <span><b>Nome</b></span>
-                                        {this.state.orderBy === "name" ? (
-                                            <Box component="span" sx={visuallyHidden}>
-                                                {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
-                                            </Box>
-                                        ) : null}
-                                    </TableSortLabel>
-
-                                    {this.props.current_file_name
-                                        ? null
-                                        : <>
-                                            <Button
-                                                variant="contained"
-                                                startIcon={<CreateNewFolderIcon/>}
-                                                onClick={() => this.createFolder()}
-                                                className="menuButton"
-                                                sx={{marginLeft: '0.5rem'}}
-                                            >
-                                                Nova Pasta
-                                            </Button>
-
-                                            <Button
-                                                disabled={
-                                                    /* in private space, root level can have docs */
-                                                    this.props.current_folder === "" && !this.props._private
-                                                }
-                                                variant="contained"
-                                                startIcon={<NoteAddIcon/>}
-                                                onClick={() => this.createFile()}
-                                                className="menuButton pathElement"
-                                            >
-                                                Novo Documento
-                                            </Button>
-                                        </>
-                                    }
-                                </Box>
-                            </TableCell>
-
-                            { !this.props.current_file_name
-                                ? <TableCell scope="column" className="headerCell explorerCell stateCell" align="left">
-                                    <span><b>Estado</b></span>
-                                </TableCell>
-                                : null
-                            }
-
-                            <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticDateCreatedCell" : "dateCreatedCell")}>
                                 <TableSortLabel
-                                    active={!this.props.current_file_name && this.state.orderBy === "dateCreated"}
-                                    direction={this.state.orderBy === "dateCreated" ? this.state.order : 'asc'}
-                                    onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("dateCreated")}}
+                                    active={this.state.orderBy === "name"}
+                                    direction={this.state.orderBy === "name" ? this.state.order : 'asc'}
+                                    onClick={() => this.handleRequestSort("name")}
                                     sx={{
                                         display: "flex",
                                         flexWrap: "wrap",
                                         width: "fit-content",
                                     }}
                                 >
-                                    <b>Data de criação</b>
-                                    {this.state.orderBy === "dateCreated" ? (
+                                    <span><b>Nome</b></span>
+                                    {this.state.orderBy === "name" ? (
                                         <Box component="span" sx={visuallyHidden}>
                                             {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
                                         </Box>
@@ -942,11 +914,11 @@ class FileExplorer extends React.Component {
                                 </TableSortLabel>
                             </TableCell>
 
-                            <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticDetailsCell" : "detailsCell")}>
+                            <TableCell scope="column" className="headerCell explorerCell detailsCell" align="left">
                                 <TableSortLabel
-                                    active={!this.props.current_file_name && this.state.orderBy === "details"}
+                                    active={this.state.orderBy === "details"}
                                     direction={this.state.orderBy === "details" ? this.state.order : 'asc'}
-                                    onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("details")}}
+                                    onClick={() => this.handleRequestSort("details")}
                                     sx={{
                                         display: "flex",
                                         flexWrap: "wrap",
@@ -962,15 +934,14 @@ class FileExplorer extends React.Component {
                                 </TableSortLabel>
                             </TableCell>
 
-                            <TableCell scope="column" className={"headerCell explorerCell " + (this.props.current_file_name ? "staticSizeCell" : "sizeCell")}>
+                            <TableCell scope="column" className="headerCell explorerCell sizeCell" align="right">
                                 <TableSortLabel
-                                    active={!this.props.current_file_name && this.state.orderBy === "size"}
+                                    active={this.state.orderBy === "size"}
                                     direction={this.state.orderBy === "size" ? this.state.order : 'asc'}
-                                    onClick={() => {if (!this.props.current_file_name) this.handleRequestSort("size")}}
+                                    onClick={() => this.handleRequestSort("size")}
                                     sx={{
                                         display: "flex",
                                         flexWrap: "wrap",
-                                        width: "fit-content",
                                     }}
                                 >
                                     <span><b>Tamanho</b></span>
@@ -981,16 +952,38 @@ class FileExplorer extends React.Component {
                                     ) : null}
                                 </TableSortLabel>
                             </TableCell>
+
+                            <TableCell scope="column" className="headerCell explorerCell dateCreatedCell" align="right">
+                                <TableSortLabel
+                                    active={this.state.orderBy === "dateCreated"}
+                                    direction={this.state.orderBy === "dateCreated" ? this.state.order : 'asc'}
+                                    onClick={() => this.handleRequestSort("dateCreated")}
+                                    sx={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                    }}
+                                >
+                                    <b>Data de criação</b>
+                                    {this.state.orderBy === "dateCreated" ? (
+                                        <Box component="span" sx={visuallyHidden}>
+                                            {this.state.order === 'desc' ? 'ordem descendente' : 'ordem ascendente'}
+                                        </Box>
+                                    ) : null}
+                                </TableSortLabel>
+                            </TableCell>
+
+                            <TableCell scope="column" className="headerCell explorerCell stateCell" align="left">
+                                <span><b>Estado do Processo</b></span>
+                            </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {this.state.components.length === 0
-                            ? <>
-                                <TableCell scope="column" className="explorerCell optionsCell" />
+                            ? <TableCell scope="column" colSpan={7} className="explorerCell optionsCell">
                                 <Typography variant="body1" sx={{marginTop: "1rem", marginBottom: "1rem", marginLeft: "1rem"}}>
                                     A pasta está vazia. Adicione um documento ou sub-pasta.
                                 </Typography>
-                            </>
+                            </TableCell>
                             : this.getSortedRows()
                         }
                     </TableBody>
@@ -1157,37 +1150,98 @@ class FileExplorer extends React.Component {
                     :
                     <>
                     <Box className="toolbar">
-                        <ReturnButton
-                            disabled={this.props.current_folder === "" && (!this.props._private || this.props.current_file_name == null)}
-                            returnFunction={this.props.returnToParentFolder}
-                        />
+                        <Box sx={{display: "flex", flexDirection: "row", justifyContent: "left"}}>
+                            <ReturnButton
+                                disabled={this.props.current_folder === "" && (!this.props._private || this.props.current_file_name == null)}
+                                returnFunction={this.props.returnToParentFolder}
+                            />
+
+                            <Button
+                                variant="contained"
+                                startIcon={<CreateNewFolderIcon/>}
+                                onClick={() => this.createFolder()}
+                                className="menuButton menuFunctionButton noMarginRight"
+                                sx={{marginLeft: '0.5rem'}}
+                            >
+                                Nova Pasta
+                            </Button>
+
+                            <Button
+                                disabled={
+                                    /* in private space, root level can have docs */
+                                    this.props.current_folder === "" && !this.props._private
+                                }
+                                variant="contained"
+                                startIcon={<NoteAddIcon/>}
+                                onClick={() => this.createFile()}
+                                className="menuButton menuFunctionButton noMarginRight"
+                            >
+                                Novo Documento
+                            </Button>
+                        </Box>
+
+                        {this.props.spaceId
+                            ? <Button
+                                variant="contained"
+                                startIcon={<LockIcon/>}
+                                onClick={() => this.props.leavePrivateSpace()}
+                                className="menuButton"
+                                color="error"
+                                sx={{
+                                    marginLeft: "1rem",
+                                    marginTop: "auto",
+                                    marginBottom: "auto",
+                                    marginRight: "0.5rem",
+                                }}
+                            >
+                                Sair do Espaço
+                            </Button>
+                            : <Button
+                                variant="contained"
+                                startIcon={<LockIcon/>}
+                                onClick={() => this.props.createPrivateSpace()}
+                                className="menuButton"
+                                sx={{
+                                    marginLeft: "1rem",
+                                    marginTop: "auto",
+                                    marginBottom: "auto"
+                                }}
+                            >
+                                Espaço Privado
+                            </Button>
+                        }
                     </Box>
 
-                    <Box sx={{
-                        width: '87vw',
-                        marginLeft: 'auto',
-                        marginRight: 'auto',
-                        marginBottom: '1.5rem',
-                    }}>
+                    <Box
+                        className="menuContent"
+                    >
                         <Notification message={""} severity={"success"} ref={this.successNot}/>
                         <Notification message={""} severity={"error"} ref={this.errorNot}/>
 
-                        <FolderMenu ref={this.folderMenu}
-                                    _private={this.props._private}
-                                    submitCallback={this.fetchFiles}/>
-                        <OcrPopup ref={this.ocrPopup}
-                                  _private={this.props._private}
-                                  submitCallback={this.fetchInfo}
-                                  showStorageForm={this.showStorageForm}/>
-                        <DeletePopup ref={this.deletePopup}
-                                     _private={this.props._private}
-                                     submitCallback={this.fetchFiles}/>
+                        <FolderMenu
+                            ref={this.folderMenu}
+                            _private={this.props._private}
+                            submitCallback={this.fetchFiles}
+                        />
+                        <OcrPopup
+                            ref={this.ocrPopup}
+                            _private={this.props._private}
+                            submitCallback={this.fetchInfo}
+                            showStorageForm={this.showStorageForm}
+                        />
+                        <DeletePopup
+                            ref={this.deletePopup}
+                            _private={this.props._private}
+                            submitCallback={this.fetchFiles}
+                        />
                         {
                             this.props._private && this.state.fetched
-                            ? <PrivateSpaceMenu ref={this.privateSpaceMenu}
-                                                  maxAge={this.state.maxAge}
-                                                  rowRefsLength={this.rowRefs.length}
-                                                  createFile={this.createFile}/>
+                            ? <PrivateSpaceMenu
+                                    ref={this.privateSpaceMenu}
+                                    maxAge={this.state.maxAge}
+                                    rowRefsLength={this.rowRefs.length}
+                                    createFile={this.createFile}
+                            />
                             : null
                         }
 
@@ -1216,6 +1270,8 @@ FileExplorer.defaultProps = {
     layoutMenu: false,
     editingMenu: false,
     // functions:
+    createPrivateSpace: null,
+    leavePrivateSpace: null,
     setCurrentPath: null,
     returnToParentFolder: null,
     enterOcrMenu: null,

@@ -17,6 +17,7 @@ from celery import group
 from celery.canvas import Signature
 from celery.schedules import crontab
 from dotenv import load_dotenv
+from filelock import FileLock
 from PIL import Image
 from PIL import ImageDraw
 from redbeat import RedBeatSchedulerEntry
@@ -27,15 +28,19 @@ from src.utils.export import export_file
 from src.utils.export import export_from_existing
 from src.utils.export import load_fonts
 from src.utils.file import ALLOWED_EXTENSIONS
+from src.utils.file import API_TEMP_PATH
+from src.utils.file import dump_json_file
 from src.utils.file import generate_random_uuid
 from src.utils.file import get_current_time
 from src.utils.file import get_data
 from src.utils.file import get_doc_len
+from src.utils.file import get_document_files_size
 from src.utils.file import get_file_basename
 from src.utils.file import get_file_size
 from src.utils.file import get_ner_file
 from src.utils.file import get_ocr_size
 from src.utils.file import get_page_count
+from src.utils.file import get_word_count
 from src.utils.file import PRIVATE_PATH
 from src.utils.file import save_file_layouts
 from src.utils.file import size_to_units
@@ -76,6 +81,16 @@ load_fonts()
 
 @celery.task(name="auto_segment", priority=0)
 def task_auto_segment(path, use_hdbscan=False):
+    data_path = f"{path}/_data.json"
+    lock_path = f"{data_path}.lock"
+    lock = FileLock(lock_path)
+    with lock:
+        data = get_data(data_path, lock=lock)
+        if "segmenting" in data and data["segmenting"]:
+            return {"segmenting": True}
+        else:
+            update_json_file(data_path, {"segmenting": True}, lock=lock)
+
     if use_hdbscan:
         return parse_images(path)
     pages_path = f"{path}/_pages"
@@ -145,7 +160,11 @@ def task_auto_segment(path, use_hdbscan=False):
                 b["id"] = f"{page + 1}.{i + 1}"
 
         sorted_all_layouts.append({"boxes": sorted_layout})
+
     save_file_layouts(path, sorted_all_layouts)
+    with lock:
+        update_json_file(data_path, {"segmenting": False}, lock=lock)
+
     return {"status": "success"}
 
 
@@ -167,10 +186,19 @@ def task_make_changes(path, data):
         },
     )
 
+    # Recreate formats already created, as well as any added to the config later
+    recreate_types = {
+        type_name
+        for type_name, value in data.items()
+        if isinstance(value, dict) and "complete" in value and value["complete"]
+    }
+    if "config" in data and "outputs" in data["config"]:
+        recreate_types.update(data["config"]["outputs"])
+
     export_folder = path + "/_export"
     created_time = get_current_time()
 
-    if data["txt"]["complete"]:
+    if "txt" in recreate_types:
         update_json_file(
             data_file,
             {
@@ -189,7 +217,7 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["txt_delimited"]["complete"]:
+    if "txt_delimited" in recreate_types:
         update_json_file(
             data_file,
             {
@@ -208,7 +236,7 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["pdf_indexed"]["complete"]:
+    if "pdf_indexed" in recreate_types:
         update_json_file(
             data_file,
             {
@@ -218,9 +246,15 @@ def task_make_changes(path, data):
                 }
             },
         )
-        recreate_csv = data["csv"]["complete"]
+        recreate_csv = "csv" in recreate_types
         os.remove(export_folder + "/_pdf_indexed.pdf")
-        export_file(path, "pdf", force_recreate=True, get_csv=recreate_csv)
+        export_file(
+            path,
+            "pdf",
+            force_recreate=True,
+            keep_temp=data["pdf"]["complete"],
+            get_csv=recreate_csv,
+        )
         data["pdf_indexed"] = {
             "complete": True,
             "size": size_to_units(
@@ -229,7 +263,7 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["pdf"]["complete"]:
+    if "pdf" in recreate_types:
         update_json_file(
             data_file,
             {
@@ -239,9 +273,16 @@ def task_make_changes(path, data):
                 }
             },
         )
-        recreate_csv = data["csv"]["complete"] and not data["pdf_indexed"]["complete"]
+        recreate_csv = "csv" in recreate_types and "pdf_indexed" not in recreate_types
         os.remove(export_folder + "/_pdf.pdf")
-        export_file(path, "pdf", force_recreate=True, simple=True, get_csv=recreate_csv)
+        export_file(
+            path,
+            "pdf",
+            force_recreate=True,
+            simple=True,
+            already_temp=data["pdf_indexed"]["complete"],
+            get_csv=recreate_csv,
+        )
         data["pdf"] = {
             "complete": True,
             "size": size_to_units(
@@ -250,8 +291,10 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["csv"]["complete"] and not (
-        data["pdf_indexed"]["complete"] or data["pdf"]["complete"]
+    if (
+        "csv" in recreate_types
+        and "pdf_indexed" not in recreate_types
+        and "pdf" not in recreate_types
     ):
         update_json_file(
             data_file,
@@ -264,7 +307,7 @@ def task_make_changes(path, data):
         )
         export_csv(path, force_recreate=True)
 
-    if data["csv"]["complete"]:
+    if "csv" in recreate_types:
         data["csv"] = {
             "complete": True,
             "size": size_to_units(
@@ -273,7 +316,7 @@ def task_make_changes(path, data):
             "creation": created_time,
         }
 
-    if data["ner"]["complete"]:
+    if "ner" in recreate_types:
         try:
             update_json_file(
                 data_file,
@@ -284,6 +327,10 @@ def task_make_changes(path, data):
                     }
                 },
             )
+            # NER is retrieved from .txt results
+            if "txt" not in recreate_types:
+                export_file(path, "txt", force_recreate=True)
+
             task_request_ner(path)
         except Exception as e:
             log.error(f"Error fetching NER for {path}: {e}")
@@ -292,7 +339,10 @@ def task_make_changes(path, data):
     data["status"] = {
         "stage": "post-ocr",
     }
-    update_json_file(data_file, data)
+    if "edited_results" in data:
+        del data["edited_results"]
+    # dump to ensure removal of "edited_results" is applied
+    dump_json_file(data_file, data)
     return {"status": "success"}
 
 
@@ -301,13 +351,25 @@ def task_count_doc_pages(path: str, extension: str):
     """
     Updates the metadata of the document at the given path with its page count.
     :param path: the document's path
-    :param extension: the document's extension
+    :param extension: the document's original extension
     """
+    if path.startswith(API_TEMP_PATH):
+        from_api = True
+    else:
+        from_api = False
+    original_path = (
+        f"{path}/{get_file_basename(path)}.{extension}" if from_api else path
+    )
+
     update_json_file(
         f"{path}/_data.json",
         {
             "pages": get_page_count(path, extension),
             "stored": True,
+            "size": size_to_units(get_file_size(original_path, path_complete=from_api)),
+            "total_size": size_to_units(
+                get_document_files_size(path, extension=extension, from_api=from_api)
+            ),
             "status": {
                 "stage": "waiting",
             },
@@ -381,6 +443,20 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                 im.save(
                     f"{path}/_pages/{basename}_{i}.png", format="PNG"
                 )  # using PNG to keep RGBA
+
+                # Generate document thumbnails with first page
+                if i == 0:
+                    img_rgb = im.convert("RGB")
+                    thumb_128 = img_rgb.copy()
+                    thumb_128.thumbnail((128, 128))
+                    thumb_128.save(
+                        f"{path}/_thumbnails/{basename}.zip_128.thumbnail", "JPEG"
+                    )
+                    img_rgb.thumbnail((600, 600))
+                    img_rgb.save(
+                        f"{path}/_thumbnails/{basename}.zip_600.thumbnail", "JPEG"
+                    )
+
             shutil.rmtree(temp_folder_name)
 
             task_count_doc_pages(path=path, extension=extension)
@@ -395,12 +471,35 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                 link_path = f"{path}/_pages/{basename}_0.{extension}"
                 if not os.path.exists(link_path):
                     os.link(original_path, link_path)
+
+                # Generate document thumbnails
+                img_rgb = img.convert("RGB")
+                thumb_128 = img_rgb.copy()
+                thumb_128.thumbnail((128, 128))
+                thumb_128.save(
+                    f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+                )
+                img_rgb.thumbnail((600, 600))
+                img_rgb.save(
+                    f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
+                )
             else:
                 compression = img._compression
                 img.save(
                     f"{path}/_pages/{basename}_0.{extension}",
                     save_all=False,
                     compression=compression,
+                )
+                # Generate document thumbnails with first page
+                img_rgb = img.convert("RGB")
+                thumb_128 = img_rgb.copy()
+                thumb_128.thumbnail((128, 128))
+                thumb_128.save(
+                    f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+                )
+                img_rgb.thumbnail((600, 600))
+                img_rgb.save(
+                    f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
                 )
 
                 for i in range(1, n_frames):
@@ -420,6 +519,19 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
             link_path = f"{path}/_pages/{basename}_0.{extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
+
+            # Generate document thumbnails
+            img = Image.open(original_path)
+            img_rgb = img.convert("RGB")
+            thumb_128 = img_rgb.copy()
+            thumb_128.thumbnail((128, 128))
+            thumb_128.save(
+                f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+            )
+            img_rgb.thumbnail((600, 600))
+            img_rgb.save(
+                f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
+            )
 
             task_count_doc_pages(path=path, extension=extension)
             if callback is not None:
@@ -676,6 +788,14 @@ def task_extract_pdf_page(path, basename, i):
             os.remove(output_path)  # Remove truncated file
             raise
 
+        # Generate document thumbnails with first page
+        if i == 0:
+            thumb_128 = pil_image.copy()
+            thumb_128.thumbnail((128, 128))
+            thumb_128.save(f"{path}/_thumbnails/{basename}.pdf_128.thumbnail", "JPEG")
+            pil_image.thumbnail((600, 600))
+            pil_image.save(f"{path}/_thumbnails/{basename}.pdf_600.thumbnail", "JPEG")
+
         log.debug(f"Extracted page {i} from {basename}.pdf")
 
     except Exception as e:
@@ -912,10 +1032,11 @@ def task_page_ocr(
 
         data = get_data(data_file)
         data["ocr"]["progress"] = len(files)
-        data["status"] = {
-            "stage": "ocr",
-            "message": f"({ocr_engine.estimate_ocr_time(config, n_doc_pages - len(files))})",
-        }
+        if data["status"]["stage"] != "error":
+            data["status"] = {
+                "stage": "ocr",
+                "message": f"({ocr_engine.estimate_ocr_time(config, n_doc_pages - len(files))})",
+            }
         update_json_file(data_file, data)
 
         # If last page has been processed, generate results
@@ -1049,7 +1170,13 @@ def task_export_results(path: str, output_types: list[str]):
                     }
                 },
             )
-            export_file(path, "pdf", get_csv=("csv" in output_types))
+            keep_temp_images = "pdf" in output_types and not data["pdf"]["complete"]
+            export_file(
+                path,
+                "pdf",
+                keep_temp=keep_temp_images,
+                get_csv=("csv" in output_types),
+            )
             creation_time = get_current_time()
             data["pdf_indexed"] = {
                 "complete": True,
@@ -1081,7 +1208,13 @@ def task_export_results(path: str, output_types: list[str]):
                     }
                 },
             )
-            export_file(path, "pdf", simple=True, get_csv=("csv" in output_types))
+            export_file(
+                path,
+                "pdf",
+                simple=True,
+                already_temp=("pdf_indexed" in output_types),
+                get_csv=("csv" in output_types),
+            )
             creation_time = get_current_time()
             data["pdf"] = {
                 "complete": True,
@@ -1144,10 +1277,22 @@ def task_export_results(path: str, output_types: list[str]):
             else:
                 data["ner"] = {"complete": False, "error": True}
 
+        if path.startswith(API_TEMP_PATH):
+            extension = data["extension"]
+            from_api = True
+        else:
+            extension = None
+            from_api = False
+
         data["ocr"]["progress"] = "completed"
         data["status"] = {
             "stage": "post-ocr",
         }
+        data["total_size"] = size_to_units(
+            get_document_files_size(path, extension=extension, from_api=from_api)
+        )
+        data["words"] = get_word_count(path)
+
         update_json_file(data_file, data)
         return {"status": "success"}
 
@@ -1200,7 +1345,7 @@ def task_set_max_private_space_age(new_max_age: int | str):
 
 @celery.task(name="cleanup_private_spaces", priority=0)
 def task_delete_old_private_spaces():
-    max_private_space_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "5"))  # days
+    max_private_space_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "1"))  # days
     log.info(f"Deleting private spaces older than {max_private_space_age} days")
 
     private_spaces = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
@@ -1212,9 +1357,6 @@ def task_delete_old_private_spaces():
             TIMEZONE
         )
         now = datetime.now().astimezone(TIMEZONE)
-        log.debug(
-            f"{folder} AGE: {(now - as_datetime).days} days. Older than 5? {(now - as_datetime).days > max_private_space_age}"
-        )
         if (now - as_datetime).days > max_private_space_age:
             shutil.rmtree(folder)
             n_deleted += 1

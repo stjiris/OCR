@@ -112,7 +112,10 @@ services:
       - files_data:/usr/share/nginx/html/files
     environment:
       NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
-      CLIENT_MAX_BODY_SIZE: 2G
+      MAX_FILE_CHUNK_SIZE: 2G
+      MAX_API_FILE_SIZE: 2G
+      MAX_DOC_SEGMENTATION_SIZE: 100M
+      MAX_EDITED_RESULTS_SIZE: 100M
       NODE_ENV: development
     restart: unless-stopped
     networks:

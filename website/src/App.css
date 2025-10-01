@@ -18,13 +18,34 @@
     src: url("fonts/RobotoMono-VariableFont_wght.ttf")
 }
 
+:root{
+    --primary-red: #BA1514;
+    --primary-gold: #C2A340;
+    --secondary-gold: #F4ECCE;
+}
+
+div.header {
+    background-color: var(--secondary-gold);
+    border-bottom: 1px solid #dee2e6;
+}
+
+h1.fancy-font {
+    font-family: 'Cinzel', serif;
+    color: var(--primary-red);
+}
+
+.red-link{
+    color: var(--primary-red) !important;
+}
+
 body {
   font-family: 'Noto Sans', 'Arial', sans-serif;
 }
 
 .toolbar {
-    margin-left: 0.5rem;
-    margin-right: 0.5rem;
+    width: 87vw;
+    margin-left: auto;
+    margin-right: auto;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -36,6 +57,14 @@ body {
     padding-bottom: 1rem;
     margin-bottom: 0.5rem;
     border-bottom: 1px solid black;
+}
+
+.menuContent {
+    width: 87vw;
+    height: 69vh;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.5rem;
 }
 
 .MuiBox-root .pathElement {
@@ -55,6 +84,7 @@ body {
 .MuiBox-root .pathButton {
     text-transform: none;
     text-decoration: underline;
+    min-width: 0;
 }
 
 .MuiBox-root .pathButton:disabled {  /* overrides transparency from Mui-disabled */
@@ -124,6 +154,29 @@ span.toolbarTitle, .MuiTypography-root.toolbarTitle {
     text-transform: none;
 }
 
+.zooming-tool {
+    display: flex;
+    flex-direction: column;
+    position: fixed;  /* float over page */
+    margin-left: 0.5rem;
+    margin-top: 0.5rem;
+    z-index: 2;
+}
+
+.zooming-tool:hover {
+    cursor: default;
+}
+
+.zooming-tool .zooming-IconButton {  /* zoom buttons within zooming tool */
+    margin-bottom: 10px;
+    padding: 0;
+}
+
+.zooming-IconButton .zoom-icon {
+    width: 1.7rem;
+    height: 1.7rem;
+}
+
 .pageImageContainer {
     display: flex;
     position: relative;
@@ -142,6 +195,15 @@ span.toolbarTitle, .MuiTypography-root.toolbarTitle {
     margin: auto;
     border: 1px solid black;
     object-fit: contain;
+    user-select: none;
+}
+
+.pageNumberInput {
+    width: 2rem;
+    height: 1rem;
+    font-size: 1rem;
+    text-align: center;
+    margin-right: 10px;
 }
 
 .editingSection {
@@ -188,7 +250,10 @@ cannot be styled with props, interferes with functioning of Autocomplete
 */
 
 .MuiTableRow-head.explorerHeaderRow {
+    height: 2rem;
     background-color: #f5f5f5;
+    border-top: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .MuiTableRow-root.explorerRow {
@@ -212,11 +277,13 @@ cannot be styled with props, interferes with functioning of Autocomplete
 }
 
 .MuiTableCell-root.MuiTableCell-head.headerCell {
-    height: 2rem;
+    font-family: 'Noto Sans', 'Arial', sans-serif;
+    height: inherit;
     padding: 16px;
 }
 
 .MuiTableCell-root.explorerCell {
+    height: inherit;
     background-color: inherit;
     border-left: 1px solid #aaa;
     font-size: 1rem;
@@ -229,19 +296,20 @@ cannot be styled with props, interferes with functioning of Autocomplete
 }
 
 .explorerCell.errorCell {
-    background-color: #f44336;
+    background-color: var(--primary-red);
+    color: #ffffff;
 }
 
 .explorerCell.infoCell {
-    background-color: #ffed7a;
+    background-color: var(--secondary-gold);
 }
 
 .explorerCell.successCell {
-    background-color: #19a942;
+    background-color: inherit;
 }
 
 .explorerCell.waitingCell {
-    background-color: #a6a6a6;
+    background-color: inherit;
 }
 
 .stateCell .stateBox {
@@ -257,9 +325,16 @@ cannot be styled with props, interferes with functioning of Autocomplete
     width: 1%;
 }
 
-.MuiTableCell-root.nameCell {
+.MuiTableCell-root.thumbnailCell {
     border-left: 0;
-    width: 34%;
+    width: 5%;
+    text-align: center;
+}
+
+.MuiTableCell-root.nameCell {
+    border-left: 1px solid #e0e0e0;
+    padding-left: 0;
+    width: 30%;
     text-align: left;
 }
 
@@ -269,55 +344,12 @@ cannot be styled with props, interferes with functioning of Autocomplete
 
 .MuiTableCell-root.staticNameCell {
     border-left: 0;
-    width: 34%;
-    text-align: left;
-    padding-left: 48px;
-}
-
-.MuiTableCell-root.actionsCell {
-    width: 16%;
-    text-align: center;
-    padding: 0;
-}
-
-.MuiTableCell-root.staticActionsCell {
-    display: none;
-    width: 16%;
-    text-align: center;
-}
-
-.actionsCell-inner {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    width: 100%;
-    justify-content: center;
-    align-items: center;
-    float: right;
-}
-
-.MuiTableCell-root.stateCell {
-    width: 13%;
-    text-align: left;
-}
-
-.MuiTableCell-root.dateCreatedCell {
-    width: 13%;
-    text-align: left;
-}
-
-.MuiTableCell-root.staticDateCreatedCell {
-    width: 13%;
+    width: 30%;
     text-align: left;
 }
 
 .MuiTableCell-root.detailsCell {
-    width: 10%;
-    text-align: left;
-}
-
-.MuiTableCell-root.staticDetailsCell {
-    width: 10%;
+    width: 13%;
     text-align: left;
 }
 
@@ -327,10 +359,19 @@ cannot be styled with props, interferes with functioning of Autocomplete
     font-family: "Roboto Mono", monospace;
 }
 
-.MuiTableCell-root.staticSizeCell {
-    width: 8%;
+.MuiTableCell-root.dateCreatedCell {
+    width: 12%;
     text-align: right;
-    font-family: "Roboto Mono", monospace;
+}
+
+.MuiTableCell-root.dateOCRCell {
+    width: 12%;
+    text-align: left;
+}
+
+.MuiTableCell-root.stateCell {
+    width: 18%;
+    text-align: left;
 }
 
 /*

@@ -302,7 +302,7 @@ const ConfigManager = (props) => {
         setUncommittedChanges(true);
     }
 
-    function getConfig() {
+    const getConfig = useCallback(() => {
         const config = {};
         if (engine !== "") {
             config.engine = engine;
@@ -329,7 +329,7 @@ const ConfigManager = (props) => {
             config.otherParams = otherParams;
         }
         return config;
-    }
+    }, [engine, lang, outputs, engineMode, segmentMode, thresholdMethod, dpiVal, otherParams]);
 
     const saveConfig = useCallback(() => {
         const config = getConfig();
@@ -363,7 +363,7 @@ const ConfigManager = (props) => {
                 errorNotifRef.current.openNotif(err.message);
                 closeConfirmationPopup();
             });
-    },  [configName, isEditingExistingConfig]);
+    },  [getConfig, configName, isEditingExistingConfig]);
 
     const deleteConfig = useCallback(() => {
         axios.post(API_URL + "/admin/delete-config",

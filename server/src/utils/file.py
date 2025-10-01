@@ -9,6 +9,7 @@ from os import environ
 
 import pytz
 import requests
+from filelock import FileLock
 
 # from string import punctuation
 
@@ -196,7 +197,7 @@ def get_file_layouts(path, is_private):
                 {"boxes": [], "page_url": page_url, "page_number": page, "done": False}
             )
 
-    return layouts
+    return layouts, data["segmenting"] if "segmenting" in data else False
 
 
 def save_file_layouts(path, layouts):
@@ -316,14 +317,19 @@ def get_ocr_size(path):
         return f"{size / 1024 ** 3:.2f} GB"
 
 
-def get_document_files_size(path):
+def get_document_files_size(path, extension=None, from_api: bool = False):
     """
     Get the total size of files related to a document,
     which are the original copy of the file and result files inside /_export.
     :param path: path to the document folder
+    :param extension: extension in the original file, used in the case of documents from the API
+    :param from_api: whether the method is being called for a file from the API
     :return: total size in bytes
     """
-    size = get_file_size(path)  # original file's size
+    original_path = (
+        f"{path}/{get_file_basename(path)}.{extension}" if from_api else path
+    )
+    size = get_file_size(original_path, path_complete=from_api)  # original file's size
     for dirpath, folders, filenames in os.walk(f"{path}/_export"):
         for f in filenames:
             subpath = os.path.join(dirpath, f)
@@ -355,8 +361,8 @@ def get_file_size(path, path_complete=False):
     if not, seeks the file contained within the target folder which shares its name
     :return: file size in bytes
     """
-    name = path.split("/")[-1]
     if not path_complete:
+        name = path.split("/")[-1]
         path = f"{path}/{name}"
     return os.path.getsize(path)
 
@@ -375,13 +381,30 @@ def get_folder_info(path, private_space=None):
     if "type" not in data:
         return {}
 
-    if data["type"] == "file" and ("stored" not in data or data["stored"] is True):
-        data["size"] = size_to_units(get_file_size(path))
-        data["total_size"] = size_to_units(get_document_files_size(path))
+    if data["type"] == "folder":
+        n_subfolders = 0
+        n_docs = 0
+        for content in os.scandir(path):
+            if content.is_dir() and not content.name.startswith("_"):
+                content_data = get_data(f"{path}/{content.name}/_data.json")
+                if "type" in content_data:
+                    if content_data["type"] == "folder":
+                        n_subfolders += 1
+                    elif content_data["type"] == "file":
+                        n_docs += 1
+        data["contents"] = {"documents": n_docs, "subfolders": n_subfolders}
 
-    elif data["type"] == "folder":
-        n_files = len([f for f in os.scandir(path) if not f.name.startswith("_")])
-        data["contents"] = n_files
+        folder_size = 0
+        dirs_dict = {}
+        # traverse bottom-up adding subdirectory sizes
+        for root, dirs, files in os.walk(path, topdown=False):
+            # sum directory file sizes
+            size = sum(os.path.getsize(os.path.join(root, name)) for name in files)
+            # sum subdirectory sizes
+            subdir_size = sum(dirs_dict[os.path.join(root, d)] for d in dirs)
+            # store size of current directory and update total size
+            folder_size = dirs_dict[root] = size + subdir_size
+        data["size"] = size_to_units(folder_size)
 
     # sanitize important paths from the info key
     path = (
@@ -504,6 +527,22 @@ def get_page_count(target_path, extension):
     return None
 
 
+def get_word_count(path):
+    n_words = 0
+    ocr_folder = f"{path}/_ocr_results"
+    with os.scandir(ocr_folder) as ocr_results:
+        for entry in ocr_results:
+            if entry.is_file() and entry.name.endswith(".json"):
+                with open(entry.path, encoding="utf-8") as file:
+                    text = file.read()
+                    if text == "":
+                        continue
+                    for paragraph in json.loads(text):
+                        for line in paragraph:
+                            n_words += len(line)
+    return n_words
+
+
 def get_file_basename(filename):
     """
     Get the basename of a file
@@ -556,10 +595,18 @@ def json_to_text(json_d):
 ##################################################
 
 
-def get_data(file):
+def get_data(file, lock=None):
+    """
+    Update the JSON data from the file.
+    :param file: file to read from
+    :param lock: file lock if already existing, to avoid recursive locks
+    """
     if not os.path.exists(file):
         raise FileNotFoundError
-    with open(file, encoding="utf-8") as f:
+    if lock is None:
+        lock_path = f"{file}.lock"
+        lock = FileLock(lock_path)
+    with lock, open(file, encoding="utf-8") as f:
         text = f.read()
         if text == "":
             return {}
@@ -574,15 +621,40 @@ def get_doc_len(file) -> int:
         return int(json.loads(text)["pages"])
 
 
-def update_json_file(file, data):
+def update_json_file(file, data, lock=None):
     """
     Update the JSON data contained in the file.
     :param file: file to update
     :param data: new or updated data
+    :param lock: file lock if already existing, to avoid recursive locks
     """
+    if not os.path.exists(file):
+        raise FileNotFoundError
 
     # TODO: ensure atomic operations to handle multiple users making changes to the same files/folders
-    previous_data = get_data(file)
-    with open(file, "w", encoding="utf-8") as f:
-        previous_data.update(data)
-        json.dump(previous_data, f, ensure_ascii=False, indent=2)
+    if lock is None:
+        lock_path = f"{file}.lock"
+        lock = FileLock(lock_path)
+    with lock:
+        previous_data = get_data(file, lock)
+        with open(file, "w", encoding="utf-8") as f:
+            previous_data.update(data)
+            json.dump(previous_data, f, ensure_ascii=False, indent=2)
+
+
+def dump_json_file(file, data, lock=None):
+    """
+    Dump the JSON data into the file.
+    :param file: file to update
+    :param data: new or updated data
+    :param lock: file lock if already existing, to avoid recursive locks
+    """
+    if not os.path.exists(file):
+        raise FileNotFoundError
+
+    # TODO: ensure atomic operations to handle multiple users making changes to the same files/folders
+    if lock is None:
+        lock_path = f"{file}.lock"
+        lock = FileLock(lock_path)
+    with lock, open(file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)

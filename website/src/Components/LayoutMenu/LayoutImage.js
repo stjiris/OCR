@@ -5,6 +5,8 @@ import Box from '@mui/material/Box';
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
+import ZoomingTool from "Components/ZoomingTool/ZoomingTool";
+
 const transparentPixel = new Image();
 transparentPixel.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=";
 
@@ -120,15 +122,16 @@ class LayoutBox extends React.Component {
             right: this.state.right,
             type: this.props.type,
             id: this.props.id,
-            checked: this.props.checked,
         }
     }
 
     beginDrag(corner) {
+        if (this.props.segmentLoading) return;
         this.props.setDraggingCorner(this, corner);
     }
 
     processDrag(e, corner) {
+        if (this.props.segmentLoading) return;
         const shiftX = this.viewRef.current.offsetLeft;
         const shiftY = this.viewRef.current.offsetTop;
 
@@ -198,18 +201,20 @@ class LayoutBox extends React.Component {
                             top: `${(finalCoords.y - initialCoords.y)/2 - 8}px`
                         }}
                     >
-                        <span><b>{
+                        <span>
+                            <b>{
                             (this.props.type === "text"
                                 ? "T"
                                 : (this.props.type === "image"
                                 ? "I"
                                 : "R")) + this.props.id
-                        }</b></span>
-                        {
-                            this.state.copyId
-                            ? <ContentCopyIcon sx={{fontSize: 15, ml: "10px"}}/>
-                            : null
-                        }
+                            }</b>
+
+                            {this.props.isCopied
+                             ? <ContentCopyIcon sx={{fontSize: 15, ml: "5px"}}/>
+                             : null
+                            }
+                        </span>
                     </Box>
 
                     <Box draggable
@@ -221,7 +226,6 @@ class LayoutBox extends React.Component {
                         }}
                         onDragStart={(e) => this.beginDrag(0)}
                         onDragEnd={() => this.props.updateMenu()}
-
                     />
 
                     <Box draggable
@@ -285,6 +289,10 @@ class LayoutImage extends React.Component {
         this.updateMenu = this.updateMenu.bind(this);
         this.setDraggingCorner = this.setDraggingCorner.bind(this);
         this.recreateBoxes = this.recreateBoxes.bind(this);
+
+        this.zoomIn = this.zoomIn.bind(this);
+        this.zoomOut = this.zoomOut.bind(this);
+        this.zoomReset = this.zoomReset.bind(this);
     }
 
     componentDidMount() {
@@ -299,7 +307,8 @@ class LayoutImage extends React.Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (prevProps.boxesCoords !== this.props.boxesCoords) {
+        if (prevProps.boxesCoords !== this.props.boxesCoords
+            || prevProps.segmentLoading !== this.props.segmentLoading) {
             this.loadBoxes();
         }
     }
@@ -332,20 +341,22 @@ class LayoutImage extends React.Component {
     }
     */
 
-    createLayoutBox(ref, box, type, checked = false) {
+    createLayoutBox(ref, box, type, checked = false, isCopied=false) {
         return <LayoutBox
             ref={ref}
             key={box.id + box.top + box.left + box.bottom + box.right}  // hack to force re-render on prop changes that don't trigger state changes
             index={box.id}
             viewRef={this.viewRef}
             imageRef={this.imageRef}
+            segmentLoading={this.props.segmentLoading}
             top={box.top}
             left={box.left}
             bottom={box.bottom}
             right={box.right}
             type={type}
             id={box.id}
-            checked={box.checked || checked || false}
+            isCopied={isCopied}
+            checked={checked || false}
             updateMenu={this.updateMenu}
             setDraggingCorner={this.setDraggingCorner}
         />
@@ -366,7 +377,7 @@ class LayoutImage extends React.Component {
 
             groupInfo.squares.forEach((box) => {
                 const ref = React.createRef();
-                boxes.push(this.createLayoutBox(ref, box, groupInfo.type, groupInfo.checked));
+                boxes.push(this.createLayoutBox(ref, box, groupInfo.type, groupInfo.checked, Boolean(groupInfo.copyId)));
                 groupInfo.squareRefs.push(ref);
             });
 
@@ -505,6 +516,7 @@ class LayoutImage extends React.Component {
     }
 
     updateMenu() {
+        if (this.props.segmentLoading) return;
         this.props.updateBoxes(this.getPageBoxes());
     }
 
@@ -547,6 +559,8 @@ class LayoutImage extends React.Component {
                 onDragOver={(e) => this.handleContainerDragOver(e)}
                 onDragEnd={(e) => this.handleContainerDragEnd(e)}
             >
+                <ZoomingTool zoomInFunc={this.zoomIn} zoomOutFunc={this.zoomOut} zoomResetFunc={this.zoomReset}/>
+
                 <img
                     ref={this.imageRef}
                     src={this.props.imageURL}
@@ -603,6 +617,7 @@ LayoutPreview.defaultProps = {
 LayoutBox.defaultProps = {
     view: null,
     imageRef: null,
+    segmentLoading: false,
 
     top: null,
     left: null,
@@ -610,6 +625,7 @@ LayoutBox.defaultProps = {
     right: null,
 
     id: null,
+    isCopied: false,
     type: "text",
     checked: false,
 

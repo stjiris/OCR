@@ -99,7 +99,9 @@ class FolderRow extends React.Component {
     }
 
     render() {
-        const buttonsDisabled = this.state.info["contents"] === 0;
+        const contents = this.state.info?.["contents"];
+        const nDocs = Number(contents?.["documents"]);
+        const nSubfolders = Number(contents?.["subfolders"]);
         const usingCustomConfig = this.state.info?.["config"] && this.state.info["config"] !== "default";
         return (
         <>
@@ -116,13 +118,13 @@ class FolderRow extends React.Component {
             >
                 <Tooltip
                     placement="right"
-                    title="A pasta está vazia"
-                    disableFocusListener={!buttonsDisabled}
-                    disableHoverListener={!buttonsDisabled}
-                    disableTouchListener={!buttonsDisabled}
+                    title="A pasta não contém documentos"
+                    disableFocusListener={!isNaN(nDocs) && nDocs !== 0}
+                    disableHoverListener={!isNaN(nDocs) && nDocs !== 0}
+                    disableTouchListener={!isNaN(nDocs) && nDocs !== 0}
                 ><span>
                     <MenuItem
-                        disabled={buttonsDisabled}
+                        disabled={isNaN(nDocs) || nDocs === 0}
                         onClick={(e) => this.performOCR(e, usingCustomConfig)}
                     >
                         <IconButton className="actionButton">
@@ -132,29 +134,20 @@ class FolderRow extends React.Component {
                     </MenuItem>
                 </span></Tooltip>
 
-                <Tooltip
-                    placement="right"
-                    title="A pasta está vazia"
-                    disableFocusListener={!buttonsDisabled}
-                    disableHoverListener={!buttonsDisabled}
-                    disableTouchListener={!buttonsDisabled}
-                ><span>
-                    <MenuItem
-                        disabled={buttonsDisabled}
-                        onClick={(e) => this.configureOCR(e, usingCustomConfig)}
+                <MenuItem
+                    onClick={(e) => this.configureOCR(e, usingCustomConfig)}
+                >
+                    <IconButton
+                        className={"actionButton"
+                            // highlight custom configs with different color
+                            + (usingCustomConfig
+                                ? " altColor"
+                                : "")}
                     >
-                        <IconButton
-                            className={"actionButton"
-                                // highlight custom configs with different color
-                                + (usingCustomConfig
-                                    ? " altColor"
-                                    : "")}
-                        >
-                            {usingCustomConfig ? <SettingsSuggestIcon /> : <SettingsIcon />}
-                        </IconButton>
-                        &nbsp;{usingCustomConfig ? "Editar Configuração" : "Configurar OCR"}
-                    </MenuItem>
-                </span></Tooltip>
+                        {usingCustomConfig ? <SettingsSuggestIcon /> : <SettingsIcon />}
+                    </IconButton>
+                    &nbsp;{usingCustomConfig ? "Editar Configuração" : "Configurar OCR"}
+                </MenuItem>
 
                 <MenuItem
                     onClick={(e) => this.delete(e)}
@@ -179,10 +172,12 @@ class FolderRow extends React.Component {
                     </IconButton>
                 </TableCell>
 
+                <TableCell className="explorerCell thumbnailCell" />
+
                 <TableCell
                     className="explorerCell nameCell"
                     onClick={() => this.folderClicked()}
-                    sx={{ cursor: "pointer" }}
+                    sx={{ cursor: "pointer", paddingLeft: "16px !important"}}
                     align="left"
                 >
                     <Box sx={{
@@ -195,23 +190,29 @@ class FolderRow extends React.Component {
                     </Box>
                 </TableCell>
 
-                <TableCell className="explorerCell stateCell" align='center'>
-                    <b>—</b>
+                <TableCell className="explorerCell detailsCell" align='left'>
+                    <span>
+                        {nDocs} documento(s)
+                        {'\n'}
+                        {nSubfolders} sub-pasta(s)
+                    </span>
                 </TableCell>
 
-                <TableCell className="explorerCell dateCreatedCell" align='left'>
+                <TableCell className="explorerCell sizeCell" align='center'>
+                    <span>
+                        {this.state.info["size"]}
+                    </span>
+                </TableCell>
+
+                <TableCell className="explorerCell dateCreatedCell" align='right'>
                     <span>
                         {this.state.info["creation"]}
                     </span>
                 </TableCell>
 
-                <TableCell className="explorerCell detailsCell" align='left'>
-                    <span>
-                        {this.state.info["contents"]} ficheiro(s) ou sub-pasta(s)
-                    </span>
+                <TableCell className="explorerCell stateCell" align='center'>
+                    —
                 </TableCell>
-
-                <TableCell className="explorerCell sizeCell" align='center'>—</TableCell>
             </TableRow>
         </>)
     }

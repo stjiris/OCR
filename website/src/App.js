@@ -31,6 +31,7 @@ import {
     ocrMenuState
 } from "./states";
 
+import logoSTJ from "static/logoSTJ.svg";
 import FileExplorer from 'Components/FileSystem/FileSystem';
 import ESPage from 'Components/ElasticSearchPage/ESPage';
 import LoginPage from 'Components/Admin/LoginPage';
@@ -49,7 +50,7 @@ const API_URL = `${window.location.protocol}//${window.location.host}/${process.
  * PATCH version when you make backwards compatible bug fixes
  */
 
-const VERSION = "1.3.0";
+const VERSION = "1.4.0";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -116,6 +117,8 @@ function App() {
 
             this.fileSystem = React.createRef();
 
+            this.createPrivateSpace = this.createPrivateSpace.bind(this);
+            this.leavePrivateSpace = this.leavePrivateSpace.bind(this);
             this.setCurrentPath = this.setCurrentPath.bind(this);
             this.returnToParentFolder = this.returnToParentFolder.bind(this);
             this.enterOcrMenu = this.enterOcrMenu.bind(this);
@@ -150,7 +153,15 @@ function App() {
 
         createPrivateSpace() {
             return axios.get(API_URL + '/create-private-space')
-            .then(({data}) => {return data["space_id"]});
+            .then(({data}) => {
+                const spaceId = data["space_id"];
+                this.setState({currentFolderPathList: [""]});
+                this.props.navigate(`/space/${spaceId}`);
+            });
+        }
+
+        leavePrivateSpace() {
+            this.props.navigate("/");
         }
 
         setCurrentPath(new_path_list, isDocument=false) {
@@ -208,6 +219,9 @@ function App() {
 
         changeFolderFromPath(folder_name) {
             let current_list = this.state.currentFolderPathList;
+            if (current_list.length === 1) return;
+
+            current_list.pop();
 
             // Remove the last element of the path until we find folder_name or until root
             while (current_list.length > 1 && current_list[current_list.length - 1] !== folder_name) {
@@ -228,18 +242,30 @@ function App() {
             const buttonsDisabled = this.state.ocrMenu || this.state.searchMenu || this.state.layoutMenu || this.state.editingMenu;
             return (
                 <Box className="App" sx={{height: "100vh", display: "flex", flexDirection: "column"}}>
-                    <Box sx={{
-                        display: "flex",
-                        flexDirection: "row",
-                        justifyContent: "center",
-                    }}>
+                    <Box className="header"
+                         sx={{
+                            display: "flex",
+                            flexDirection: "row",
+                            justifyContent: "center",
+                         }}
+                    >
+                        <img
+                            src={logoSTJ}
+                            alt="Logótipo do STJ"
+                            style={{
+                                maxHeight: "50px",
+                                marginLeft: "10px",
+                                marginTop: "8px",
+                            }}
+                        />
+
                         <Typography
                             id="modal-modal-title"
-                            variant="h3"
+                            variant="h4"
                             component="h1"
+                            className="fancy-font"
                             sx={{
                                 textAlign: "center",
-                                color: "#1976d2",
                                 margin: "auto",
                             }}
                         >
@@ -250,41 +276,50 @@ function App() {
                             }
                         </Typography>
 
-                        {
-                            this.getPrivateSpaceId()
-                                ? <Button
-                                    disabled={buttonsDisabled}
-                                    variant="contained"
-                                    startIcon={<LockIcon/>}
-                                    onClick={() => { this.props.navigate("/"); }}
-                                    className="menuButton"
-                                    color="error"
-                                    sx={{marginRight: "1rem", marginTop: "auto", marginBottom: "auto"}}
-                                >
-                                    Sair do Espaço
-                                </Button>
+                        <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
+                            {true || buttonsDisabled || Boolean(this.getPrivateSpaceId())  // FIXME: Remove "true ||" to re-enable indexing
+                                ? null
                                 : <Button
-                                    disabled={buttonsDisabled}
                                     variant="contained"
-                                    startIcon={<LockIcon/>}
+                                    startIcon={<SearchIcon />}
                                     onClick={() => {
-                                        this.createPrivateSpace().then((spaceId) => {
-                                            //this.setCurrentPath([""]);
-                                            this.setState({currentFolderPathList: [""]});
-                                            this.props.navigate(`/space/${spaceId}`);
-                                        });
+                                        this.setState(searchMenuState)
                                     }}
                                     className="menuButton"
-                                    sx={{marginRight: "1rem", marginTop: "auto", marginBottom: "auto"}}
+                                    sx={{mr: '1.5rem'}}
                                 >
-                                    Novo Espaço Privado
+                                    Pesquisar
                                 </Button>
-                        }
+                            }
+
+                            <span style={{margin: 0, alignContent: "center"}}>
+                                {`Versão: ${VERSION}`}
+                            </span>
+
+                            {/* TODO: update help document */}
+                            <Button
+                                variant="text"
+                                onClick={() => window.open("https://servico-ocr.gitbook.io/manual-ocr", '_blank')}
+                                startIcon={<HelpIcon/>}
+                                className="red-link"
+                                sx={{
+                                    marginLeft: '1.5rem',
+                                    marginRight: '0.5rem',
+                                    textTransform: 'none',
+                                    p: 0
+                                }}
+                            >
+                                Manual de Utilizador
+                            </Button>
+                        </Box>
                     </Box>
 
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'row',
+                        width: '87vw',
+                        marginLeft: 'auto',
+                        marginRight: 'auto',
                         justifyContent: 'space-between',
                         zIndex: '5',
                         // border: '1px solid #000000',
@@ -360,40 +395,6 @@ function App() {
                                 </p>
                             </Box>
                         </Box>
-
-                        <Box sx={{display: "flex", flexDirection: "row", lineHeight: "2rem"}}>
-                            {true || buttonsDisabled || Boolean(this.getPrivateSpaceId())  // FIXME: Remove "true ||" to re-enable indexing
-                                ? null
-                                : <Button
-                                    variant="contained"
-                                    startIcon={<SearchIcon />}
-                                    onClick={() => {
-                                        this.setState(searchMenuState)
-                                    }}
-                                    className="menuButton"
-                                    sx={{mr: '1.5rem'}}
-                                >
-                                    Pesquisar
-                                </Button>
-                            }
-
-                            <p style={{margin: 0}}>{`Versão: ${VERSION}`}</p>
-
-                            {/* TODO: update help document */}
-                            <Button
-                                variant="text"
-                                onClick={() => window.open("https://docs.google.com/document/d/e/2PACX-1vTjGei4_szYIrD8G7x2UmNKlbOsW_JZmVj0E2J4933-hXjkU9iuKGr0J8Aj6qpF25HlCb9y3vMadC23/pub", '_blank')}
-                                startIcon={<HelpIcon/>}
-                                sx={{
-                                    marginLeft: '1.5rem',
-                                    marginRight: '0.5rem',
-                                    textTransform: 'none',
-                                    p: 0
-                                }}
-                            >
-                                Manual de Utilizador
-                            </Button>
-                        </Box>
                     </Box>
 
                     <Box>
@@ -413,6 +414,8 @@ function App() {
                                             ocrMenu={this.state.ocrMenu}
                                             layoutMenu={this.state.layoutMenu}
                                             editingMenu={this.state.editingMenu}
+                                            createPrivateSpace={this.createPrivateSpace}
+                                            leavePrivateSpace={this.leavePrivateSpace}
                                             setCurrentPath={this.setCurrentPath}
                                             returnToParentFolder={this.returnToParentFolder}
                                             enterOcrMenu={this.enterOcrMenu}

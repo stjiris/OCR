@@ -11,11 +11,11 @@ export const tesseractLangList = [
 
 export const defaultOutputs = ["pdf"];
 export const tesseractOutputsList = [
-    { value: "pdf_indexed", description: "PDF com texto e índice"},
+    { value: "pdf_indexed", description: "PDF com texto e índice de palavras"},
     { value: "pdf", description: "PDF com texto (por defeito)"},
     { value: "txt", description: "Texto"},
     { value: "txt_delimited", description: "Texto com separador por página"},
-    { value: "csv", description: "Índice de palavras"},
+    { value: "csv", description: "Índice de palavras em formato CSV"},
     { value: "ner", description: "Entidades (NER)"},
     { value: "hocr", description: "hOCR (apenas documentos com 1 página)"},
     { value: "xml", description: "ALTO (apenas documentos com 1 página)"},
