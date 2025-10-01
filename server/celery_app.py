@@ -1346,7 +1346,7 @@ def task_set_max_private_space_age(new_max_age: int | str):
 @celery.task(name="cleanup_private_spaces", priority=0)
 def task_delete_old_private_spaces():
     max_private_space_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "1"))  # days
-    log.info(f"Deleting private spaces older than {max_private_space_age} days")
+    log.info(f"Deleting private spaces older than {max_private_space_age} day(s)")
 
     private_spaces = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
     n_deleted = 0

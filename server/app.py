@@ -1529,7 +1529,7 @@ def set_max_private_space_age():
             os.environ["MAX_PRIVATE_SPACE_AGE"] = str(int(new_max_age))
             return {
                 "success": True,
-                "message": f"New max private space age: {new_max_age} days",
+                "message": f"New max private space age: {new_max_age} day(s)",
             }
     except ValueError:
         return {
