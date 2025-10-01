@@ -17,6 +17,7 @@ import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 
 import ReturnButton from 'Components/FileSystem/ReturnButton';
 import Notification from 'Components/Notifications/Notification';
+import ChangeMaxAgePopup from 'Components/Form/ChangeMaxAgePopup';
 import ConfirmActionPopup from 'Components/Form/ConfirmActionPopup';
 import CheckboxList from 'Components/Form/CheckboxList';
 import TooltipIcon from 'Components/TooltipIcon/TooltipIcon';
@@ -56,12 +57,12 @@ const StorageManager = (props) => {
     const [privateSpaces, setPrivateSpaces] = useState([]);
     const [apiFiles, setApiFiles] = useState([]);
     const [lastCleanup, setLastCleanup] = useState("nunca");
-    const [maxPrivateSpaceAge, setMaxPrivateSpaceAge] = useState("5");
+    const [maxPrivateSpaceAge, setMaxPrivateSpaceAge] = useState("1");
 
     const [refreshing, setRefreshing] = useState(true);
     const [lastUpdate, setLastUpdate] = useState(null);
 
-    const [scheduleType, setScheduleType] = useState("monthly");
+    const [scheduleType, setScheduleType] = useState("interval");
 
     const [everyHours, setEveryHours] = useState('');
 
@@ -73,6 +74,8 @@ const StorageManager = (props) => {
 
     const [deleteSpaceId, setDeleteSpaceId] = useState(null);
     const [deleteApiDocumentId, setDeleteApiDocumentId] = useState(null);
+
+    const [changeMaxAgePopupOpened, setChangeMaxAgePopupOpened] = useState(false);
 
     const [confirmPopupOpened, setConfirmPopupOpened] = useState(false);
     const [confirmPopupMessage, setConfirmPopupMessage] = useState("");
@@ -231,10 +234,26 @@ const StorageManager = (props) => {
         // confirm popup is set up in useEffect
     }
 
+
+    function openChangeMaxAgePopup(e) {
+        e.stopPropagation();
+        setChangeMaxAgePopupOpened(true);
+    }
+
+    function closeChangeMaxAgePopup() {
+        setChangeMaxAgePopupOpened(false);
+    }
+
+    function submittedChangeMaxAge(newMaxAge, responseMessage) {
+        setChangeMaxAgePopupOpened(false);
+        setMaxPrivateSpaceAge(newMaxAge);
+        successNotif.current.openNotif(responseMessage);
+    }
+
     function openCleanupPopup(e) {
         e.stopPropagation();
         setConfirmPopupOpened(true);
-        setConfirmPopupMessage(`Tem a certeza que quer remover as sessões com mais de ${maxPrivateSpaceAge} dias?`);
+        setConfirmPopupMessage(`Tem a certeza que quer remover as sessões com mais de ${maxPrivateSpaceAge} dia(s)?`);
         setConfirmPopupSubmitCallback(() => runPrivateSpaceCleanup);  // set value as function runPrivateSpaceCleanup
     }
 
@@ -318,6 +337,13 @@ const StorageManager = (props) => {
             <Notification message={""} severity={"success"} ref={successNotif}/>
             <Notification message={""} severity={"error"} ref={errorNotif}/>
 
+            <ChangeMaxAgePopup
+                open={changeMaxAgePopupOpened}
+                maxAge={maxPrivateSpaceAge}
+                submitCallback={submittedChangeMaxAge}
+                cancelCallback={closeChangeMaxAgePopup}
+            />
+
             <ConfirmActionPopup
                 open={confirmPopupOpened}
                 message={confirmPopupMessage}
@@ -397,6 +423,24 @@ const StorageManager = (props) => {
                         Último update: {lastUpdate ? lastUpdate.toLocaleString("pt-PT") : "nunca"}
                     </span>
                 </Box>
+
+                <Box>
+                    <Button
+                        variant="contained"
+                        onClick={(e) => openCleanupPopup(e)}
+                        className="menuButton menuFunctionButton"
+                    >
+                        Remover espaços privados com mais de {maxPrivateSpaceAge} dia(s)
+                    </Button>
+
+                    <Button
+                        variant="contained"
+                        onClick={(e) => openChangeMaxAgePopup(e)}
+                        className="menuButton menuFunctionButton"
+                    >
+                        Alterar idade máxima
+                    </Button>
+                </Box>
             </Box>
 
             <Box sx={{
@@ -473,15 +517,6 @@ const StorageManager = (props) => {
                     width: 'fit-content',
                     alignItems: 'center',
                 }}>
-                    <Button
-                        variant="contained"
-                        onClick={(e) => openCleanupPopup(e)}
-                        className="menuButton"
-                        sx={{alignSelf: 'center'}}
-                    >
-                        Remover espaços privados com mais de {maxPrivateSpaceAge} dias
-                    </Button>
-
                     <Box sx = {{
                             display: "flex",
                             flexDirection: "column",
@@ -608,54 +643,6 @@ const StorageManager = (props) => {
                             </Box>
                         </Box>
 
-
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                        }}>
-                            <FormControlLabel
-                                label="Mensalmente"
-                                checked={scheduleType === "monthly"}
-                                control={<Radio size="small"/>}
-                                onChange={() => handleScheduleTypeChange("monthly")}
-                            />
-
-                            <Box sx={{
-                                display: 'flex',
-                                flexDirection: 'row',
-                            }}>
-                                <TimePicker
-                                    disabled={scheduleType !== "monthly"}
-                                    required={scheduleType === "monthly"}
-                                    label="Hora"
-                                    views={['hours', 'minutes']}
-                                    ampm={false}
-                                    value={monthTime}
-                                    onChange={(value, ctx) => setMonthTime(value)}
-                                    className="simpleInput hourInput"
-                                    slotProps={{ textField: { size: "small", error: scheduleType === "monthly" && monthTime === null } }}
-                                />
-
-                                <TextField
-                                    disabled={scheduleType !== "monthly"}
-                                    required={scheduleType === "monthly"}
-                                    error={scheduleType === "monthly" && !(dayRegex.test(monthDay))}
-                                    value={monthDay}
-                                    onChange={(e) => handleMonthDayChange(e.target.value)}
-                                    label="Dia"
-                                    size="small"
-                                    variant="outlined"
-                                    className="simpleInput"
-                                    sx={{
-                                        width: '4rem',
-                                        marginLeft: '0.3rem',
-                                        marginRight: '0.3rem',
-                                        textAlign: "center",
-                                    }}
-                                />
-                            </Box>
-                        </Box>
-
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -737,6 +724,53 @@ const StorageManager = (props) => {
                                 onChangeCallback={handleWeekDaysChange}
                                 errorText="Deve selecionar pelo menos um dia"
                             />
+                        </Box>
+
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }}>
+                            <FormControlLabel
+                                label="Mensalmente"
+                                checked={scheduleType === "monthly"}
+                                control={<Radio size="small"/>}
+                                onChange={() => handleScheduleTypeChange("monthly")}
+                            />
+
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                            }}>
+                                <TimePicker
+                                    disabled={scheduleType !== "monthly"}
+                                    required={scheduleType === "monthly"}
+                                    label="Hora"
+                                    views={['hours', 'minutes']}
+                                    ampm={false}
+                                    value={monthTime}
+                                    onChange={(value, ctx) => setMonthTime(value)}
+                                    className="simpleInput hourInput"
+                                    slotProps={{ textField: { size: "small", error: scheduleType === "monthly" && monthTime === null } }}
+                                />
+
+                                <TextField
+                                    disabled={scheduleType !== "monthly"}
+                                    required={scheduleType === "monthly"}
+                                    error={scheduleType === "monthly" && !(dayRegex.test(monthDay))}
+                                    value={monthDay}
+                                    onChange={(e) => handleMonthDayChange(e.target.value)}
+                                    label="Dia"
+                                    size="small"
+                                    variant="outlined"
+                                    className="simpleInput"
+                                    sx={{
+                                        width: '4rem',
+                                        marginLeft: '0.3rem',
+                                        marginRight: '0.3rem',
+                                        textAlign: "center",
+                                    }}
+                                />
+                            </Box>
                         </Box>
                     </Box>
                 </Box>
