@@ -89,9 +89,12 @@ def get_file_parsed(path, is_private):
     :param path: path to the file
     :return: list with the text of each page
     """
-    extension = path.split(".")[-1].lower()
+    original_extension = path.split(".")[-1]
+    extension = original_extension.lower()
     page_extension = (
-        ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
+        ".png"
+        if (extension == "pdf" or extension == "zip")
+        else f".{original_extension}"
     )
     url_prefix = IMAGE_PREFIX + (
         "/private/" if is_private else "/images/"
@@ -168,9 +171,12 @@ def get_file_layouts(path, is_private):
     data = get_data(f"{path}/_data.json")
     layouts = []
     basename = get_file_basename(path)
-    extension = path.split(".")[-1].lower()
+    original_extension = path.split(".")[-1]
+    extension = original_extension.lower()
     page_extension = (
-        ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
+        ".png"
+        if (extension == "pdf" or extension == "zip")
+        else f".{original_extension}"
     )
     url_prefix = IMAGE_PREFIX + (
         f"/private/{path.replace(PRIVATE_PATH, '')}"
