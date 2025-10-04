@@ -511,7 +511,7 @@ class DocumentRow extends React.Component {
                     name="Doc. original"
                     filename={this.props.name}
                     info={info}
-                    fileIcon={<FileIcon extension={info["extension"]} />}
+                    fileIcon={<FileIcon extension={info["extension"].toLowerCase()} />}
                     downloadFile={this.getOriginalFile}
                 />
 

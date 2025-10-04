@@ -98,9 +98,12 @@ def task_auto_segment(path, use_hdbscan=False):
         log.error(f"Error in parsing images at {path}: missing /_pages")
         raise FileNotFoundError
 
-    extension = path.split(".")[-1].lower()
+    original_extension = path.split(".")[-1]
+    extension = original_extension.lower()
     page_extension = (
-        ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
+        ".png"
+        if (extension == "pdf" or extension == "zip")
+        else f".{original_extension}"
     )
     basename = get_file_basename(path)
 
@@ -405,7 +408,8 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
         )
 
         data = get_data(f"{path}/_data.json")
-        extension = data["extension"]
+        original_extension = data["extension"]
+        extension = original_extension.lower()
 
         basename = get_file_basename(path)
 
@@ -415,7 +419,7 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
             pdf.close()
 
             pdf_prep_callback = task_count_doc_pages.si(
-                path=path, extension=extension
+                path=path, extension=original_extension
             ).set(link=callback, ignore_result=True)
             chord(
                 task_extract_pdf_page.si(path, basename, i) for i in range(num_pages)
@@ -459,16 +463,18 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
 
             shutil.rmtree(temp_folder_name)
 
-            task_count_doc_pages(path=path, extension=extension)
+            task_count_doc_pages(path=path, extension=original_extension)
             if callback is not None:
                 callback.apply_async(ignore_result=True)
 
         elif extension in ("tif", "tiff"):
-            img = Image.open(f"{path}/{basename}.{extension}", formats=["tiff"])
+            img = Image.open(
+                f"{path}/{basename}.{original_extension}", formats=["tiff"]
+            )
             n_frames = img.n_frames
             if n_frames == 1:
-                original_path = f"{path}/{basename}.{extension}"
-                link_path = f"{path}/_pages/{basename}_0.{extension}"
+                original_path = f"{path}/{basename}.{original_extension}"
+                link_path = f"{path}/_pages/{basename}_0.{original_extension}"
                 if not os.path.exists(link_path):
                     os.link(original_path, link_path)
 
@@ -477,16 +483,18 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                 thumb_128 = img_rgb.copy()
                 thumb_128.thumbnail((128, 128))
                 thumb_128.save(
-                    f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+                    f"{path}/_thumbnails/{basename}.{original_extension}_128.thumbnail",
+                    "JPEG",
                 )
                 img_rgb.thumbnail((600, 600))
                 img_rgb.save(
-                    f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
+                    f"{path}/_thumbnails/{basename}.{original_extension}_600.thumbnail",
+                    "JPEG",
                 )
             else:
                 compression = img._compression
                 img.save(
-                    f"{path}/_pages/{basename}_0.{extension}",
+                    f"{path}/_pages/{basename}_0.{original_extension}",
                     save_all=False,
                     compression=compression,
                 )
@@ -495,28 +503,30 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
                 thumb_128 = img_rgb.copy()
                 thumb_128.thumbnail((128, 128))
                 thumb_128.save(
-                    f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+                    f"{path}/_thumbnails/{basename}.{original_extension}_128.thumbnail",
+                    "JPEG",
                 )
                 img_rgb.thumbnail((600, 600))
                 img_rgb.save(
-                    f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
+                    f"{path}/_thumbnails/{basename}.{original_extension}_600.thumbnail",
+                    "JPEG",
                 )
 
                 for i in range(1, n_frames):
                     img.seek(i)
                     img.save(
-                        f"{path}/_pages/{basename}_{i}.{extension}",
+                        f"{path}/_pages/{basename}_{i}.{original_extension}",
                         save_all=False,
                         compression=compression,
                     )
 
-            task_count_doc_pages(path=path, extension=extension)
+            task_count_doc_pages(path=path, extension=original_extension)
             if callback is not None:
                 callback.apply_async(ignore_result=True)
 
         elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
-            original_path = f"{path}/{basename}.{extension}"
-            link_path = f"{path}/_pages/{basename}_0.{extension}"
+            original_path = f"{path}/{basename}.{original_extension}"
+            link_path = f"{path}/_pages/{basename}_0.{original_extension}"
             if not os.path.exists(link_path):
                 os.link(original_path, link_path)
 
@@ -526,14 +536,16 @@ def task_prepare_file_ocr(path: str, callback: Signature | None = None):
             thumb_128 = img_rgb.copy()
             thumb_128.thumbnail((128, 128))
             thumb_128.save(
-                f"{path}/_thumbnails/{basename}.{extension}_128.thumbnail", "JPEG"
+                f"{path}/_thumbnails/{basename}.{original_extension}_128.thumbnail",
+                "JPEG",
             )
             img_rgb.thumbnail((600, 600))
             img_rgb.save(
-                f"{path}/_thumbnails/{basename}.{extension}_600.thumbnail", "JPEG"
+                f"{path}/_thumbnails/{basename}.{original_extension}_600.thumbnail",
+                "JPEG",
             )
 
-            task_count_doc_pages(path=path, extension=extension)
+            task_count_doc_pages(path=path, extension=original_extension)
             if callback is not None:
                 callback.apply_async(ignore_result=True)
 
@@ -1278,10 +1290,10 @@ def task_export_results(path: str, output_types: list[str]):
                 data["ner"] = {"complete": False, "error": True}
 
         if path.startswith(API_TEMP_PATH):
-            extension = data["extension"]
+            original_extension = data["extension"]
             from_api = True
         else:
-            extension = None
+            original_extension = None
             from_api = False
 
         data["ocr"]["progress"] = "completed"
@@ -1289,7 +1301,9 @@ def task_export_results(path: str, output_types: list[str]):
             "stage": "post-ocr",
         }
         data["total_size"] = size_to_units(
-            get_document_files_size(path, extension=extension, from_api=from_api)
+            get_document_files_size(
+                path, extension=original_extension, from_api=from_api
+            )
         )
         data["words"] = get_word_count(path)
 
