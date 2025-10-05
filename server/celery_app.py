@@ -70,6 +70,8 @@ celery.conf.redbeat_lock_timeout = 0
 # 0 is highest, 10 is lowest; use lowest by default
 celery.conf.task_default_priority = 10
 
+celery.conf.worker_pool_restarts = True  # allow restarting worker pool from Flower
+
 celery.conf.worker_prefetch_multiplier = 1  # prefetch only 1 task per process/thread
 celery.conf.worker_disable_prefetch = True  # may not work before celery 5.6
 celery.conf.task_acks_late = True  # ack tasks only after completion; required for disabling prefetch but should be False if there are multiple workers
