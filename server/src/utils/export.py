@@ -263,7 +263,7 @@ def export_pdf(
         generate_index = get_csv or not simple
 
         data = get_data(data_file)
-        original_extension = data["extension"]
+        original_extension = data["extension"].lower()
 
         # TODO: try to improve compression when creating PDF; reportlab already compresses images on creation
         if original_extension == "pdf":

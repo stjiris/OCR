@@ -1,12 +1,14 @@
-import cv2
-import os
-import uuid
-import numpy as np
 import glob
 import logging as log
+import os
+import uuid
+
+import cv2
 import hdbscan
+import numpy as np
 from src.utils.file import get_file_basename
 from src.utils.file import save_file_layouts
+
 
 ##################################################
 # IMAGE UTILS
@@ -87,15 +89,18 @@ def find_lines(
 
     return dmask, lines
 
+
 def remove_lines(image, vertical_mask, horizontal_mask):
     lines = vertical_mask + horizontal_mask
     # note this is a horizontal kernel
     kernel = np.ones((5, 5), np.uint8)
     lines = cv2.dilate(lines, kernel, iterations=2)
-    image = cv2.adaptiveThreshold(image, 255,
-           cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    image = cv2.adaptiveThreshold(
+        image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
+    )
     image = cv2.bitwise_or(image, lines, mask=None)
     return image
+
 
 def findCorners(image):
     """
@@ -112,18 +117,24 @@ def findCorners(image):
     h = 1
     for cnt in kp:
         x, y = cnt.pt
-        pos_corners.append([x, y, x+w, y+h])
+        pos_corners.append([x, y, x + w, y + h])
         pos_corners_xy.append([x, y])
     return pos_corners, pos_corners_xy, kp
 
+
 def merge_boxes(boxes):
-        for key in boxes.keys():
-            box = boxes[key]
-            if len(box) > 0:
-                new_pos = [max(0, min(box[:, 0]-5)), max(0, min(box[:,
-                1]-5)), max(box[:, 2]+5), max(box[:, 3]+5)]
-                boxes[key] = new_pos
-        return boxes
+    for key in boxes.keys():
+        box = boxes[key]
+        if len(box) > 0:
+            new_pos = [
+                max(0, min(box[:, 0] - 5)),
+                max(0, min(box[:, 1] - 5)),
+                max(box[:, 2] + 5),
+                max(box[:, 3] + 5),
+            ]
+            boxes[key] = new_pos
+    return boxes
+
 
 def parse_image(img_path):
     img = cv2.imread(img_path)
@@ -132,21 +143,21 @@ def parse_image(img_path):
     ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
 
     threshold_inv = cv2.adaptiveThreshold(
-            np.invert(gray),
-            255,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY,
-            15,
-            -2,
-        )
+        np.invert(gray),
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        15,
+        -2,
+    )
 
     vertical_mask, vertical_segments = find_lines(
-                    threshold_inv,
-                    regions=None,
-                    direction="vertical",
-                    line_scale=15,
-                    iterations=0,
-                )
+        threshold_inv,
+        regions=None,
+        direction="vertical",
+        line_scale=15,
+        iterations=0,
+    )
 
     horizontal_mask, horizontal_segments = find_lines(
         threshold_inv,
@@ -159,48 +170,51 @@ def parse_image(img_path):
     image_remove_line = remove_lines(thresh1, vertical_mask, horizontal_mask)
 
     pos_corners, pos_corners_xy, kp = findCorners(image_remove_line)
-    thresh_inv = 255-image_remove_line
-    contours, hierarchy = cv2.findContours(thresh_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    thresh_inv = 255 - image_remove_line
+    contours, hierarchy = cv2.findContours(
+        thresh_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
 
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
 
-        pos_corners.append([x, y, x+w, y+h])
+        pos_corners.append([x, y, x + w, y + h])
         pos_corners_xy.append([x, y])
 
-        pos_corners.append([x, y, x+w, y+h])
-        pos_corners_xy.append([x+w, y+h])
+        pos_corners.append([x, y, x + w, y + h])
+        pos_corners_xy.append([x + w, y + h])
 
-        pos_corners.append([x, y, x+w, y+h])
-        pos_corners_xy.append([x+w, y])
+        pos_corners.append([x, y, x + w, y + h])
+        pos_corners_xy.append([x + w, y])
 
-        pos_corners.append([x, y, x+w, y+h])
-        pos_corners_xy.append([x, y+h])
+        pos_corners.append([x, y, x + w, y + h])
+        pos_corners_xy.append([x, y + h])
 
-        pos_corners.append([x, y, x+w, y+h])
-        pos_corners_xy.append([x+w/2, y+h/2])
+        pos_corners.append([x, y, x + w, y + h])
+        pos_corners_xy.append([x + w / 2, y + h / 2])
 
-        pos_corners.append([x, y, x+w, y+h])
-        pos_corners_xy.append([x, y+h/2])
+        pos_corners.append([x, y, x + w, y + h])
+        pos_corners_xy.append([x, y + h / 2])
 
-        pos_corners.append([x, y, x+w, y+h])
-        pos_corners_xy.append([x+w/2, y])
+        pos_corners.append([x, y, x + w, y + h])
+        pos_corners_xy.append([x + w / 2, y])
 
+        pos_corners.append([x, y, x + w, y + h])
+        pos_corners_xy.append([x + w, y + h / 2])
 
-        pos_corners.append([x, y, x+w, y+h])
-        pos_corners_xy.append([x+w, y+h/2])
-
-        pos_corners.append([x, y, x+w, y+h])
-        pos_corners_xy.append([x+w/2, y+h])
+        pos_corners.append([x, y, x + w, y + h])
+        pos_corners_xy.append([x + w / 2, y + h])
 
     data_hdbsan = np.array(pos_corners_xy)
     height = max(data_hdbsan[:, 1]) - min(data_hdbsan[:, 1])
     width = max(data_hdbsan[:, 0]) - min(data_hdbsan[:, 0])
-    data_hdbsan[:, 0] = data_hdbsan[:, 0]/width
-    data_hdbsan[:, 1] = data_hdbsan[:, 1]/height
-    hdb = hdbscan.HDBSCAN(min_cluster_size=5, min_samples=5, cluster_selection_epsilon=0.025)
-    hdb.fit (data_hdbsan)
-    n_clusters = len(set(hdb.labels_)) - (1 if -1 in hdb.labels_ else 0 )
+    data_hdbsan[:, 0] = data_hdbsan[:, 0] / width
+    data_hdbsan[:, 1] = data_hdbsan[:, 1] / height
+    hdb = hdbscan.HDBSCAN(
+        min_cluster_size=5, min_samples=5, cluster_selection_epsilon=0.025
+    )
+    hdb.fit(data_hdbsan)
+    n_clusters = len(set(hdb.labels_)) - (1 if -1 in hdb.labels_ else 0)
     pos_corners = np.array(pos_corners)
     rects = {}
 
@@ -221,19 +235,31 @@ def parse_image(img_path):
     # cv2.imshow("shapes", im2)
     # cv2.waitKey(0)
 
+
 def parse_images(path):
-    extension = path.split(".")[-1].lower()
-    page_extension = ".png" if (extension == "pdf" or extension == "zip") else f".{extension}"
+    original_extension = path.split(".")[-1]
+    extension = original_extension.lower()
+    page_extension = (
+        ".png"
+        if (extension == "pdf" or extension == "zip")
+        else f".{original_extension}"
+    )
     basename = get_file_basename(path)
 
     if os.path.exists(f"{path}/_pages"):
         # Grab all the images already in the folder
-        images = [x for x in glob.glob(f"{path}/_pages/{basename}_*{page_extension}") if x[-5] != "$"]
-        sorted_images = sorted(images, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+        images = [
+            x
+            for x in glob.glob(f"{path}/_pages/{basename}_*{page_extension}")
+            if x[-5] != "$"
+        ]
+        sorted_images = sorted(
+            images, key=lambda x: int(x.split("_")[-1].split(".")[0])
+        )
 
         all_layouts = []
 
-        for id,img in enumerate(sorted_images):
+        for id, img in enumerate(sorted_images):
             print(id)
             mer_boxes = parse_image(img)
             formatted_boxes = []
@@ -241,7 +267,9 @@ def parse_images(path):
             for box in mer_boxes.values():
                 left, top, right, bottom = box
                 formatted_box = {
-                    "_uniq_id": uuid.uuid4().hex[:16],  # each line in the sortable list must have a constant unique ID
+                    "_uniq_id": uuid.uuid4().hex[
+                        :16
+                    ],  # each line in the sortable list must have a constant unique ID
                     "groupId": "temp",
                     "checked": False,
                     "type": "text",
@@ -254,7 +282,7 @@ def parse_images(path):
                             "right": right,
                         }
                     ],
-                    "copyId": None
+                    "copyId": None,
                 }
                 formatted_boxes.append(formatted_box)
 
@@ -267,14 +295,17 @@ def parse_images(path):
         sorted_all_layouts = []
         for page, layout in enumerate(all_layouts):
             # This orders the segments based on typical reading order: top-left to bottom-right.
-            sorted_layout = sorted(layout['boxes'], key=lambda c: (c["squares"][0]['top'], c["squares"][0]['left']))
+            sorted_layout = sorted(
+                layout["boxes"],
+                key=lambda c: (c["squares"][0]["top"], c["squares"][0]["left"]),
+            )
 
             for i, group in enumerate(sorted_layout):
-                group['groupId'] = f"{page + 1}.{i + 1}"
-                for b in group['squares']:
-                    b['id'] = f"{page + 1}.{i + 1}"
+                group["groupId"] = f"{page + 1}.{i + 1}"
+                for b in group["squares"]:
+                    b["id"] = f"{page + 1}.{i + 1}"
 
-            sorted_all_layouts.append({'boxes': sorted_layout})
+            sorted_all_layouts.append({"boxes": sorted_layout})
         save_file_layouts(path, sorted_all_layouts)
     else:
         log.error(f"Error in parsing images at {path}")

@@ -125,8 +125,9 @@ class LayoutBox extends React.Component {
         }
     }
 
-    beginDrag(corner) {
+    beginDrag(event, corner) {
         if (this.props.segmentLoading) return;
+        event.stopPropagation();
         this.props.setDraggingCorner(this, corner);
     }
 
@@ -224,7 +225,7 @@ class LayoutBox extends React.Component {
                             cursor: "move",
                             zIndex: 100
                         }}
-                        onDragStart={(e) => this.beginDrag(0)}
+                        onDragStart={(e) => this.beginDrag(e, 0)}
                         onDragEnd={() => this.props.updateMenu()}
                     />
 
@@ -235,7 +236,7 @@ class LayoutBox extends React.Component {
                             cursor: "move",
                             zIndex: 100
                         }}
-                        onDragStart={(e) => this.beginDrag(1)}
+                        onDragStart={(e) => this.beginDrag(e, 1)}
                         onDragEnd={() => this.props.updateMenu()}
                     />
 
@@ -246,7 +247,7 @@ class LayoutBox extends React.Component {
                             cursor: "move",
                             zIndex: 100
                         }}
-                        onDragStart={(e) => this.beginDrag(2)}
+                        onDragStart={(e) => this.beginDrag(e, 2)}
                         onDragEnd={() => this.props.updateMenu()}
                     />
 
@@ -257,7 +258,7 @@ class LayoutBox extends React.Component {
                             cursor: "move",
                             zIndex: 100
                         }}
-                        onDragStart={(e) => this.beginDrag(3)}
+                        onDragStart={(e) => this.beginDrag(e, 3)}
                         onDragEnd={() => this.props.updateMenu()}
                     />
                 </Box>
@@ -409,6 +410,7 @@ class LayoutImage extends React.Component {
             delete updatedGroup.squareRefs;
             groupsData.push(updatedGroup);
         });
+        console.log(groupsData);
         return groupsData;
     }
 

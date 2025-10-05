@@ -649,12 +649,14 @@ def prepare_upload():
     os.mkdir(target + "/_pages")
     os.mkdir(target + "/_thumbnails")
 
-    extension = filename.split(".")[-1].lower()
+    extension = filename.split(".")[-1]
     with open(f"{target}/_data.json", "w", encoding="utf-8") as f:
         json.dump(
             {
                 "type": "file",
-                "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
+                "extension": (
+                    extension if extension.lower() in ALLOWED_EXTENSIONS else "other"
+                ),
                 "stored": 0.00,
                 "creation": get_current_time(),
                 "status": {
@@ -1256,7 +1258,7 @@ def api_perform_ocr():
 
     doc_id = generate_random_uuid()[:9]
     doc_path = f"{API_TEMP_PATH}/{doc_id}"
-    extension = file.filename.split(".")[-1].lower()
+    extension = file.filename.split(".")[-1]
     file_path = f"{doc_path}/{doc_id}.{extension}"
     os.mkdir(doc_path)
     with open(f"{doc_path}/_data.json", "w", encoding="utf-8") as f:
@@ -1264,7 +1266,9 @@ def api_perform_ocr():
             {
                 "type": "file",
                 "creation": get_current_time(),
-                "extension": extension if extension in ALLOWED_EXTENSIONS else "other",
+                "extension": (
+                    extension if extension.lower() in ALLOWED_EXTENSIONS else "other"
+                ),
                 "stored": 0.00,  # 0% at start, 100% when all chunks stored, True after prepare_file_ocr
                 "status": {
                     "stage": "uploading",

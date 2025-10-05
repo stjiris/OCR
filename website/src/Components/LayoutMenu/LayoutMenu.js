@@ -176,11 +176,11 @@ class LayoutMenu extends React.Component {
 		contents[this.state.currentPage - 1]["boxes"] = groups;
 
 		groups.forEach((currentPageGroup) => {
-            if (currentPageGroup["copyId"] !== undefined) {
+            if (currentPageGroup["copyId"] != undefined) {
                 contents.forEach((page, i) => {
                     const otherPageBoxes = page["boxes"];
                     otherPageBoxes.forEach((group, j) => {
-                        if (group["copyId"] !== undefined && group["copyId"] === currentPageGroup["copyId"]) {
+                        if (group["copyId"] != undefined && group["copyId"] === currentPageGroup["copyId"]) {
                             const groupSquares = group["squares"];
                             const currentSquares = currentPageGroup["squares"];
                             if (groupSquares.length === 1) {
