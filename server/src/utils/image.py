@@ -8,6 +8,7 @@ import hdbscan
 import numpy as np
 from src.utils.file import get_file_basename
 from src.utils.file import save_file_layouts
+from src.utils.file import update_json_file
 
 
 ##################################################
@@ -307,6 +308,7 @@ def parse_images(path):
 
             sorted_all_layouts.append({"boxes": sorted_layout})
         save_file_layouts(path, sorted_all_layouts)
+        update_json_file(f"{path}/_data.json", {"segmenting": False})
     else:
         log.error(f"Error in parsing images at {path}")
         raise FileNotFoundError
