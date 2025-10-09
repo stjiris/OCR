@@ -389,7 +389,123 @@ def task_perform_direct_ocr(
     async_ocr = task_file_ocr.si(
         path=path, config=config, delete_on_finish=delete_on_finish
     )
-    task_prepare_file_ocr(path=path, callback=async_ocr)
+    prepare_file_from_api(path=path, callback=async_ocr)
+
+
+def prepare_file_from_api(path: str, callback: Signature | None = None):
+    """
+    Same as task_prepare_file_ocr but does not generate thumbnails, which aren't needed for API usage
+    """
+    data_folder = f"{path}/_data.json"
+    try:
+        if not os.path.exists(f"{path}/_pages"):
+            os.mkdir(f"{path}/_pages")
+
+        update_json_file(
+            data_folder,
+            {
+                "status": {
+                    "stage": "preparing",
+                    "message": "A preparar o documento",
+                }
+            },
+        )
+
+        data = get_data(f"{path}/_data.json")
+        original_extension = data["extension"]
+        extension = original_extension.lower()
+
+        basename = get_file_basename(path)
+
+        if extension == "pdf":
+            pdf = pdfium.PdfDocument(f"{path}/{basename}.pdf")
+            num_pages = len(pdf)
+            pdf.close()
+
+            pdf_prep_callback = task_count_doc_pages.si(
+                path=path, extension=original_extension
+            ).set(link=callback, ignore_result=True)
+            chord(
+                task_extract_pdf_page.si(path, basename, i) for i in range(num_pages)
+            )(pdf_prep_callback)
+
+        elif extension == "zip":
+            temp_folder_name = f"{path}/{generate_random_uuid()}"
+            os.mkdir(temp_folder_name)
+
+            with zipfile.ZipFile(f"{path}/{basename}.zip", "r") as zip_ref:
+                zip_ref.extractall(temp_folder_name)
+
+            page_paths = [
+                f"{temp_folder_name}/{file}"
+                for file in os.listdir(temp_folder_name)
+                if os.path.isfile(os.path.join(temp_folder_name, file))
+            ]
+
+            # sort pages alphabetically, case-insensitive
+            # casefold for better internationalization, original string appended as fallback
+            page_paths.sort(key=lambda s: (s.casefold(), s))
+
+            for i, page in enumerate(page_paths):
+                im = Image.open(page)
+                im.save(
+                    f"{path}/_pages/{basename}_{i}.png", format="PNG"
+                )  # using PNG to keep RGBA
+
+            shutil.rmtree(temp_folder_name)
+
+            task_count_doc_pages(path=path, extension=original_extension)
+            if callback is not None:
+                callback.apply_async(ignore_result=True)
+
+        elif extension in ("tif", "tiff"):
+            img = Image.open(
+                f"{path}/{basename}.{original_extension}", formats=["tiff"]
+            )
+            n_frames = img.n_frames
+            if n_frames == 1:
+                original_path = f"{path}/{basename}.{original_extension}"
+                link_path = f"{path}/_pages/{basename}_0.{original_extension}"
+                if not os.path.exists(link_path):
+                    os.link(original_path, link_path)
+            else:
+                compression = img._compression
+                for i in range(0, n_frames):
+                    img.seek(i)
+                    img.save(
+                        f"{path}/_pages/{basename}_{i}.{original_extension}",
+                        save_all=False,
+                        compression=compression,
+                    )
+
+            task_count_doc_pages(path=path, extension=original_extension)
+            if callback is not None:
+                callback.apply_async(ignore_result=True)
+
+        elif extension in ALLOWED_EXTENSIONS:  # some other than pdf
+            original_path = f"{path}/{basename}.{original_extension}"
+            link_path = f"{path}/_pages/{basename}_0.{original_extension}"
+            if not os.path.exists(link_path):
+                os.link(original_path, link_path)
+
+            task_count_doc_pages(path=path, extension=original_extension)
+            if callback is not None:
+                callback.apply_async(ignore_result=True)
+
+        else:
+            raise FileNotFoundError("No file with a valid extension was found")
+
+    except Exception as e:
+        data = get_data(data_folder)
+        data["ocr"] = data.get("ocr", {})
+        data["ocr"]["exceptions"] = str(e)
+        data["status"] = {
+            "stage": "error",
+            "message": "Erro a preparar documento",
+        }
+        update_json_file(data_folder, data)
+        log.error(f"Error in preparing OCR for file at {path}: {e}")
+        raise e
 
 
 @celery.task(name="prepare_file")
