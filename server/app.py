@@ -51,6 +51,7 @@ from src.utils.file import get_file_layouts
 from src.utils.file import get_file_parsed
 from src.utils.file import get_filesystem
 from src.utils.file import get_structure_info
+from src.utils.file import get_word_count
 from src.utils.file import json_to_text
 from src.utils.file import PRIVATE_PATH
 from src.utils.file import save_file_layouts
@@ -1065,6 +1066,9 @@ def submit_text():
 
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(text, f, indent=2, ensure_ascii=False)
+
+    data_update = {"words": get_word_count(path)}
+    update_json_file(data_path, data_update)
 
     if remake_files:
         celery.send_task(
