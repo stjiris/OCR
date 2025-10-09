@@ -649,6 +649,19 @@ const ConfigManager = (props) => {
                     display: 'flex',
                     flexDirection: 'column',
                 }}>
+                    <CheckboxList title={"Formatos de resultado"}
+                                  options={outputOptions}
+                                  checked={outputs}
+                                  onChangeCallback={(checked) => setOutputList(checked)}
+                                  required={configName === "default"}
+                                  errorText="Deve selecionar pelo menos um formato de resultado"
+                    />
+                </Box>
+
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
                     <CheckboxList title={"Língua"}
                                   options={langOptions}
                                   checked={lang}
@@ -766,19 +779,6 @@ const ConfigManager = (props) => {
                         slotProps={{
                             inputLabel: {sx: {top: "0.5rem"}}
                         }}
-                    />
-                </Box>
-
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}>
-                    <CheckboxList title={"Formatos de resultado"}
-                                  options={outputOptions}
-                                  checked={outputs}
-                                  onChangeCallback={(checked) => setOutputList(checked)}
-                                  required={configName === "default"}
-                                  errorText="Deve selecionar pelo menos um formato de resultado"
                     />
                 </Box>
             </Box>
