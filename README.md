@@ -1,4 +1,4 @@
-# OCR – 1.2
+# OCR Service
 
 # Setup
 For a prepared server, the only required setup is the creation of `.env` files in the `website` and `server` folders. If the server is behind a proxy and must be accessed through a specific path, this path must be placed where `/path-that-serves-website/` is specified.
