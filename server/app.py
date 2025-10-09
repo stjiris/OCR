@@ -1489,10 +1489,15 @@ def schedule_private_space_cleanup():
 @auth_required("token", "session")
 @roles_required("Admin")
 def perform_private_space_cleanup():
-    celery.send_task("cleanup_private_spaces", ignore_result=True)
+    max_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "1"))
+    celery.send_task(
+        "cleanup_private_spaces",
+        kwargs={"max_private_space_age": max_age},
+        ignore_result=True,
+    )
     return {
         "success": True,
-        "message": "O sistema irá apagar os espaços privados mais antigos.",
+        "message": f"O sistema irá apagar os espaços privados com mais de {max_age}.",
     }
 
 
@@ -1526,15 +1531,15 @@ def set_max_private_space_age():
                 "message": f'Invalid number of days: "{new_max_age}", must be positive integer',
             }
 
-        result = celery.send_task(
-            "set_max_private_space_age", kwargs={"new_max_age": new_max_age}
-        ).get()
-        if result["status"] == "success":
-            os.environ["MAX_PRIVATE_SPACE_AGE"] = str(int(new_max_age))
-            return {
-                "success": True,
-                "message": f"New max private space age: {new_max_age} day(s)",
-            }
+        entry = RedBeatSchedulerEntry.from_key(
+            "redbeat:cleanup_private_spaces", app=celery
+        )
+        entry.kwargs = {"max_private_space_age": int(new_max_age)}
+        entry = entry.save()
+        return {
+            "success": True,
+            "message": f"Novo agendamento da limpeza de espaços privados: {entry}",
+        }
     except ValueError:
         return {
             "success": False,

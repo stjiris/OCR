@@ -1343,25 +1343,17 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
         "cleanup_private_spaces",
         task_delete_old_private_spaces.s().task,
         crontab(minute="0", hour="0"),
-        # args=["first", "second"], # example of sending args to task scheduled with redbeat
+        kwargs={
+            "max_private_space_age": int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "1"))
+        },
         app=celery,
     )
     entry.save()
     log.info(f"Created periodic task {entry}")
 
 
-@celery.task(name="set_max_private_space_age", priority=0)
-def task_set_max_private_space_age(new_max_age: int | str):
-    try:
-        os.environ["MAX_PRIVATE_SPACE_AGE"] = str(int(new_max_age))
-        return {"status": "success"}
-    except ValueError:
-        return {"status": "error"}
-
-
 @celery.task(name="cleanup_private_spaces", priority=0)
-def task_delete_old_private_spaces():
-    max_private_space_age = int(os.environ.get("MAX_PRIVATE_SPACE_AGE", "1"))  # days
+def task_delete_old_private_spaces(max_private_space_age: int):
     log.info(f"Deleting private spaces older than {max_private_space_age} day(s)")
 
     private_spaces = [f.path for f in os.scandir(f"./{PRIVATE_PATH}/") if f.is_dir()]
