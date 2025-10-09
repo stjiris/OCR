@@ -41,7 +41,7 @@ const weekDaysOptions = [
     { value: "sun", description: "Domingo"},
 ]
 
-const sizeRegex = /(\d+) ([A-Za-z]+)/;
+const sizeRegex = /(\d+(?:\.\d+)?) ([A-Za-z]+)/;  // match both e.g. "50 KB" and "50.00 KB"
 const sizeMap = {
     B: 1,
     KB: 1024,
@@ -87,7 +87,7 @@ const StorageManager = (props) => {
     function parseSize(sizeStr) {
         const match = sizeStr.match(sizeRegex);
         if (!match) return 0;
-        const value = parseInt(match[1], 10);
+        const value = parseFloat(match[1]);
         const unit = match[2].toUpperCase();
         return value * (sizeMap[unit] || 1);
     }
