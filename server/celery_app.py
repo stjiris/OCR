@@ -266,6 +266,7 @@ def task_make_changes(path, data):
                 get_file_size(export_folder + "/_pdf_indexed.pdf", path_complete=True)
             ),
             "creation": created_time,
+            "pages": get_page_count(path, "pdf") + 1,
         }
 
     if "pdf" in recreate_types:
@@ -294,6 +295,7 @@ def task_make_changes(path, data):
                 get_file_size(export_folder + "/_pdf.pdf", path_complete=True)
             ),
             "creation": created_time,
+            "pages": get_page_count(path, "pdf"),
         }
 
     if (
