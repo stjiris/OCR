@@ -7,6 +7,7 @@ import tempfile
 import traceback
 import uuid
 import zipfile
+from contextlib import suppress
 from datetime import datetime
 from io import BytesIO
 
@@ -252,7 +253,8 @@ def task_make_changes(path, data):
             },
         )
         recreate_csv = "csv" in recreate_types
-        os.remove(export_folder + "/_pdf_indexed.pdf")
+        with suppress(FileNotFoundError):
+            os.remove(export_folder + "/_pdf_indexed.pdf")
         export_file(
             path,
             "pdf",
@@ -284,7 +286,8 @@ def task_make_changes(path, data):
             },
         )
         recreate_csv = "csv" in recreate_types and "pdf_indexed" not in recreate_types
-        os.remove(export_folder + "/_pdf.pdf")
+        with suppress(FileNotFoundError):
+            os.remove(export_folder + "/_pdf.pdf")
         export_file(
             path,
             "pdf",
@@ -921,7 +924,8 @@ def task_extract_pdf_page(path, basename, i):
             )
         except Exception as e:
             log.error(f"Invalid PNG generated for page {i}: {e}")
-            os.remove(output_path)  # Remove truncated file
+            with suppress(FileNotFoundError):
+                os.remove(output_path)  # Remove truncated file
             raise
 
         # Generate document thumbnails with first page
