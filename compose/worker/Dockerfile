@@ -48,9 +48,9 @@ RUN \
 
 WORKDIR /usr/local/src
 
-ARG PYPDFIUM2_VERSION=5.0.0b1
+ARG PYPDFIUM2_VERSION=5.0.0
 # synced with libpdfium version bundled by pypdfium above
-ARG PDFIUM_VERSION=6996
+ARG PDFIUM_VERSION=7483
 ARG PDFIUM_URL=https://github.com/bblanchon/pdfium-binaries/releases/download/chromium
 
 # build to this prefix
